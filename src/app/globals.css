@@ -1,8 +1,8 @@
-@import "tailwindcss";
-@plugin "@heroui/react";
-@source "../../node_modules/@heroui/react/dist/**/*.{js,ts,jsx,tsx}";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 html,
 body {
-  background-color: var(--heroui-background, #f4f5f7);
+  background-color: hsl(var(--heroui-background));
 }
