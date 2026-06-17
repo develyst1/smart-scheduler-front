@@ -1,0 +1,108 @@
+"use client";
+
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Switch,
+  Spinner,
+  Button,
+  addToast,
+} from "@heroui/react";
+import { PowerOff, Power } from "lucide-react";
+import { TeacherTypeChip } from "@/components/common/BookingBadges";
+import {
+  useTeachers,
+  useToggleTeacher,
+  useToggleTeacherType,
+} from "@/hooks/scheduler";
+import type { Teacher, TeacherType } from "@/types/app/scheduler";
+import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
+
+const GROUP_ORDER: TeacherType[] = ["FULL_TIME", "PART_TIME", "FREELANCE"];
+
+export default function TeachersContent() {
+  const { data: teachers = [], isLoading } = useTeachers();
+  const toggle = useToggleTeacher();
+  const toggleType = useToggleTeacherType();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Spinner label="กำลังโหลด..." />
+      </div>
+    );
+  }
+
+  const handleToggle = (t: Teacher) =>
+    toggle.mutate({ id: t.id, active: !t.active });
+
+  const handleToggleType = (type: TeacherType, active: boolean) => {
+    toggleType.mutate({ type, active });
+    addToast({
+      title: `${active ? "เปิด" : "ปิด"}รับงานครู ${TEACHER_TYPE_LABEL[type]} ทั้งหมด`,
+      description: active ? undefined : "ครูกลุ่มนี้จะไม่แสดงในตารางจองของเดือนนี้",
+      color: active ? "success" : "default",
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-default-500">
+        จัดลำดับการรับงาน: Full-time / Part-time (เหมาจ่าย) ก่อน แล้วจึงกระจายงานให้ Freelance ·
+        ปิดสิทธิ์รับงานเพื่อไม่ให้ครูแสดงในตารางจอง
+      </p>
+
+      {GROUP_ORDER.map((type) => {
+        const group = teachers.filter((t) => t.type === type);
+        if (group.length === 0) return null;
+        const allActive = group.every((t) => t.active);
+
+        return (
+          <Card key={type} shadow="sm">
+            <CardHeader className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TeacherTypeChip type={type} size="md" />
+                <span className="text-sm text-default-400">{group.length} คน</span>
+              </div>
+              <Button
+                size="sm"
+                variant="flat"
+                color={allActive ? "default" : "success"}
+                startContent={allActive ? <PowerOff size={15} /> : <Power size={15} />}
+                onPress={() => handleToggleType(type, !allActive)}
+              >
+                {allActive ? "ปิดทั้งกลุ่ม" : "เปิดทั้งกลุ่ม"}
+              </Button>
+            </CardHeader>
+            <CardBody className="gap-2">
+              {group.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between rounded-xl border border-default-100 p-3"
+                >
+                  <div>
+                    <p className="font-medium">{t.name}</p>
+                    <p className="text-xs text-default-400">
+                      ({t.nickname}) · {t.subjects.join(", ")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs ${t.active ? "text-success" : "text-default-400"}`}>
+                      {t.active ? "รับงาน" : "ปิดรับงาน"}
+                    </span>
+                    <Switch
+                      isSelected={t.active}
+                      onValueChange={() => handleToggle(t)}
+                      aria-label={`สลับสถานะ ${t.name}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </CardBody>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
