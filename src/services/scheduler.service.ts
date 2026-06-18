@@ -52,6 +52,10 @@ export const getBookingsByDate = (date: string) =>
 
 export const getAllBookings = () => delay(clone(bookings));
 
+/** ดึงการจองในช่วงวันที่ [start, end] (inclusive) — ใช้กับ week view */
+export const getBookingsInRange = (start: string, end: string) =>
+  delay(clone(bookings.filter((b) => b.date >= start && b.date <= end)));
+
 /** ยืนยันตาราง → ส่งแจ้งเตือนทันทีผ่าน Line (mock) */
 export const confirmBooking = (id: string) => {
   const b = bookings.find((x) => x.id === id);
@@ -69,7 +73,13 @@ export const confirmBooking = (id: string) => {
  *  - ถ้าผูกคอร์สและยังมีโควตา → สร้างคาบ EXTENDED ต่อท้ายสัปดาห์ถัดไปอัตโนมัติ
  *  - ถ้าลาเกินโควตาและยังไม่ปลดล็อก → ไม่ขยายคาบ (ส่ง warning กลับ)
  */
-export const markSickLeave = (id: string) => {
+export interface SickLeaveResult {
+  booking?: Booking;
+  extended?: Booking;
+  locked: boolean;
+}
+
+export const markSickLeave = (id: string): Promise<SickLeaveResult> => {
   const b = bookings.find((x) => x.id === id);
   if (!b) return delay({ booking: undefined, extended: undefined, locked: false });
 

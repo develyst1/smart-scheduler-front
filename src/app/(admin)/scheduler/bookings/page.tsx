@@ -1,5 +1,5 @@
 import { BookingsContent } from "@/components/partials/Bookings";
 
-export default function BookingsPage() {
+export default async function BookingsPage() {
   return <BookingsContent />;
 }

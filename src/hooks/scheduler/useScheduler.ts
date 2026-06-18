@@ -6,6 +6,7 @@ import {
   confirmBooking,
   createBooking,
   getBookingsByDate,
+  getBookingsInRange,
   getCoursePackages,
   getDailyReport,
   getTeachers,
@@ -51,6 +52,12 @@ export const useBookingsByDate = (date: string) =>
   useQuery({
     queryKey: [...BOOKINGS_KEY, date],
     queryFn: () => getBookingsByDate(date),
+  });
+
+export const useBookingsInRange = (start: string, end: string) =>
+  useQuery({
+    queryKey: [...BOOKINGS_KEY, "range", start, end],
+    queryFn: () => getBookingsInRange(start, end),
   });
 
 const invalidateAll = (qc: ReturnType<typeof useQueryClient>) => {

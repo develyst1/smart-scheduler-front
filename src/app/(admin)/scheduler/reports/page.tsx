@@ -1,5 +1,5 @@
 import { ReportsContent } from "@/components/partials/Reports";
 
-export default function ReportsPage() {
+export default async function ReportsPage() {
   return <ReportsContent />;
 }

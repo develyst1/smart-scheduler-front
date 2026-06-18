@@ -1,8 +1,10 @@
 "use client";
 
-import { Card, CardBody, Button, Progress, Chip, addToast } from "@heroui/react";
+import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack } from "@mantine/core";
 import { LockKeyholeOpen, Lock } from "lucide-react";
 import { useAdminUnlockCourse, useCoursePackages } from "@/hooks/scheduler";
+import { notify } from "@/lib/ui/notify";
+import { MANTINE_COLOR } from "@/lib/ui/colors";
 import type { CoursePackageView } from "@/types/app/scheduler";
 
 export default function CoursePackagePanel() {
@@ -11,7 +13,7 @@ export default function CoursePackagePanel() {
 
   const handleUnlock = async (c: CoursePackageView) => {
     await unlock.mutateAsync(c.id);
-    addToast({
+    notify({
       title: "ปลดล็อกการลาแล้ว (กรณีพิเศษ)",
       description: `${c.studentName} สามารถเลื่อนตารางเพิ่มได้`,
       color: "warning",
@@ -20,77 +22,90 @@ export default function CoursePackagePanel() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {courses.map((c) => (
-        <Card key={c.id} shadow="sm">
-          <CardBody className="gap-3">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-semibold">{c.studentName}</p>
-                <p className="text-xs text-default-400">คอร์ส {c.size} ครั้ง · หมดอายุ {c.expiryDate}</p>
+      {courses.map((c) => {
+        const leaveColor = c.leaveLocked
+          ? MANTINE_COLOR.danger
+          : c.leaveRemaining === 0
+            ? MANTINE_COLOR.warning
+            : MANTINE_COLOR.success;
+
+        return (
+          <Card key={c.id} padding="lg">
+            <Stack gap="md">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-semibold">{c.studentName}</p>
+                  <p className="text-xs text-default-400">
+                    คอร์ส {c.size} ครั้ง · หมดอายุ {c.expiryDate}
+                  </p>
+                </div>
+                {c.leaveLocked ? (
+                  <Badge color="red" variant="light" leftSection={<Lock size={13} />}>
+                    ล็อก
+                  </Badge>
+                ) : c.adminUnlocked ? (
+                  <Badge color="orange" variant="light">
+                    ปลดล็อกพิเศษ
+                  </Badge>
+                ) : (
+                  <Badge color="green" variant="light">
+                    ปกติ
+                  </Badge>
+                )}
               </div>
-              {c.leaveLocked ? (
-                <Chip size="sm" color="danger" variant="flat" startContent={<Lock size={13} />}>
-                  ล็อก
-                </Chip>
-              ) : c.adminUnlocked ? (
-                <Chip size="sm" color="warning" variant="flat">
-                  ปลดล็อกพิเศษ
-                </Chip>
-              ) : (
-                <Chip size="sm" color="success" variant="flat">
-                  ปกติ
-                </Chip>
+
+              <Group gap="lg" wrap="nowrap">
+                <RingProgress
+                  size={92}
+                  thickness={9}
+                  roundCaps
+                  sections={[{ value: (c.usedSessions / c.size) * 100, color: "blue" }]}
+                  label={
+                    <div className="text-center">
+                      <Text size="lg" fw={700} lh={1}>
+                        {c.usedSessions}/{c.size}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        ครั้ง
+                      </Text>
+                    </div>
+                  }
+                />
+
+                <div className="flex-1">
+                  <div className="mb-1 flex justify-between text-xs text-default-500">
+                    <span>สิทธิ์การลา</span>
+                    <span>เหลือ {c.leaveRemaining}</span>
+                  </div>
+                  <Progress
+                    size="md"
+                    radius="xl"
+                    value={(c.leaveUsed / c.leaveQuota) * 100}
+                    color={leaveColor}
+                  />
+                  <p className="mt-1.5 text-[11px] text-default-400">
+                    ใช้ไป {c.leaveUsed}/{c.leaveQuota} · ขยายได้ถึงสัปดาห์ที่ {c.maxWeek}
+                  </p>
+                </div>
+              </Group>
+
+              {c.leaveLocked && (
+                <Button
+                  size="xs"
+                  color="orange"
+                  variant="light"
+                  fullWidth
+                  leftSection={<LockKeyholeOpen size={15} />}
+                  loading={unlock.isPending}
+                  onClick={() => handleUnlock(c)}
+                >
+                  ปลดล็อก (แอดมิน)
+                </Button>
               )}
-            </div>
-
-            <div>
-              <div className="mb-1 flex justify-between text-xs text-default-500">
-                <span>เรียนไปแล้ว</span>
-                <span>
-                  {c.usedSessions}/{c.size} ครั้ง
-                </span>
-              </div>
-              <Progress
-                aria-label="ความคืบหน้าคอร์ส"
-                size="sm"
-                value={(c.usedSessions / c.size) * 100}
-                color="primary"
-              />
-            </div>
-
-            <div>
-              <div className="mb-1 flex justify-between text-xs text-default-500">
-                <span>สิทธิ์การลา</span>
-                <span>
-                  ใช้ไป {c.leaveUsed}/{c.leaveQuota} · เหลือ {c.leaveRemaining}
-                </span>
-              </div>
-              <Progress
-                aria-label="โควตาการลา"
-                size="sm"
-                value={(c.leaveUsed / c.leaveQuota) * 100}
-                color={c.leaveLocked ? "danger" : c.leaveRemaining === 0 ? "warning" : "success"}
-              />
-              <p className="mt-1 text-[11px] text-default-400">
-                ขยายตารางได้ถึงสัปดาห์ที่ {c.maxWeek}
-              </p>
-            </div>
-
-            {c.leaveLocked && (
-              <Button
-                size="sm"
-                color="warning"
-                variant="flat"
-                startContent={<LockKeyholeOpen size={15} />}
-                isLoading={unlock.isPending}
-                onPress={() => handleUnlock(c)}
-              >
-                ปลดล็อก (แอดมิน)
-              </Button>
-            )}
-          </CardBody>
-        </Card>
-      ))}
+            </Stack>
+          </Card>
+        );
+      })}
     </div>
   );
 }

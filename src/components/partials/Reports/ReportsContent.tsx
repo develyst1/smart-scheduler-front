@@ -2,16 +2,23 @@
 
 import { useState } from "react";
 import dayjs from "dayjs";
-import { Card, CardBody, Input, Spinner } from "@heroui/react";
-import { Users, CheckCircle2, CalendarOff, Clock } from "lucide-react";
+import { Card, Loader, ThemeIcon, Paper, Text } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
+import {
+  Users,
+  CheckCircle2,
+  CalendarOff,
+  Clock,
+  CalendarDays,
+} from "lucide-react";
 import { BookingTypeChip } from "@/components/common/BookingBadges";
 import { useDailyReport } from "@/hooks/scheduler";
 
 const STAT_CARDS = [
-  { key: "totalBooked", label: "ลงเรียนทั้งหมด", icon: Users, color: "text-primary" },
-  { key: "attended", label: "มาเรียนจริง", icon: CheckCircle2, color: "text-success" },
-  { key: "onLeave", label: "ลา/ป่วย", icon: CalendarOff, color: "text-default-500" },
-  { key: "pending", label: "รอยืนยัน", icon: Clock, color: "text-warning" },
+  { key: "totalBooked", label: "ลงเรียนทั้งหมด", icon: Users, color: "blue" },
+  { key: "attended", label: "มาเรียนจริง", icon: CheckCircle2, color: "green" },
+  { key: "onLeave", label: "ลา/ป่วย", icon: CalendarOff, color: "gray" },
+  { key: "pending", label: "รอยืนยัน", icon: Clock, color: "orange" },
 ] as const;
 
 export default function ReportsContent() {
@@ -20,20 +27,21 @@ export default function ReportsContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Input
-          type="date"
-          label="เลือกวันที่"
-          size="sm"
-          className="max-w-52"
-          value={date}
-          onValueChange={setDate}
-        />
-      </div>
+      <DatePickerInput
+        label="เลือกวันที่"
+        value={date}
+        onChange={(v) => v && setDate(v)}
+        valueFormat="D MMM YYYY"
+        size="sm"
+        radius="md"
+        className="max-w-56"
+        leftSection={<CalendarDays size={16} />}
+      />
 
       {isLoading || !report ? (
-        <div className="flex h-48 items-center justify-center">
-          <Spinner label="กำลังสรุปยอด..." />
+        <div className="flex h-48 flex-col items-center justify-center gap-3 text-sm text-default-500">
+          <Loader size="md" />
+          กำลังสรุปยอด...
         </div>
       ) : (
         <>
@@ -41,36 +49,45 @@ export default function ReportsContent() {
             {STAT_CARDS.map((s) => {
               const Icon = s.icon;
               return (
-                <Card key={s.key} shadow="sm">
-                  <CardBody className="flex flex-row items-center gap-4">
-                    <span className={`${s.color}`}>
-                      <Icon size={28} />
-                    </span>
+                <Card key={s.key} padding="lg">
+                  <div className="flex items-center gap-4">
+                    <ThemeIcon
+                      variant="light"
+                      color={s.color}
+                      size={48}
+                      radius="md"
+                    >
+                      <Icon size={26} />
+                    </ThemeIcon>
                     <div>
-                      <p className="text-2xl font-bold">{report[s.key]}</p>
-                      <p className="text-xs text-default-400">{s.label}</p>
+                      <p className="text-3xl font-bold leading-none tracking-tight">
+                        {report[s.key]}
+                      </p>
+                      <p className="mt-1 text-xs text-default-400">{s.label}</p>
                     </div>
-                  </CardBody>
+                  </div>
                 </Card>
               );
             })}
           </div>
 
-          <Card shadow="sm">
-            <CardBody className="gap-3">
-              <p className="text-sm font-semibold">แยกตามรูปแบบการจอง</p>
-              <div className="flex flex-wrap gap-4">
-                {report.byBookingType.map((item) => (
-                  <div
-                    key={item.type}
-                    className="flex items-center gap-2 rounded-xl border border-default-100 px-4 py-3"
-                  >
-                    <BookingTypeChip type={item.type} size="md" />
-                    <span className="text-lg font-semibold">{item.count}</span>
-                  </div>
-                ))}
-              </div>
-            </CardBody>
+          <Card padding="lg">
+            <Text size="sm" fw={600} mb="md">
+              แยกตามรูปแบบการจอง
+            </Text>
+            <div className="flex flex-wrap gap-3">
+              {report.byBookingType.map((item) => (
+                <Paper
+                  key={item.type}
+                  withBorder
+                  p="md"
+                  className="flex items-center gap-3 bg-default-100/50"
+                >
+                  <BookingTypeChip type={item.type} size="md" />
+                  <span className="text-xl font-bold">{item.count}</span>
+                </Paper>
+              ))}
+            </div>
           </Card>
         </>
       )}

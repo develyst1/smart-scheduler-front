@@ -1,17 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Select,
-  SelectItem,
-  Spinner,
-} from "@heroui/react";
+import { Table, Select, Loader } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { getAllBookings } from "@/services/scheduler.service";
@@ -39,8 +29,9 @@ export default function BookingsTable() {
 
   if (isLoading) {
     return (
-      <div className="flex h-40 items-center justify-center">
-        <Spinner label="กำลังโหลด..." />
+      <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-default-500">
+        <Loader size="md" />
+        กำลังโหลด...
       </div>
     );
   }
@@ -52,44 +43,55 @@ export default function BookingsTable() {
           label="กรองตามรูปแบบ"
           size="sm"
           className="max-w-52"
-          selectedKeys={[typeFilter]}
-          onChange={(e) => setTypeFilter((e.target.value || "ALL") as BookingType | "ALL")}
-        >
-          {[{ key: "ALL", label: "ทั้งหมด" }, ...BOOKING_TYPE_OPTIONS].map((o) => (
-            <SelectItem key={o.key}>{o.label}</SelectItem>
-          ))}
-        </Select>
+          value={typeFilter}
+          onChange={(v) => setTypeFilter((v || "ALL") as BookingType | "ALL")}
+          allowDeselect={false}
+          data={[{ key: "ALL", label: "ทั้งหมด" }, ...BOOKING_TYPE_OPTIONS].map((o) => ({
+            value: o.key,
+            label: o.label,
+          }))}
+        />
       </div>
 
-      <Table aria-label="รายการการจอง" removeWrapper>
-        <TableHeader>
-          <TableColumn>นักเรียน</TableColumn>
-          <TableColumn>วิชา</TableColumn>
-          <TableColumn>ครู</TableColumn>
-          <TableColumn>วันที่</TableColumn>
-          <TableColumn>เวลา</TableColumn>
-          <TableColumn>รูปแบบ</TableColumn>
-          <TableColumn>สถานะ</TableColumn>
-        </TableHeader>
-        <TableBody emptyContent="ไม่มีข้อมูล">
-          {rows.map((b) => (
-            <TableRow key={b.id}>
-              <TableCell className="font-medium">{b.studentName}</TableCell>
-              <TableCell>{b.subject}</TableCell>
-              <TableCell>{teacherName(b.teacherId)}</TableCell>
-              <TableCell>{b.date}</TableCell>
-              <TableCell>
-                {b.startTime}-{b.endTime}
-              </TableCell>
-              <TableCell>
-                <BookingTypeChip type={b.bookingType} />
-              </TableCell>
-              <TableCell>
-                <StatusChip status={b.status} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
+      <Table highlightOnHover verticalSpacing="sm" aria-label="รายการการจอง">
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>นักเรียน</Table.Th>
+            <Table.Th>วิชา</Table.Th>
+            <Table.Th>ครู</Table.Th>
+            <Table.Th>วันที่</Table.Th>
+            <Table.Th>เวลา</Table.Th>
+            <Table.Th>รูปแบบ</Table.Th>
+            <Table.Th>สถานะ</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {rows.length === 0 ? (
+            <Table.Tr>
+              <Table.Td colSpan={7} className="text-center text-sm text-default-400">
+                ไม่มีข้อมูล
+              </Table.Td>
+            </Table.Tr>
+          ) : (
+            rows.map((b) => (
+              <Table.Tr key={b.id}>
+                <Table.Td className="font-medium">{b.studentName}</Table.Td>
+                <Table.Td>{b.subject}</Table.Td>
+                <Table.Td>{teacherName(b.teacherId)}</Table.Td>
+                <Table.Td>{b.date}</Table.Td>
+                <Table.Td>
+                  {b.startTime}-{b.endTime}
+                </Table.Td>
+                <Table.Td>
+                  <BookingTypeChip type={b.bookingType} />
+                </Table.Td>
+                <Table.Td>
+                  <StatusChip status={b.status} />
+                </Table.Td>
+              </Table.Tr>
+            ))
+          )}
+        </Table.Tbody>
       </Table>
     </div>
   );

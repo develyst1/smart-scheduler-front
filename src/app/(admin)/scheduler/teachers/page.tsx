@@ -1,5 +1,5 @@
 import { TeachersContent } from "@/components/partials/Teachers";
 
-export default function TeachersPage() {
+export default async function TeachersPage() {
   return <TeachersContent />;
 }

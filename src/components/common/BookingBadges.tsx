@@ -1,6 +1,6 @@
 "use client";
 
-import { Chip } from "@heroui/react";
+import { Badge } from "@mantine/core";
 import type { BookingStatus, BookingType, TeacherType } from "@/types/app/scheduler";
 import {
   BOOKING_STATUS_COLOR,
@@ -8,43 +8,43 @@ import {
   BOOKING_TYPE_LABEL,
   TEACHER_TYPE_LABEL,
 } from "@/types/app/scheduler";
+import { MANTINE_COLOR, type SemanticColor } from "@/lib/ui/colors";
 
-export function StatusChip({ status, size = "sm" }: { status: BookingStatus; size?: "sm" | "md" }) {
+type Size = "sm" | "md";
+
+export function StatusChip({ status, size = "sm" }: { status: BookingStatus; size?: Size }) {
   return (
-    <Chip size={size} color={BOOKING_STATUS_COLOR[status]} variant="flat">
+    <Badge size={size} color={MANTINE_COLOR[BOOKING_STATUS_COLOR[status]]} variant="light" radius="sm">
       {BOOKING_STATUS_LABEL[status]}
-    </Chip>
+    </Badge>
   );
 }
 
-const BOOKING_TYPE_COLOR: Record<
-  BookingType,
-  "default" | "primary" | "secondary" | "success" | "warning" | "danger"
-> = {
+const BOOKING_TYPE_COLOR: Record<BookingType, SemanticColor> = {
   FIRST_TRIAL: "warning",
   SINGLE_SESSION: "default",
   COURSE_PACKAGE: "primary",
   VOUCHER: "secondary",
 };
 
-export function BookingTypeChip({ type, size = "sm" }: { type: BookingType; size?: "sm" | "md" }) {
+export function BookingTypeChip({ type, size = "sm" }: { type: BookingType; size?: Size }) {
   return (
-    <Chip size={size} color={BOOKING_TYPE_COLOR[type]} variant="dot">
+    <Badge size={size} color={MANTINE_COLOR[BOOKING_TYPE_COLOR[type]]} variant="dot" radius="sm">
       {BOOKING_TYPE_LABEL[type]}
-    </Chip>
+    </Badge>
   );
 }
 
-const TEACHER_TYPE_COLOR: Record<TeacherType, "primary" | "secondary" | "default"> = {
+const TEACHER_TYPE_COLOR: Record<TeacherType, SemanticColor> = {
   FULL_TIME: "primary",
   PART_TIME: "secondary",
   FREELANCE: "default",
 };
 
-export function TeacherTypeChip({ type, size = "sm" }: { type: TeacherType; size?: "sm" | "md" }) {
+export function TeacherTypeChip({ type, size = "sm" }: { type: TeacherType; size?: Size }) {
   return (
-    <Chip size={size} color={TEACHER_TYPE_COLOR[type]} variant="flat">
+    <Badge size={size} color={MANTINE_COLOR[TEACHER_TYPE_COLOR[type]]} variant="light" radius="sm">
       {TEACHER_TYPE_LABEL[type]}
-    </Chip>
+    </Badge>
   );
 }

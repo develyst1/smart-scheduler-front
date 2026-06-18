@@ -57,7 +57,7 @@ export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
   CANCELLED: "ยกเลิก",
 };
 
-/** สี HeroUI chip ตามสถานะ — ใช้สีน้อย เรียบตา ตาม requirement */
+/** สี semantic ตามสถานะ — map เป็นสี Mantine ใน lib/ui/colors.ts (ใช้สีน้อย เรียบตา) */
 export const BOOKING_STATUS_COLOR: Record<
   BookingStatus,
   "default" | "primary" | "secondary" | "success" | "warning" | "danger"

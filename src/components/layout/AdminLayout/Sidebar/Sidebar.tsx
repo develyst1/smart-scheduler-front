@@ -10,13 +10,13 @@ export default function Sidebar() {
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-default-200 bg-content1">
-      <div className="flex items-center gap-2 px-5 py-5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+      <div className="flex items-center gap-3 px-5 py-5">
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-blue-700 text-primary-foreground shadow-md shadow-primary/30">
           <CalendarRange size={20} />
         </span>
         <div className="leading-tight">
-          <p className="text-sm font-semibold">{APP_NAME}</p>
-          <p className="text-xs text-default-400">จัดตารางเรียน</p>
+          <p className="text-sm font-semibold tracking-tight">{APP_NAME}</p>
+          <p className="text-xs text-default-400">จัดตารางเรียนหลังบ้าน</p>
         </div>
       </div>
 
@@ -28,13 +28,24 @@ export default function Sidebar() {
             <Link
               key={item.key}
               href={item.href}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
+              className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
                 active
                   ? "bg-primary/10 font-medium text-primary"
                   : "text-default-600 hover:bg-default-100"
               }`}
             >
-              <Icon size={18} />
+              {active && (
+                <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary" />
+              )}
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                  active
+                    ? "bg-primary/15 text-primary"
+                    : "text-default-500 group-hover:text-default-600"
+                }`}
+              >
+                <Icon size={18} />
+              </span>
               {item.label}
             </Link>
           );

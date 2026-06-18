@@ -1,5 +1,5 @@
 import { CalendarContent } from "@/components/partials/Calendar";
 
-export default function CalendarPage() {
+export default async function CalendarPage() {
   return <CalendarContent />;
 }
