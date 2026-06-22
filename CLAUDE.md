@@ -1,108 +1,80 @@
-# CLAUDE.md
+# CLAUDE.md — smart-scheduler-front (Frontoffice Web)
 
-This file guides Claude Code (and other AI agents) when working in this repository.
+Guides Claude Code (and other agents) in this repo. For the cross-repo map see the
+workspace root `../CLAUDE.md`.
 
-## Project: Smart Tutoring Scheduler & Attendance Report System (Frontend)
+## What this is
 
-A back-office (Backend-for-staff) web app for a tutoring school/institute. It replaces the
-current manual Excel workflow with a system that manages **teacher schedules** and **student
-attendance**, with the explicit goal of reducing **human error**.
+The **frontoffice web app** — the staff-facing screen that replaces the manual **Excel**
+scheduling workflow for a tutoring school, to cut **human error**. Audience: **internal
+staff/admins** (not students/parents). This is **Phase 1** and is the most-built repo.
 
-- **Audience:** internal staff/admins (not students or parents directly).
-- **Repo scope:** this repo (`smart-scheduler-front`) is the **frontend**.
-- **Status:** greenfield. As of this writing the repo contains only requirement docs
-  ([Requirement.md](Requirement.md), [requirement.png](requirement.png)) — no app code yet.
+> Business spec (Thai): [Requirement.md](Requirement.md) (original) and **[req2.md](req2.md)**
+> (current SRS — wins on conflict). The hard part is **domain logic**, not the UI.
 
-> The authoritative business spec is **[Requirement.md](Requirement.md)** (Thai). When in
-> doubt about a rule, read it before implementing. This file summarizes the key logic; the
-> spec wins on conflicts.
+## Stack (as actually installed — see [package.json](package.json))
 
-## Tech stack (intended)
-
-The `.gitignore` is the standard **Next.js** template, so target:
-
-- **Next.js** (App Router) + **React** + **TypeScript**
-- **Ant Design** as the default UI library (house pattern). See the
-  `nextjs-antd-pattern` skill for scaffolding components, hooks, services, and types.
-- Package manager: npm/yarn (lockfile will decide once added).
-
-Common commands once the app is scaffolded:
+- **Next.js 16** (App Router) + **React 19** + **TypeScript** (strict)
+- **Mantine v9** UI — `@mantine/core`, `@mantine/dates`, `@mantine/hooks`, `@mantine/notifications`
+  > NOTE: this repo uses **Mantine**, not Ant Design. (An older draft of this file said AntD — that
+  > was wrong.) Both FE repos standardize on Mantine.
+- **Tailwind CSS v3** — utilities only; **semantic color names** are bridged to Mantine in
+  [src/lib/ui/colors.ts](src/lib/ui/colors.ts)
+- **TanStack Query v5** (server state) + **Axios** (HTTP) + **dayjs** (dates) + **lucide-react** (icons)
+- Package manager: **bun** (`bun.lock`). Path alias **`@/*` → `./src/*`** ([tsconfig.json](tsconfig.json)).
 
 ```bash
-npm install      # install deps
-npm run dev      # local dev server
-npm run build    # production build
-npm run lint     # lint
+bun install
+bun run dev      # local dev server
+bun run build    # production build
+bun run lint     # lint
 ```
 
-## Domain model (data entities)
+## Architecture — layered, framework-light domain
 
-### Teachers
-Three types, which drive scheduling priority:
-1. **Full-time** — flat-rate; schedule to full capacity **first**.
-2. **Part-time** — flat-rate; scheduled alongside full-time first.
-3. **Freelance** — paid per actual teaching hour; gets remaining slots after full/part-time.
+Data flows **page → partial → hook → service → (API)**, with pure domain logic kept aside:
 
-- **Availability control:** staff can disable a single teacher — or **all Freelance teachers** —
-  so they don't appear in the booking grid for a given period (e.g. to cut Freelance cost).
+| Layer | Location | Rule |
+|-------|----------|------|
+| **Types & domain constants** | `src/types/app/<domain>/index.ts` | Types + `const` maps (labels, colors, quotas). [example](src/types/app/scheduler/index.ts) |
+| **Pure domain logic** | `src/lib/<domain>/*.ts` | Framework-free, no React/IO, **unit-testable** (e.g. [leave.ts](src/lib/scheduler/leave.ts)). |
+| **UI helpers** | `src/lib/ui/*` | [notify.ts](src/lib/ui/notify.ts) (toast wrapper), [colors.ts](src/lib/ui/colors.ts) (semantic→Mantine). |
+| **Data access** | `src/services/<domain>.service.ts` | The only place that talks to the backend. **Currently mock** ([scheduler.service.ts](src/services/scheduler.service.ts) with `delay()`). |
+| **Server-state hooks** | `src/hooks/<domain>/*.ts` | TanStack Query `use*` hooks; query keys as `const`; mutations `invalidateQueries`. [example](src/hooks/scheduler/useScheduler.ts) |
+| **Routes (thin)** | `src/app/(group)/.../page.tsx` | Server component that just renders a partial. [example](src/app/(admin)/scheduler/calendar/page.tsx) |
+| **Feature UI** | `src/components/partials/<Feature>/<Feature>Content.tsx` | `"use client"` container + sub-components + `Modal/`. |
+| **Layout / shared** | `src/components/layout/*`, `src/components/common/*` | Config-driven nav ([AdminLayout.config.ts](src/components/layout/AdminLayout/AdminLayout.config.ts)). |
+| **Providers** | `src/context/*` | `MantineProviders`, `QueryProvider`. |
 
-### Students / Booking types
-1. **First Trial** — one-time trial (customer requests via Line). System should auto-classify/
-   tag these (e.g. distinct color/tag) so staff can follow up.
-2. **Single Session** — pay-per-hour, no course commitment.
-3. **Course Package** — 4 / 6 / 10 sessions, each with an **expiry window** (weeks/months).
-4. **Voucher** — packages of 5 / 10 / 15 hours; expiry **~2× longer** than courses (e.g. 6 months).
-   Vouchers are **not** fixed to a time slot and **cannot** pick a specific teacher (system
-   assigns by availability).
+Conventions:
+- Pages stay thin (delegate to a `*Content` partial). Mark client components `"use client"`.
+- Use the semantic color set (`default/primary/secondary/success/warning/danger`) — **restrained
+  color is an explicit client request**; keep the calendar calm/uncluttered.
+- Toasts go through `notify(...)`; never hand-roll Mantine notifications in partials.
+- Thai is the UI language — keep Thai domain terms in user-facing copy.
 
-## Core business logic (Phase 1)
+## Connecting to the backend (next step)
 
-### Calendar Dashboard (single-page overview)
-- One screen showing **every teacher's schedule for a given day**, time-axis **10:00–18:00**.
-- See free/full slots at a glance — no per-teacher drill-down required.
-- UI must be clean and calm: **avoid loud/excessive colors**; one-page horizontal scroll across
-  all teachers for the day.
+Today `src/services/*` returns mock data. To wire the real **Scheduling API**
+(`smart-scheduler-back`, Bun + Hono):
+- Replace mock bodies with **Axios** calls; keep the **same function signatures** so hooks/partials
+  don't change.
+- Prefer **Hono's typed RPC client (`hc<AppType>`)** if you import the backend's `AppType`, for
+  end-to-end type safety; otherwise share a types package.
+- **LINE push is the backend's job.** `confirmBooking` here only calls the API; the Hono server
+  performs the LINE Messaging API push (see the `TODO(phase2)` in
+  [scheduler.service.ts](src/services/scheduler.service.ts)). The browser must never hold LINE tokens.
 
-### Auto-recurring booking
-- Registering a course (e.g. 10 sessions, Sundays 10:00) **auto-locks that slot forward** for
-  the quota (e.g. ~10–13 weeks ahead).
+## Domain logic you must not break (from req2.md)
 
-### Leave (cancellation) & extension logic
-- When a student takes leave (e.g. sick), staff records it; the system **removes that day's
-  session** and **auto-appends an extra slot** in a following week.
-- **Leave quota is bound to the package** and is strictly enforced:
-  - **4-session course:** max **1** leave (schedule may extend to **week 5** max).
-  - **6-session course:** max **2** leaves.
-  - **10-session course:** max **3** leaves (schedule may extend to **week 13** max).
-- Exceeding quota **locks** further rescheduling unless an **admin manually unlocks** it
-  (special cases only, e.g. serious accident).
+- **Teacher priority:** schedule **Full-time / Part-time first** (flat-rate), then **Freelance**
+  (paid per actual hour). Preserve `TEACHER_TYPE_PRIORITY` ordering in any auto-assignment.
+- **Booking types:** First Trial (tag/color, follow-up) · Single Session · Course Package (4/6/10,
+  with expiry) · Voucher (5/10/15 hrs, ~2× expiry, **no fixed slot, cannot pick a teacher**).
+- **Leave quota bound to package size:** 4→**1** leave (extend ≤ week 5), 6→**2**, 10→**3**
+  (extend ≤ week 13). Over quota → **lock** rescheduling until an **admin** unlocks (special cases).
+  Mirrored here in [leave.ts](src/lib/scheduler/leave.ts), but the **backend is the source of truth**.
+- **Statuses:** `PENDING → CONFIRMED → ATTENDED / SICK_LEAVE → EXTENDED / CANCELLED`.
 
-### Booking workflow statuses
-Model bookings with explicit states, e.g.:
-`Pending → Confirmed → Cancelled / Sick Leave → Extended`.
-Keep a **leave counter** tied precisely to the course package to enforce quotas.
-
-## Phase 2 — Notifications & reports
-- **Instant notification on confirm:** when staff click **"Confirm schedule"**, send a message
-  **immediately** (not 1 hour before class). Delivery channel is **Line** (emphasized by client).
-- **Daily summary report:** dashboard totaling per day — students booked, on leave, actually
-  attended — so staff can act on the aggregate numbers.
-
-## Phase 3 — Integration / future (only if feasible)
-- Current front-desk software is **"Alis To Soft"** (registration, payments, course balance,
-  hour deduction with Line alerts to parents, stock).
-- **Option 1:** integrate via API so recording attendance/leave here auto-deducts hours in
-  Alis To Soft (today it's keyed manually in both systems).
-- **Option 2 (build it all):** if no API, later add finance, **Freelance payroll by actual
-  hours taught**, and stock — consolidating into a single system.
-
-## Guidance for changes
-
-- **Domain logic is the hard part, not the UI.** Quota counting, expiry windows, and the
-  leave/extension rules are the source of correctness bugs — implement them against
-  [Requirement.md](Requirement.md) and keep them testable/isolated from UI.
-- Preserve the **teacher-priority** ordering (full/part-time before freelance) wherever slots
-  are auto-assigned.
-- Keep the calendar UI **uncluttered** — restraint with color is an explicit client request.
-- Thai is the primary language of the spec and likely the UI; preserve Thai domain terms in
-  user-facing copy unless told otherwise.
+> ⚠️ `MAX_WEEK_BY_SIZE` for the 6-session course is coded as **week 8** — the spec only fixes
+> 4→week 5 and 10→week 13. Confirm the real rule before trusting it.
