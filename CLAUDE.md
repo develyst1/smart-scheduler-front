@@ -9,8 +9,8 @@ The **frontoffice web app** — the staff-facing screen that replaces the manual
 scheduling workflow for a tutoring school, to cut **human error**. Audience: **internal
 staff/admins** (not students/parents). This is **Phase 1** and is the most-built repo.
 
-> Business spec (Thai): [Requirement.md](Requirement.md) (original) and **[req2.md](req2.md)**
-> (current SRS — wins on conflict). The hard part is **domain logic**, not the UI.
+> Business spec (Thai): **[../requirement.md](../requirement.md)** (latest, root — wins), then
+> [req2.md](req2.md) and [Requirement.md](Requirement.md). The hard part is **domain logic**, not the UI.
 
 ## Stack (as actually installed — see [package.json](package.json))
 
@@ -65,15 +65,19 @@ Today `src/services/*` returns mock data. To wire the real **Scheduling API**
   performs the LINE Messaging API push (see the `TODO(phase2)` in
   [scheduler.service.ts](src/services/scheduler.service.ts)). The browser must never hold LINE tokens.
 
-## Domain logic you must not break (from req2.md)
+## Domain logic you must not break (from requirement.md)
 
+- **Calendar hours:** **09:00–18:00** (nine one-hour slots) — `TIME_SLOTS` in
+  [types](src/types/app/scheduler/index.ts).
 - **Teacher priority:** schedule **Full-time / Part-time first** (flat-rate), then **Freelance**
   (paid per actual hour). Preserve `TEACHER_TYPE_PRIORITY` ordering in any auto-assignment.
-- **Booking types:** First Trial (tag/color, follow-up) · Single Session · Course Package (4/6/10,
-  with expiry) · Voucher (5/10/15 hrs, ~2× expiry, **no fixed slot, cannot pick a teacher**).
+- **Booking types:** First Trial (tag/color, follow-up) · Single Session (1 hr) · Course Package
+  (4/6/10, **fixed day+time**, with expiry) · Voucher (5/10/15 hrs → **3/6/9-month** validity from
+  first booking, **no fixed slot, cannot pick a teacher**).
 - **Leave quota bound to package size:** 4→**1** leave (extend ≤ week 5), 6→**2**, 10→**3**
   (extend ≤ week 13). Over quota → **lock** rescheduling until an **admin** unlocks (special cases).
   Mirrored here in [leave.ts](src/lib/scheduler/leave.ts), but the **backend is the source of truth**.
+- **Manual Move/Add:** staff can move or add a session by hand for special cases.
 - **Statuses:** `PENDING → CONFIRMED → ATTENDED / SICK_LEAVE → EXTENDED / CANCELLED`.
 
 > ⚠️ `MAX_WEEK_BY_SIZE` for the 6-session course is coded as **week 8** — the spec only fixes
