@@ -3,7 +3,15 @@ import type {
   Booking,
   CoursePackage,
   Teacher,
+  TeacherType,
 } from "@/types/app/scheduler";
+
+// ลำดับความสำคัญของประเภทครู (ทีมงานปรับได้) — ครูจะเรียงตามนี้ใน booking grid
+// ค่าเริ่มต้น: Full-time → Part-time → Freelance
+export let teacherTypeOrder: TeacherType[] = ["FULL_TIME", "PART_TIME", "FREELANCE"];
+export const setTeacherTypeOrderStore = (order: TeacherType[]) => {
+  teacherTypeOrder = order;
+};
 
 // In-memory mock store. Replaces a real backend for now so the UI is fully
 // interactive. Swap services/lib-api to real endpoints later (Phase 3).
@@ -13,8 +21,8 @@ export const teachers: Teacher[] = [
   { id: "t2", name: "ครูบีม รุ่งโรจน์", nickname: "บีม", type: "FULL_TIME", subjects: ["อังกฤษ"], active: true },
   { id: "t3", name: "ครูแคท ปิยะดา", nickname: "แคท", type: "PART_TIME", subjects: ["เคมี", "ชีวะ"], active: true },
   { id: "t4", name: "ครูดิว ธนพล", nickname: "ดิว", type: "PART_TIME", subjects: ["คณิต"], active: true },
-  { id: "t5", name: "ครูเอิร์ธ กิตติ", nickname: "เอิร์ธ", type: "FREELANCE", subjects: ["อังกฤษ", "IELTS"], active: true },
-  { id: "t6", name: "ครูฟ้า ชนิดา", nickname: "ฟ้า", type: "FREELANCE", subjects: ["ภาษาไทย"], active: false },
+  { id: "t5", name: "ครูเอิร์ธ กิตติ", nickname: "เอิร์ธ", type: "FREELANCE", subjects: ["อังกฤษ", "IELTS"], active: true, hourlyRate: 500, incomeLimit: 20000, limitOverride: false },
+  { id: "t6", name: "ครูฟ้า ชนิดา", nickname: "ฟ้า", type: "FREELANCE", subjects: ["ภาษาไทย"], active: false, hourlyRate: 450, incomeLimit: 15000, limitOverride: false },
 ];
 
 const today = dayjs().format("YYYY-MM-DD");

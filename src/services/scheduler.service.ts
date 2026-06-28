@@ -4,17 +4,21 @@ import {
   coursePackages,
   nextBookingId,
   teachers,
+  teacherTypeOrder,
+  setTeacherTypeOrderStore,
 } from "@/lib/mock/data";
 import { canTakeLeave, toCourseView } from "@/lib/scheduler/leave";
+import { sortByTypeOrder, toTeacherView } from "@/lib/scheduler/teacher";
 import type {
   Booking,
   BookingType,
   CoursePackageView,
   DailyReport,
+  RescheduleReason,
   Teacher,
   TeacherType,
+  TeacherView,
 } from "@/types/app/scheduler";
-import { TEACHER_TYPE_PRIORITY } from "@/types/app/scheduler";
 
 // Simulate network latency so React Query states behave realistically.
 const delay = <T>(value: T, ms = 200) =>
@@ -24,14 +28,10 @@ const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 
 // ───────────────────────────── Teachers ─────────────────────────────
 
-export const getTeachers = () =>
-  delay(
-    clone(
-      [...teachers].sort(
-        (a, b) => TEACHER_TYPE_PRIORITY[a.type] - TEACHER_TYPE_PRIORITY[b.type],
-      ),
-    ),
-  );
+export const getTeachers = (): Promise<TeacherView[]> => {
+  const views = teachers.map((t) => toTeacherView(t, bookings));
+  return delay(sortByTypeOrder(clone(views), teacherTypeOrder));
+};
 
 export const setTeacherActive = (id: string, active: boolean) => {
   const t = teachers.find((x) => x.id === id);
@@ -43,6 +43,22 @@ export const setTeacherActive = (id: string, active: boolean) => {
 export const setTeacherTypeActive = (type: TeacherType, active: boolean) => {
   teachers.filter((t) => t.type === type).forEach((t) => (t.active = active));
   return delay(clone(teachers.filter((t) => t.type === type)));
+};
+
+/** ลำดับความสำคัญของประเภทครู (drag/reorder) */
+export const getTeacherTypeOrder = (): Promise<TeacherType[]> =>
+  delay(clone(teacherTypeOrder));
+
+export const setTeacherTypeOrder = (order: TeacherType[]) => {
+  setTeacherTypeOrderStore(order);
+  return delay(clone(order));
+};
+
+/** เปิด/ปิด override รับงานต่อแม้เกิน limit */
+export const setTeacherLimitOverride = (id: string, override: boolean) => {
+  const t = teachers.find((x) => x.id === id);
+  if (t) t.limitOverride = override;
+  return delay(clone(t) as Teacher);
 };
 
 // ───────────────────────────── Bookings ─────────────────────────────
@@ -123,15 +139,143 @@ export interface CreateBookingInput {
   bookingType: BookingType;
 }
 
+const endOf = (startTime: string) =>
+  dayjs(`2000-01-01 ${startTime}`).add(1, "hour").format("HH:mm");
+
+/** การจองที่ "ครอง" slot อยู่จริง (ไม่นับคิวที่รอช่อง / ยกเลิก) */
+const slotOccupant = (teacherId: string, date: string, startTime: string) =>
+  bookings.find(
+    (b) =>
+      b.teacherId === teacherId &&
+      b.date === date &&
+      b.startTime === startTime &&
+      !b.pendingSlot &&
+      b.status !== "CANCELLED",
+  );
+
+/** เช็คว่ามีการจองทับ slot นี้มั้ย (ใช้ก่อนสร้าง — ฝั่ง UI เด้ง conflict dialog) */
+export const detectConflict = (
+  teacherId: string,
+  date: string,
+  startTime: string,
+): Promise<Booking | undefined> => {
+  const found = slotOccupant(teacherId, date, startTime);
+  return delay(found ? clone(found) : undefined);
+};
+
 export const createBooking = (input: CreateBookingInput) => {
   const newBooking: Booking = {
     id: nextBookingId(),
     ...input,
-    endTime: dayjs(`2000-01-01 ${input.startTime}`).add(1, "hour").format("HH:mm"),
+    endTime: endOf(input.startTime),
     status: "PENDING",
   };
   bookings.push(newBooking);
   return delay(clone(newBooking));
+};
+
+export interface RescheduleResolution {
+  reason: RescheduleReason;
+  /** ปลายทาง: วัน/สัปดาห์ → date ใหม่; ครู → teacherId ใหม่ */
+  date: string;
+  teacherId: string;
+  startTime: string;
+}
+
+/**
+ * จองทับ slot ที่มีคนจองอยู่:
+ *  - การจองเดิม → PENDING_RESCHEDULE (คาที่เดิมไว้ก่อน tentative) + เก็บ target
+ *  - การจองใหม่ → สร้างแบบ pendingSlot (รอช่องว่าง, ยังไม่โผล่ในตาราง)
+ *  - mock: ส่ง Line แจ้งผู้ปกครองขอย้าย รอตอบรับ
+ * ช่องจะเป็นของการจองใหม่จริง เมื่อ confirmReschedule (ผู้ปกครองตกลง)
+ */
+export interface RescheduleResult {
+  existing?: Booking;
+  incoming: Booking;
+}
+
+export const createBookingWithReschedule = (
+  input: CreateBookingInput,
+  resolution: RescheduleResolution,
+): Promise<RescheduleResult> => {
+  const existing = slotOccupant(input.teacherId, input.date, input.startTime);
+  if (!existing) {
+    // ไม่ชนแล้ว (เปลี่ยนไประหว่างทาง) → สร้างปกติ
+    const created: Booking = {
+      id: nextBookingId(),
+      ...input,
+      endTime: endOf(input.startTime),
+      status: "PENDING",
+    };
+    bookings.push(created);
+    return delay({ existing: undefined, incoming: clone(created) });
+  }
+
+  const incoming: Booking = {
+    id: nextBookingId(),
+    ...input,
+    endTime: endOf(input.startTime),
+    status: "PENDING",
+    pendingSlot: true,
+  };
+  bookings.push(incoming);
+
+  existing.status = "PENDING_RESCHEDULE";
+  existing.incomingBookingId = incoming.id;
+  existing.rescheduleTo = {
+    reason: resolution.reason,
+    date: resolution.date,
+    teacherId: resolution.teacherId,
+    startTime: resolution.startTime,
+    endTime: endOf(resolution.startTime),
+  };
+
+  // TODO(phase2): Line push ขอย้ายไปยังผู้ปกครองของ existing.studentName
+  console.info(
+    `[Line notify] ขอย้ายคาบ ${existing.studentName} → ${existing.rescheduleTo.date} ${existing.rescheduleTo.startTime} (รอตอบรับ)`,
+  );
+
+  return delay({ existing: clone(existing), incoming: clone(incoming) });
+};
+
+/** ผู้ปกครองตอบรับ → ย้ายของเดิมไป target จริง แล้วปล่อยช่องให้การจองใหม่ */
+export const confirmReschedule = (oldId: string) => {
+  const old = bookings.find((b) => b.id === oldId);
+  if (!old || !old.rescheduleTo) return delay(undefined);
+
+  const t = old.rescheduleTo;
+  old.date = t.date;
+  old.teacherId = t.teacherId;
+  old.startTime = t.startTime;
+  old.endTime = t.endTime;
+  old.status = "CONFIRMED";
+  old.note = "ย้ายคาบจากการจองทับ (ผู้ปกครองตกลง)";
+
+  if (old.incomingBookingId) {
+    const incoming = bookings.find((b) => b.id === old.incomingBookingId);
+    if (incoming) incoming.pendingSlot = false; // เข้าครองช่องเดิมได้แล้ว
+  }
+  old.rescheduleTo = undefined;
+  old.incomingBookingId = undefined;
+
+  console.info(`[Line notify] ยืนยันย้ายคาบ ${old.studentName} → ${old.date} ${old.startTime}`);
+  return delay(clone(old));
+};
+
+/** ผู้ปกครองไม่ตกลง / ยกเลิกการย้าย → คืนของเดิม + ลบคิวที่รอช่อง */
+export const cancelReschedule = (oldId: string) => {
+  const old = bookings.find((b) => b.id === oldId);
+  if (!old) return delay(undefined);
+
+  if (old.incomingBookingId) {
+    const idx = bookings.findIndex((b) => b.id === old.incomingBookingId);
+    if (idx !== -1) bookings.splice(idx, 1); // ยกเลิกการจองใหม่
+  }
+  old.status = "CONFIRMED";
+  old.rescheduleTo = undefined;
+  old.incomingBookingId = undefined;
+
+  return delay(clone(old));
 };
 
 // ───────────────────────── Course packages ─────────────────────────
@@ -155,19 +299,45 @@ const BOOKING_TYPES: BookingType[] = [
   "VOUCHER",
 ];
 
-export const getDailyReport = (date: string): Promise<DailyReport> => {
-  const dayBookings = bookings.filter((b) => b.date === date);
+export const getDailyReport = (
+  date: string,
+  teacherId?: string,
+): Promise<DailyReport> => {
+  // ไม่นับคิวที่รอช่อง (จองทับ) — ยังไม่ใช่การจองจริง
+  const dayBookings = bookings.filter(
+    (b) => b.date === date && !b.pendingSlot && (!teacherId || b.teacherId === teacherId),
+  );
+  const cancelled = dayBookings.filter((b) => b.status === "CANCELLED").length;
+  // "ลงเรียนทั้งหมด" = ไม่นับที่ยกเลิก
+  const active = dayBookings.filter((b) => b.status !== "CANCELLED");
+  const totalBooked = active.length;
+  const attended = active.filter((b) => b.status === "ATTENDED").length;
+
+  const byTeacherMap = new Map<string, { count: number; attended: number }>();
+  for (const b of active) {
+    const cur = byTeacherMap.get(b.teacherId) ?? { count: 0, attended: 0 };
+    cur.count += 1;
+    if (b.status === "ATTENDED") cur.attended += 1;
+    byTeacherMap.set(b.teacherId, cur);
+  }
+
   const report: DailyReport = {
     date,
-    totalBooked: dayBookings.length,
-    attended: dayBookings.filter((b) => b.status === "ATTENDED").length,
-    onLeave: dayBookings.filter((b) => b.status === "SICK_LEAVE").length,
-    pending: dayBookings.filter((b) => b.status === "PENDING").length,
-    cancelled: dayBookings.filter((b) => b.status === "CANCELLED").length,
+    totalBooked,
+    attended,
+    confirmed: active.filter((b) => b.status === "CONFIRMED").length,
+    pending: active.filter((b) => b.status === "PENDING").length,
+    reschedulePending: active.filter((b) => b.status === "PENDING_RESCHEDULE").length,
+    onLeave: active.filter((b) => b.status === "SICK_LEAVE").length,
+    cancelled,
+    attendanceRate: totalBooked > 0 ? Math.round((attended / totalBooked) * 100) : 0,
     byBookingType: BOOKING_TYPES.map((type) => ({
       type,
-      count: dayBookings.filter((b) => b.bookingType === type).length,
+      count: active.filter((b) => b.bookingType === type).length,
     })),
+    byTeacher: [...byTeacherMap.entries()]
+      .map(([tid, v]) => ({ teacherId: tid, count: v.count, attended: v.attended }))
+      .sort((a, b) => b.count - a.count),
   };
   return delay(report);
 };

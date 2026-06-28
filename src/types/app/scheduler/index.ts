@@ -10,6 +10,24 @@ export interface Teacher {
   subjects: string[];
   /** ปิด = ไม่แสดงในตารางจองของเดือนนั้น (เช่น ประหยัดงบครู Freelance) */
   active: boolean;
+  /** เรทค่าจ้างต่อชั่วโมง (จากระบบ back-office) — ใช้กับ Freelance */
+  hourlyRate?: number;
+  /** เพดานรายได้ต่อเดือน (จาก back-office, read-only) — เกินแล้ว auto-disable (Freelance) */
+  incomeLimit?: number;
+  /** เปิดรับงานต่อแม้รายได้เกิน limit (กรณีพิเศษ ทีมงานกดเอง) */
+  limitOverride?: boolean;
+}
+
+/** Teacher + ข้อมูลรายได้เดือนปัจจุบันที่คำนวณแล้ว (Freelance) */
+export interface TeacherView extends Teacher {
+  /** ชั่วโมงที่รับงานเดือนนี้ (1 booking = 1 ชม.) */
+  monthlyHours: number;
+  /** รายได้สะสมเดือนนี้ = hourlyRate × monthlyHours */
+  monthlyIncome: number;
+  /** รายได้ถึง/เกิน limit และยังไม่ override */
+  overLimit: boolean;
+  /** แสดงในตารางจองได้ = active && ไม่ over limit */
+  bookable: boolean;
 }
 
 export const TEACHER_TYPE_LABEL: Record<TeacherType, string> = {
@@ -36,7 +54,7 @@ export type BookingType =
 export const BOOKING_TYPE_LABEL: Record<BookingType, string> = {
   FIRST_TRIAL: "ทดลองเรียน",
   SINGLE_SESSION: "รายชั่วโมง",
-  COURSE_PACKAGE: "คอร์ส",
+  COURSE_PACKAGE: "คอร์ส (รายสัปดาห์ )",
   VOUCHER: "Voucher",
 };
 
@@ -46,6 +64,7 @@ export type BookingStatus =
   | "ATTENDED" // มาเรียนจริง
   | "SICK_LEAVE" // ลา/ป่วย
   | "EXTENDED" // คาบที่ขยายต่อท้ายจากการลา
+  | "PENDING_RESCHEDULE" // รอย้าย — แจ้งผู้ปกครองแล้ว รอตอบรับ (จองทับ)
   | "CANCELLED"; // ยกเลิก
 
 export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
@@ -54,6 +73,7 @@ export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
   ATTENDED: "มาเรียน",
   SICK_LEAVE: "ลา/ป่วย",
   EXTENDED: "ขยายคาบ",
+  PENDING_RESCHEDULE: "รอย้าย (รอผู้ปกครอง)",
   CANCELLED: "ยกเลิก",
 };
 
@@ -67,8 +87,27 @@ export const BOOKING_STATUS_COLOR: Record<
   ATTENDED: "success",
   SICK_LEAVE: "default",
   EXTENDED: "secondary",
+  PENDING_RESCHEDULE: "danger",
   CANCELLED: "danger",
 };
+
+/** วิธีย้ายการจองเดิมเมื่อมีการจองทับ */
+export type RescheduleReason = "MOVE_DAY" | "MOVE_WEEK" | "MOVE_TEACHER";
+
+export const RESCHEDULE_REASON_LABEL: Record<RescheduleReason, string> = {
+  MOVE_DAY: "ย้ายไปวันอื่น",
+  MOVE_WEEK: "ย้ายไปสัปดาห์อื่น",
+  MOVE_TEACHER: "ย้ายไปครูคนอื่น",
+};
+
+/** ปลายทางที่จะย้ายการจองเดิมไป (รอผู้ปกครองตอบรับ) */
+export interface RescheduleTarget {
+  reason: RescheduleReason;
+  date: string; // YYYY-MM-DD
+  teacherId: string;
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+}
 
 export interface Booking {
   id: string;
@@ -83,6 +122,12 @@ export interface Booking {
   /** อ้างถึงคอร์สแพ็คเกจ (ถ้ามี) สำหรับการนับโควตาการลา */
   courseId?: string;
   note?: string;
+  /** ปลายทางที่เสนอย้าย (เมื่อ status = PENDING_RESCHEDULE) */
+  rescheduleTo?: RescheduleTarget;
+  /** id ของการจองใหม่ที่รอช่องนี้ว่าง (ผูกกับ booking ที่กำลังถูกย้าย) */
+  incomingBookingId?: string;
+  /** true = การจองใหม่ที่ยังรอช่องว่าง (ไม่แสดงในตารางจนกว่าของเดิมจะย้าย) */
+  pendingSlot?: boolean;
 }
 
 // ──────────────────────── Course package + leave quota ────────────────────────
@@ -129,12 +174,18 @@ export interface CoursePackageView extends CoursePackage {
 
 export interface DailyReport {
   date: string;
-  totalBooked: number;
+  totalBooked: number; // ไม่นับที่ยกเลิก/รอช่อง
   attended: number;
-  onLeave: number;
+  confirmed: number;
   pending: number;
+  reschedulePending: number; // รอผู้ปกครองตอบรับการย้าย (จองทับ)
+  onLeave: number;
   cancelled: number;
+  /** อัตรามาเรียน % = attended / totalBooked */
+  attendanceRate: number;
   byBookingType: { type: BookingType; count: number }[];
+  /** จำนวนคาบต่อครู (workload) — เรียงมากไปน้อย */
+  byTeacher: { teacherId: string; count: number; attended: number }[];
 }
 
 // ───────────────────────────── Misc ─────────────────────────────

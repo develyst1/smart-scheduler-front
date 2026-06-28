@@ -3,17 +3,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminUnlockCourse,
+  cancelReschedule,
   confirmBooking,
+  confirmReschedule,
   createBooking,
+  createBookingWithReschedule,
+  detectConflict,
   getBookingsByDate,
   getBookingsInRange,
+  type RescheduleResolution,
   getCoursePackages,
   getDailyReport,
   getTeachers,
+  getTeacherTypeOrder,
   markAttended,
   markSickLeave,
   setTeacherActive,
+  setTeacherLimitOverride,
   setTeacherTypeActive,
+  setTeacherTypeOrder,
   type CreateBookingInput,
 } from "@/services/scheduler.service";
 import type { TeacherType } from "@/types/app/scheduler";
@@ -42,6 +50,31 @@ export const useToggleTeacherType = () => {
   return useMutation({
     mutationFn: ({ type, active }: { type: TeacherType; active: boolean }) =>
       setTeacherTypeActive(type, active),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEACHERS_KEY }),
+  });
+};
+
+export const TEACHER_ORDER_KEY = ["teacher-type-order"] as const;
+
+export const useTeacherTypeOrder = () =>
+  useQuery({ queryKey: TEACHER_ORDER_KEY, queryFn: getTeacherTypeOrder });
+
+export const useSetTeacherTypeOrder = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (order: TeacherType[]) => setTeacherTypeOrder(order),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: TEACHER_ORDER_KEY });
+      qc.invalidateQueries({ queryKey: TEACHERS_KEY });
+    },
+  });
+};
+
+export const useSetLimitOverride = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, override }: { id: string; override: boolean }) =>
+      setTeacherLimitOverride(id, override),
     onSuccess: () => qc.invalidateQueries({ queryKey: TEACHERS_KEY }),
   });
 };
@@ -98,6 +131,50 @@ export const useCreateBooking = () => {
   });
 };
 
+/** เช็คการจองทับก่อนสร้าง (คืน booking เดิมถ้าชน) */
+export const useDetectConflict = () =>
+  useMutation({
+    mutationFn: ({
+      teacherId,
+      date,
+      startTime,
+    }: {
+      teacherId: string;
+      date: string;
+      startTime: string;
+    }) => detectConflict(teacherId, date, startTime),
+  });
+
+export const useCreateBookingWithReschedule = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      input,
+      resolution,
+    }: {
+      input: CreateBookingInput;
+      resolution: RescheduleResolution;
+    }) => createBookingWithReschedule(input, resolution),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+export const useConfirmReschedule = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (oldId: string) => confirmReschedule(oldId),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+export const useCancelReschedule = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (oldId: string) => cancelReschedule(oldId),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
 // ───────────────────────── Course packages ─────────────────────────
 
 export const useCoursePackages = () =>
@@ -113,8 +190,8 @@ export const useAdminUnlockCourse = () => {
 
 // ───────────────────────────── Reports ─────────────────────────────
 
-export const useDailyReport = (date: string) =>
+export const useDailyReport = (date: string, teacherId?: string) =>
   useQuery({
-    queryKey: [...REPORT_KEY, date],
-    queryFn: () => getDailyReport(date),
+    queryKey: [...REPORT_KEY, date, teacherId ?? "all"],
+    queryFn: () => getDailyReport(date, teacherId),
   });
