@@ -44,6 +44,12 @@ export default function CalendarContent() {
     onOpen();
   };
 
+  // จองทับช่องที่มีการจองอยู่ → เปิดฟอร์มสร้างของ slot เดิม (จะ detect conflict ตอน save)
+  const openOverbook = (b: Booking) => {
+    setSelected(undefined);
+    setCreateSlot({ teacherId: b.teacherId, time: b.startTime, date: b.date });
+  };
+
   const loading = loadingTeachers || (view === "day" ? loadingDay : loadingWeek);
 
   return (
@@ -84,6 +90,8 @@ export default function CalendarContent() {
         booking={selected}
         createSlot={createSlot}
         teachers={teachers}
+        bookings={view === "day" ? dayBookings : weekBookings}
+        onOverbook={openOverbook}
       />
     </div>
   );

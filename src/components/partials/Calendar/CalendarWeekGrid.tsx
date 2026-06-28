@@ -3,11 +3,11 @@
 import dayjs from "dayjs";
 import { Plus } from "lucide-react";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
-import type { Booking, Teacher } from "@/types/app/scheduler";
+import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
 
 interface Props {
-  teachers: Teacher[];
+  teachers: TeacherView[];
   weekDays: string[]; // 7 วัน (YYYY-MM-DD) เรียงตามลำดับ
   bookings: Booking[];
   onSelectBooking: (booking: Booking) => void;
@@ -42,12 +42,18 @@ export default function CalendarWeekGrid({
   onSelectBooking,
   onCreate,
 }: Props) {
-  const activeTeachers = teachers.filter((t) => t.active);
+  const activeTeachers = teachers.filter((t) => t.bookable);
   const today = dayjs().format("YYYY-MM-DD");
 
   const cellBookings = (teacherId: string, date: string) =>
     bookings
-      .filter((b) => b.teacherId === teacherId && b.date === date)
+      .filter(
+        (b) =>
+          b.teacherId === teacherId &&
+          b.date === date &&
+          !b.pendingSlot &&
+          b.status !== "CANCELLED",
+      )
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   return (

@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
-import type { Booking, Teacher } from "@/types/app/scheduler";
+import type { Booking, TeacherView } from "@/types/app/scheduler";
 import {
   BOOKING_STATUS_COLOR,
   BOOKING_TYPE_LABEL,
@@ -10,7 +10,7 @@ import {
 } from "@/types/app/scheduler";
 
 interface Props {
-  teachers: Teacher[];
+  teachers: TeacherView[];
   bookings: Booking[];
   onSelectBooking: (booking: Booking) => void;
   onCreate: (teacherId: string, time: string) => void;
@@ -37,10 +37,16 @@ const ACCENT_STYLE: Record<string, string> = {
 };
 
 export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCreate }: Props) {
-  const activeTeachers = teachers.filter((t) => t.active);
+  const activeTeachers = teachers.filter((t) => t.bookable);
 
   const findBooking = (teacherId: string, time: string) =>
-    bookings.find((b) => b.teacherId === teacherId && b.startTime === time);
+    bookings.find(
+      (b) =>
+        b.teacherId === teacherId &&
+        b.startTime === time &&
+        !b.pendingSlot &&
+        b.status !== "CANCELLED",
+    );
 
   return (
     <div className="overflow-auto rounded-2xl border border-default-200 bg-content1 shadow-sm">
@@ -86,7 +92,7 @@ function Row({
   onCreate,
 }: {
   time: string;
-  teachers: Teacher[];
+  teachers: TeacherView[];
   findBooking: (teacherId: string, time: string) => Booking | undefined;
   onSelectBooking: (b: Booking) => void;
   onCreate: (teacherId: string, time: string) => void;
