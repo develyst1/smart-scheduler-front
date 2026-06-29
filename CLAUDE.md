@@ -62,7 +62,9 @@ Set `NEXT_PUBLIC_API_URL` (default `http://localhost:3001/api`). Use `NEXT_PUBLI
 for offline mock ([scheduler.mock.service.ts](src/services/scheduler.mock.service.ts)).
 - **LINE push is the backend's job.** `confirmBooking` only calls the API; the server enqueues LINE
   via the outbox. The browser must never hold LINE tokens.
-- **Conflict reschedule** (จองทับ) works fully in mock mode only until backend **B.1** ships.
+- **Conflict reschedule** (จองทับ) works on the real API (backend **B.1** shipped): `POST
+  /bookings/with-reschedule` + `PATCH /bookings/:id/reschedule/{confirm,cancel}`. Run
+  `bunx drizzle-kit migrate` in `smart-scheduler-back` before using it.
 
 ## Domain logic you must not break (from requirement.md)
 
