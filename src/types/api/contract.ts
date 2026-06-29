@@ -179,6 +179,13 @@ export interface SetAvailabilityResponse {
   teachers: TeacherDTO[];
 }
 
+export interface TeacherTypeOrderResponse {
+  order: TeacherType[];
+}
+export interface SetTeacherTypeOrderRequest {
+  order: TeacherType[];
+}
+
 export type ApiErrorCode =
   | "VALIDATION"
   | "NOT_FOUND"

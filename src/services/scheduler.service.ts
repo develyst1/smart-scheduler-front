@@ -13,9 +13,8 @@ import {
   readLimitOverrides,
   readTeacherTypeOrder,
   writeLimitOverride,
-  writeTeacherTypeOrder,
 } from "@/lib/api/teacher-order-store";
-import { sortByTypeOrder, toTeacherView } from "@/lib/scheduler/teacher";
+import { toTeacherView } from "@/lib/scheduler/teacher";
 import type {
   BookingType,
   Booking,
@@ -34,6 +33,7 @@ import type {
   DailyReportResponse,
   RescheduleDecisionResponse,
   TeachersResponse,
+  TeacherTypeOrderResponse,
   UpdateBookingStatusResponse,
 } from "@/types/api/contract";
 import { ApiClientError } from "@/lib/api/client";
@@ -58,11 +58,9 @@ async function fetchMonthBookings(): Promise<Booking[]> {
 
 function teachersToViews(dtos: ReturnType<typeof flattenTeachers>, bookings: Booking[]): TeacherView[] {
   const overrides = readLimitOverrides();
-  const teachers = dtos.map((dto) => dtoToTeacher(dto, !!overrides[dto.id]));
-  return sortByTypeOrder(
-    teachers.map((t) => toTeacherView(t, bookings)),
-    readTeacherTypeOrder(),
-  );
+  // Order is applied server-side: GET /teachers returns groups in the persisted
+  // type order (B.2), and flattenTeachers preserves it — no client re-sort needed.
+  return dtos.map((dto) => toTeacherView(dtoToTeacher(dto, !!overrides[dto.id]), bookings));
 }
 
 // ───────────────────────────── Calendar aggregate ─────────────────────────────
@@ -122,12 +120,16 @@ export const setTeacherTypeActive = async (type: TeacherType, active: boolean) =
   return data.teachers.map((t) => dtoToTeacher(t));
 };
 
-export const getTeacherTypeOrder = (): Promise<TeacherType[]> =>
-  Promise.resolve(readTeacherTypeOrder());
+export const getTeacherTypeOrder = async (): Promise<TeacherType[]> => {
+  if (useMock) return mock.getTeacherTypeOrder();
+  const { data } = await api.get<TeacherTypeOrderResponse>("/teachers/type-order");
+  return data.order;
+};
 
-export const setTeacherTypeOrder = (order: TeacherType[]) => {
-  writeTeacherTypeOrder(order);
-  return Promise.resolve([...order]);
+export const setTeacherTypeOrder = async (order: TeacherType[]): Promise<TeacherType[]> => {
+  if (useMock) return mock.setTeacherTypeOrder(order);
+  const { data } = await api.patch<TeacherTypeOrderResponse>("/teachers/type-order", { order });
+  return data.order;
 };
 
 export const setTeacherLimitOverride = async (id: string, override: boolean) => {
