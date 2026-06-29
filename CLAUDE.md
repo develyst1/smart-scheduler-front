@@ -9,8 +9,9 @@ The **frontoffice web app** — the staff-facing screen that replaces the manual
 scheduling workflow for a tutoring school, to cut **human error**. Audience: **internal
 staff/admins** (not students/parents). This is **Phase 1** and is the most-built repo.
 
-> Business spec (Thai): **[../requirement.md](../requirement.md)** (latest, root — wins), then
-> [req2.md](req2.md) and [Requirement.md](Requirement.md). The hard part is **domain logic**, not the UI.
+> Business spec (Thai): **[docs/requirement-timeline.md](docs/requirement-timeline.md)** (living
+> spec, newest entry wins; synced from workspace root `docs/`). Repo-specific task list:
+> [todo.md](todo.md). The hard part is **domain logic**, not the UI.
 
 ## Stack (as actually installed — see [package.json](package.json))
 
