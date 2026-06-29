@@ -4,9 +4,9 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 import { ActionIcon, Button, MultiSelect, Paper, SegmentedControl, Tooltip } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { ChevronLeft, ChevronRight, CalendarDays, UserSearch } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users } from "lucide-react";
 import { StatusChip } from "@/components/common/BookingBadges";
-import type { TeacherView } from "@/types/app/scheduler";
+import type { TeacherType, TeacherView } from "@/types/app/scheduler";
 import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 import { STATUS_LEGEND } from "./Calendar.config";
 
@@ -21,6 +21,8 @@ interface Props {
   teachers?: TeacherView[];
   selectedTeacherIds?: string[];
   onChangeTeacherIds?: (ids: string[]) => void;
+  selectedTypes?: string[];
+  onChangeTypes?: (types: string[]) => void;
 }
 
 const THAI_DAYS = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
@@ -34,6 +36,8 @@ export default function CalendarHeader({
   teachers = [],
   selectedTeacherIds = [],
   onChangeTeacherIds,
+  selectedTypes = [],
+  onChangeTypes,
 }: Props) {
   const d = dayjs(date).locale("th");
   const step = view === "week" ? 7 : 1;
@@ -48,69 +52,78 @@ export default function CalendarHeader({
   })();
 
   return (
-    <Paper
-      withBorder
-      p="sm"
-      className="flex flex-wrap items-end justify-between gap-3 bg-content1"
-    >
-      <div className="flex flex-col gap-1.5">
-        <span className="pl-1 text-base font-semibold tracking-tight text-foreground">
-          {view === "week" ? weekLabel : dayLabel}
-        </span>
+    <Paper withBorder p="sm" className="flex flex-col gap-3 bg-content1">
+      {/* แถวบน: ชื่อช่วงวัน + ปุ่มควบคุม | legend สถานะ */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1.5">
+          <span className="pl-1 text-base font-semibold tracking-tight text-foreground">
+            {view === "week" ? weekLabel : dayLabel}
+          </span>
 
-        <div className="flex items-center gap-2">
-          <SegmentedControl
-            size="sm"
-            radius="md"
-            value={view}
-            onChange={(v) => onChangeView(v as CalendarView)}
-            data={[
-              { label: "รายวัน", value: "day" },
-              { label: "รายสัปดาห์", value: "week" },
-            ]}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <SegmentedControl
+              size="sm"
+              radius="md"
+              value={view}
+              onChange={(v) => onChangeView(v as CalendarView)}
+              data={[
+                { label: "รายวัน", value: "day" },
+                { label: "รายสัปดาห์", value: "week" },
+              ]}
+            />
 
-          <Tooltip label={view === "week" ? "สัปดาห์ก่อนหน้า" : "วันก่อนหน้า"}>
-            <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(-1)} aria-label="ก่อนหน้า">
-              <ChevronLeft size={18} />
-            </ActionIcon>
-          </Tooltip>
+            <Tooltip label={view === "week" ? "สัปดาห์ก่อนหน้า" : "วันก่อนหน้า"}>
+              <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(-1)} aria-label="ก่อนหน้า">
+                <ChevronLeft size={18} />
+              </ActionIcon>
+            </Tooltip>
 
-          <DatePickerInput
-            value={date}
-            onChange={(v) => v && onChangeDate(v)}
-            valueFormat="D MMM YYYY"
-            size="sm"
-            radius="md"
-            popoverProps={{ withinPortal: true }}
-            leftSection={<CalendarDays size={16} />}
-            className="min-w-52"
-            aria-label="เลือกวันที่"
-          />
+            <DatePickerInput
+              value={date}
+              onChange={(v) => v && onChangeDate(v)}
+              valueFormat="D MMM YYYY"
+              size="sm"
+              radius="md"
+              popoverProps={{ withinPortal: true }}
+              leftSection={<CalendarDays size={16} />}
+              className="min-w-52"
+              aria-label="เลือกวันที่"
+            />
 
-          <Tooltip label={view === "week" ? "สัปดาห์ถัดไป" : "วันถัดไป"}>
-            <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(1)} aria-label="ถัดไป">
-              <ChevronRight size={18} />
-            </ActionIcon>
-          </Tooltip>
+            <Tooltip label={view === "week" ? "สัปดาห์ถัดไป" : "วันถัดไป"}>
+              <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(1)} aria-label="ถัดไป">
+                <ChevronRight size={18} />
+              </ActionIcon>
+            </Tooltip>
 
-          <Button
-            variant={isToday ? "filled" : "light"}
-            size="sm"
-            radius="md"
-            onClick={() => onChangeDate(dayjs().format("YYYY-MM-DD"))}
-          >
-            วันนี้
-          </Button>
+            <Button
+              variant={isToday ? "filled" : "light"}
+              size="sm"
+              radius="md"
+              onClick={() => onChangeDate(dayjs().format("YYYY-MM-DD"))}
+            >
+              วันนี้
+            </Button>
+          </div>
         </div>
 
-        {teachers.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {STATUS_LEGEND.map((l) => (
+            <StatusChip key={l.status} status={l.status} size="md" />
+          ))}
+        </div>
+      </div>
+
+      {/* แถวล่าง: ตัวกรองครูผู้สอน */}
+      {teachers.length > 0 && (
+        <div className="flex flex-wrap items-end gap-3 border-t border-default-100 pt-3">
           <MultiSelect
-            placeholder="ครูทั้งหมด"
+            label="ครูผู้สอน"
+            placeholder={selectedTeacherIds.length > 0 ? undefined : "ครูทั้งหมด"}
             value={selectedTeacherIds}
             onChange={onChangeTeacherIds}
             data={teachers
-              .filter((t) => t.bookable)
+              .filter((t) => t.bookable && (selectedTypes.length === 0 || selectedTypes.includes(t.type)))
               .map((t) => ({
                 value: t.id,
                 label: `${t.nickname} · ${TEACHER_TYPE_LABEL[t.type]}`,
@@ -121,17 +134,37 @@ export default function CalendarHeader({
             clearable
             searchable
             maxDropdownHeight={280}
-            className="max-w-xs"
+            className="min-w-52 basis-0 grow-[6]"
+            classNames={{
+              // pills อยู่แถวเดียว เลื่อนแนวนอนแทนการ wrap ขึ้นบรรทัดใหม่
+              pillsList: "!flex-nowrap overflow-x-auto scroll-smooth py-0.5",
+              inputField: "min-w-12",
+            }}
             aria-label="กรองครู"
           />
-        )}
-      </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {STATUS_LEGEND.map((l) => (
-          <StatusChip key={l.status} status={l.status} size="md" />
-        ))}
-      </div>
+          <MultiSelect
+            label="ประเภท"
+            placeholder={selectedTypes.length > 0 ? undefined : "ทุกประเภท"}
+            value={selectedTypes}
+            onChange={onChangeTypes}
+            data={(Object.keys(TEACHER_TYPE_LABEL) as TeacherType[]).map((type) => ({
+              value: type,
+              label: TEACHER_TYPE_LABEL[type],
+            }))}
+            leftSection={<Users size={15} />}
+            size="sm"
+            radius="md"
+            clearable
+            maxDropdownHeight={280}
+            className="min-w-44 basis-0 grow-[4]"
+            classNames={{
+              pillsList: "!flex-nowrap overflow-x-auto scroll-smooth py-0.5",
+            }}
+            aria-label="กรองประเภทครู"
+          />
+        </div>
+      )}
     </Paper>
   );
 }
