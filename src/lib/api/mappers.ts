@@ -20,6 +20,10 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     status: dto.status,
     courseId: dto.course?.id,
     note: dto.note ?? undefined,
+    // Conflict resolution (B.1)
+    pendingSlot: dto.pendingSlot || undefined,
+    incomingBookingId: dto.incomingBookingId ?? undefined,
+    rescheduleTo: dto.rescheduleTo ?? undefined,
   };
 }
 

@@ -7,7 +7,8 @@ workspace root `../CLAUDE.md`.
 
 The **frontoffice web app** — the staff-facing screen that replaces the manual **Excel**
 scheduling workflow for a tutoring school, to cut **human error**. Audience: **internal
-staff/admins** (not students/parents). This is **Phase 1** and is the most-built repo.
+staff/admins** (not students/parents). Part of **Option C (Ultimate)** — the scheduling
+frontoffice; most-built repo in the workspace.
 
 > Business spec (Thai): **[docs/requirement-timeline.md](docs/requirement-timeline.md)** (living
 > spec, newest entry wins; synced from workspace root `docs/`). Repo-specific task list:
@@ -40,7 +41,7 @@ Data flows **page → partial → hook → service → (API)**, with pure domain
 | **Types & domain constants** | `src/types/app/<domain>/index.ts` | Types + `const` maps (labels, colors, quotas). [example](src/types/app/scheduler/index.ts) |
 | **Pure domain logic** | `src/lib/<domain>/*.ts` | Framework-free, no React/IO, **unit-testable** (e.g. [leave.ts](src/lib/scheduler/leave.ts)). |
 | **UI helpers** | `src/lib/ui/*` | [notify.ts](src/lib/ui/notify.ts) (toast wrapper), [colors.ts](src/lib/ui/colors.ts) (semantic→Mantine). |
-| **Data access** | `src/services/<domain>.service.ts` | The only place that talks to the backend. **Currently mock** ([scheduler.service.ts](src/services/scheduler.service.ts) with `delay()`). |
+| **Data access** | `src/services/<domain>.service.ts` | The only place that talks to the backend. Calls **Scheduling API** by default (`NEXT_PUBLIC_API_URL`); mock via `NEXT_PUBLIC_USE_MOCK=true`. |
 | **Server-state hooks** | `src/hooks/<domain>/*.ts` | TanStack Query `use*` hooks; query keys as `const`; mutations `invalidateQueries`. [example](src/hooks/scheduler/useScheduler.ts) |
 | **Routes (thin)** | `src/app/(group)/.../page.tsx` | Server component that just renders a partial. [example](src/app/(admin)/scheduler/calendar/page.tsx) |
 | **Feature UI** | `src/components/partials/<Feature>/<Feature>Content.tsx` | `"use client"` container + sub-components + `Modal/`. |
@@ -54,17 +55,14 @@ Conventions:
 - Toasts go through `notify(...)`; never hand-roll Mantine notifications in partials.
 - Thai is the UI language — keep Thai domain terms in user-facing copy.
 
-## Connecting to the backend (next step)
+## Connecting to the backend
 
-Today `src/services/*` returns mock data. To wire the real **Scheduling API**
-(`smart-scheduler-back`, Bun + Hono):
-- Replace mock bodies with **Axios** calls; keep the **same function signatures** so hooks/partials
-  don't change.
-- Prefer **Hono's typed RPC client (`hc<AppType>`)** if you import the backend's `AppType`, for
-  end-to-end type safety; otherwise share a types package.
-- **LINE push is the backend's job.** `confirmBooking` here only calls the API; the Hono server
-  performs the LINE Messaging API push (see the `TODO(phase2)` in
-  [scheduler.service.ts](src/services/scheduler.service.ts)). The browser must never hold LINE tokens.
+`src/services/scheduler.service.ts` calls **`smart-scheduler-back`** (Bun + Hono) via Axios.
+Set `NEXT_PUBLIC_API_URL` (default `http://localhost:3001/api`). Use `NEXT_PUBLIC_USE_MOCK=true`
+for offline mock ([scheduler.mock.service.ts](src/services/scheduler.mock.service.ts)).
+- **LINE push is the backend's job.** `confirmBooking` only calls the API; the server enqueues LINE
+  via the outbox. The browser must never hold LINE tokens.
+- **Conflict reschedule** (จองทับ) works fully in mock mode only until backend **B.1** ships.
 
 ## Domain logic you must not break (from requirement.md)
 

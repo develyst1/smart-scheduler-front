@@ -12,8 +12,19 @@ export type BookingStatus =
   | "ATTENDED"
   | "SICK_LEAVE"
   | "EXTENDED"
+  | "PENDING_RESCHEDULE"
   | "CANCELLED";
 export type PackageSize = 4 | 6 | 10;
+
+export type RescheduleReason = "MOVE_DAY" | "MOVE_WEEK" | "MOVE_TEACHER";
+
+export interface RescheduleTarget {
+  reason: RescheduleReason;
+  date: IsoDate;
+  teacherId: string;
+  startTime: HhMm;
+  endTime: HhMm;
+}
 
 export type IsoDate = string;
 export type HhMm = string;
@@ -64,6 +75,10 @@ export interface BookingDTO {
   teacher: Pick<TeacherDTO, "id" | "name" | "nickname" | "type">;
   subject: SubjectRef;
   course: CourseSummary | null;
+  // Conflict resolution (B.1)
+  pendingSlot: boolean;
+  incomingBookingId: string | null;
+  rescheduleTo: RescheduleTarget | null;
 }
 
 export interface CalendarResponse {
@@ -130,6 +145,22 @@ export interface CreateBookingRequest {
 export interface CreateBookingResponse {
   booking: BookingDTO;
   course: CourseSummary | null;
+}
+
+export interface CreateBookingWithRescheduleRequest extends CreateBookingRequest {
+  resolution: {
+    reason: RescheduleReason;
+    date: IsoDate;
+    teacherId: string;
+    startTime: HhMm;
+  };
+}
+export interface CreateBookingWithRescheduleResponse {
+  existing: BookingDTO | null;
+  incoming: BookingDTO;
+}
+export interface RescheduleDecisionResponse {
+  booking: BookingDTO | null;
 }
 
 export type BookingStatusAction = "confirm" | "attend" | "sick-leave" | "cancel";

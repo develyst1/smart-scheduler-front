@@ -67,7 +67,7 @@
 
 - [ ] ❌ **[BE] ยืนยันตัวตน + บทบาทผ่าน LINE OA (Role Verification)**
   - อ้างอิง: ข้อ 4 — *"ทักเข้า LINE OA → บอทถามบทบาท (1.ลูกค้า 2.ครู 3.แอดมิน) + กรอกรหัสยืนยัน (เช่น 'ขอรหัสแอดมิน : 229') → จดจำ chat ID คู่กับบทบาท"*
-  - ปัจจุบัน: ยังไม่มี backend/integration LINE (FE มีแค่ comment `TODO(phase2)` ใน [scheduler.service.ts](src/services/scheduler.service.ts))
+  - ปัจจุบัน: ยังไม่มี backend/integration LINE (scheduling API enqueue outbox แล้ว แต่ยังไม่มี worker/webhook)
   - ต้องทำ: [BE] LINE webhook + bot flow ถามบทบาท/ตรวจรหัส + ผูก `userId` ↔ role (ใช้ outbox + audit ตาม root CLAUDE.md)
 
 - [ ] ❌ **[BE+FE] ศูนย์กลางการแจ้งเตือน (ลูกค้าแจ้งลา → เด้งเข้า LINE แอดมิน)**
@@ -81,7 +81,7 @@
 ---
 
 ## 5. ระบบหลังบ้านแบบครบวงจร (Backoffice & API — Option C)
-อ้างอิง: **requirement2.md ข้อ 5** — *อยู่นอก scope ของ repo นี้* (เป็นของ `smart-scheduler-backoffice-*`)
+อ้างอิง: **requirement2.md ข้อ 5** — **อยู่ในสัญญา Option C** (`smart-scheduler-backoffice-*`, build wave 2)
 บันทึกไว้เพื่อความครบถ้วน + จุดที่ frontoffice ต้องเชื่อมต่อ
 
 - [ ] ❌ **[BO] ระบบคลังสินค้า Mini ERP/POS** — คีย์รับเข้า/ตัดยอดเมื่อขาย (ข้อ 5)
@@ -103,4 +103,4 @@
 | 2.2 | CRM badge/level นักเรียน (FE ส่วน) | ❌ รอ BE |
 | 4.2 | Notification inbox/feed (FE ส่วน) | ❌ รอ BE |
 
-> **งาน FE ที่ทำได้ล่วงหน้า (ไม่รอ BE) ทำครบทุกข้อแล้ว** — งานที่เหลือทั้งหมดต้องรอ backend phase 2
+> **งาน FE ที่ทำได้ล่วงหน้า (ไม่รอ BE) ทำครบทุกข้อแล้ว** — งาน scheduling ที่เหลือรอ backend (B.*); backoffice อยู่ใน Option C build wave 2

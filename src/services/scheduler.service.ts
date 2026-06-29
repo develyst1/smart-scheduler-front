@@ -30,7 +30,9 @@ import type {
   BookingsResponse,
   CalendarResponse,
   CoursesResponse,
+  CreateBookingWithRescheduleResponse,
   DailyReportResponse,
+  RescheduleDecisionResponse,
   TeachersResponse,
   UpdateBookingStatusResponse,
 } from "@/types/api/contract";
@@ -261,30 +263,46 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
   return dtoToBooking(data.booking);
 };
 
-/** ยังไม่มีบน API — รอ B.1 (Opus) */
-export const createBookingWithReschedule = (...args: Parameters<typeof mock.createBookingWithReschedule>) => {
-  if (useMock) return mock.createBookingWithReschedule(...args);
-  return Promise.reject(
-    new ApiClientError(
-      "NOT_IMPLEMENTED",
-      "จองทับ+ย้ายของเดิมยังไม่รองรับบน API — รอ backend B.1",
-      501,
-    ),
+export const createBookingWithReschedule = async (
+  input: CreateBookingInput,
+  resolution: mock.RescheduleResolution,
+): Promise<mock.RescheduleResult> => {
+  if (useMock) return mock.createBookingWithReschedule(input, resolution);
+  if (!input.subjectId) {
+    throw new ApiClientError("VALIDATION", "เลือกวิชาก่อนจอง (ไม่พบ subjectId)", 400);
+  }
+  const { data } = await api.post<CreateBookingWithRescheduleResponse>(
+    "/bookings/with-reschedule",
+    {
+      student: { name: input.studentName },
+      teacherId: input.teacherId,
+      subjectId: input.subjectId,
+      date: input.date,
+      startTime: input.startTime,
+      bookingType: input.bookingType,
+      resolution,
+    },
   );
+  return {
+    existing: data.existing ? dtoToBooking(data.existing) : undefined,
+    incoming: dtoToBooking(data.incoming),
+  };
 };
 
-export const confirmReschedule = (oldId: string) => {
+export const confirmReschedule = async (oldId: string): Promise<Booking | undefined> => {
   if (useMock) return mock.confirmReschedule(oldId);
-  return Promise.reject(
-    new ApiClientError("NOT_IMPLEMENTED", "ยืนยันการย้ายยังไม่รองรับบน API — รอ backend B.1", 501),
+  const { data } = await api.patch<RescheduleDecisionResponse>(
+    `/bookings/${oldId}/reschedule/confirm`,
   );
+  return data.booking ? dtoToBooking(data.booking) : undefined;
 };
 
-export const cancelReschedule = (oldId: string) => {
+export const cancelReschedule = async (oldId: string): Promise<Booking | undefined> => {
   if (useMock) return mock.cancelReschedule(oldId);
-  return Promise.reject(
-    new ApiClientError("NOT_IMPLEMENTED", "ยกเลิกการย้ายยังไม่รองรับบน API — รอ backend B.1", 501),
+  const { data } = await api.patch<RescheduleDecisionResponse>(
+    `/bookings/${oldId}/reschedule/cancel`,
   );
+  return data.booking ? dtoToBooking(data.booking) : undefined;
 };
 
 // ───────────────────────── Course packages ─────────────────────────
