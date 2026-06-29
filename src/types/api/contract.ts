@@ -186,10 +186,22 @@ export interface SetTeacherTypeOrderRequest {
   order: TeacherType[];
 }
 
+export type Role = "admin" | "staff";
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+export interface LoginResponse {
+  token: string;
+  user: { username: string; role: Role };
+}
+
 export type ApiErrorCode =
   | "VALIDATION"
   | "NOT_FOUND"
   | "FORBIDDEN"
+  | "UNAUTHORIZED"
   | "SLOT_TAKEN"
   | "COURSE_EXPIRED"
   | "LEAVE_LOCKED"
