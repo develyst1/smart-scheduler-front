@@ -16,6 +16,7 @@ export default function CalendarContent() {
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [view, setView] = useState<CalendarView>("day");
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
   const weekStart = dayjs(date).day(0);
   const weekDays = Array.from({ length: 7 }, (_, i) => weekStart.add(i, "day").format("YYYY-MM-DD"));
@@ -33,10 +34,12 @@ export default function CalendarContent() {
     [calendar, view],
   );
 
-  const filteredTeachers =
-    selectedTeacherIds.length === 0
-      ? teachers
-      : teachers.filter((t) => selectedTeacherIds.includes(t.id));
+  // กรองครูตามประเภท + รายชื่อ — ว่าง = แสดงทั้งหมด
+  const filteredTeachers = teachers.filter(
+    (t) =>
+      (selectedTypes.length === 0 || selectedTypes.includes(t.type)) &&
+      (selectedTeacherIds.length === 0 || selectedTeacherIds.includes(t.id)),
+  );
 
   const [isOpen, { open: onOpen, close: onClose }] = useDisclosure(false);
   const [selected, setSelected] = useState<Booking | undefined>();
@@ -74,6 +77,8 @@ export default function CalendarContent() {
         teachers={teachers}
         selectedTeacherIds={selectedTeacherIds}
         onChangeTeacherIds={setSelectedTeacherIds}
+        selectedTypes={selectedTypes}
+        onChangeTypes={setSelectedTypes}
       />
 
       {loading ? (
