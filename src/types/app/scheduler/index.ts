@@ -2,12 +2,22 @@
 
 export type TeacherType = "FULL_TIME" | "PART_TIME" | "FREELANCE";
 
+export interface SubjectOption {
+  id: string;
+  name: string;
+}
+
 export interface Teacher {
   id: string;
   name: string;
   nickname: string;
   type: TeacherType;
+  /** ชื่อวิชา — ใช้แสดงผล */
   subjects: string[];
+  /** id+name จาก API — ใช้ตอนสร้าง booking */
+  subjectOptions?: SubjectOption[];
+  /** ผูก LINE แล้ว — confirm จะ push ได้ */
+  lineLinked?: boolean;
   /** ปิด = ไม่แสดงในตารางจองของเดือนนั้น (เช่น ประหยัดงบครู Freelance) */
   active: boolean;
   /** เรทค่าจ้างต่อชั่วโมง (จากระบบ back-office) — ใช้กับ Freelance */

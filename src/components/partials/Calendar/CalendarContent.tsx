@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { Loader } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useBookingsByDate, useBookingsInRange, useTeachers } from "@/hooks/scheduler";
+import { calendarDayBookings, calendarToBookings } from "@/lib/api/mappers";
+import { useCalendar, useTeachers } from "@/hooks/scheduler";
 import type { Booking } from "@/types/app/scheduler";
 import CalendarHeader, { type CalendarView } from "./CalendarHeader";
 import CalendarGrid from "./CalendarGrid";
@@ -16,18 +17,22 @@ export default function CalendarContent() {
   const [view, setView] = useState<CalendarView>("day");
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
 
-  // สัปดาห์เริ่มวันอาทิตย์ (firstDayOfWeek=0) — 7 วันสำหรับ week view
   const weekStart = dayjs(date).day(0);
   const weekDays = Array.from({ length: 7 }, (_, i) => weekStart.add(i, "day").format("YYYY-MM-DD"));
 
+  const calView = view === "day" ? "day" : "week";
   const { data: teachers = [], isLoading: loadingTeachers } = useTeachers();
-  const { data: dayBookings = [], isLoading: loadingDay } = useBookingsByDate(date);
-  const { data: weekBookings = [], isLoading: loadingWeek } = useBookingsInRange(
-    weekDays[0],
-    weekDays[6],
+  const { data: calendar, isLoading: loadingCalendar } = useCalendar(date, calView);
+
+  const dayBookings = useMemo(
+    () => (calendar ? calendarDayBookings(calendar, date) : []),
+    [calendar, date],
+  );
+  const weekBookings = useMemo(
+    () => (calendar && view === "week" ? calendarToBookings(calendar) : []),
+    [calendar, view],
   );
 
-  // กรองครูตามตัวเลือก — ถ้าไม่ได้เลือกใคร = แสดงทั้งหมด
   const filteredTeachers =
     selectedTeacherIds.length === 0
       ? teachers
@@ -51,13 +56,12 @@ export default function CalendarContent() {
     onOpen();
   };
 
-  // จองทับช่องที่มีการจองอยู่ → เปิดฟอร์มสร้างของ slot เดิม (จะ detect conflict ตอน save)
   const openOverbook = (b: Booking) => {
     setSelected(undefined);
     setCreateSlot({ teacherId: b.teacherId, time: b.startTime, date: b.date });
   };
 
-  const loading = loadingTeachers || (view === "day" ? loadingDay : loadingWeek);
+  const loading = loadingTeachers || loadingCalendar;
 
   return (
     <div className="space-y-5">

@@ -9,6 +9,7 @@ import {
   createBooking,
   createBookingWithReschedule,
   detectConflict,
+  getCalendar,
   getBookingsByDate,
   getBookingsInRange,
   type RescheduleResolution,
@@ -28,6 +29,7 @@ import type { TeacherType } from "@/types/app/scheduler";
 
 export const TEACHERS_KEY = ["teachers"] as const;
 export const BOOKINGS_KEY = ["bookings"] as const;
+export const CALENDAR_KEY = ["calendar"] as const;
 export const COURSES_KEY = ["courses"] as const;
 export const REPORT_KEY = ["daily-report"] as const;
 
@@ -79,6 +81,14 @@ export const useSetLimitOverride = () => {
   });
 };
 
+// ───────────────────────────── Calendar ─────────────────────────────
+
+export const useCalendar = (date: string, view: "day" | "week") =>
+  useQuery({
+    queryKey: [...CALENDAR_KEY, date, view],
+    queryFn: () => getCalendar(date, view),
+  });
+
 // ───────────────────────────── Bookings ─────────────────────────────
 
 export const useBookingsByDate = (date: string) =>
@@ -95,8 +105,10 @@ export const useBookingsInRange = (start: string, end: string) =>
 
 const invalidateAll = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: BOOKINGS_KEY });
+  qc.invalidateQueries({ queryKey: CALENDAR_KEY });
   qc.invalidateQueries({ queryKey: COURSES_KEY });
   qc.invalidateQueries({ queryKey: REPORT_KEY });
+  qc.invalidateQueries({ queryKey: TEACHERS_KEY });
 };
 
 export const useConfirmBooking = () => {

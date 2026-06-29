@@ -1,17 +1,24 @@
 import dayjs from "dayjs";
+import { api } from "@/lib/api/client";
 import {
-  bookings,
-  coursePackages,
-  nextBookingId,
-  teachers,
-  teacherTypeOrder,
-  setTeacherTypeOrderStore,
-} from "@/lib/mock/data";
-import { canTakeLeave, toCourseView } from "@/lib/scheduler/leave";
+  calendarDayBookings,
+  calendarToBookings,
+  dtoToBooking,
+  dtoToCourseView,
+  dtoToTeacher,
+  flattenTeachers,
+} from "@/lib/api/mappers";
+import {
+  DEFAULT_TEACHER_TYPE_ORDER,
+  readLimitOverrides,
+  readTeacherTypeOrder,
+  writeLimitOverride,
+  writeTeacherTypeOrder,
+} from "@/lib/api/teacher-order-store";
 import { sortByTypeOrder, toTeacherView } from "@/lib/scheduler/teacher";
 import type {
-  Booking,
   BookingType,
+  Booking,
   CoursePackageView,
   DailyReport,
   RescheduleReason,
@@ -19,275 +26,281 @@ import type {
   TeacherType,
   TeacherView,
 } from "@/types/app/scheduler";
+import type {
+  BookingsResponse,
+  CalendarResponse,
+  CoursesResponse,
+  DailyReportResponse,
+  TeachersResponse,
+  UpdateBookingStatusResponse,
+} from "@/types/api/contract";
+import { ApiClientError } from "@/lib/api/client";
+import * as mock from "./scheduler.mock.service";
 
-// Simulate network latency so React Query states behave realistically.
-const delay = <T>(value: T, ms = 200) =>
-  new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
+export type { RescheduleResolution, RescheduleResult } from "./scheduler.mock.service";
 
-const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
+const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
+
+const monthRange = (ref = dayjs()) => ({
+  from: ref.startOf("month").format("YYYY-MM-DD"),
+  to: ref.endOf("month").format("YYYY-MM-DD"),
+});
+
+async function fetchMonthBookings(): Promise<Booking[]> {
+  const { from, to } = monthRange();
+  const { data } = await api.get<BookingsResponse>("/bookings", {
+    params: { from, to, page: 1, limit: 200 },
+  });
+  return data.items.map(dtoToBooking);
+}
+
+function teachersToViews(dtos: ReturnType<typeof flattenTeachers>, bookings: Booking[]): TeacherView[] {
+  const overrides = readLimitOverrides();
+  const teachers = dtos.map((dto) => dtoToTeacher(dto, !!overrides[dto.id]));
+  return sortByTypeOrder(
+    teachers.map((t) => toTeacherView(t, bookings)),
+    readTeacherTypeOrder(),
+  );
+}
+
+// ───────────────────────────── Calendar aggregate ─────────────────────────────
+
+export async function getCalendar(date: string, view: "day" | "week"): Promise<CalendarResponse> {
+  const { data } = await api.get<CalendarResponse>("/calendar", { params: { date, view } });
+  return data;
+}
+
+export function parseCalendarTeachers(cal: CalendarResponse, allTeachers?: TeacherView[]): TeacherView[] {
+  const day = cal.days[0];
+  if (!day) return allTeachers ?? [];
+  const order = readTeacherTypeOrder();
+  const rank = (type: TeacherType) => {
+    const i = order.indexOf(type);
+    return i === -1 ? order.length : i;
+  };
+  const fromCal = day.columns
+    .map((col) => {
+      const existing = allTeachers?.find((t) => t.id === col.teacher.id);
+      if (existing) return existing;
+      const overrides = readLimitOverrides();
+      const teacher = dtoToTeacher(col.teacher, !!overrides[col.teacher.id]);
+      return toTeacherView(teacher, calendarToBookings(cal));
+    })
+    .sort((a, b) => rank(a.type) - rank(b.type) || a.nickname.localeCompare(b.nickname, "th"));
+  return fromCal;
+}
 
 // ───────────────────────────── Teachers ─────────────────────────────
 
-export const getTeachers = (): Promise<TeacherView[]> => {
-  const views = teachers.map((t) => toTeacherView(t, bookings));
-  return delay(sortByTypeOrder(clone(views), teacherTypeOrder));
+export const getTeachers = async (): Promise<TeacherView[]> => {
+  if (useMock) return mock.getTeachers();
+  const [{ data: groups }, bookings] = await Promise.all([
+    api.get<TeachersResponse>("/teachers"),
+    fetchMonthBookings(),
+  ]);
+  return teachersToViews(flattenTeachers(groups), bookings);
 };
 
-export const setTeacherActive = (id: string, active: boolean) => {
-  const t = teachers.find((x) => x.id === id);
-  if (t) t.active = active;
-  return delay(clone(t) as Teacher);
+export const setTeacherActive = async (id: string, active: boolean) => {
+  if (useMock) return mock.setTeacherActive(id, active);
+  const { data } = await api.patch<{ teachers: TeachersResponse["groups"][0]["teachers"] }>(
+    "/teachers/availability",
+    { teacherId: id, active },
+  );
+  const row = data.teachers[0];
+  return dtoToTeacher(row) as Teacher;
 };
 
-/** ปิด/เปิดครูทั้งประเภท (เช่น ปิด Freelance ทั้งหมดเพื่อประหยัดงบ) */
-export const setTeacherTypeActive = (type: TeacherType, active: boolean) => {
-  teachers.filter((t) => t.type === type).forEach((t) => (t.active = active));
-  return delay(clone(teachers.filter((t) => t.type === type)));
+export const setTeacherTypeActive = async (type: TeacherType, active: boolean) => {
+  if (useMock) return mock.setTeacherTypeActive(type, active);
+  const { data } = await api.patch<{ teachers: TeachersResponse["groups"][0]["teachers"] }>(
+    "/teachers/availability",
+    { type, active },
+  );
+  return data.teachers.map((t) => dtoToTeacher(t));
 };
 
-/** ลำดับความสำคัญของประเภทครู (drag/reorder) */
 export const getTeacherTypeOrder = (): Promise<TeacherType[]> =>
-  delay(clone(teacherTypeOrder));
+  Promise.resolve(readTeacherTypeOrder());
 
 export const setTeacherTypeOrder = (order: TeacherType[]) => {
-  setTeacherTypeOrderStore(order);
-  return delay(clone(order));
+  writeTeacherTypeOrder(order);
+  return Promise.resolve([...order]);
 };
 
-/** เปิด/ปิด override รับงานต่อแม้เกิน limit */
-export const setTeacherLimitOverride = (id: string, override: boolean) => {
-  const t = teachers.find((x) => x.id === id);
-  if (t) t.limitOverride = override;
-  return delay(clone(t) as Teacher);
+export const setTeacherLimitOverride = async (id: string, override: boolean) => {
+  writeLimitOverride(id, override);
+  if (useMock) return mock.setTeacherLimitOverride(id, override);
+  const teachers = await getTeachers();
+  const view = teachers.find((t) => t.id === id);
+  if (!view) throw new ApiClientError("NOT_FOUND", "ไม่พบครู", 404);
+  const { id: _id, monthlyHours, monthlyIncome, overLimit, bookable, ...base } = view;
+  return { ...base, limitOverride: override } as Teacher;
 };
 
 // ───────────────────────────── Bookings ─────────────────────────────
 
-export const getBookingsByDate = (date: string) =>
-  delay(clone(bookings.filter((b) => b.date === date)));
-
-export const getAllBookings = () => delay(clone(bookings));
-
-/** ดึงการจองในช่วงวันที่ [start, end] (inclusive) — ใช้กับ week view */
-export const getBookingsInRange = (start: string, end: string) =>
-  delay(clone(bookings.filter((b) => b.date >= start && b.date <= end)));
-
-/** ยืนยันตาราง → ส่งแจ้งเตือนทันทีผ่าน Line (mock) */
-export const confirmBooking = (id: string) => {
-  const b = bookings.find((x) => x.id === id);
-  if (b) {
-    b.status = "CONFIRMED";
-    // TODO(phase2): integrate Line Messaging API push here.
-    console.info(`[Line notify] ยืนยันคาบเรียน ${b.studentName} ${b.date} ${b.startTime}`);
-  }
-  return delay(clone(b) as Booking);
+export const getBookingsByDate = async (date: string) => {
+  if (useMock) return mock.getBookingsByDate(date);
+  const cal = await getCalendar(date, "day");
+  return calendarDayBookings(cal, date);
 };
 
-/**
- * บันทึกการลา/ป่วย:
- *  - ตั้งสถานะคาบเป็น SICK_LEAVE
- *  - ถ้าผูกคอร์สและยังมีโควตา → สร้างคาบ EXTENDED ต่อท้ายสัปดาห์ถัดไปอัตโนมัติ
- *  - ถ้าลาเกินโควตาและยังไม่ปลดล็อก → ไม่ขยายคาบ (ส่ง warning กลับ)
- */
+export const getAllBookings = async () => {
+  if (useMock) return mock.getAllBookings();
+  const { data } = await api.get<BookingsResponse>("/bookings", {
+    params: { page: 1, limit: 200 },
+  });
+  return data.items.map(dtoToBooking);
+};
+
+export const getBookingsInRange = async (start: string, end: string) => {
+  if (useMock) return mock.getBookingsInRange(start, end);
+  const { data } = await api.get<BookingsResponse>("/bookings", {
+    params: { from: start, to: end, page: 1, limit: 200 },
+  });
+  return data.items.map(dtoToBooking);
+};
+
+export interface ConfirmResult {
+  booking: Booking;
+  notification: UpdateBookingStatusResponse["notification"];
+}
+
+export const confirmBooking = async (id: string): Promise<ConfirmResult> => {
+  if (useMock) {
+    const booking = await mock.confirmBooking(id);
+    return { booking, notification: null };
+  }
+  const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {
+    action: "confirm",
+  });
+  return { booking: dtoToBooking(data.booking), notification: data.notification };
+};
+
 export interface SickLeaveResult {
   booking?: Booking;
   extended?: Booking;
   locked: boolean;
 }
 
-export const markSickLeave = (id: string): Promise<SickLeaveResult> => {
-  const b = bookings.find((x) => x.id === id);
-  if (!b) return delay({ booking: undefined, extended: undefined, locked: false });
-
-  b.status = "SICK_LEAVE";
-
-  const course = b.courseId ? coursePackages.find((c) => c.id === b.courseId) : undefined;
-  if (!course) {
-    return delay({ booking: clone(b), extended: undefined, locked: false });
-  }
-
-  if (!canTakeLeave(course)) {
-    // ลาเกินโควตา — ล็อกไม่ให้ขยายตาราง
-    return delay({ booking: clone(b), extended: undefined, locked: true });
-  }
-
-  course.leaveUsed += 1;
-  const extended: Booking = {
-    ...clone(b),
-    id: nextBookingId(),
-    date: dayjs(b.date).add(1, "week").format("YYYY-MM-DD"),
-    status: "EXTENDED",
-    note: "คาบขยายอัตโนมัติจากการลา",
+export const markSickLeave = async (id: string): Promise<SickLeaveResult> => {
+  if (useMock) return mock.markSickLeave(id);
+  const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {
+    action: "sick-leave",
+  });
+  return {
+    booking: dtoToBooking(data.booking),
+    extended: data.extended ? dtoToBooking(data.extended) : undefined,
+    locked: data.locked,
   };
-  bookings.push(extended);
-
-  return delay({ booking: clone(b), extended: clone(extended), locked: false });
 };
 
-export const markAttended = (id: string) => {
-  const b = bookings.find((x) => x.id === id);
-  if (b) b.status = "ATTENDED";
-  return delay(clone(b) as Booking);
+export const markAttended = async (id: string) => {
+  if (useMock) return mock.markAttended(id);
+  const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {
+    action: "attend",
+  });
+  return dtoToBooking(data.booking);
 };
 
 export interface CreateBookingInput {
   studentName: string;
   teacherId: string;
+  /** ชื่อวิชา (legacy) — ใช้ resolve subjectId ถ้าไม่ส่ง id */
   subject: string;
+  subjectId?: string;
   date: string;
   startTime: string;
   bookingType: BookingType;
 }
 
-const endOf = (startTime: string) =>
-  dayjs(`2000-01-01 ${startTime}`).add(1, "hour").format("HH:mm");
-
-/** การจองที่ "ครอง" slot อยู่จริง (ไม่นับคิวที่รอช่อง / ยกเลิก) */
-const slotOccupant = (teacherId: string, date: string, startTime: string) =>
-  bookings.find(
-    (b) =>
-      b.teacherId === teacherId &&
-      b.date === date &&
-      b.startTime === startTime &&
-      !b.pendingSlot &&
-      b.status !== "CANCELLED",
+function resolveSubjectId(
+  teacherId: string,
+  subjectName: string,
+  subjectId?: string,
+  teachers?: TeacherView[],
+): string {
+  if (subjectId) return subjectId;
+  const teacher = teachers?.find((t) => t.id === teacherId);
+  const match = teacher?.subjectOptions?.find(
+    (s) => s.name.toLowerCase() === subjectName.trim().toLowerCase(),
   );
+  if (match) return match.id;
+  throw new ApiClientError(
+    "VALIDATION",
+    "เลือกวิชาจากรายการของครู — ไม่พบ subjectId",
+    400,
+  );
+}
 
-/** เช็คว่ามีการจองทับ slot นี้มั้ย (ใช้ก่อนสร้าง — ฝั่ง UI เด้ง conflict dialog) */
-export const detectConflict = (
+export const detectConflict = async (
   teacherId: string,
   date: string,
   startTime: string,
 ): Promise<Booking | undefined> => {
-  const found = slotOccupant(teacherId, date, startTime);
-  return delay(found ? clone(found) : undefined);
+  if (useMock) return mock.detectConflict(teacherId, date, startTime);
+  const cal = await getCalendar(date, "day");
+  const day = cal.days.find((d) => d.date === date);
+  const col = day?.columns.find((c) => c.teacher.id === teacherId);
+  const slot = col?.slots.find((s) => s.time === startTime);
+  return slot?.booking ? dtoToBooking(slot.booking) : undefined;
 };
 
-export const createBooking = (input: CreateBookingInput) => {
-  const newBooking: Booking = {
-    id: nextBookingId(),
-    ...input,
-    endTime: endOf(input.startTime),
-    status: "PENDING",
-  };
-  bookings.push(newBooking);
-  return delay(clone(newBooking));
+export const createBooking = async (input: CreateBookingInput, teachers?: TeacherView[]) => {
+  if (useMock) return mock.createBooking(input);
+  const subjectId = resolveSubjectId(input.teacherId, input.subject, input.subjectId, teachers);
+  const { data } = await api.post("/bookings", {
+    student: { name: input.studentName },
+    teacherId: input.teacherId,
+    subjectId,
+    date: input.date,
+    startTime: input.startTime,
+    bookingType: input.bookingType,
+  });
+  return dtoToBooking(data.booking);
 };
 
-export interface RescheduleResolution {
-  reason: RescheduleReason;
-  /** ปลายทาง: วัน/สัปดาห์ → date ใหม่; ครู → teacherId ใหม่ */
-  date: string;
-  teacherId: string;
-  startTime: string;
-}
-
-/**
- * จองทับ slot ที่มีคนจองอยู่:
- *  - การจองเดิม → PENDING_RESCHEDULE (คาที่เดิมไว้ก่อน tentative) + เก็บ target
- *  - การจองใหม่ → สร้างแบบ pendingSlot (รอช่องว่าง, ยังไม่โผล่ในตาราง)
- *  - mock: ส่ง Line แจ้งผู้ปกครองขอย้าย รอตอบรับ
- * ช่องจะเป็นของการจองใหม่จริง เมื่อ confirmReschedule (ผู้ปกครองตกลง)
- */
-export interface RescheduleResult {
-  existing?: Booking;
-  incoming: Booking;
-}
-
-export const createBookingWithReschedule = (
-  input: CreateBookingInput,
-  resolution: RescheduleResolution,
-): Promise<RescheduleResult> => {
-  const existing = slotOccupant(input.teacherId, input.date, input.startTime);
-  if (!existing) {
-    // ไม่ชนแล้ว (เปลี่ยนไประหว่างทาง) → สร้างปกติ
-    const created: Booking = {
-      id: nextBookingId(),
-      ...input,
-      endTime: endOf(input.startTime),
-      status: "PENDING",
-    };
-    bookings.push(created);
-    return delay({ existing: undefined, incoming: clone(created) });
-  }
-
-  const incoming: Booking = {
-    id: nextBookingId(),
-    ...input,
-    endTime: endOf(input.startTime),
-    status: "PENDING",
-    pendingSlot: true,
-  };
-  bookings.push(incoming);
-
-  existing.status = "PENDING_RESCHEDULE";
-  existing.incomingBookingId = incoming.id;
-  existing.rescheduleTo = {
-    reason: resolution.reason,
-    date: resolution.date,
-    teacherId: resolution.teacherId,
-    startTime: resolution.startTime,
-    endTime: endOf(resolution.startTime),
-  };
-
-  // TODO(phase2): Line push ขอย้ายไปยังผู้ปกครองของ existing.studentName
-  console.info(
-    `[Line notify] ขอย้ายคาบ ${existing.studentName} → ${existing.rescheduleTo.date} ${existing.rescheduleTo.startTime} (รอตอบรับ)`,
+/** ยังไม่มีบน API — รอ B.1 (Opus) */
+export const createBookingWithReschedule = (...args: Parameters<typeof mock.createBookingWithReschedule>) => {
+  if (useMock) return mock.createBookingWithReschedule(...args);
+  return Promise.reject(
+    new ApiClientError(
+      "NOT_IMPLEMENTED",
+      "จองทับ+ย้ายของเดิมยังไม่รองรับบน API — รอ backend B.1",
+      501,
+    ),
   );
-
-  return delay({ existing: clone(existing), incoming: clone(incoming) });
 };
 
-/** ผู้ปกครองตอบรับ → ย้ายของเดิมไป target จริง แล้วปล่อยช่องให้การจองใหม่ */
 export const confirmReschedule = (oldId: string) => {
-  const old = bookings.find((b) => b.id === oldId);
-  if (!old || !old.rescheduleTo) return delay(undefined);
-
-  const t = old.rescheduleTo;
-  old.date = t.date;
-  old.teacherId = t.teacherId;
-  old.startTime = t.startTime;
-  old.endTime = t.endTime;
-  old.status = "CONFIRMED";
-  old.note = "ย้ายคาบจากการจองทับ (ผู้ปกครองตกลง)";
-
-  if (old.incomingBookingId) {
-    const incoming = bookings.find((b) => b.id === old.incomingBookingId);
-    if (incoming) incoming.pendingSlot = false; // เข้าครองช่องเดิมได้แล้ว
-  }
-  old.rescheduleTo = undefined;
-  old.incomingBookingId = undefined;
-
-  console.info(`[Line notify] ยืนยันย้ายคาบ ${old.studentName} → ${old.date} ${old.startTime}`);
-  return delay(clone(old));
+  if (useMock) return mock.confirmReschedule(oldId);
+  return Promise.reject(
+    new ApiClientError("NOT_IMPLEMENTED", "ยืนยันการย้ายยังไม่รองรับบน API — รอ backend B.1", 501),
+  );
 };
 
-/** ผู้ปกครองไม่ตกลง / ยกเลิกการย้าย → คืนของเดิม + ลบคิวที่รอช่อง */
 export const cancelReschedule = (oldId: string) => {
-  const old = bookings.find((b) => b.id === oldId);
-  if (!old) return delay(undefined);
-
-  if (old.incomingBookingId) {
-    const idx = bookings.findIndex((b) => b.id === old.incomingBookingId);
-    if (idx !== -1) bookings.splice(idx, 1); // ยกเลิกการจองใหม่
-  }
-  old.status = "CONFIRMED";
-  old.rescheduleTo = undefined;
-  old.incomingBookingId = undefined;
-
-  return delay(clone(old));
+  if (useMock) return mock.cancelReschedule(oldId);
+  return Promise.reject(
+    new ApiClientError("NOT_IMPLEMENTED", "ยกเลิกการย้ายยังไม่รองรับบน API — รอ backend B.1", 501),
+  );
 };
 
 // ───────────────────────── Course packages ─────────────────────────
 
-export const getCoursePackages = (): Promise<CoursePackageView[]> =>
-  delay(coursePackages.map((c) => toCourseView(clone(c))));
+export const getCoursePackages = async (): Promise<CoursePackageView[]> => {
+  if (useMock) return mock.getCoursePackages();
+  const { data } = await api.get<CoursesResponse>("/courses");
+  return data.map(dtoToCourseView);
+};
 
-/** ปลดล็อกพิเศษโดยแอดมิน เมื่อนักเรียนลาเกินโควตา (กรณีพิเศษ) */
-export const adminUnlockCourse = (id: string) => {
-  const c = coursePackages.find((x) => x.id === id);
-  if (c) c.adminUnlocked = true;
-  return delay(c ? toCourseView(clone(c)) : undefined);
+export const adminUnlockCourse = async (id: string) => {
+  if (useMock) return mock.adminUnlockCourse(id);
+  const { data } = await api.patch<CoursesResponse[number]>(`/courses/${id}`, {
+    adminUnlocked: true,
+  });
+  return dtoToCourseView(data);
 };
 
 // ───────────────────────────── Reports ─────────────────────────────
@@ -299,19 +312,16 @@ const BOOKING_TYPES: BookingType[] = [
   "VOUCHER",
 ];
 
-export const getDailyReport = (
-  date: string,
+function enrichDailyReport(
+  base: DailyReportResponse,
+  dayBookings: Booking[],
   teacherId?: string,
-): Promise<DailyReport> => {
-  // ไม่นับคิวที่รอช่อง (จองทับ) — ยังไม่ใช่การจองจริง
-  const dayBookings = bookings.filter(
-    (b) => b.date === date && !b.pendingSlot && (!teacherId || b.teacherId === teacherId),
+): DailyReport {
+  const active = dayBookings.filter(
+    (b) => !b.pendingSlot && b.status !== "CANCELLED" && (!teacherId || b.teacherId === teacherId),
   );
-  const cancelled = dayBookings.filter((b) => b.status === "CANCELLED").length;
-  // "ลงเรียนทั้งหมด" = ไม่นับที่ยกเลิก
-  const active = dayBookings.filter((b) => b.status !== "CANCELLED");
-  const totalBooked = active.length;
   const attended = active.filter((b) => b.status === "ATTENDED").length;
+  const totalBooked = active.length;
 
   const byTeacherMap = new Map<string, { count: number; attended: number }>();
   for (const b of active) {
@@ -321,15 +331,15 @@ export const getDailyReport = (
     byTeacherMap.set(b.teacherId, cur);
   }
 
-  const report: DailyReport = {
-    date,
+  return {
+    date: base.date,
     totalBooked,
     attended,
     confirmed: active.filter((b) => b.status === "CONFIRMED").length,
     pending: active.filter((b) => b.status === "PENDING").length,
     reschedulePending: active.filter((b) => b.status === "PENDING_RESCHEDULE").length,
-    onLeave: active.filter((b) => b.status === "SICK_LEAVE").length,
-    cancelled,
+    onLeave: base.onLeave,
+    cancelled: base.cancelled,
     attendanceRate: totalBooked > 0 ? Math.round((attended / totalBooked) * 100) : 0,
     byBookingType: BOOKING_TYPES.map((type) => ({
       type,
@@ -339,5 +349,15 @@ export const getDailyReport = (
       .map(([tid, v]) => ({ teacherId: tid, count: v.count, attended: v.attended }))
       .sort((a, b) => b.count - a.count),
   };
-  return delay(report);
+}
+
+export const getDailyReport = async (date: string, teacherId?: string): Promise<DailyReport> => {
+  if (useMock) return mock.getDailyReport(date, teacherId);
+  const [{ data: base }, dayBookings] = await Promise.all([
+    api.get<DailyReportResponse>("/reports/daily", { params: { date } }),
+    getBookingsByDate(date),
+  ]);
+  return enrichDailyReport(base, dayBookings, teacherId);
 };
+
+export { DEFAULT_TEACHER_TYPE_ORDER };

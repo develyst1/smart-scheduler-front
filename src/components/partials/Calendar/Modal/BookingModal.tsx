@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import {
   Modal,
@@ -34,6 +34,7 @@ import type {
   RescheduleReason,
   TeacherView,
 } from "@/types/app/scheduler";
+import type { CreateBookingInput } from "@/services/scheduler.service";
 import { RESCHEDULE_REASON_LABEL, TIME_SLOTS } from "@/types/app/scheduler";
 import { BOOKING_TYPE_OPTIONS } from "../Calendar.config";
 
@@ -127,12 +128,27 @@ function ViewBooking({
     : undefined;
 
   const handleConfirm = async () => {
-    await confirm.mutateAsync(booking.id);
-    notify({
-      title: "ยืนยันตารางแล้ว",
-      description: "ส่งแจ้งเตือนทันทีผ่าน Line ไปยังครู/ผู้เกี่ยวข้อง",
-      color: "primary",
-    });
+    const res = await confirm.mutateAsync(booking.id);
+    const n = res.notification;
+    if (n?.status === "queued") {
+      notify({
+        title: "ยืนยันตารางแล้ว",
+        description: "ส่งแจ้งเตือน LINE ไปยังครูแล้ว",
+        color: "primary",
+      });
+    } else if (n?.status === "skipped") {
+      notify({
+        title: "ยืนยันตารางแล้ว",
+        description: n.reason ?? "ครูยังไม่ผูก LINE — ไม่ได้ส่งแจ้งเตือน",
+        color: "warning",
+      });
+    } else {
+      notify({
+        title: "ยืนยันตารางแล้ว",
+        description: "ส่งแจ้งเตือนทันทีผ่าน Line ไปยังครู/ผู้เกี่ยวข้อง",
+        color: "primary",
+      });
+    }
     onClose();
   };
 
@@ -326,9 +342,16 @@ function CreateForm({
 
   const [studentName, setStudentName] = useState("");
   const [teacherId, setTeacherId] = useState(createSlot.teacherId);
-  const [subject, setSubject] = useState("");
+  const [subjectId, setSubjectId] = useState("");
   const [startTime, setStartTime] = useState(createSlot.time);
   const [bookingType, setBookingType] = useState<BookingType>("SINGLE_SESSION");
+
+  const selectedTeacher = teachers.find((t) => t.id === teacherId);
+  const subjectOptions = selectedTeacher?.subjectOptions ?? [];
+
+  useEffect(() => {
+    if (subjectOptions.length === 1) setSubjectId(subjectOptions[0].id);
+  }, [teacherId, subjectOptions.length]);
 
   // conflict state
   const [conflict, setConflict] = useState<Booking | undefined>();
@@ -336,12 +359,18 @@ function CreateForm({
   const [targetDate, setTargetDate] = useState<string>(createSlot.date);
   const [targetTeacherId, setTargetTeacherId] = useState<string>(createSlot.teacherId);
 
-  const valid = studentName.trim() && subject.trim() && teacherId && startTime;
+  const valid = studentName.trim() && subjectId && teacherId && startTime;
 
-  const input = {
+  const subjectName =
+    subjectOptions.find((s) => s.id === subjectId)?.name ??
+    selectedTeacher?.subjects[0] ??
+    "";
+
+  const input: CreateBookingInput = {
     studentName: studentName.trim(),
     teacherId,
-    subject: subject.trim(),
+    subject: subjectName,
+    subjectId,
     date: createSlot.date,
     startTime,
     bookingType,
@@ -458,17 +487,24 @@ function CreateForm({
         onChange={(e) => setStudentName(e.currentTarget.value)}
         required
       />
-      <TextInput
+      <Select
         label="วิชา"
-        value={subject}
-        onChange={(e) => setSubject(e.currentTarget.value)}
+        value={subjectId || null}
+        onChange={(v) => setSubjectId(v ?? "")}
+        placeholder={subjectOptions.length ? "เลือกวิชา" : "โหลดครูก่อน"}
+        data={subjectOptions.map((s) => ({ value: s.id, label: s.name }))}
+        allowDeselect={false}
         required
+        disabled={!subjectOptions.length}
       />
       <div className="grid grid-cols-2 gap-3">
         <Select
           label="ครูผู้สอน"
           value={teacherId}
-          onChange={(v) => setTeacherId(v ?? "")}
+          onChange={(v) => {
+            setTeacherId(v ?? "");
+            setSubjectId("");
+          }}
           data={teacherSelectData(teachers.filter((t) => t.bookable))}
           allowDeselect={false}
           renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
