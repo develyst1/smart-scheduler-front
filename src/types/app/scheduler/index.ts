@@ -192,8 +192,9 @@ export interface DailyReport {
 
 export type ModalMode = "create" | "edit" | "view";
 
-/** สล็อตเวลา 10:00–18:00 (คาบละ 1 ชม.) */
+/** สล็อตเวลา 09:00–18:00 (คาบละ 1 ชม.) — ตาม requirement.md */
 export const TIME_SLOTS = [
+  "09:00",
   "10:00",
   "11:00",
   "12:00",
