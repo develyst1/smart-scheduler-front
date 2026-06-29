@@ -53,8 +53,8 @@ export type BookingType =
 
 export const BOOKING_TYPE_LABEL: Record<BookingType, string> = {
   FIRST_TRIAL: "ทดลองเรียน",
-  SINGLE_SESSION: "รายชั่วโมง",
-  COURSE_PACKAGE: "คอร์ส (รายสัปดาห์ )",
+  SINGLE_SESSION: "จองรายครั้ง",
+  COURSE_PACKAGE: "คอร์สรายสัปดาห์",
   VOUCHER: "Voucher",
 };
 

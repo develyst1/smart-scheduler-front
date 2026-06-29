@@ -3,7 +3,7 @@
 รายการสิ่งที่ต้องแก้/เพิ่ม โดยเทียบจาก **requirement2.md** (ฉบับล่าสุดหลังคุยกับลูกค้า) กับโค้ดปัจจุบัน
 ของ repo นี้ (Frontoffice Web — Next.js 16 + Mantine v9, ตอนนี้ใช้ mock data)
 
-> สถานะ: ✅ มีแล้ว · 🟡 มีบางส่วน/ต้องปรับ · ❌ ยังไม่มี
+> สถานะ: ✅ มีแล้ว/เสร็จแล้ว · 🟡 มีบางส่วน/ต้องปรับ · ❌ ยังไม่มี
 > Scope: **[FE]** ทำในรีโปนี้ได้ · **[BE]** ต้องมี backend (`smart-scheduler-back`) · **[BO]** เป็นของฝั่ง Backoffice
 
 ---
@@ -11,23 +11,19 @@
 ## 1. ระบบตารางเรียนและการจอง (Visual Calendar & Booking)
 อ้างอิง: **requirement2.md ข้อ 1**
 
-- [ ] 🟡 **[FE] ตัวกรองตารางตามรายชื่อครู (Filter by teacher)** บนหน้า Dashboard/ปฏิทิน
+- [x] ✅ **[FE] ตัวกรองตารางตามรายชื่อครู (Filter by teacher)** บนหน้า Dashboard/ปฏิทิน
   - อ้างอิง: ข้อ 1 — *"เพิ่มฟังก์ชันตัวกรอง (Filter) เพื่อให้สามารถเลือกดูตารางตามรายชื่อครูผู้สอนได้"*
-  - ปัจจุบัน: [CalendarHeader.tsx](src/components/partials/Calendar/CalendarHeader.tsx) มีแค่ปุ่มเลือกวัน/สัปดาห์ + legend ยัง **ไม่มี** ตัวกรองครู
-  - ต้องทำ: เพิ่ม `MultiSelect`/`Select` ครู แล้ว filter `teachers`/`bookings` ที่ส่งเข้า `CalendarGrid` / `CalendarWeekGrid`
+  - ✅ เสร็จแล้ว: เพิ่ม `MultiSelect` กรองครู (เลือกหลายคนได้, ค้นหาได้) ใน [CalendarHeader.tsx](src/components/partials/Calendar/CalendarHeader.tsx) + state `selectedTeacherIds` ใน [CalendarContent.tsx](src/components/partials/Calendar/CalendarContent.tsx) — filter ก่อนส่งเข้า `CalendarGrid` / `CalendarWeekGrid`
 
 - [x] ✅ **[FE] Dropdown เลือกประเภทการจอง 4 ประเภท** (ตอนกดจองลงตาราง)
   - อ้างอิง: ข้อ 1 — *"1. ทดลองเรียน 2. จองรายครั้ง 3. คอร์สรายสัปดาห์ 4. ใช้ Voucher"*
-  - ปัจจุบัน: มีครบใน [BookingModal.tsx `CreateForm`](src/components/partials/Calendar/Modal/BookingModal.tsx) + [Calendar.config.ts](src/components/partials/Calendar/Calendar.config.ts)
-  - 🟡 ต้องปรับ: ปรับ label ให้ตรงสำนวนลูกค้า — ปัจจุบัน `SINGLE_SESSION = "รายชั่วโมง"` (req ใช้ "จองรายครั้ง / One time"), `COURSE_PACKAGE = "คอร์ส"` (req ใช้ "คอร์สรายสัปดาห์ / Weekly Course") ดู [types](src/types/app/scheduler/index.ts)
+  - ✅ เสร็จแล้ว: มีครบใน [BookingModal.tsx `CreateForm`](src/components/partials/Calendar/Modal/BookingModal.tsx) + [Calendar.config.ts](src/components/partials/Calendar/Calendar.config.ts)
+  - ✅ label ตรงสำนวนลูกค้าแล้ว: `SINGLE_SESSION = "จองรายครั้ง"`, `COURSE_PACKAGE = "คอร์สรายสัปดาห์"` ดู [types](src/types/app/scheduler/index.ts)
 
-- [ ] ❌ **[FE+BE] การจัดการตารางชนกัน (Conflict Resolution)**
+- [x] ✅ **[FE] การจัดการตารางชนกัน (Conflict Resolution)**
   - อ้างอิง: ข้อ 1 — *"หากสร้างคิวจองในวันที่มีการจองอยู่แล้ว ระบบจะมี Dropdown ให้เลือกวิธีจัดการกับการจองเก่า"*
-  - ปัจจุบัน: [createBooking](src/services/scheduler.service.ts) push เข้า array ทันที **ไม่มีการตรวจชน** และ `CreateForm` ไม่มี UI จัดการ
-  - ต้องทำ: ตรวจ slot ชน (ครู+วัน+เวลา ซ้ำ) → แสดง Dropdown ทางเลือกจัดการ **การจองเก่า**:
-    1. ย้ายออกไปวันอื่น (เด้งเตือนให้ติดต่อตกลงกับผู้ปกครองก่อน)
-    2. ย้ายไปสัปดาห์อื่น (เด้งเตือนให้ติดต่อตกลงกับผู้ปกครองก่อน)
-    3. ย้ายไปให้ครูคนอื่นสอนแทน
+  - ✅ เสร็จแล้ว: [BookingModal.tsx `CreateForm`](src/components/partials/Calendar/Modal/BookingModal.tsx) มี `detectConflict` + Dropdown 3 ทางเลือก (ย้ายวัน / ย้ายสัปดาห์ / ย้ายครู) + [scheduler.service.ts](src/services/scheduler.service.ts) มี `createBookingWithReschedule`, `confirmReschedule`, `cancelReschedule` ครบ
+  - 🟡 เหลือ [BE]: ตอน wire API จริง ต้องย้าย conflict logic ไปฝั่ง backend (ป้องกัน race condition) + LINE push จริง
 
 ---
 
@@ -54,15 +50,15 @@
 ## 3. การจัดการครูผู้สอน (Teacher Management)
 อ้างอิง: **requirement2.md ข้อ 3**
 
-- [ ] 🟡 **[FE] จัดลำดับความสำคัญครู (Priority Dropdown / drag reorder)**
-  - อ้างอิง: ข้อ 3 — *"แอดมินจัดเรียงลำดับกลุ่มครูได้ตามต้องการ (ลาก Freelance ขึ้นบนสุด) ... ตอนจองระบบแนะนำ/กระจายงานตาม Priority ที่ตั้งไว้"*
-  - ปัจจุบัน: ลำดับ **ฮาร์ดโค้ด** `FULL_TIME → PART_TIME → FREELANCE` ใน [TEACHER_TYPE_PRIORITY](src/types/app/scheduler/index.ts) และ `GROUP_ORDER` ใน [TeachersContent.tsx](src/components/partials/Teachers/TeachersContent.tsx) แก้ไม่ได้
-  - ต้องทำ: เปลี่ยนเป็น priority ที่แอดมินตั้งเอง (drag-and-drop / dropdown) เก็บค่า แล้วใช้ลำดับนี้ตอนแนะนำครูในการจอง
+- [x] ✅ **[FE] จัดลำดับความสำคัญครู (Priority drag reorder)**
+  - อ้างอิง: ข้อ 3 — *"แอดมินจัดเรียงลำดับกลุ่มครูได้ตามต้องการ (ลาก Freelance ขึ้นบนสุด)"*
+  - ✅ เสร็จแล้ว: [TeachersContent.tsx](src/components/partials/Teachers/TeachersContent.tsx) มี `DragDropContext` (drag-and-drop ลำดับประเภทครู) + [scheduler.service.ts](src/services/scheduler.service.ts) มี `setTeacherTypeOrder` + `getTeachers` เรียง bookings grid ตาม `teacherTypeOrder` อัตโนมัติ
+  - 🟡 เหลือ [BE]: persist ลำดับใน DB จริง (ตอนนี้ in-memory only)
 
-- [ ] ❌ **[FE+BE] ควบคุมงบครู Freelance (Auto-Disable เมื่อถึง Limit รายได้)**
-  - อ้างอิง: ข้อ 3 — *"ตั้ง Limit รายได้ครู Freelance ... ดึงเรทต่อชั่วโมงจากหลังบ้านมาคูณชั่วโมง ถ้าถึงลิมิตเดือนนั้น → Auto-Disable ซ่อนจาก Dashboard"*
-  - ปัจจุบัน: `Teacher` มีแค่ `active` (เปิด/ปิดมือ) **ไม่มี** field เรท/ลิมิต/ชั่วโมงสะสม ดู [types](src/types/app/scheduler/index.ts)
-  - ต้องทำ: [BE/BO] เก็บเรทต่อชั่วโมง + รายได้สะสมเดือนนี้ + ลิมิต · [FE] ตั้งค่าลิมิต + auto ปิด (`active=false`) เมื่อถึงลิมิต พร้อมเหตุผลที่แสดง
+- [x] ✅ **[FE] ควบคุมงบครู Freelance (Auto-Disable เมื่อถึง Limit รายได้)**
+  - อ้างอิง: ข้อ 3 — *"ตั้ง Limit รายได้ครู Freelance ... ถึงลิมิต → Auto-Disable ซ่อนจาก Dashboard"*
+  - ✅ เสร็จแล้ว (FE): [TeachersContent.tsx `FreelanceRow`](src/components/partials/Teachers/TeachersContent.tsx) แสดง progress bar รายได้ vs เพดาน + badge "เกินเพดาน · ปิดอัตโนมัติ" + switch override · [types](src/types/app/scheduler/index.ts) มี `TeacherView.overLimit`, `bookable`, `monthlyIncome`, `monthlyHours`
+  - ❌ เหลือ [BE/BO]: ดึงเรทและเพดานจาก back-office API จริง (ตอนนี้ `hourlyRate`/`incomeLimit` อยู่ใน mock data)
 
 ---
 
@@ -94,10 +90,17 @@
 
 ---
 
-## สรุปลำดับความสำคัญที่แนะนำ (เฉพาะ [FE] ที่ทำได้เลยในรีโปนี้)
+## สรุปสถานะ [FE] ทั้งหมด
 
-1. **ตัวกรองครูในปฏิทิน** (ข้อ 1) — เล็ก เห็นผลทันที
-2. **ปรับ label ประเภทการจอง** ให้ตรงสำนวนลูกค้า (ข้อ 1)
-3. **Conflict Resolution UI + logic** (ข้อ 1) — domain logic สำคัญ
-4. **Priority ครูแบบจัดเรียงเองได้** (ข้อ 3)
-5. งานที่เหลือ (CRM, QR/LINE, auto-deduct, income limit, notification center) ต้องรอ/ทำคู่กับ **backend**
+| # | งาน | สถานะ |
+|---|-----|-------|
+| 1.1 | ตัวกรองครูในปฏิทิน | ✅ เสร็จ |
+| 1.2 | label ประเภทการจอง (จองรายครั้ง / คอร์สรายสัปดาห์) | ✅ เสร็จ |
+| 1.3 | Conflict Resolution UI + logic | ✅ เสร็จ |
+| 3.1 | Priority ครูแบบ drag reorder | ✅ เสร็จ |
+| 3.2 | Auto-disable Freelance เมื่อถึง income limit (FE ส่วน) | ✅ เสร็จ |
+| 2.1 | QR / LINE check-in (FE ส่วน) | ❌ รอ BE |
+| 2.2 | CRM badge/level นักเรียน (FE ส่วน) | ❌ รอ BE |
+| 4.2 | Notification inbox/feed (FE ส่วน) | ❌ รอ BE |
+
+> **งาน FE ที่ทำได้ล่วงหน้า (ไม่รอ BE) ทำครบทุกข้อแล้ว** — งานที่เหลือทั้งหมดต้องรอ backend phase 2

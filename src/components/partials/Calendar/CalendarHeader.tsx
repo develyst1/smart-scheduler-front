@@ -2,10 +2,12 @@
 
 import dayjs from "dayjs";
 import "dayjs/locale/th";
-import { ActionIcon, Button, Paper, SegmentedControl, Tooltip } from "@mantine/core";
+import { ActionIcon, Button, MultiSelect, Paper, SegmentedControl, Tooltip } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, UserSearch } from "lucide-react";
 import { StatusChip } from "@/components/common/BookingBadges";
+import type { TeacherView } from "@/types/app/scheduler";
+import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 import { STATUS_LEGEND } from "./Calendar.config";
 
 export type CalendarView = "day" | "week";
@@ -16,6 +18,9 @@ interface Props {
   view: CalendarView;
   onChangeView: (view: CalendarView) => void;
   weekDays: string[];
+  teachers?: TeacherView[];
+  selectedTeacherIds?: string[];
+  onChangeTeacherIds?: (ids: string[]) => void;
 }
 
 const THAI_DAYS = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
@@ -26,6 +31,9 @@ export default function CalendarHeader({
   view,
   onChangeView,
   weekDays,
+  teachers = [],
+  selectedTeacherIds = [],
+  onChangeTeacherIds,
 }: Props) {
   const d = dayjs(date).locale("th");
   const step = view === "week" ? 7 : 1;
@@ -95,6 +103,28 @@ export default function CalendarHeader({
             วันนี้
           </Button>
         </div>
+
+        {teachers.length > 0 && (
+          <MultiSelect
+            placeholder="ครูทั้งหมด"
+            value={selectedTeacherIds}
+            onChange={onChangeTeacherIds}
+            data={teachers
+              .filter((t) => t.bookable)
+              .map((t) => ({
+                value: t.id,
+                label: `${t.nickname} · ${TEACHER_TYPE_LABEL[t.type]}`,
+              }))}
+            leftSection={<UserSearch size={15} />}
+            size="sm"
+            radius="md"
+            clearable
+            searchable
+            maxDropdownHeight={280}
+            className="max-w-xs"
+            aria-label="กรองครู"
+          />
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

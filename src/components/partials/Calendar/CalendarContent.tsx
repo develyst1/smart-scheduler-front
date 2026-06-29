@@ -14,6 +14,7 @@ import BookingModal from "./Modal/BookingModal";
 export default function CalendarContent() {
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [view, setView] = useState<CalendarView>("day");
+  const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
 
   // สัปดาห์เริ่มวันอาทิตย์ (firstDayOfWeek=0) — 7 วันสำหรับ week view
   const weekStart = dayjs(date).day(0);
@@ -25,6 +26,12 @@ export default function CalendarContent() {
     weekDays[0],
     weekDays[6],
   );
+
+  // กรองครูตามตัวเลือก — ถ้าไม่ได้เลือกใคร = แสดงทั้งหมด
+  const filteredTeachers =
+    selectedTeacherIds.length === 0
+      ? teachers
+      : teachers.filter((t) => selectedTeacherIds.includes(t.id));
 
   const [isOpen, { open: onOpen, close: onClose }] = useDisclosure(false);
   const [selected, setSelected] = useState<Booking | undefined>();
@@ -60,6 +67,9 @@ export default function CalendarContent() {
         view={view}
         onChangeView={setView}
         weekDays={weekDays}
+        teachers={teachers}
+        selectedTeacherIds={selectedTeacherIds}
+        onChangeTeacherIds={setSelectedTeacherIds}
       />
 
       {loading ? (
@@ -69,14 +79,14 @@ export default function CalendarContent() {
         </div>
       ) : view === "day" ? (
         <CalendarGrid
-          teachers={teachers}
+          teachers={filteredTeachers}
           bookings={dayBookings}
           onSelectBooking={openView}
           onCreate={openCreate}
         />
       ) : (
         <CalendarWeekGrid
-          teachers={teachers}
+          teachers={filteredTeachers}
           weekDays={weekDays}
           bookings={weekBookings}
           onSelectBooking={openView}
