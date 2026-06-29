@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
   output: "standalone",
-  // basePath: process.env.NEXT_BASE_PATH || undefined,
+  reactStrictMode: true,
   allowedDevOrigins: [
     "localhost",
     "https://did.smartalliance.co.th",
@@ -15,7 +14,8 @@ const nextConfig: NextConfig = {
     "192.168.33.160",
     "192.168.33.166:3000",
     "192.168.33.160:6601",
-    "192.168.33.65",
+    "192.168.33.42",
+    "154.197.124.206",
   ],
 };
 export default nextConfig;
