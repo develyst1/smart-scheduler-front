@@ -16,6 +16,7 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-p
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import { notify } from "@/lib/ui/notify";
 import { formatWorkDaysLabel } from "@/lib/scheduler/work-days";
+import TeacherWorkDaysSelect from "./TeacherWorkDaysSelect";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import {
   useTeachers,
@@ -116,7 +117,8 @@ export default function TeachersContent() {
       </Paper>
 
       <p className="text-sm text-default-500">
-        ปิดสิทธิ์รับงานเพื่อไม่ให้ครูแสดงในตารางจอง · ครู Freelance ที่รายได้ถึงเพดานจะถูกปิดอัตโนมัติ
+        ปิดสิทธิ์รับงานเพื่อไม่ให้ครูแสดงในตารางจอง · ตั้งวันที่มาสอนต่อคน (เช่น PT เสาร์–อาทิตย์) ·
+        ครู Freelance ที่รายได้ถึงเพดานจะถูกปิดอัตโนมัติ
       </p>
 
       {typeOrder.map((type) => {
@@ -162,23 +164,28 @@ export default function TeachersContent() {
 function TeacherRow({ teacher: t, onToggle }: { teacher: TeacherView; onToggle: () => void }) {
   return (
     <div
-      className={`flex items-center justify-between rounded-xl border border-default-100 p-3 transition-colors hover:bg-default-100/60 ${
+      className={`rounded-xl border border-default-100 p-3 transition-colors hover:bg-default-100/60 ${
         t.active ? "" : "opacity-60"
       }`}
     >
-      <div>
-        <p className="font-medium">{t.name}</p>
-        <p className="text-xs text-default-400">
-          ({t.nickname}) · {formatWorkDaysLabel(t.workDays)}
-          {t.subjects.length > 0 ? ` · ${t.subjects.slice(0, 3).join(", ")}${t.subjects.length > 3 ? "…" : ""}` : ""}
-        </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium">{t.name}</p>
+          <p className="text-xs text-default-400">
+            ({t.nickname}) · {formatWorkDaysLabel(t.workDays)}
+            {t.subjects.length > 0
+              ? ` · ${t.subjects.slice(0, 3).join(", ")}${t.subjects.length > 3 ? "…" : ""}`
+              : ""}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className={`text-xs ${t.active ? "text-success" : "text-default-400"}`}>
+            {t.active ? "รับงาน" : "ปิดรับงาน"}
+          </span>
+          <Switch checked={t.active} onChange={onToggle} aria-label={`สลับสถานะ ${t.name}`} />
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <span className={`text-xs ${t.active ? "text-success" : "text-default-400"}`}>
-          {t.active ? "รับงาน" : "ปิดรับงาน"}
-        </span>
-        <Switch checked={t.active} onChange={onToggle} aria-label={`สลับสถานะ ${t.name}`} />
-      </div>
+      <TeacherWorkDaysSelect teacherId={t.id} nickname={t.nickname} workDays={t.workDays} />
     </div>
   );
 }
@@ -266,6 +273,8 @@ function FreelanceRow({ teacher: t, onToggle }: { teacher: TeacherView; onToggle
           />
         </div>
       )}
+
+      <TeacherWorkDaysSelect teacherId={t.id} nickname={t.nickname} workDays={t.workDays} />
     </div>
   );
 }

@@ -56,6 +56,12 @@ export const setTeacherLimitOverride = (id: string, override: boolean) => {
   return delay(clone(t) as Teacher);
 };
 
+export const setTeacherWorkDays = (id: string, workDays: number[]) => {
+  const t = teachers.find((x) => x.id === id);
+  if (t) t.workDays = workDays;
+  return delay(clone(t) as Teacher);
+};
+
 export const getBookingsByDate = (date: string) =>
   delay(clone(bookings.filter((b) => b.date === date)));
 

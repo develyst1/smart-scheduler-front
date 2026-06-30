@@ -5,6 +5,22 @@ const THAI_SHORT = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"] as co
 const WEEKEND_DAYS = [6, 0];
 const WEEKDAY_DAYS = [1, 2, 3, 4, 5];
 
+export const ALL_WORK_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
+
+export const WORK_DAY_OPTIONS = ALL_WORK_DAYS.map((d) => ({
+  value: String(d),
+  label: THAI_SHORT[d],
+}));
+
+/** ปุ่มลัดในหน้าจัดการครู */
+export const WORK_DAY_PRESETS: { label: string; days: number[] }[] = [
+  { label: "ทุกวัน", days: [...ALL_WORK_DAYS] },
+  { label: "เสาร์–อาทิตย์", days: [...WEEKEND_DAYS] },
+  { label: "จ–ศ", days: [...WEEKDAY_DAYS] },
+  { label: "เสาร์", days: [6] },
+  { label: "อาทิตย์", days: [0] },
+];
+
 export function teacherWorksOnDay(workDays: readonly number[] | undefined, weekday: number): boolean {
   if (!workDays?.length) return true;
   return workDays.includes(weekday);

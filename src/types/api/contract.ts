@@ -210,6 +210,11 @@ export interface SetAvailabilityResponse {
   teachers: TeacherDTO[];
 }
 
+export interface SetTeacherWorkDaysRequest {
+  workDays: number[];
+}
+export type SetTeacherWorkDaysResponse = TeacherDTO;
+
 export interface TeacherTypeOrderResponse {
   order: TeacherType[];
 }

@@ -43,7 +43,7 @@ repo นี้ = หน้าจอ staff (Next.js 16 + Mantine v9) · **เช�
 - [x] ✅ **จัดลำดับครู drag reorder** — [TeachersContent.tsx](src/components/partials/Teachers/TeachersContent.tsx)
 - [x] ✅ **Auto-Disable Freelance เมื่อถึงเพดานรายได้** (FE: progress + badge + override switch)
   - [ ] 🟡 **[BO] เรท/เพดานจริง** ยังมาจาก mock — รอ backoffice API (D.1)
-- [x] ✅ **วันที่ครูมาสอน (`workDays`)** — ซ่อนในปฏิทินวันธรรมดาสำหรับ PT เสาร์–อาทิตย์ · แสดง label ในหน้าคุณครู
+- [x] ✅ **วันที่ครูมาสอน (`workDays`)** — ตั้งรายคนในหน้าคุณครู (MultiSelect + preset) · ไม่ hardcode ตามประเภท PT
 
 ---
 

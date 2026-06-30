@@ -34,6 +34,7 @@ import type {
   CreateVoucherResponse,
   DailyReportResponse,
   RescheduleDecisionResponse,
+  SetTeacherWorkDaysResponse,
   TeachersResponse,
   TeacherTypeOrderResponse,
   UpdateBookingStatusResponse,
@@ -133,6 +134,15 @@ export const setTeacherTypeOrder = async (order: TeacherType[]): Promise<Teacher
   if (useMock) return mock.setTeacherTypeOrder(order);
   const { data } = await api.patch<TeacherTypeOrderResponse>("/teachers/type-order", { order });
   return data.order;
+};
+
+export const setTeacherWorkDays = async (id: string, workDays: number[]) => {
+  if (useMock) return mock.setTeacherWorkDays(id, workDays);
+  const { data } = await api.patch<SetTeacherWorkDaysResponse>(
+    `/teachers/${id}/work-days`,
+    { workDays },
+  );
+  return dtoToTeacher(data);
 };
 
 export const setTeacherLimitOverride = async (id: string, override: boolean) => {

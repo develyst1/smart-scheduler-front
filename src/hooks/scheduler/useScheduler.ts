@@ -25,6 +25,7 @@ import {
   setTeacherLimitOverride,
   setTeacherTypeActive,
   setTeacherTypeOrder,
+  setTeacherWorkDays,
   type CreateBookingInput,
   type CreateCourseInput,
   type CreateVoucherInput,
@@ -72,6 +73,18 @@ export const useSetTeacherTypeOrder = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: TEACHER_ORDER_KEY });
       qc.invalidateQueries({ queryKey: TEACHERS_KEY });
+    },
+  });
+};
+
+export const useSetTeacherWorkDays = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, workDays }: { id: string; workDays: number[] }) =>
+      setTeacherWorkDays(id, workDays),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: TEACHERS_KEY });
+      qc.invalidateQueries({ queryKey: CALENDAR_KEY });
     },
   });
 };
