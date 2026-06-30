@@ -13,6 +13,8 @@ import {
   getBookingsByDate,
   getBookingsInRange,
   type RescheduleResolution,
+  createCoursePackage,
+  createVoucher,
   getCoursePackages,
   getDailyReport,
   getTeachers,
@@ -24,6 +26,8 @@ import {
   setTeacherTypeActive,
   setTeacherTypeOrder,
   type CreateBookingInput,
+  type CreateCourseInput,
+  type CreateVoucherInput,
 } from "@/services/scheduler.service";
 import type { TeacherType } from "@/types/app/scheduler";
 
@@ -196,6 +200,22 @@ export const useAdminUnlockCourse = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => adminUnlockCourse(id),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+export const useCreateCoursePackage = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateCourseInput) => createCoursePackage(input),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+export const useCreateVoucher = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateVoucherInput) => createVoucher(input),
     onSuccess: () => invalidateAll(qc),
   });
 };

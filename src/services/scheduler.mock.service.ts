@@ -256,6 +256,91 @@ export const adminUnlockCourse = (id: string) => {
   return delay(c ? toCourseView(clone(c)) : undefined);
 };
 
+export const createCoursePackage = (input: {
+  studentName: string;
+  teacherId: string;
+  subjectId: string;
+  size: 4 | 6 | 10;
+  startDate: string;
+  startTime: string;
+  note?: string;
+}) => {
+  const teacher = teachers.find((t) => t.id === input.teacherId);
+  const subjectName =
+    teacher?.subjectOptions?.find((s) => s.id === input.subjectId)?.name ??
+    teacher?.subjects[0] ??
+    "โปรแกรม";
+  const courseId = `c${coursePackages.length + 1}`;
+  const newCourse = {
+    id: courseId,
+    studentName: input.studentName,
+    size: input.size,
+    usedSessions: 0,
+    leaveUsed: 0,
+    adminUnlocked: false,
+    startDate: input.startDate,
+    weekday: dayjs(input.startDate).day(),
+    startTime: input.startTime,
+    expiryDate: dayjs(input.startDate).add(input.size + 1, "week").format("YYYY-MM-DD"),
+  };
+  coursePackages.push(newCourse);
+
+  const generated: Booking[] = Array.from({ length: input.size }, (_, i) => ({
+    id: nextBookingId(),
+    studentName: input.studentName,
+    teacherId: input.teacherId,
+    subject: subjectName,
+    date: dayjs(input.startDate).add(i, "week").format("YYYY-MM-DD"),
+    startTime: input.startTime,
+    endTime: dayjs(`2000-01-01 ${input.startTime}`).add(1, "hour").format("HH:mm"),
+    bookingType: "COURSE_PACKAGE" as const,
+    status: "CONFIRMED" as const,
+    courseId,
+    note: input.note,
+  }));
+  bookings.push(...generated);
+
+  return delay({
+    course: {
+      ...toCourseView(newCourse),
+      student: { id: "s-mock", name: input.studentName, nickname: input.studentName },
+    },
+    bookings: generated.map((b) => ({
+      id: b.id,
+      date: b.date,
+      startTime: b.startTime,
+      endTime: b.endTime,
+      bookingType: b.bookingType,
+      status: b.status,
+      note: b.note ?? null,
+      student: { id: "s-mock", name: b.studentName, nickname: b.studentName },
+      teacher: {
+        id: teacher!.id,
+        name: teacher!.name,
+        nickname: teacher!.nickname,
+        type: teacher!.type,
+      },
+      subject: { id: input.subjectId, name: subjectName },
+      course: toCourseView(newCourse),
+      pendingSlot: false,
+      incomingBookingId: null,
+      rescheduleTo: null,
+    })),
+  });
+};
+
+export const createVoucher = (input: { studentName: string; totalHours: 5 | 10 | 15 }) =>
+  delay({
+    voucher: {
+      id: `v${Date.now()}`,
+      totalHours: input.totalHours,
+      usedHours: 0,
+      remaining: input.totalHours,
+      expiryDate: dayjs().add(input.totalHours === 5 ? 3 : input.totalHours === 10 ? 6 : 9, "month").format("YYYY-MM-DD"),
+      student: { id: "s-mock", name: input.studentName, nickname: input.studentName },
+    },
+  });
+
 const BOOKING_TYPES: BookingType[] = [
   "FIRST_TRIAL",
   "SINGLE_SESSION",

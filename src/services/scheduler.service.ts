@@ -30,12 +30,15 @@ import type {
   CalendarResponse,
   CoursesResponse,
   CreateBookingWithRescheduleResponse,
+  CreateCoursePackageResponse,
+  CreateVoucherResponse,
   DailyReportResponse,
   RescheduleDecisionResponse,
   TeachersResponse,
   TeacherTypeOrderResponse,
   UpdateBookingStatusResponse,
 } from "@/types/api/contract";
+import type { PackageSize } from "@/types/app/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import * as mock from "./scheduler.mock.service";
 
@@ -321,6 +324,48 @@ export const adminUnlockCourse = async (id: string) => {
     adminUnlocked: true,
   });
   return dtoToCourseView(data);
+};
+
+export interface CreateCourseInput {
+  studentName: string;
+  teacherId: string;
+  subjectId: string;
+  size: PackageSize;
+  startDate: string;
+  startTime: string;
+  note?: string;
+}
+
+export const createCoursePackage = async (
+  input: CreateCourseInput,
+): Promise<CreateCoursePackageResponse> => {
+  if (useMock) return mock.createCoursePackage(input);
+  const { data } = await api.post<CreateCoursePackageResponse>("/courses", {
+    student: { name: input.studentName },
+    teacherId: input.teacherId,
+    subjectId: input.subjectId,
+    size: input.size,
+    startDate: input.startDate,
+    startTime: input.startTime,
+    note: input.note,
+  });
+  return data;
+};
+
+export interface CreateVoucherInput {
+  studentName: string;
+  totalHours: 5 | 10 | 15;
+}
+
+export const createVoucher = async (
+  input: CreateVoucherInput,
+): Promise<CreateVoucherResponse> => {
+  if (useMock) return mock.createVoucher(input);
+  const { data } = await api.post<CreateVoucherResponse>("/vouchers", {
+    student: { name: input.studentName },
+    totalHours: input.totalHours,
+  });
+  return data;
 };
 
 // ───────────────────────────── Reports ─────────────────────────────

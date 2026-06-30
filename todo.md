@@ -55,10 +55,10 @@ repo นี้ = หน้าจอ staff (Next.js 16 + Mantine v9) · **เช�
 
 ---
 
-## 5. เพิ่มเติม — ฟอร์มสมัครคอร์ส/Voucher (FE pending, BE พร้อม)
+## 5. เพิ่มเติม — ฟอร์มสมัครคอร์ส/Voucher
 
-- [ ] ❌ **[FE] ฟอร์มสมัครคอร์ส (recurring)** — ยิง `POST /courses` (BE B.4 พร้อมแล้ว) → preview คาบรายสัปดาห์
-- [ ] ❌ **[FE] ฟอร์มซื้อ Voucher** — ยิง `POST /vouchers` (BE B.5 พร้อมแล้ว)
+- [x] ✅ **[FE] ฟอร์มสมัครคอร์ส (recurring)** — [CreateCourseModal.tsx](src/components/partials/Bookings/CreateCourseModal.tsx) → `POST /courses` + preview คาบ
+- [x] ✅ **[FE] ฟอร์มซื้อ Voucher** — [CreateVoucherModal.tsx](src/components/partials/Bookings/CreateVoucherModal.tsx) → `POST /vouchers`
 - [x] ✅ แสดงคอร์ส/โควตาการลา ([CoursePackagePanel.tsx](src/components/partials/Bookings/CoursePackagePanel.tsx))
 
 ---
@@ -69,8 +69,8 @@ repo นี้ = หน้าจอ staff (Next.js 16 + Mantine v9) · **เช�
 |------|--------|
 | Foundation (API wired + Auth/login) | ✅ เสร็จ |
 | ปฏิทิน/จอง + Conflict + ครู/priority + Freelance limit (FE) | ✅ เสร็จ |
-| ฟอร์มสมัครคอร์ส/Voucher (BE พร้อม) | ❌ FE pending |
+| ฟอร์มสมัครคอร์ส/Voucher (BE พร้อม) | ✅ เสร็จ |
 | QR check-in · CRM level · LINE OA · notification inbox | ❌ รอ BE (C.1–C.5) |
 | เรท/เพดานครูจาก backoffice | 🟡 รอ D.1 |
 
-> **งาน FE ที่ทำได้โดยไม่รอ BE เหลือ:** ฟอร์มสมัครคอร์ส/Voucher (ข้อ 5) — ที่เหลือต้องรอ backend C.* / backoffice
+> **งาน FE ที่ทำได้โดยไม่รอ BE เหลือ:** (ไม่มีแล้ว — ฟอร์มคอร์ส/Voucher เสร็จ) · ที่เหลือต้องรอ backend C.* / backoffice

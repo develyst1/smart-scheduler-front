@@ -104,6 +104,36 @@ export interface TeachersResponse {
 
 export type CoursesResponse = Array<CourseSummary & { student: StudentRef }>;
 
+export interface CreateCoursePackageRequest {
+  student: StudentInput;
+  teacherId: string;
+  subjectId: string;
+  size: PackageSize;
+  startDate: IsoDate;
+  startTime: HhMm;
+  note?: string;
+}
+export interface CreateCoursePackageResponse {
+  course: CourseSummary & { student: StudentRef };
+  bookings: BookingDTO[];
+}
+
+export interface VoucherSummary {
+  id: string;
+  totalHours: number;
+  usedHours: number;
+  remaining: number;
+  expiryDate: IsoDate;
+  student: StudentRef;
+}
+export interface CreateVoucherRequest {
+  student: StudentInput;
+  totalHours: 5 | 10 | 15;
+}
+export interface CreateVoucherResponse {
+  voucher: VoucherSummary;
+}
+
 export interface BookingsResponse {
   items: BookingDTO[];
   page: number;
