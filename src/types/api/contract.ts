@@ -33,6 +33,9 @@ export interface StudentRef {
   id: string;
   name: string;
   nickname: string | null;
+  crmPoints?: number;
+  crmLevel?: number;
+  crmLevelName?: string;
 }
 
 export interface SubjectRef {
