@@ -491,26 +491,26 @@ function CreateForm({
         required
       />
       <Select
-        label="วิชา"
-        value={subjectId || null}
-        onChange={(v) => setSubjectId(v ?? "")}
-        placeholder={subjectOptions.length ? "เลือกวิชา" : "โหลดครูก่อน"}
-        data={subjectOptions.map((s) => ({ value: s.id, label: s.name }))}
+        label="ครูผู้สอน"
+        value={teacherId}
+        onChange={(v) => {
+          setTeacherId(v ?? "");
+          setSubjectId("");
+        }}
+        data={teacherSelectData(teachers.filter((t) => bookableOnDate(t, createSlot.date)))}
         allowDeselect={false}
-        required
-        disabled={!subjectOptions.length}
+        renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
       />
       <div className="grid grid-cols-2 gap-3">
         <Select
-          label="ครูผู้สอน"
-          value={teacherId}
-          onChange={(v) => {
-            setTeacherId(v ?? "");
-            setSubjectId("");
-          }}
-          data={teacherSelectData(teachers.filter((t) => bookableOnDate(t, createSlot.date)))}
+          label="วิชา"
+          value={subjectId || null}
+          onChange={(v) => setSubjectId(v ?? "")}
+          placeholder={subjectOptions.length ? "เลือกวิชา" : "โหลดครูก่อน"}
+          data={subjectOptions.map((s) => ({ value: s.id, label: s.name }))}
           allowDeselect={false}
-          renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+          required
+          disabled={!subjectOptions.length}
         />
         <Select
           label="เวลา"
