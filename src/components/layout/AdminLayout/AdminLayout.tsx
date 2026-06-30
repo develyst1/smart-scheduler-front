@@ -1,13 +1,28 @@
+"use client";
+
+import { useState } from "react";
 import Sidebar from "./Sidebar/Sidebar";
 import Header from "./Header/Header";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  // desktop: ย่อ sidebar เหลือไอคอน · mobile: เปิด drawer ทับจอ
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      <Sidebar
+        collapsed={collapsed}
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+      />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-auto bg-[#f5f7fb] p-6">{children}</main>
+        <Header
+          collapsed={collapsed}
+          onToggleCollapse={() => setCollapsed((c) => !c)}
+          onOpenMobile={() => setMobileOpen(true)}
+        />
+        <main className="flex-1 overflow-auto bg-[#f5f7fb] p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );
