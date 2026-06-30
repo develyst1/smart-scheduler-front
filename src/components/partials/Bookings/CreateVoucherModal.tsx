@@ -5,7 +5,6 @@ import {
   Modal,
   Button,
   NumberInput,
-  TextInput,
   Group,
   Stack,
   Alert,
@@ -14,6 +13,7 @@ import {
 } from "@mantine/core";
 import { Ticket, Info } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
+import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { useCreateVoucher } from "@/hooks/scheduler";
 import type { CreateVoucherResponse } from "@/types/api/contract";
 
@@ -25,7 +25,7 @@ interface Props {
 export default function CreateVoucherModal({ opened, onClose }: Props) {
   const create = useCreateVoucher();
 
-  const [studentName, setStudentName] = useState("");
+  const [student, setStudent] = useState<StudentSelectValue | null>(null);
   const [totalHours, setTotalHours] = useState<number>(10);
   // จำนวนเดือนหมดอายุ — ตอนนี้เป็น display ฝั่ง FE เท่านั้น (ยังไม่ส่ง backend;
   // BE ยังคำนวณวันหมดอายุจากจำนวนชั่วโมงเอง ตาม contract เดิม)
@@ -34,19 +34,21 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
 
   useEffect(() => {
     if (!opened) {
-      setStudentName("");
+      setStudent(null);
       setTotalHours(10);
       setExpiryMonths(6);
       setResult(null);
     }
   }, [opened]);
 
-  const valid = studentName.trim() && totalHours > 0 && expiryMonths > 0 && !create.isPending;
+  const valid = student?.name.trim() && totalHours > 0 && expiryMonths > 0 && !create.isPending;
 
   const handleSubmit = async () => {
     if (!valid) return;
     const res = await create.mutateAsync({
-      studentName: studentName.trim(),
+      studentName: student?.name.trim() ?? "",
+      studentId: student?.id,
+      studentPhone: student?.phone,
       totalHours: totalHours as 5 | 10 | 15,
     });
     setResult(res);
@@ -92,13 +94,7 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
             วอยเชอร์ไม่ล็อกครู/เวลา — นักเรียนใช้จองทีหลังผ่านปฏิทิน · อายุนับจากวันจองครั้งแรก
           </Alert>
 
-          <TextInput
-            label="ชื่อนักเรียน"
-            placeholder="เช่น น้องมิ้น"
-            value={studentName}
-            onChange={(e) => setStudentName(e.currentTarget.value)}
-            required
-          />
+          <StudentSelect value={student} onChange={setStudent} required />
 
           <Group grow align="flex-start">
             <NumberInput

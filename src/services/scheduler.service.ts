@@ -223,6 +223,10 @@ export const markAttended = async (id: string) => {
 
 export interface CreateBookingInput {
   studentName: string;
+  /** existing student id (from the dropdown). When set, name/phone are ignored by the API. */
+  studentId?: string;
+  /** parent phone for a NEW student — backend find-or-creates the guardian. */
+  studentPhone?: string;
   teacherId: string;
   /** ชื่อวิชา (legacy) — ใช้ resolve subjectId ถ้าไม่ส่ง id */
   subject: string;
@@ -231,6 +235,16 @@ export interface CreateBookingInput {
   startTime: string;
   bookingType: BookingType;
 }
+
+/** Existing id → { id }; otherwise an inline new student (+ optional parent phone). */
+const studentPayload = (input: {
+  studentId?: string;
+  studentName: string;
+  studentPhone?: string;
+}) =>
+  input.studentId
+    ? { id: input.studentId }
+    : { name: input.studentName.trim(), phone: input.studentPhone?.trim() || undefined };
 
 function resolveSubjectId(
   teacherId: string,
@@ -268,7 +282,7 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
   if (useMock) return mock.createBooking(input);
   const subjectId = resolveSubjectId(input.teacherId, input.subject, input.subjectId, teachers);
   const { data } = await api.post("/bookings", {
-    student: { name: input.studentName },
+    student: studentPayload(input),
     teacherId: input.teacherId,
     subjectId,
     date: input.date,
@@ -289,7 +303,7 @@ export const createBookingWithReschedule = async (
   const { data } = await api.post<CreateBookingWithRescheduleResponse>(
     "/bookings/with-reschedule",
     {
-      student: { name: input.studentName },
+      student: studentPayload(input),
       teacherId: input.teacherId,
       subjectId: input.subjectId,
       date: input.date,
@@ -338,6 +352,8 @@ export const adminUnlockCourse = async (id: string) => {
 
 export interface CreateCourseInput {
   studentName: string;
+  studentId?: string;
+  studentPhone?: string;
   teacherId: string;
   subjectId: string;
   size: PackageSize;
@@ -351,7 +367,7 @@ export const createCoursePackage = async (
 ): Promise<CreateCoursePackageResponse> => {
   if (useMock) return mock.createCoursePackage(input);
   const { data } = await api.post<CreateCoursePackageResponse>("/courses", {
-    student: { name: input.studentName },
+    student: studentPayload(input),
     teacherId: input.teacherId,
     subjectId: input.subjectId,
     size: input.size,
@@ -364,6 +380,8 @@ export const createCoursePackage = async (
 
 export interface CreateVoucherInput {
   studentName: string;
+  studentId?: string;
+  studentPhone?: string;
   totalHours: 5 | 10 | 15;
 }
 
@@ -372,7 +390,7 @@ export const createVoucher = async (
 ): Promise<CreateVoucherResponse> => {
   if (useMock) return mock.createVoucher(input);
   const { data } = await api.post<CreateVoucherResponse>("/vouchers", {
-    student: { name: input.studentName },
+    student: studentPayload(input),
     totalHours: input.totalHours,
   });
   return data;

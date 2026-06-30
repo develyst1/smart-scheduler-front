@@ -6,7 +6,6 @@ import {
   Modal,
   Button,
   Select,
-  TextInput,
   Divider,
   Group,
   Stack,
@@ -17,6 +16,7 @@ import { DatePickerInput } from "@mantine/dates";
 import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
+import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import {
@@ -341,7 +341,7 @@ function CreateForm({
   const detect = useDetectConflict();
   const reschedule = useCreateBookingWithReschedule();
 
-  const [studentName, setStudentName] = useState("");
+  const [student, setStudent] = useState<StudentSelectValue | null>(null);
   const [teacherId, setTeacherId] = useState(createSlot.teacherId);
   const [subjectId, setSubjectId] = useState("");
   const [startTime, setStartTime] = useState(createSlot.time);
@@ -360,7 +360,7 @@ function CreateForm({
   const [targetDate, setTargetDate] = useState<string>(createSlot.date);
   const [targetTeacherId, setTargetTeacherId] = useState<string>(createSlot.teacherId);
 
-  const valid = studentName.trim() && subjectId && teacherId && startTime;
+  const valid = student?.name.trim() && subjectId && teacherId && startTime;
 
   const subjectName =
     subjectOptions.find((s) => s.id === subjectId)?.name ??
@@ -368,7 +368,9 @@ function CreateForm({
     "";
 
   const input: CreateBookingInput = {
-    studentName: studentName.trim(),
+    studentName: student?.name.trim() ?? "",
+    studentId: student?.id,
+    studentPhone: student?.phone,
     teacherId,
     subject: subjectName,
     subjectId,
@@ -484,12 +486,7 @@ function CreateForm({
   // ── ฟอร์มสร้างปกติ ──
   return (
     <Stack gap="md">
-      <TextInput
-        label="ชื่อนักเรียน"
-        value={studentName}
-        onChange={(e) => setStudentName(e.currentTarget.value)}
-        required
-      />
+      <StudentSelect value={student} onChange={setStudent} required />
       <Select
         label="ครูผู้สอน"
         value={teacherId}
