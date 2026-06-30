@@ -3,6 +3,7 @@
 import { MantineProvider, createTheme } from "@mantine/core";
 import { DatesProvider } from "@mantine/dates";
 import { Notifications } from "@mantine/notifications";
+import { SessionProvider } from "next-auth/react";
 import { QueryProvider } from "@/context/query/QueryProvider";
 import "dayjs/locale/th";
 
@@ -29,11 +30,13 @@ const theme = createTheme({
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <MantineProvider theme={theme} defaultColorScheme="light">
-      <DatesProvider settings={{ locale: "th", firstDayOfWeek: 0 }}>
-        <Notifications position="top-right" autoClose={4000} />
-        <QueryProvider>{children}</QueryProvider>
-      </DatesProvider>
-    </MantineProvider>
+    <SessionProvider>
+      <MantineProvider theme={theme} defaultColorScheme="light">
+        <DatesProvider settings={{ locale: "th", firstDayOfWeek: 0 }}>
+          <Notifications position="top-right" autoClose={4000} />
+          <QueryProvider>{children}</QueryProvider>
+        </DatesProvider>
+      </MantineProvider>
+    </SessionProvider>
   );
 }

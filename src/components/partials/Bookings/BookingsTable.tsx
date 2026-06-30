@@ -4,11 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { Table, Select, Loader, TextInput, Card, Pagination, Group } from "@mantine/core";
 import { Search } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
-import { getAllBookings } from "@/services/scheduler.service";
-import { useTeachers } from "@/hooks/scheduler";
+import { useAllBookings, useTeachers } from "@/hooks/scheduler";
 import type { BookingStatus, BookingType } from "@/types/app/scheduler";
 import { BOOKING_STATUS_LABEL } from "@/types/app/scheduler";
 import { BOOKING_TYPE_OPTIONS } from "@/components/partials/Calendar/Calendar.config";
@@ -35,10 +33,7 @@ const inRange = (date: string, range: DateRange) => {
 };
 
 export default function BookingsTable() {
-  const { data: bookings = [], isLoading } = useQuery({
-    queryKey: ["bookings", "all"],
-    queryFn: getAllBookings,
-  });
+  const { data: bookings = [], isLoading } = useAllBookings();
   const { data: teachers = [] } = useTeachers();
 
   const [search, setSearch] = useState("");

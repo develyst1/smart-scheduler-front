@@ -1,23 +1,17 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Button } from "@mantine/core";
 import { LogOut } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
 import { NAV_ITEMS } from "../AdminLayout.config";
-import { getUser } from "@/lib/api/auth-store";
-import { logout } from "@/services/auth.service";
 
 export default function Header() {
   const pathname = usePathname();
   const current = NAV_ITEMS.find((i) => pathname?.startsWith(i.href));
 
-  // Read user after mount to avoid SSR/client hydration mismatch.
-  const [name, setName] = useState("ทีมงาน");
-  useEffect(() => {
-    const u = getUser();
-    if (u?.username) setName(u.username);
-  }, []);
+  const { data: session } = useSession();
+  const name = session?.user?.username ?? "ทีมงาน";
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-default-200 bg-content1/80 px-6 backdrop-blur">
@@ -34,7 +28,7 @@ export default function Header() {
           color="gray"
           size="xs"
           leftSection={<LogOut size={15} />}
-          onClick={logout}
+          onClick={() => signOut({ callbackUrl: "/login" })}
         >
           ออกจากระบบ
         </Button>

@@ -9,6 +9,7 @@ import {
   createBooking,
   createBookingWithReschedule,
   detectConflict,
+  getAllBookings,
   getCalendar,
   getBookingsByDate,
   getBookingsInRange,
@@ -119,6 +120,9 @@ export const useBookingsInRange = (start: string, end: string) =>
     queryKey: [...BOOKINGS_KEY, "range", start, end],
     queryFn: () => getBookingsInRange(start, end),
   });
+
+export const useAllBookings = () =>
+  useQuery({ queryKey: [...BOOKINGS_KEY, "all"], queryFn: getAllBookings });
 
 const invalidateAll = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: BOOKINGS_KEY });

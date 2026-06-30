@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Paper, PasswordInput, TextInput, Title } from "@mantine/core";
 import { CalendarDays } from "lucide-react";
-import { login } from "@/services/auth.service";
+import { signIn } from "next-auth/react";
 import { notify } from "@/lib/ui/notify";
 
 export default function LoginPage() {
@@ -16,16 +16,22 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      await login(username.trim(), password);
-      const next = new URLSearchParams(window.location.search).get("next");
-      router.replace(next && next.startsWith("/") ? next : "/scheduler/calendar");
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.error?.message ?? "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
-      notify({ title: "เข้าสู่ระบบไม่สำเร็จ", description: message, color: "danger" });
+    const res = await signIn("credentials", {
+      username: username.trim(),
+      password,
+      redirect: false,
+    });
+    if (res?.error) {
+      notify({
+        title: "เข้าสู่ระบบไม่สำเร็จ",
+        description: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+        color: "danger",
+      });
       setLoading(false);
+      return;
     }
+    const next = new URLSearchParams(window.location.search).get("next");
+    router.replace(next && next.startsWith("/") ? next : "/scheduler/calendar");
   };
 
   return (

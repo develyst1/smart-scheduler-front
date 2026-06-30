@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Tabs, Button, Group } from "@mantine/core";
 import { CalendarPlus, Ticket } from "lucide-react";
 import CoursePackagePanel from "./CoursePackagePanel";
+import VoucherPanel from "./VoucherPanel";
 import BookingsTable from "./BookingsTable";
 import CreateCourseModal from "./CreateCourseModal";
 import CreateVoucherModal from "./CreateVoucherModal";
@@ -47,6 +48,7 @@ export default function BookingsContent() {
               ออกวอยเชอร์
             </Button>
           </Group>
+          <VoucherPanel />
         </Tabs.Panel>
 
         <Tabs.Panel value="all" pt="md">

@@ -1,6 +1,6 @@
 import axios from "axios";
+import { getSession, signOut } from "next-auth/react";
 import type { ApiError } from "@/types/api/contract";
-import { clearAuth, getToken } from "./auth-store";
 
 export class ApiClientError extends Error {
   constructor(
@@ -23,22 +23,26 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Attach the JWT (B.7) to every request when logged in.
-api.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+// Attach the backend JWT carried in the NextAuth session to every request.
+// getSession() is async but cached client-side by next-auth.
+api.interceptors.request.use(async (config) => {
+  if (typeof window !== "undefined") {
+    const session = await getSession();
+    if (session?.backendToken) {
+      config.headers.Authorization = `Bearer ${session.backendToken}`;
+    }
+  }
   return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Session missing/expired → drop the token and bounce to login (skip in mock).
+    // Session missing/expired → end the NextAuth session and bounce to login (skip in mock).
     if (error.response?.status === 401 && typeof window !== "undefined" && !useMockData) {
-      clearAuth();
       if (!window.location.pathname.startsWith("/login")) {
         const next = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.href = `/login?next=${next}`;
+        void signOut({ callbackUrl: `/login?next=${next}` });
       }
     }
     const body = error.response?.data as ApiError | undefined;

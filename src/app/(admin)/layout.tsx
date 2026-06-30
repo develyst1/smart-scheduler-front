@@ -1,14 +1,10 @@
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import AuthGuard from "@/components/auth/AuthGuard";
 
+// Route protection is handled server-side by src/proxy.ts (Next 16 middleware).
 export default async function AdminRouteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <AuthGuard>
-      <AdminLayout>{children}</AdminLayout>
-    </AuthGuard>
-  );
+  return <AdminLayout>{children}</AdminLayout>;
 }

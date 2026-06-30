@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Modal,
   Button,
-  Select,
+  NumberInput,
   TextInput,
   Group,
   Stack,
@@ -17,14 +17,6 @@ import { notify } from "@/lib/ui/notify";
 import { useCreateVoucher } from "@/hooks/scheduler";
 import type { CreateVoucherResponse } from "@/types/api/contract";
 
-const HOUR_OPTIONS = [
-  { value: "5", label: "5 ชั่วโมง (หมดอายุ 3 เดือนหลังจองครั้งแรก)" },
-  { value: "10", label: "10 ชั่วโมง (หมดอายุ 6 เดือน)" },
-  { value: "15", label: "15 ชั่วโมง (หมดอายุ 9 เดือน)" },
-] as const;
-
-type VoucherHours = 5 | 10 | 15;
-
 interface Props {
   opened: boolean;
   onClose: () => void;
@@ -34,24 +26,28 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
   const create = useCreateVoucher();
 
   const [studentName, setStudentName] = useState("");
-  const [totalHours, setTotalHours] = useState<VoucherHours>(10);
+  const [totalHours, setTotalHours] = useState<number>(10);
+  // จำนวนเดือนหมดอายุ — ตอนนี้เป็น display ฝั่ง FE เท่านั้น (ยังไม่ส่ง backend;
+  // BE ยังคำนวณวันหมดอายุจากจำนวนชั่วโมงเอง ตาม contract เดิม)
+  const [expiryMonths, setExpiryMonths] = useState<number>(6);
   const [result, setResult] = useState<CreateVoucherResponse | null>(null);
 
   useEffect(() => {
     if (!opened) {
       setStudentName("");
       setTotalHours(10);
+      setExpiryMonths(6);
       setResult(null);
     }
   }, [opened]);
 
-  const valid = studentName.trim() && !create.isPending;
+  const valid = studentName.trim() && totalHours > 0 && expiryMonths > 0 && !create.isPending;
 
   const handleSubmit = async () => {
     if (!valid) return;
     const res = await create.mutateAsync({
       studentName: studentName.trim(),
-      totalHours,
+      totalHours: totalHours as 5 | 10 | 15,
     });
     setResult(res);
     notify({
@@ -84,6 +80,9 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
             <Text size="xs" c="dimmed" mt={2}>
               วันหมดอายุชั่วคราว: {result.voucher.expiryDate} (นับจากวันจองครั้งแรก)
             </Text>
+            <Text size="xs" c="dimmed" mt={2}>
+              ตั้งอายุ: {expiryMonths} เดือน (ยังไม่ผูก backend)
+            </Text>
           </Paper>
           <Button onClick={onClose}>ปิด</Button>
         </Stack>
@@ -101,13 +100,28 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
             required
           />
 
-          <Select
-            label="จำนวนชั่วโมง"
-            value={String(totalHours)}
-            onChange={(v) => v && setTotalHours(Number(v) as VoucherHours)}
-            data={[...HOUR_OPTIONS]}
-            allowDeselect={false}
-          />
+          <Group grow align="flex-start">
+            <NumberInput
+              label="จำนวนชั่วโมง"
+              value={totalHours}
+              onChange={(v) => setTotalHours(typeof v === "number" ? v : 0)}
+              min={1}
+              step={1}
+              allowDecimal={false}
+              suffix=" ชม."
+              required
+            />
+            <NumberInput
+              label="หมดอายุ (เดือน)"
+              value={expiryMonths}
+              onChange={(v) => setExpiryMonths(typeof v === "number" ? v : 0)}
+              min={1}
+              step={1}
+              allowDecimal={false}
+              suffix=" เดือน"
+              required
+            />
+          </Group>
 
           <Group justify="flex-end">
             <Button variant="subtle" color="gray" onClick={onClose}>
