@@ -1,106 +1,76 @@
-# TODO — smart-scheduler-front
+# TODO — smart-scheduler-front (Frontoffice Web)
 
-รายการสิ่งที่ต้องแก้/เพิ่ม โดยเทียบจาก **requirement2.md** (ฉบับล่าสุดหลังคุยกับลูกค้า) กับโค้ดปัจจุบัน
-ของ repo นี้ (Frontoffice Web — Next.js 16 + Mantine v9, ตอนนี้ใช้ mock data)
+สถานะงานเทียบ **[docs/requirement-timeline.md](docs/requirement-timeline.md)** (สัญญา **Option C**)
+repo นี้ = หน้าจอ staff (Next.js 16 + Mantine v9) · **เชื่อม API จริงแล้ว** (`smart-scheduler-back`)
 
-> สถานะ: ✅ มีแล้ว/เสร็จแล้ว · 🟡 มีบางส่วน/ต้องปรับ · ❌ ยังไม่มี
-> Scope: **[FE]** ทำในรีโปนี้ได้ · **[BE]** ต้องมี backend (`smart-scheduler-back`) · **[BO]** เป็นของฝั่ง Backoffice
-
----
-
-## 1. ระบบตารางเรียนและการจอง (Visual Calendar & Booking)
-อ้างอิง: **requirement2.md ข้อ 1**
-
-- [x] ✅ **[FE] ตัวกรองตารางตามรายชื่อครู (Filter by teacher)** บนหน้า Dashboard/ปฏิทิน
-  - อ้างอิง: ข้อ 1 — *"เพิ่มฟังก์ชันตัวกรอง (Filter) เพื่อให้สามารถเลือกดูตารางตามรายชื่อครูผู้สอนได้"*
-  - ✅ เสร็จแล้ว: เพิ่ม `MultiSelect` กรองครู (เลือกหลายคนได้, ค้นหาได้) ใน [CalendarHeader.tsx](src/components/partials/Calendar/CalendarHeader.tsx) + state `selectedTeacherIds` ใน [CalendarContent.tsx](src/components/partials/Calendar/CalendarContent.tsx) — filter ก่อนส่งเข้า `CalendarGrid` / `CalendarWeekGrid`
-
-- [x] ✅ **[FE] Dropdown เลือกประเภทการจอง 4 ประเภท** (ตอนกดจองลงตาราง)
-  - อ้างอิง: ข้อ 1 — *"1. ทดลองเรียน 2. จองรายครั้ง 3. คอร์สรายสัปดาห์ 4. ใช้ Voucher"*
-  - ✅ เสร็จแล้ว: มีครบใน [BookingModal.tsx `CreateForm`](src/components/partials/Calendar/Modal/BookingModal.tsx) + [Calendar.config.ts](src/components/partials/Calendar/Calendar.config.ts)
-  - ✅ label ตรงสำนวนลูกค้าแล้ว: `SINGLE_SESSION = "จองรายครั้ง"`, `COURSE_PACKAGE = "คอร์สรายสัปดาห์"` ดู [types](src/types/app/scheduler/index.ts)
-
-- [x] ✅ **[FE] การจัดการตารางชนกัน (Conflict Resolution)**
-  - อ้างอิง: ข้อ 1 — *"หากสร้างคิวจองในวันที่มีการจองอยู่แล้ว ระบบจะมี Dropdown ให้เลือกวิธีจัดการกับการจองเก่า"*
-  - ✅ เสร็จแล้ว: [BookingModal.tsx `CreateForm`](src/components/partials/Calendar/Modal/BookingModal.tsx) มี `detectConflict` + Dropdown 3 ทางเลือก (ย้ายวัน / ย้ายสัปดาห์ / ย้ายครู) + [scheduler.service.ts](src/services/scheduler.service.ts) มี `createBookingWithReschedule`, `confirmReschedule`, `cancelReschedule` ครบ
-  - 🟡 เหลือ [BE]: ตอน wire API จริง ต้องย้าย conflict logic ไปฝั่ง backend (ป้องกัน race condition) + LINE push จริง
+> สถานะ: ✅ เสร็จ · 🟡 บางส่วน · ❌ ยังไม่มี · อัปเดต 2026-06-30
+> Scope: **[FE]** ทำในรีโปนี้ · **[BE]** ต้องมี `smart-scheduler-back` · **[BO]** ฝั่ง backoffice
 
 ---
 
-## 2. ระบบเช็คอิน กฎการลา และ CRM (Attendance, Policy & CRM)
-อ้างอิง: **requirement2.md ข้อ 2**
+## ✅ Foundation (เสร็จ — เปลี่ยนจาก mock → API จริง)
 
-- [ ] ❌ **[BE+FE] เช็คอิน/แจ้งลาผ่าน QR Code + LINE**
-  - อ้างอิง: ข้อ 2 — *"ลงทะเบียนผ่าน LINE OA เพื่อรับ QR Code สำหรับเช็คอินเข้าเรียนตามเวลา หรือกดแจ้งลาผ่าน LINE"*
-  - ปัจจุบัน: เช็คอิน/ลา ทำมือผ่านปุ่มในโมดอล ([BookingModal `ViewBooking`](src/components/partials/Calendar/Modal/BookingModal.tsx)) เท่านั้น **ไม่มี** QR / LINE flow
-  - ต้องทำ: [BE] webhook LINE OA + ออก QR ต่อคาบ + endpoint เช็คอิน · [FE] หน้าจอแสดง/สแกน QR และสถานะเช็คอิน
-
-- [ ] ❌ **[BE+FE] CRM สะสมแต้ม + จัดระดับลูกค้า (Gamification)**
-  - อ้างอิง: ข้อ 2 — *"ทำตามกฎ (เช็คอินตรงเวลา/แจ้งลาตามระบบ) ได้คะแนนสะสม เพื่อจัด Level ลูกค้า ... ระดับสูงได้สิทธิประโยชน์/โปรโมชั่น/ลำดับความสำคัญ"*
-  - ปัจจุบัน: **ไม่มี** model คะแนน/level ของลูกค้าเลย (มีแค่ `studentName` เป็น string ใน Booking/CoursePackage)
-  - ต้องทำ: [BE] schema นักเรียน + แต้ม + level + กติกาให้แต้ม · [FE] แสดง badge/level ในหน้า การจอง/นักเรียน และผูกกับลำดับความสำคัญตอนจอง
-
-- [ ] ❌ **[BE] ตัดโควตาคอร์สอัตโนมัติสิ้นวัน**
-  - อ้างอิง: ข้อ 2 — *"ถึงเวลาสิ้นสุดวันแล้วไม่มีการสแกนเช็คอิน และไม่มีการแจ้งลา → ตัดโควตาคอร์สอัตโนมัติ"*
-  - ปัจจุบัน: การหักคาบ/เปลี่ยนสถานะทำมือเท่านั้น **ไม่มี** job ตัดอัตโนมัติ
-  - ต้องทำ: [BE] cron/scheduled job เมื่อสิ้นเวลา 18:00 (Asia/Bangkok) → คาบที่ไม่เช็คอิน & ไม่แจ้งลา ให้ตัด `usedSessions`/เปลี่ยนสถานะ (พิจารณาเชื่อม wallet ฝั่ง Backoffice)
+- [x] ✅ **Axios client + env** (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_USE_MOCK`) — [client.ts](src/lib/api/client.ts)
+- [x] ✅ **Contract types + mappers** DTO↔UI — [contract.ts](src/types/api/contract.ts), [mappers.ts](src/lib/api/mappers.ts)
+- [x] ✅ **ทุกหน้าเชื่อม API จริง** (calendar/bookings/teachers/reports) ผ่าน hooks — [useScheduler.ts](src/hooks/scheduler/useScheduler.ts)
+- [x] ✅ **Auth/Login (B.7 FE)** — หน้า `/login` + เก็บ token + axios แนบ Bearer + ดัก 401 redirect + `AuthGuard` + ปุ่ม logout
+  - [auth-store.ts](src/lib/api/auth-store.ts), [auth.service.ts](src/services/auth.service.ts), [login/page.tsx](src/app/login/page.tsx), [AuthGuard.tsx](src/components/auth/AuthGuard.tsx)
 
 ---
 
-## 3. การจัดการครูผู้สอน (Teacher Management)
-อ้างอิง: **requirement2.md ข้อ 3**
+## 1. ปฏิทิน & การจอง — ✅ เสร็จ (timeline 2026-06-28 ข้อ 1)
 
-- [x] ✅ **[FE] จัดลำดับความสำคัญครู (Priority drag reorder)**
-  - อ้างอิง: ข้อ 3 — *"แอดมินจัดเรียงลำดับกลุ่มครูได้ตามต้องการ (ลาก Freelance ขึ้นบนสุด)"*
-  - ✅ เสร็จแล้ว: [TeachersContent.tsx](src/components/partials/Teachers/TeachersContent.tsx) มี `DragDropContext` (drag-and-drop ลำดับประเภทครู) + [scheduler.service.ts](src/services/scheduler.service.ts) มี `setTeacherTypeOrder` + `getTeachers` เรียง bookings grid ตาม `teacherTypeOrder` อัตโนมัติ
-  - 🟡 เหลือ [BE]: persist ลำดับใน DB จริง (ตอนนี้ in-memory only)
-
-- [x] ✅ **[FE] ควบคุมงบครู Freelance (Auto-Disable เมื่อถึง Limit รายได้)**
-  - อ้างอิง: ข้อ 3 — *"ตั้ง Limit รายได้ครู Freelance ... ถึงลิมิต → Auto-Disable ซ่อนจาก Dashboard"*
-  - ✅ เสร็จแล้ว (FE): [TeachersContent.tsx `FreelanceRow`](src/components/partials/Teachers/TeachersContent.tsx) แสดง progress bar รายได้ vs เพดาน + badge "เกินเพดาน · ปิดอัตโนมัติ" + switch override · [types](src/types/app/scheduler/index.ts) มี `TeacherView.overLimit`, `bookable`, `monthlyIncome`, `monthlyHours`
-  - ❌ เหลือ [BE/BO]: ดึงเรทและเพดานจาก back-office API จริง (ตอนนี้ `hourlyRate`/`incomeLimit` อยู่ใน mock data)
+- [x] ✅ **ตัวกรองตามครู (MultiSelect)** — [CalendarHeader.tsx](src/components/partials/Calendar/CalendarHeader.tsx)
+- [x] ✅ **Dropdown 4 ประเภทการจอง** (Trial/รายครั้ง/คอร์สรายสัปดาห์/Voucher) — [BookingModal.tsx](src/components/partials/Calendar/Modal/BookingModal.tsx)
+- [x] ✅ **Conflict Resolution (จองทับ)** — UI 3 ทางเลือก + **เชื่อม API จริงแล้ว** (BE B.1 เสร็จ: `with-reschedule`/confirm/cancel ใน transaction + LINE)
+  - _เดิม todo เขียน "เหลือ BE ย้าย logic" → ตอนนี้ **เสร็จฝั่ง BE แล้ว**_
 
 ---
 
-## 4. ระบบแจ้งเตือนและการยืนยันตัวตน (LINE OA & Notifications)
-อ้างอิง: **requirement2.md ข้อ 4**
+## 2. เช็คอิน / กฎลา / CRM — ❌ รอ BE (timeline ข้อ 2)
 
-- [ ] ❌ **[BE] ยืนยันตัวตน + บทบาทผ่าน LINE OA (Role Verification)**
-  - อ้างอิง: ข้อ 4 — *"ทักเข้า LINE OA → บอทถามบทบาท (1.ลูกค้า 2.ครู 3.แอดมิน) + กรอกรหัสยืนยัน (เช่น 'ขอรหัสแอดมิน : 229') → จดจำ chat ID คู่กับบทบาท"*
-  - ปัจจุบัน: ยังไม่มี backend/integration LINE (scheduling API enqueue outbox แล้ว แต่ยังไม่มี worker/webhook)
-  - ต้องทำ: [BE] LINE webhook + bot flow ถามบทบาท/ตรวจรหัส + ผูก `userId` ↔ role (ใช้ outbox + audit ตาม root CLAUDE.md)
-
-- [ ] ❌ **[BE+FE] ศูนย์กลางการแจ้งเตือน (ลูกค้าแจ้งลา → เด้งเข้า LINE แอดมิน)**
-  - อ้างอิง: ข้อ 4 — *"ลูกค้าระบุตัวตนแล้ว การแจ้งลา/แจ้งเตือนจะถูกเด้งไปแสดงที่ LINE ของแอดมินโดยตรง"*
-  - ปัจจุบัน: การลา set สถานะใน mock เท่านั้น ([markSickLeave](src/services/scheduler.service.ts)) ไม่มีการ push ไป LINE แอดมิน
-  - ต้องทำ: [BE] push LINE หาแอดมินเมื่อมีคำขอลาจากลูกค้า · [FE] (option) inbox/feed รวมการแจ้งเตือนในแอป
-
-> หมายเหตุ: ตาม root CLAUDE.md — **LINE push เป็นหน้าที่ของ backend เท่านั้น** browser ห้ามถือ token,
-> และ **LINE Notify ปิดบริการแล้ว** ให้ใช้ LINE Messaging API (Official Account)
+- [ ] ❌ **[BE+FE] QR / LINE check-in & แจ้งลา** — ปัจจุบันเช็คอิน/ลา ทำมือผ่านปุ่มในโมดอลเท่านั้น
+  - รอ **BE C.1** (ออก QR + endpoint เช็คอิน) + **C.4** (LINE OA) · FE: หน้าสแกน/แสดง QR + สถานะ
+- [ ] ❌ **[BE+FE] CRM แต้ม + Level นักเรียน** — ยังไม่มี model แต้ม/level
+  - รอ **BE C.2** (schema แต้ม/level) · FE: badge/level ในหน้าการจอง + ผูกลำดับความสำคัญ
+- [x] ✅ กฎลา/ขยายคาบ + Policy Lock (เชื่อม BE แล้ว — sick-leave/extend/unlock)
+- [ ] ❌ **[BE] ตัดโควตาอัตโนมัติสิ้นวัน** = งาน BE C.3 (FE ไม่ต้องทำ)
 
 ---
 
-## 5. ระบบหลังบ้านแบบครบวงจร (Backoffice & API — Option C)
-อ้างอิง: **requirement2.md ข้อ 5** — **อยู่ในสัญญา Option C** (`smart-scheduler-backoffice-*`, build wave 2)
-บันทึกไว้เพื่อความครบถ้วน + จุดที่ frontoffice ต้องเชื่อมต่อ
+## 3. จัดการครู — ✅ เสร็จ (timeline ข้อ 3)
 
-- [ ] ❌ **[BO] ระบบคลังสินค้า Mini ERP/POS** — คีย์รับเข้า/ตัดยอดเมื่อขาย (ข้อ 5)
-- [ ] ❌ **[BO] API อิสระแบบ Jira** ให้ฝั่งจองตารางยิงมาตัดสต๊อก/ดึงเรทครู/ปรับข้อมูล (ข้อ 5)
-  - จุดเชื่อมที่กระทบ repo นี้: ข้อ 3 (ดึง **เรทครู** มาคำนวณลิมิต) ต้องเรียกผ่าน API ตัวนี้
+- [x] ✅ **จัดลำดับครู drag reorder** — [TeachersContent.tsx](src/components/partials/Teachers/TeachersContent.tsx)
+  - _เดิม "in-memory only" → ตอนนี้ **persist ใน DB จริงแล้ว** (BE B.2: `/teachers/type-order`)_
+- [x] ✅ **Auto-Disable Freelance เมื่อถึงเพดานรายได้** (FE: progress + badge + override switch)
+  - [ ] 🟡 **[BO] เรท/เพดานจริง** ยังมาจาก mock — รอ backoffice API (D.1) แทน `hourlyRate`/`incomeLimit`
 
 ---
 
-## สรุปสถานะ [FE] ทั้งหมด
+## 4. LINE OA & แจ้งเตือน — ❌ รอ BE (timeline ข้อ 4)
 
-| # | งาน | สถานะ |
-|---|-----|-------|
-| 1.1 | ตัวกรองครูในปฏิทิน | ✅ เสร็จ |
-| 1.2 | label ประเภทการจอง (จองรายครั้ง / คอร์สรายสัปดาห์) | ✅ เสร็จ |
-| 1.3 | Conflict Resolution UI + logic | ✅ เสร็จ |
-| 3.1 | Priority ครูแบบ drag reorder | ✅ เสร็จ |
-| 3.2 | Auto-disable Freelance เมื่อถึง income limit (FE ส่วน) | ✅ เสร็จ |
-| 2.1 | QR / LINE check-in (FE ส่วน) | ❌ รอ BE |
-| 2.2 | CRM badge/level นักเรียน (FE ส่วน) | ❌ รอ BE |
-| 4.2 | Notification inbox/feed (FE ส่วน) | ❌ รอ BE |
+- [ ] ❌ **[BE] ยืนยันตัวตน/บทบาทผ่าน LINE OA** = งาน BE **C.4** (webhook + ผูก userId↔role)
+- [ ] ❌ **[BE+FE] ลูกค้าแจ้งลา → push LINE แอดมิน** = BE **C.5** · FE (option) inbox/feed ในแอป
+- [x] ✅ Toast แจ้งผล LINE หลัง confirm (อ่านจาก `notification.status` ที่ BE ส่งกลับ)
 
-> **งาน FE ที่ทำได้ล่วงหน้า (ไม่รอ BE) ทำครบทุกข้อแล้ว** — งาน scheduling ที่เหลือรอ backend (B.*); backoffice อยู่ใน Option C build wave 2
+---
+
+## 5. เพิ่มเติม — ฟอร์มสมัครคอร์ส/Voucher (FE pending, BE พร้อม)
+
+- [ ] ❌ **[FE] ฟอร์มสมัครคอร์ส (recurring)** — ยิง `POST /courses` (BE B.4 พร้อมแล้ว) → preview คาบรายสัปดาห์
+- [ ] ❌ **[FE] ฟอร์มซื้อ Voucher** — ยิง `POST /vouchers` (BE B.5 พร้อมแล้ว)
+- [x] ✅ แสดงคอร์ส/โควตาการลา ([CoursePackagePanel.tsx](src/components/partials/Bookings/CoursePackagePanel.tsx))
+
+---
+
+## สรุป
+
+| ส่วน | สถานะ |
+|------|--------|
+| Foundation (API wired + Auth/login) | ✅ เสร็จ |
+| ปฏิทิน/จอง + Conflict + ครู/priority + Freelance limit (FE) | ✅ เสร็จ |
+| ฟอร์มสมัครคอร์ส/Voucher (BE พร้อม) | ❌ FE pending |
+| QR check-in · CRM level · LINE OA · notification inbox | ❌ รอ BE (C.1–C.5) |
+| เรท/เพดานครูจาก backoffice | 🟡 รอ D.1 |
+
+> **งาน FE ที่ทำได้โดยไม่รอ BE เหลือ:** ฟอร์มสมัครคอร์ส/Voucher (ข้อ 5) — ที่เหลือต้องรอ backend C.* / backoffice
