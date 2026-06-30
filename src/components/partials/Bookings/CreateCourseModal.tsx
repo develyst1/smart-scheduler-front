@@ -17,6 +17,7 @@ import { DatePickerInput } from "@mantine/dates";
 import { CalendarPlus, Info } from "lucide-react";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { notify } from "@/lib/ui/notify";
+import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { useCreateCoursePackage, useTeachers } from "@/hooks/scheduler";
 import {
   LEAVE_QUOTA_BY_SIZE,
@@ -52,7 +53,9 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
 
   const selectedTeacher = teachers.find((t) => t.id === teacherId);
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
-  const bookableTeachers = teachers.filter((t) => t.bookable);
+  const bookableTeachers = teachers.filter((t) =>
+    bookableOnDate(t, startDate),
+  );
 
   useEffect(() => {
     if (!opened) {

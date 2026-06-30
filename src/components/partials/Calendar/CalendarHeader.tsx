@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users } from "luci
 import { StatusChip } from "@/components/common/BookingBadges";
 import type { TeacherType, TeacherView } from "@/types/app/scheduler";
 import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
+import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { STATUS_LEGEND } from "./Calendar.config";
 
 export type CalendarView = "day" | "week";
@@ -123,7 +124,10 @@ export default function CalendarHeader({
             value={selectedTeacherIds}
             onChange={onChangeTeacherIds}
             data={teachers
-              .filter((t) => t.bookable && (selectedTypes.length === 0 || selectedTypes.includes(t.type)))
+              .filter((t) => {
+                const available = view === "day" ? bookableOnDate(t, date) : t.bookable;
+                return available && (selectedTypes.length === 0 || selectedTypes.includes(t.type));
+              })
               .map((t) => ({
                 value: t.id,
                 label: `${t.nickname} · ${TEACHER_TYPE_LABEL[t.type]}`,

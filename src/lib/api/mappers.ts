@@ -37,6 +37,7 @@ export function dtoToTeacher(dto: TeacherDTO, limitOverride = false): Teacher {
     subjectOptions: dto.subjects,
     active: dto.active,
     lineLinked: dto.lineLinked,
+    workDays: dto.workDays,
     limitOverride,
   };
 }

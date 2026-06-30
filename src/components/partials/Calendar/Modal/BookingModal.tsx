@@ -18,6 +18,7 @@ import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight } from "luc
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { notify } from "@/lib/ui/notify";
+import { bookableOnDate } from "@/lib/scheduler/work-days";
 import {
   useCancelReschedule,
   useConfirmBooking,
@@ -421,7 +422,9 @@ function CreateForm({
 
   // ── โหมดจัดการการจองทับ ──
   if (conflict) {
-    const bookableTeachers = teachers.filter((t) => t.bookable && t.id !== conflict.teacherId);
+    const bookableTeachers = teachers.filter(
+      (t) => bookableOnDate(t, conflict.date) && t.id !== conflict.teacherId,
+    );
     return (
       <Stack gap="md">
         <Alert color="orange" icon={<AlertTriangle size={18} />} title="ช่องนี้มีการจองอยู่แล้ว">
@@ -505,7 +508,7 @@ function CreateForm({
             setTeacherId(v ?? "");
             setSubjectId("");
           }}
-          data={teacherSelectData(teachers.filter((t) => t.bookable))}
+          data={teacherSelectData(teachers.filter((t) => bookableOnDate(t, createSlot.date)))}
           allowDeselect={false}
           renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
         />

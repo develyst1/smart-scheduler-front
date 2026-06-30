@@ -26,6 +26,8 @@ export interface Teacher {
   incomeLimit?: number;
   /** เปิดรับงานต่อแม้รายได้เกิน limit (กรณีพิเศษ ทีมงานกดเอง) */
   limitOverride?: boolean;
+  /** 0=Sun … 6=Sat — วันที่ครูมาสอนได้ */
+  workDays?: number[];
 }
 
 /** Teacher + ข้อมูลรายได้เดือนปัจจุบันที่คำนวณแล้ว (Freelance) */

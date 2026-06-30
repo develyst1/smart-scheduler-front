@@ -15,6 +15,7 @@ import { PowerOff, Power, Wallet, GripVertical } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import { notify } from "@/lib/ui/notify";
+import { formatWorkDaysLabel } from "@/lib/scheduler/work-days";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import {
   useTeachers,
@@ -168,7 +169,8 @@ function TeacherRow({ teacher: t, onToggle }: { teacher: TeacherView; onToggle: 
       <div>
         <p className="font-medium">{t.name}</p>
         <p className="text-xs text-default-400">
-          ({t.nickname}) · {t.subjects.join(", ")}
+          ({t.nickname}) · {formatWorkDaysLabel(t.workDays)}
+          {t.subjects.length > 0 ? ` · ${t.subjects.slice(0, 3).join(", ")}${t.subjects.length > 3 ? "…" : ""}` : ""}
         </p>
       </div>
       <div className="flex items-center gap-3">
@@ -216,7 +218,7 @@ function FreelanceRow({ teacher: t, onToggle }: { teacher: TeacherView; onToggle
         <div>
           <p className="font-medium">{t.name}</p>
           <p className="text-xs text-default-400">
-            ({t.nickname}) · {t.subjects.join(", ")} · ฿{thb(t.hourlyRate ?? 0)}/ชม.
+            ({t.nickname}) · {formatWorkDaysLabel(t.workDays)} · ฿{thb(t.hourlyRate ?? 0)}/ชม.
           </p>
         </div>
         <div className="flex items-center gap-3">

@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { Loader } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { calendarDayBookings, calendarToBookings } from "@/lib/api/mappers";
+import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { useCalendar, useTeachers } from "@/hooks/scheduler";
 import type { Booking } from "@/types/app/scheduler";
 import CalendarHeader, { type CalendarView } from "./CalendarHeader";
@@ -38,7 +39,8 @@ export default function CalendarContent() {
   const filteredTeachers = teachers.filter(
     (t) =>
       (selectedTypes.length === 0 || selectedTypes.includes(t.type)) &&
-      (selectedTeacherIds.length === 0 || selectedTeacherIds.includes(t.id)),
+      (selectedTeacherIds.length === 0 || selectedTeacherIds.includes(t.id)) &&
+      (view === "week" || bookableOnDate(t, date)),
   );
 
   const [isOpen, { open: onOpen, close: onClose }] = useDisclosure(false);

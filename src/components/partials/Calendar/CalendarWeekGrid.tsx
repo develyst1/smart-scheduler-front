@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { Plus } from "lucide-react";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
+import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
 
 interface Props {
@@ -94,10 +95,13 @@ export default function CalendarWeekGrid({
 
             {weekDays.map((day) => {
               const items = cellBookings(t.id, day);
+              const canBook = bookableOnDate(t, day);
               return (
                 <div
                   key={day}
-                  className="min-h-24 space-y-1 border-l border-t border-default-100 p-1.5"
+                  className={`min-h-24 space-y-1 border-l border-t border-default-100 p-1.5 ${
+                    canBook ? "" : "bg-default-50/80"
+                  }`}
                 >
                   {items.map((b) => {
                     const accent = BOOKING_STATUS_COLOR[b.status];
@@ -117,14 +121,16 @@ export default function CalendarWeekGrid({
                     );
                   })}
 
-                  <button
-                    type="button"
-                    onClick={() => onCreate(t.id, TIME_SLOTS[0], day)}
-                    className="flex w-full items-center justify-center rounded-lg border border-dashed border-default-200 py-1 text-default-300 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
-                    aria-label="เพิ่มการจอง"
-                  >
-                    <Plus size={14} />
-                  </button>
+                  {canBook && (
+                    <button
+                      type="button"
+                      onClick={() => onCreate(t.id, TIME_SLOTS[0], day)}
+                      className="flex w-full items-center justify-center rounded-lg border border-dashed border-default-200 py-1 text-default-300 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                      aria-label="เพิ่มการจอง"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  )}
                 </div>
               );
             })}

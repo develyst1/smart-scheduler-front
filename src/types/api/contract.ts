@@ -48,6 +48,7 @@ export interface TeacherDTO {
   active: boolean;
   subjects: SubjectRef[];
   lineLinked: boolean;
+  workDays: number[];
 }
 
 export interface CourseSummary {

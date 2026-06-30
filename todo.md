@@ -41,9 +41,9 @@ repo นี้ = หน้าจอ staff (Next.js 16 + Mantine v9) · **เช�
 ## 3. จัดการครู — ✅ เสร็จ (timeline ข้อ 3)
 
 - [x] ✅ **จัดลำดับครู drag reorder** — [TeachersContent.tsx](src/components/partials/Teachers/TeachersContent.tsx)
-  - _เดิม "in-memory only" → ตอนนี้ **persist ใน DB จริงแล้ว** (BE B.2: `/teachers/type-order`)_
 - [x] ✅ **Auto-Disable Freelance เมื่อถึงเพดานรายได้** (FE: progress + badge + override switch)
-  - [ ] 🟡 **[BO] เรท/เพดานจริง** ยังมาจาก mock — รอ backoffice API (D.1) แทน `hourlyRate`/`incomeLimit`
+  - [ ] 🟡 **[BO] เรท/เพดานจริง** ยังมาจาก mock — รอ backoffice API (D.1)
+- [x] ✅ **วันที่ครูมาสอน (`workDays`)** — ซ่อนในปฏิทินวันธรรมดาสำหรับ PT เสาร์–อาทิตย์ · แสดง label ในหน้าคุณครู
 
 ---
 
