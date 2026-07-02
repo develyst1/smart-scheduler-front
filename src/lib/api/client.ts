@@ -16,10 +16,14 @@ export class ApiClientError extends Error {
 const baseURL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
 
+const baseAuthURL =
+  process.env.NEXT_PUBLIC_AUTH_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
+console.log("baseURL", baseURL);
+console.log("baseAuthURL", baseAuthURL);
 export const useMockData = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 export const api = axios.create({
-  baseURL,
+  baseURL: baseURL,
   headers: { "Content-Type": "application/json" },
 });
 
