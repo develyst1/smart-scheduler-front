@@ -16,6 +16,7 @@ import {
 import { DatePickerInput } from "@mantine/dates";
 import { CalendarPlus, Info } from "lucide-react";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
+import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { useCreateCoursePackage, useTeachers } from "@/hooks/scheduler";
@@ -42,7 +43,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
   const { data: teachers = [] } = useTeachers();
   const create = useCreateCoursePackage();
 
-  const [studentName, setStudentName] = useState("");
+  const [student, setStudent] = useState<StudentSelectValue | null>(null);
   const [teacherId, setTeacherId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [size, setSize] = useState<PackageSize>(6);
@@ -59,7 +60,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
 
   useEffect(() => {
     if (!opened) {
-      setStudentName("");
+      setStudent(null);
       setTeacherId("");
       setSubjectId("");
       setSize(6);
@@ -76,7 +77,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
   }, [teacherId, subjectOptions.length]);
 
   const valid =
-    studentName.trim() &&
+    student?.name.trim() &&
     teacherId &&
     subjectId &&
     startDate &&
@@ -86,7 +87,9 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
   const handleSubmit = async () => {
     if (!valid || !startDate) return;
     const result = await create.mutateAsync({
-      studentName: studentName.trim(),
+      studentName: student?.name.trim() ?? "",
+      studentId: student?.id,
+      studentPhone: student?.phone,
       teacherId,
       subjectId,
       size,
@@ -146,13 +149,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
             {LEAVE_QUOTA_BY_SIZE[size]} ครั้ง · ขยายได้ถึงสัปดาห์ที่ {MAX_WEEK_BY_SIZE[size]}
           </Alert>
 
-          <TextInput
-            label="ชื่อนักเรียน"
-            placeholder="เช่น น้องพีพี"
-            value={studentName}
-            onChange={(e) => setStudentName(e.currentTarget.value)}
-            required
-          />
+          <StudentSelect value={student} onChange={setStudent} required />
 
           <Select
             label="ครูผู้สอน"

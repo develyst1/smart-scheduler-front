@@ -160,9 +160,21 @@ export type StudentInput =
   | {
       name: string;
       nickname?: string;
+      /** parent phone — backend find-or-creates the guardian and attaches the student. */
       phone?: string;
-      parentLineUserId?: string;
     };
+
+/** GET /api/students?q=&limit= — booking dropdown source (searchable by name/phone). */
+export interface StudentListItem {
+  id: string;
+  name: string;
+  nickname: string | null;
+  phone: string | null; // parent phone
+  parentId: string | null;
+  parentName: string | null;
+  label: string; // "name (phone)" — ready for display
+}
+export type StudentsResponse = StudentListItem[];
 
 export interface CreateBookingRequest {
   student: StudentInput;
