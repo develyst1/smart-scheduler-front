@@ -13,11 +13,13 @@ import type { LoginResponse } from "@/types/api/contract";
 const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 // Same base as the API (e.g. `…/api`); login lives at `…/api/auth/login`.
+const apiAuthBase =
+  process.env.NEXT_PUBLIC_AUTH_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
 const apiBase =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
 
-console.log("NextAuth config: apiBase=", apiBase, "useMock=", useMock);
-
+  console.log("apiAuthBase", apiAuthBase);
+  console.log("apiBase", apiBase);
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
