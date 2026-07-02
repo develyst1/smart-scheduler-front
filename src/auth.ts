@@ -16,6 +16,8 @@ const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 const apiBase =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
 
+console.log("NextAuth config: apiBase=", apiBase, "useMock=", useMock);
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
@@ -37,6 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             backendToken: "mock-token",
           };
         }
+        console.log("NextAuth config: apiBase=", apiBase, "useMock=", useMock);
 
         try {
           const { data } = await axios.post<LoginResponse>(`${apiBase}/auth/login`, {
