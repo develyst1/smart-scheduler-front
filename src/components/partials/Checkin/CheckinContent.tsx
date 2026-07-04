@@ -1,0 +1,143 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Button, Loader, Paper, Title } from "@mantine/core";
+import { CheckCircle2, Clock3, XCircle } from "lucide-react";
+
+// Public check-in flow (C.1) — no auth. The `token` query param is the credential,
+// so we call the backend directly (bypassing the axios client that attaches a JWT
+// and bounces to /login on 401). Endpoint: POST {API}/checkin  (public).
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
+
+interface BookingRef {
+  student?: { name?: string };
+  subject?: { name?: string };
+  teacher?: { nickname?: string };
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+interface CheckinResult {
+  already: boolean;
+  booking: BookingRef | null;
+  crmAwarded?: number;
+}
+
+type Phase =
+  | { kind: "loading" }
+  | { kind: "success"; result: CheckinResult }
+  | { kind: "error"; message: string };
+
+export default function CheckinContent() {
+  const params = useSearchParams();
+  const token = params.get("token")?.trim() ?? "";
+  const [phase, setPhase] = useState<Phase>({ kind: "loading" });
+
+  const submit = useCallback(async () => {
+    if (!token) {
+      setPhase({ kind: "error", message: "ลิงก์เช็คอินไม่ถูกต้อง (ไม่พบโทเคน)" });
+      return;
+    }
+    setPhase({ kind: "loading" });
+    try {
+      const res = await fetch(`${API_BASE}/checkin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const message =
+          data?.error?.message ?? "ไม่สามารถเช็คอินได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง";
+        setPhase({ kind: "error", message });
+        return;
+      }
+      setPhase({ kind: "success", result: data as CheckinResult });
+    } catch {
+      setPhase({ kind: "error", message: "เชื่อมต่อระบบไม่ได้ กรุณาลองใหม่อีกครั้ง" });
+    }
+  }, [token]);
+
+  useEffect(() => {
+    void submit();
+  }, [submit]);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#f5f7fb] p-4">
+      <Paper withBorder shadow="sm" radius="lg" p="xl" className="w-full max-w-sm">
+        {phase.kind === "loading" && <LoadingView />}
+        {phase.kind === "success" && <SuccessView result={phase.result} />}
+        {phase.kind === "error" && <ErrorView message={phase.message} onRetry={submit} />}
+      </Paper>
+    </div>
+  );
+}
+
+function LoadingView() {
+  return (
+    <div className="flex flex-col items-center gap-3 py-6 text-center">
+      <Loader />
+      <p className="text-sm text-default-500">กำลังเช็คอิน…</p>
+    </div>
+  );
+}
+
+function SuccessView({ result }: { result: CheckinResult }) {
+  const b = result.booking;
+  return (
+    <div className="flex flex-col items-center gap-3 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-success">
+        <CheckCircle2 size={32} />
+      </span>
+      <Title order={3}>{result.already ? "เช็คอินแล้วก่อนหน้านี้" : "เช็คอินสำเร็จ"}</Title>
+      {b && (
+        <div className="w-full rounded-lg bg-default-100 p-4 text-left text-sm">
+          {b.student?.name && <BookingLine label="นักเรียน" value={b.student.name} />}
+          {b.subject?.name && <BookingLine label="วิชา" value={b.subject.name} />}
+          {b.teacher?.nickname && <BookingLine label="ครู" value={b.teacher.nickname} />}
+          {(b.startTime || b.date) && (
+            <BookingLine
+              label="เวลา"
+              value={[b.date, b.startTime && `${b.startTime}–${b.endTime ?? ""} น.`]
+                .filter(Boolean)
+                .join("  ")}
+            />
+          )}
+        </div>
+      )}
+      {!result.already && result.crmAwarded ? (
+        <p className="text-sm text-success">+{result.crmAwarded} แต้มสะสม</p>
+      ) : null}
+      <p className="mt-1 text-xs text-default-400">ปิดหน้านี้ได้เลย</p>
+    </div>
+  );
+}
+
+function ErrorView({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const isWindow = message.includes("เช็คอินได้") || message.includes("หมดอายุ");
+  return (
+    <div className="flex flex-col items-center gap-3 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-danger/10 text-danger">
+        {isWindow ? <Clock3 size={32} /> : <XCircle size={32} />}
+      </span>
+      <Title order={3}>เช็คอินไม่สำเร็จ</Title>
+      <p className="text-sm text-default-600">{message}</p>
+      <Button variant="light" onClick={onRetry} mt="xs">
+        ลองอีกครั้ง
+      </Button>
+    </div>
+  );
+}
+
+function BookingLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-3 py-1">
+      <span className="text-default-500">{label}</span>
+      <span className="font-medium text-foreground">{value}</span>
+    </div>
+  );
+}
