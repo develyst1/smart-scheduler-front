@@ -1,14 +1,14 @@
 "use client";
 
-import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack } from "@mantine/core";
-import { LockKeyholeOpen, Lock } from "lucide-react";
+import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader } from "@mantine/core";
+import { LockKeyholeOpen, Lock, GraduationCap } from "lucide-react";
 import { useAdminUnlockCourse, useCoursePackages } from "@/hooks/scheduler";
 import { notify } from "@/lib/ui/notify";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import type { CoursePackageView } from "@/types/app/scheduler";
 
 export default function CoursePackagePanel() {
-  const { data: courses = [] } = useCoursePackages();
+  const { data: courses = [], isLoading } = useCoursePackages();
   const unlock = useAdminUnlockCourse();
 
   const handleUnlock = async (c: CoursePackageView) => {
@@ -19,6 +19,26 @@ export default function CoursePackagePanel() {
       color: "warning",
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-default-500">
+        <Loader size="md" />
+        กำลังโหลด...
+      </div>
+    );
+  }
+
+  if (courses.length === 0) {
+    return (
+      <Card padding="xl">
+        <Group justify="center" c="dimmed" gap="xs">
+          <GraduationCap size={18} />
+          <Text size="sm">ยังไม่มีคอร์ส</Text>
+        </Group>
+      </Card>
+    );
+  }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
