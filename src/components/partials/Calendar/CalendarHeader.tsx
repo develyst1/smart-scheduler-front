@@ -6,6 +6,7 @@ import { ActionIcon, Button, MultiSelect, Paper, SegmentedControl, Tooltip } fro
 import { DatePickerInput } from "@mantine/dates";
 import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users } from "lucide-react";
 import { StatusChip } from "@/components/common/BookingBadges";
+import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import type { TeacherType, TeacherView } from "@/types/app/scheduler";
 import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
@@ -123,15 +124,13 @@ export default function CalendarHeader({
             placeholder={selectedTeacherIds.length > 0 ? undefined : "ครูทั้งหมด"}
             value={selectedTeacherIds}
             onChange={onChangeTeacherIds}
-            data={teachers
-              .filter((t) => {
+            data={teacherSelectData(
+              teachers.filter((t) => {
                 const available = view === "day" ? bookableOnDate(t, date) : t.bookable;
                 return available && (selectedTypes.length === 0 || selectedTypes.includes(t.type));
-              })
-              .map((t) => ({
-                value: t.id,
-                label: `${t.nickname} · ${TEACHER_TYPE_LABEL[t.type]}`,
-              }))}
+              }),
+            )}
+            renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
             leftSection={<UserSearch size={15} />}
             size="sm"
             radius="md"

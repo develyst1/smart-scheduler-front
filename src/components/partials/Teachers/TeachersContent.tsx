@@ -32,13 +32,13 @@ import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 const thb = (n: number) => n.toLocaleString("th-TH");
 
 export default function TeachersContent() {
-  const { data: teachers = [], isLoading } = useTeachers();
-  const { data: typeOrder = [] } = useTeacherTypeOrder();
+  const { data: teachers = [], isLoading: loadingTeachers } = useTeachers();
+  const { data: typeOrder = [], isLoading: loadingOrder } = useTeacherTypeOrder();
   const toggle = useToggleTeacher();
   const toggleType = useToggleTeacherType();
   const setOrder = useSetTeacherTypeOrder();
 
-  if (isLoading) {
+  if (loadingTeachers || loadingOrder) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-default-500">
         <Loader size="md" />
