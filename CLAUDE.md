@@ -11,8 +11,13 @@ staff/admins** (not students/parents). Part of **Option C (Ultimate)** — the s
 frontoffice; most-built repo in the workspace.
 
 > Business spec (Thai): **[docs/requirement-timeline.md](docs/requirement-timeline.md)** (living
-> spec, newest entry wins; synced from workspace root `docs/`). Repo-specific task list:
-> [todo.md](todo.md). The hard part is **domain logic**, not the UI.
+> spec, newest entry wins; synced from workspace root `docs/`). The hard part is **domain logic**,
+> not the UI.
+>
+> **Tasks/scope live in the `smart-scheduler-requirement` repo, not a `todo.md`** (todo files were
+> removed 2026-07-08 — do not recreate them). Open `smart-scheduler-requirement/requirement.html`
+> and treat `Partial` / `Planned` items as the work queue. See the root `../CLAUDE.md` §"How work is
+> assigned" for the full policy.
 
 ## Stack (as actually installed — see [package.json](package.json))
 
