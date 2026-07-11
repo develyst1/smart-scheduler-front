@@ -16,6 +16,7 @@ import {
   createVoucher,
   getCoursePackages,
   getDailyReport,
+  getVouchers,
   getTeachers,
   getTeacherTypeOrder,
   markAttended,
@@ -36,6 +37,7 @@ export const BOOKINGS_KEY = ["bookings"] as const;
 export const CALENDAR_KEY = ["calendar"] as const;
 export const COURSES_KEY = ["courses"] as const;
 export const REPORT_KEY = ["daily-report"] as const;
+export const VOUCHERS_KEY = ["vouchers"] as const;
 
 // ───────────────────────────── Teachers ─────────────────────────────
 
@@ -128,6 +130,7 @@ const invalidateAll = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: COURSES_KEY });
   qc.invalidateQueries({ queryKey: REPORT_KEY });
   qc.invalidateQueries({ queryKey: TEACHERS_KEY });
+  qc.invalidateQueries({ queryKey: VOUCHERS_KEY }); // attend ตัดชั่วโมงวอยเชอร์
 };
 
 export const useConfirmBooking = () => {
@@ -214,6 +217,14 @@ export const useCreateVoucher = () => {
     onSuccess: () => invalidateAll(qc),
   });
 };
+
+/** รายการวอยเชอร์ — ทั้งหมด (แท็บวอยเชอร์) หรือของนักเรียนคนเดียว (ตัวเลือกตอนจอง) */
+export const useVouchers = (studentId?: string, enabled = true) =>
+  useQuery({
+    queryKey: [...VOUCHERS_KEY, studentId ?? "all"],
+    queryFn: () => getVouchers(studentId),
+    enabled,
+  });
 
 // ───────────────────────────── Reports ─────────────────────────────
 

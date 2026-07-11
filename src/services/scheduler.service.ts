@@ -36,6 +36,8 @@ import type {
   TeachersResponse,
   TeacherTypeOrderResponse,
   UpdateBookingStatusResponse,
+  VoucherSummary,
+  VouchersResponse,
 } from "@/types/api/contract";
 import type { PackageSize } from "@/types/app/scheduler";
 import { ApiClientError } from "@/lib/api/client";
@@ -230,6 +232,8 @@ export interface CreateBookingInput {
   date: string;
   startTime: string;
   bookingType: BookingType;
+  /** ต้องระบุเมื่อ bookingType === "VOUCHER" — วอยเชอร์ที่จะตัดชั่วโมง */
+  voucherId?: string;
 }
 
 /** Existing id → { id }; otherwise an inline new student (+ optional parent phone). */
@@ -284,6 +288,7 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
     date: input.date,
     startTime: input.startTime,
     bookingType: input.bookingType,
+    voucherId: input.bookingType === "VOUCHER" ? input.voucherId : undefined,
   });
   return dtoToBooking(data.booking);
 };
@@ -364,6 +369,15 @@ export const createVoucher = async (
   const { data } = await api.post<CreateVoucherResponse>("/vouchers", {
     student: studentPayload(input),
     totalHours: input.totalHours,
+  });
+  return data;
+};
+
+/** รายการวอยเชอร์ (แท็บวอยเชอร์ + ตัวเลือกตอนจอง) — กรองตามนักเรียนได้ */
+export const getVouchers = async (studentId?: string): Promise<VoucherSummary[]> => {
+  if (useMock) return mock.getVouchers(studentId);
+  const { data } = await api.get<VouchersResponse>("/vouchers", {
+    params: studentId ? { studentId } : undefined,
   });
   return data;
 };

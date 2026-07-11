@@ -25,6 +25,7 @@ import {
   useMarkAttended,
   useMarkSickLeave,
   useMoveBooking,
+  useVouchers,
 } from "@/hooks/scheduler";
 import type { Booking, BookingType, TeacherView } from "@/types/app/scheduler";
 import type { CreateBookingInput, MoveBookingInput } from "@/services/scheduler.service";
@@ -381,6 +382,7 @@ function CreateForm({
   const [subjectId, setSubjectId] = useState("");
   const [startTime, setStartTime] = useState(createSlot.time);
   const [bookingType, setBookingType] = useState<BookingType>("SINGLE_SESSION");
+  const [voucherId, setVoucherId] = useState<string | null>(null);
   // ช่องที่ถูกจองอยู่แล้วและ "ไม่ใช่การลา" → จองทับไม่ได้ (UC-004)
   const [blocked, setBlocked] = useState<Booking | undefined>();
 
@@ -391,6 +393,16 @@ function CreateForm({
     if (subjectOptions.length === 1) setSubjectId(subjectOptions[0].id);
   }, [teacherId, subjectOptions.length]);
 
+  // วอยเชอร์ (UC-008): จองแบบ Voucher ต้องเลือกวอยเชอร์ของนักเรียนคนนั้น (มีชั่วโมงเหลือ+ไม่หมดอายุ)
+  const isVoucher = bookingType === "VOUCHER";
+  const { data: vouchers = [] } = useVouchers(student?.id, isVoucher && !!student?.id);
+  const usableVouchers = vouchers.filter(
+    (v) => v.remaining > 0 && v.expiryDate >= createSlot.date,
+  );
+  useEffect(() => {
+    setVoucherId(null); // เปลี่ยนนักเรียน/ประเภท → ล้างวอยเชอร์ที่เลือก
+  }, [student?.id, bookingType]);
+
   // นักเรียนเดิมที่ลาในช่องนี้ (ถ้ามี) — จองทับได้เฉพาะกรณีนี้
   const leaveOccupant = bookings.find(
     (b) =>
@@ -400,7 +412,8 @@ function CreateForm({
       b.status === "SICK_LEAVE",
   );
 
-  const valid = student?.name.trim() && subjectId && teacherId && startTime;
+  const valid =
+    student?.name.trim() && subjectId && teacherId && startTime && (!isVoucher || voucherId);
 
   const subjectName =
     subjectOptions.find((s) => s.id === subjectId)?.name ??
@@ -417,6 +430,7 @@ function CreateForm({
     date: createSlot.date,
     startTime,
     bookingType,
+    voucherId: isVoucher ? voucherId ?? undefined : undefined,
   };
 
   const handleSubmit = async () => {
@@ -503,6 +517,28 @@ function CreateForm({
         data={BOOKING_TYPE_OPTIONS.map((o) => ({ value: o.key, label: o.label }))}
         allowDeselect={false}
       />
+
+      {isVoucher && (
+        <Select
+          label="เลือกวอยเชอร์ (ตัดชั่วโมงตอนมาเรียน)"
+          value={voucherId}
+          onChange={setVoucherId}
+          placeholder={
+            !student?.id
+              ? "เลือกนักเรียนที่มีวอยเชอร์ก่อน"
+              : usableVouchers.length
+                ? "เลือกวอยเชอร์"
+                : "นักเรียนคนนี้ไม่มีวอยเชอร์ที่ใช้ได้"
+          }
+          data={usableVouchers.map((v) => ({
+            value: v.id,
+            label: `${v.totalHours} ชม. · เหลือ ${v.remaining} · หมดอายุ ${v.expiryDate}`,
+          }))}
+          disabled={!student?.id || usableVouchers.length === 0}
+          nothingFoundMessage="ไม่มีวอยเชอร์ที่ใช้ได้"
+          required
+        />
+      )}
 
       <Group justify="flex-end" gap="sm">
         <Button variant="subtle" color="gray" onClick={onClose}>

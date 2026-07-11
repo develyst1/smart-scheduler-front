@@ -142,6 +142,7 @@ export interface VoucherSummary {
   expiryDate: IsoDate;
   student: StudentRef;
 }
+export type VouchersResponse = VoucherSummary[];
 export interface CreateVoucherRequest {
   student: StudentInput;
   totalHours: 5 | 10 | 15;

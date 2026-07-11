@@ -126,6 +126,7 @@ export interface CreateBookingInput {
   date: string;
   startTime: string;
   bookingType: BookingType;
+  voucherId?: string;
 }
 
 const endOf = (startTime: string) =>
@@ -265,6 +266,15 @@ export const createCoursePackage = (input: {
     })),
   });
 };
+
+const MOCK_VOUCHERS = [
+  { id: "v1", totalHours: 10, usedHours: 4, remaining: 6, expiryDate: "2026-12-15", student: { id: "s1", name: "น้องมิ้น", nickname: "มิ้น" } },
+  { id: "v2", totalHours: 5, usedHours: 5, remaining: 0, expiryDate: "2026-09-01", student: { id: "s2", name: "น้องเอิร์ธ", nickname: "เอิร์ธ" } },
+  { id: "v3", totalHours: 15, usedHours: 2, remaining: 13, expiryDate: "2027-03-30", student: { id: "s3", name: "น้องพลอย", nickname: "พลอย" } },
+];
+
+export const getVouchers = (studentId?: string) =>
+  delay(clone(studentId ? MOCK_VOUCHERS.filter((v) => v.student.id === studentId) : MOCK_VOUCHERS));
 
 export const createVoucher = (input: { studentName: string; totalHours: 5 | 10 | 15 }) =>
   delay({

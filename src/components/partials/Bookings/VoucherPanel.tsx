@@ -1,37 +1,9 @@
 "use client";
 
-import { Card, Table, Progress, Text, Badge, Group } from "@mantine/core";
+import { Card, Table, Progress, Text, Badge, Group, Loader } from "@mantine/core";
 import { Ticket } from "lucide-react";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
-import type { VoucherSummary } from "@/types/api/contract";
-
-// TODO: ต่อ API จริง (GET /vouchers) — ตอนนี้ใช้ mock ฝั่ง FE ก่อน
-const MOCK_VOUCHERS: VoucherSummary[] = [
-  {
-    id: "v1",
-    totalHours: 10,
-    usedHours: 4,
-    remaining: 6,
-    expiryDate: "2026-12-15",
-    student: { id: "s1", name: "น้องมิ้น", nickname: "มิ้น" },
-  },
-  {
-    id: "v2",
-    totalHours: 5,
-    usedHours: 5,
-    remaining: 0,
-    expiryDate: "2026-09-01",
-    student: { id: "s2", name: "น้องเอิร์ธ", nickname: "เอิร์ธ" },
-  },
-  {
-    id: "v3",
-    totalHours: 15,
-    usedHours: 2,
-    remaining: 13,
-    expiryDate: "2027-03-30",
-    student: { id: "s3", name: "น้องพลอย", nickname: "พลอย" },
-  },
-];
+import { useVouchers } from "@/hooks/scheduler";
 
 function RemainingBadge({ remaining }: { remaining: number }) {
   if (remaining === 0)
@@ -48,7 +20,18 @@ function RemainingBadge({ remaining }: { remaining: number }) {
 }
 
 export default function VoucherPanel() {
-  const vouchers = MOCK_VOUCHERS;
+  const { data: vouchers = [], isLoading } = useVouchers();
+
+  if (isLoading) {
+    return (
+      <Card padding="xl">
+        <Group justify="center" c="dimmed" gap="xs">
+          <Loader size="sm" />
+          <Text size="sm">กำลังโหลดวอยเชอร์...</Text>
+        </Group>
+      </Card>
+    );
+  }
 
   if (vouchers.length === 0) {
     return (
