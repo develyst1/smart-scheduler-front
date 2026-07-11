@@ -5,6 +5,7 @@ import { Combobox, InputBase, Loader, TextInput, useCombobox } from "@mantine/co
 import { useDebouncedValue } from "@mantine/hooks";
 import { UserPlus } from "lucide-react";
 import { useStudentSearch } from "@/hooks/scheduler";
+import { useT } from "@/lib/i18n";
 
 /** What the form needs to build a StudentInput: an existing id, or a new name (+ phone). */
 export interface StudentSelectValue {
@@ -27,7 +28,8 @@ const NEW = "__new__";
  * (by name or parent phone); pick an existing student, or create a new one — when
  * creating, an optional parent-phone field appears so siblings can share a number.
  */
-export default function StudentSelect({ value, onChange, label = "นักเรียน", required }: Props) {
+export default function StudentSelect({ value, onChange, label, required }: Props) {
+  const t = useT();
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
   });
@@ -73,14 +75,14 @@ export default function StudentSelect({ value, onChange, label = "นักเ�
       <Combobox store={combobox} onOptionSubmit={handleSubmit} withinPortal={false}>
         <Combobox.Target>
           <InputBase
-            label={label}
+            label={label ?? t("student.label")}
             required={required}
             component="input"
             value={search}
             onChange={(e) => handleType(e.currentTarget.value)}
             onFocus={() => combobox.openDropdown()}
             onBlur={() => combobox.closeDropdown()}
-            placeholder="พิมพ์ชื่อหรือเบอร์เพื่อค้นหา / เพิ่มใหม่"
+            placeholder={t("student.searchPlaceholder")}
             rightSection={isFetching ? <Loader size={14} /> : <Combobox.Chevron />}
             rightSectionPointerEvents="none"
           />
@@ -92,12 +94,12 @@ export default function StudentSelect({ value, onChange, label = "นักเ�
             {search.trim() && !exactMatch && (
               <Combobox.Option value={NEW}>
                 <span className="flex items-center gap-1.5 text-primary-600">
-                  <UserPlus size={14} /> เพิ่มนักเรียนใหม่ “{search.trim()}”
+                  <UserPlus size={14} /> {t("student.addNew", { name: search.trim() })}
                 </span>
               </Combobox.Option>
             )}
             {!options.length && !search.trim() && (
-              <Combobox.Empty>พิมพ์เพื่อค้นหานักเรียน</Combobox.Empty>
+              <Combobox.Empty>{t("student.searchHint")}</Combobox.Empty>
             )}
           </Combobox.Options>
         </Combobox.Dropdown>
@@ -105,9 +107,9 @@ export default function StudentSelect({ value, onChange, label = "นักเ�
 
       {isNew && (
         <TextInput
-          label="เบอร์ผู้ปกครอง (ถ้ามี)"
-          description="ใช้ผูกนักเรียนกับผู้ปกครอง — เบอร์เดียวมีลูกได้หลายคน"
-          placeholder="เช่น 0812345678"
+          label={t("student.parentPhone")}
+          description={t("student.parentPhoneHint")}
+          placeholder={t("student.phoneExample")}
           value={value?.phone ?? ""}
           onChange={(e) => onChange({ name: value!.name, phone: e.currentTarget.value })}
         />

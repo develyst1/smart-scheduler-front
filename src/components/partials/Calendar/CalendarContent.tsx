@@ -6,6 +6,7 @@ import { Loader } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { calendarDayBookings, calendarToBookings } from "@/lib/api/mappers";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
+import { useT } from "@/lib/i18n";
 import { useCalendar, useTeachers } from "@/hooks/scheduler";
 import type { Booking } from "@/types/app/scheduler";
 import CalendarHeader, { type CalendarView } from "./CalendarHeader";
@@ -14,6 +15,7 @@ import CalendarWeekGrid from "./CalendarWeekGrid";
 import BookingModal from "./Modal/BookingModal";
 
 export default function CalendarContent() {
+  const t = useT();
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [view, setView] = useState<CalendarView>("day");
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
@@ -86,7 +88,7 @@ export default function CalendarContent() {
       {loading ? (
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-default-500">
           <Loader size="md" />
-          กำลังโหลดตาราง...
+          {t("calendar.loading")}
         </div>
       ) : view === "day" ? (
         <CalendarGrid

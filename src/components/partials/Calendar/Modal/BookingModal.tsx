@@ -18,6 +18,7 @@ import StudentSelect, { type StudentSelectValue } from "@/components/common/Stud
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { ApiClientError } from "@/lib/api/client";
+import { useT } from "@/lib/i18n";
 import {
   useConfirmBooking,
   useCreateBooking,
@@ -54,8 +55,9 @@ export default function BookingModal({
   bookings,
   onOverbook,
 }: Props) {
+  const t = useT();
   const isCreate = !booking;
-  const teacher = teachers.find((t) => t.id === (booking?.teacherId ?? createSlot?.teacherId));
+  const teacher = teachers.find((tc) => tc.id === (booking?.teacherId ?? createSlot?.teacherId));
 
   return (
     <Modal
@@ -65,7 +67,7 @@ export default function BookingModal({
       centered
       title={
         isCreate ? (
-          <span className="font-semibold">เพิ่มการจอง · {createSlot?.date}</span>
+          <span className="font-semibold">{t("booking.addTitle", { date: createSlot?.date ?? "" })}</span>
         ) : booking ? (
           <div className="flex flex-col gap-1">
             <span className="font-semibold">{booking.studentName}</span>
@@ -107,6 +109,7 @@ function ViewBooking({
   onOverbook: (b: Booking) => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const confirm = useConfirmBooking();
   const attended = useMarkAttended();
   const sickLeave = useMarkSickLeave();
@@ -118,20 +121,20 @@ function ViewBooking({
     const n = res.notification;
     if (n?.status === "queued") {
       notify({
-        title: "ยืนยันตารางแล้ว",
-        description: "ส่งแจ้งเตือน LINE ไปยังครูแล้ว",
+        title: t("booking.confirmedTitle"),
+        description: t("booking.confirmedLineSent"),
         color: "primary",
       });
     } else if (n?.status === "skipped") {
       notify({
-        title: "ยืนยันตารางแล้ว",
-        description: n.reason ?? "ครูยังไม่ผูก LINE — ไม่ได้ส่งแจ้งเตือน",
+        title: t("booking.confirmedTitle"),
+        description: n.reason ?? t("booking.confirmedLineSkipped"),
         color: "warning",
       });
     } else {
       notify({
-        title: "ยืนยันตารางแล้ว",
-        description: "ส่งแจ้งเตือนทันทีผ่าน Line ไปยังครู/ผู้เกี่ยวข้อง",
+        title: t("booking.confirmedTitle"),
+        description: t("booking.confirmedDefault"),
         color: "primary",
       });
     }
@@ -142,25 +145,25 @@ function ViewBooking({
     const res = await sickLeave.mutateAsync(booking.id);
     if (res.locked) {
       notify({
-        title: "ลาเกินโควตา — ล็อกการเลื่อนตาราง",
-        description: "นักเรียนใช้สิทธิ์การลาครบแล้ว ต้องให้แอดมินปลดล็อกที่หน้า การจอง/นักเรียน",
+        title: t("booking.leaveLockedTitle"),
+        description: t("booking.leaveLockedDesc"),
         color: "danger",
       });
     } else if (res.extended) {
       notify({
-        title: "บันทึกการลาแล้ว",
-        description: `สร้างคาบเรียนชดเชยอัตโนมัติในสัปดาห์ถัดไป (${res.extended.date})`,
+        title: t("booking.leaveSavedTitle"),
+        description: t("booking.leaveExtendedDesc", { date: res.extended.date }),
         color: "success",
       });
     } else {
-      notify({ title: "บันทึกการลาแล้ว", color: "default" });
+      notify({ title: t("booking.leaveSavedTitle"), color: "default" });
     }
     onClose();
   };
 
   const handleAttended = async () => {
     await attended.mutateAsync(booking.id);
-    notify({ title: "บันทึกการเข้าเรียนแล้ว", color: "success" });
+    notify({ title: t("booking.attendedTitle"), color: "success" });
     onClose();
   };
 
@@ -184,15 +187,15 @@ function ViewBooking({
   return (
     <Stack gap="md">
       <dl className="grid grid-cols-2 gap-3 text-sm">
-        <Field label="ครูผู้สอน" value={teacherName} />
-        <Field label="วิชา" value={booking.subject} />
-        <Field label="วันที่" value={booking.date} />
-        <Field label="เวลา" value={`${booking.startTime} - ${booking.endTime}`} />
+        <Field label={t("booking.teacher")} value={teacherName} />
+        <Field label={t("booking.subject")} value={booking.subject} />
+        <Field label={t("booking.date")} value={booking.date} />
+        <Field label={t("booking.time")} value={`${booking.startTime} - ${booking.endTime}`} />
       </dl>
       {booking.note && (
         <>
           <Divider />
-          <p className="text-sm text-default-500">หมายเหตุ: {booking.note}</p>
+          <p className="text-sm text-default-500">{t("booking.noteLabel")}: {booking.note}</p>
         </>
       )}
 
@@ -205,7 +208,7 @@ function ViewBooking({
               leftSection={<ArrowLeftRight size={16} />}
               onClick={() => onOverbook(booking)}
             >
-              จองทับ (นักเรียนลา)
+              {t("booking.overbookBtn")}
             </Button>
           )}
           {canMove && (
@@ -215,14 +218,14 @@ function ViewBooking({
               leftSection={<Move size={16} />}
               onClick={() => setMoving(true)}
             >
-              ย้ายคาบ
+              {t("booking.moveBtn")}
             </Button>
           )}
         </Group>
 
         <Group gap="sm" wrap="wrap">
           <Button variant="subtle" color="gray" onClick={onClose}>
-            ปิด
+            {t("common.close")}
           </Button>
           <Button
             variant="light"
@@ -231,7 +234,7 @@ function ViewBooking({
             loading={sickLeave.isPending}
             onClick={handleSickLeave}
           >
-            บันทึกลา/ป่วย
+            {t("booking.sickLeaveBtn")}
           </Button>
           <Button
             variant="light"
@@ -240,7 +243,7 @@ function ViewBooking({
             loading={attended.isPending}
             onClick={handleAttended}
           >
-            มาเรียน
+            {t("booking.attendBtn")}
           </Button>
           {booking.status === "PENDING" && (
             <Button
@@ -249,7 +252,7 @@ function ViewBooking({
               loading={confirm.isPending}
               onClick={handleConfirm}
             >
-              ยืนยัน + แจ้งเตือน Line
+              {t("booking.confirmBtn")}
             </Button>
           )}
         </Group>
@@ -271,12 +274,13 @@ function MoveBookingForm({
   onCancel: () => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const move = useMoveBooking();
   const [teacherId, setTeacherId] = useState(booking.teacherId);
   const [date, setDate] = useState(booking.date);
   const [startTime, setStartTime] = useState(booking.startTime);
 
-  const bookableTeachers = teachers.filter((t) => bookableOnDate(t, date));
+  const bookableTeachers = teachers.filter((tc) => bookableOnDate(tc, date));
 
   const handleSubmit = async () => {
     const patch: MoveBookingInput = {};
@@ -285,7 +289,7 @@ function MoveBookingForm({
     if (startTime !== booking.startTime) patch.startTime = startTime;
 
     if (Object.keys(patch).length === 0) {
-      notify({ title: "ไม่มีการเปลี่ยนแปลง", color: "default" });
+      notify({ title: t("booking.noChange"), color: "default" });
       onCancel();
       return;
     }
@@ -293,7 +297,7 @@ function MoveBookingForm({
     try {
       await move.mutateAsync({ id: booking.id, patch });
       notify({
-        title: "ย้ายคาบแล้ว",
+        title: t("booking.movedTitle"),
         description: `${date} ${startTime}`,
         color: "success",
       });
@@ -301,22 +305,22 @@ function MoveBookingForm({
     } catch (e) {
       const msg =
         e instanceof ApiClientError && e.code === "SLOT_TAKEN"
-          ? "ครูมีคาบในช่วงเวลานี้แล้ว — เลือกวัน/เวลา/ครูอื่น"
+          ? t("booking.moveSlotTaken")
           : e instanceof ApiClientError
             ? e.message
-            : "ย้ายคาบไม่สำเร็จ";
-      notify({ title: "ย้ายคาบไม่สำเร็จ", description: msg, color: "danger" });
+            : t("booking.moveFailGeneric");
+      notify({ title: t("booking.moveFailTitle"), description: msg, color: "danger" });
     }
   };
 
   return (
     <Stack gap="md">
-      <Alert color="grape" icon={<Move size={18} />} title="ย้ายคาบด้วยมือ">
-        ย้ายครู / วัน / เวลา สำหรับกรณีพิเศษ — ถ้าช่องปลายทางมีคาบอยู่แล้วจะย้ายไม่ได้
+      <Alert color="grape" icon={<Move size={18} />} title={t("booking.moveTitle")}>
+        {t("booking.moveHint")}
       </Alert>
 
       <Select
-        label="ครูผู้สอน"
+        label={t("booking.teacher")}
         value={teacherId}
         onChange={(v) => v && setTeacherId(v)}
         allowDeselect={false}
@@ -325,27 +329,27 @@ function MoveBookingForm({
       />
       <div className="grid grid-cols-2 gap-3">
         <DatePickerInput
-          label="วันที่"
+          label={t("booking.date")}
           value={date}
           onChange={(v) => v && setDate(v)}
           valueFormat="D MMM YYYY"
           styles={{ input: { textAlign: "left" } }}
         />
         <Select
-          label="เวลา"
+          label={t("booking.time")}
           value={startTime}
           onChange={(v) => v && setStartTime(v)}
           allowDeselect={false}
-          data={TIME_SLOTS.map((t) => ({ value: t, label: t }))}
+          data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
         />
       </div>
 
       <Group justify="flex-end" gap="sm">
         <Button variant="subtle" color="gray" onClick={onCancel}>
-          ย้อนกลับ
+          {t("common.back")}
         </Button>
         <Button color="grape" loading={move.isPending} onClick={handleSubmit}>
-          ยืนยันย้ายคาบ
+          {t("booking.confirmMoveBtn")}
         </Button>
       </Group>
     </Stack>
@@ -374,6 +378,7 @@ function CreateForm({
   bookings: Booking[];
   onClose: () => void;
 }) {
+  const t = useT();
   const create = useCreateBooking();
   const detect = useDetectConflict();
 
@@ -386,7 +391,7 @@ function CreateForm({
   // ช่องที่ถูกจองอยู่แล้วและ "ไม่ใช่การลา" → จองทับไม่ได้ (UC-004)
   const [blocked, setBlocked] = useState<Booking | undefined>();
 
-  const selectedTeacher = teachers.find((t) => t.id === teacherId);
+  const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
 
   useEffect(() => {
@@ -444,8 +449,8 @@ function CreateForm({
     // ช่องว่าง หรือ นักเรียนเดิมลา → สร้างได้ (จองทับคาบที่ลา)
     await create.mutateAsync(input);
     notify({
-      title: existing ? "จองแทนคาบที่ลาแล้ว" : "สร้างการจองแล้ว",
-      description: "สถานะ: รอยืนยัน",
+      title: existing ? t("booking.overbookCreatedTitle") : t("booking.createdTitle"),
+      description: t("booking.statusPending"),
       color: "success",
     });
     onClose();
@@ -455,16 +460,19 @@ function CreateForm({
   if (blocked) {
     return (
       <Stack gap="md">
-        <Alert color="red" icon={<AlertTriangle size={18} />} title="ช่องนี้มีการจองอยู่แล้ว">
-          {blocked.studentName} · {blocked.subject} ({blocked.startTime}) — จองทับได้เฉพาะกรณีที่
-          นักเรียนคนเดิม<b>ลา</b>เท่านั้น
+        <Alert color="red" icon={<AlertTriangle size={18} />} title={t("booking.blockedTitle")}>
+          {t("booking.blockedDesc", {
+            student: blocked.studentName,
+            subject: blocked.subject,
+            time: blocked.startTime,
+          })}
         </Alert>
         <Group justify="flex-end" gap="sm">
           <Button variant="subtle" color="gray" onClick={() => setBlocked(undefined)}>
-            ย้อนกลับ
+            {t("common.back")}
           </Button>
           <Button variant="light" color="gray" onClick={onClose}>
-            ปิด
+            {t("common.close")}
           </Button>
         </Group>
       </Stack>
@@ -475,74 +483,78 @@ function CreateForm({
   return (
     <Stack gap="md">
       {leaveOccupant && (
-        <Alert color="orange" icon={<ArrowLeftRight size={18} />} title="จองแทนคาบที่นักเรียนลา">
-          ช่องนี้ {leaveOccupant.studentName} ลา — การจองนี้จะเข้าไปแทนในช่องเวลาเดิม
+        <Alert color="orange" icon={<ArrowLeftRight size={18} />} title={t("booking.overbookBannerTitle")}>
+          {t("booking.overbookBannerDesc", { student: leaveOccupant.studentName })}
         </Alert>
       )}
       <StudentSelect value={student} onChange={setStudent} required />
       <Select
-        label="ครูผู้สอน"
+        label={t("booking.teacher")}
         value={teacherId}
         onChange={(v) => {
           setTeacherId(v ?? "");
           setSubjectId("");
         }}
-        data={teacherSelectData(teachers.filter((t) => bookableOnDate(t, createSlot.date)))}
+        data={teacherSelectData(teachers.filter((tc) => bookableOnDate(tc, createSlot.date)))}
         allowDeselect={false}
         renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
       />
       <div className="grid grid-cols-2 gap-3">
         <Select
-          label="วิชา"
+          label={t("booking.subject")}
           value={subjectId || null}
           onChange={(v) => setSubjectId(v ?? "")}
-          placeholder={subjectOptions.length ? "เลือกวิชา" : "โหลดครูก่อน"}
+          placeholder={subjectOptions.length ? t("booking.subjectPlaceholder") : t("booking.subjectPlaceholderNoTeacher")}
           data={subjectOptions.map((s) => ({ value: s.id, label: s.name }))}
           allowDeselect={false}
           required
           disabled={!subjectOptions.length}
         />
         <Select
-          label="เวลา"
+          label={t("booking.time")}
           value={startTime}
           onChange={(v) => setStartTime(v ?? "")}
-          data={TIME_SLOTS.map((t) => ({ value: t, label: t }))}
+          data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
           allowDeselect={false}
         />
       </div>
       <Select
-        label="รูปแบบการจอง"
+        label={t("booking.typeLabel")}
         value={bookingType}
         onChange={(v) => setBookingType((v ?? "SINGLE_SESSION") as BookingType)}
-        data={BOOKING_TYPE_OPTIONS.map((o) => ({ value: o.key, label: o.label }))}
+        data={BOOKING_TYPE_OPTIONS.map((k) => ({ value: k, label: t(`bookingType.${k}`) }))}
         allowDeselect={false}
       />
 
       {isVoucher && (
         <Select
-          label="เลือกวอยเชอร์ (ตัดชั่วโมงตอนมาเรียน)"
+          label={t("booking.voucherLabel")}
           value={voucherId}
           onChange={setVoucherId}
           placeholder={
             !student?.id
-              ? "เลือกนักเรียนที่มีวอยเชอร์ก่อน"
+              ? t("booking.voucherPickStudentFirst")
               : usableVouchers.length
-                ? "เลือกวอยเชอร์"
-                : "นักเรียนคนนี้ไม่มีวอยเชอร์ที่ใช้ได้"
+                ? t("booking.voucherPick")
+                : t("booking.voucherNone")
           }
           data={usableVouchers.map((v) => ({
             value: v.id,
-            label: `${v.totalHours} ชม. · เหลือ ${v.remaining} · หมดอายุ ${v.expiryDate}`,
+            label: t("booking.voucherOption", {
+              hours: v.totalHours,
+              remaining: v.remaining,
+              expiry: v.expiryDate,
+            }),
           }))}
           disabled={!student?.id || usableVouchers.length === 0}
-          nothingFoundMessage="ไม่มีวอยเชอร์ที่ใช้ได้"
+          nothingFoundMessage={t("booking.voucherNone")}
           required
         />
       )}
 
       <Group justify="flex-end" gap="sm">
         <Button variant="subtle" color="gray" onClick={onClose}>
-          ยกเลิก
+          {t("common.cancel")}
         </Button>
         <Button
           color="blue"
@@ -550,7 +562,7 @@ function CreateForm({
           loading={create.isPending || detect.isPending}
           onClick={handleSubmit}
         >
-          บันทึก
+          {t("common.save")}
         </Button>
       </Group>
     </Stack>

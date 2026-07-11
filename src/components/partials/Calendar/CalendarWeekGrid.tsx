@@ -1,11 +1,13 @@
 "use client";
 
 import dayjs from "dayjs";
+import "dayjs/locale/th";
 import { Plus } from "lucide-react";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
+import { useI18n } from "@/lib/i18n";
 
 interface Props {
   teachers: TeacherView[];
@@ -14,8 +16,6 @@ interface Props {
   onSelectBooking: (booking: Booking) => void;
   onCreate: (teacherId: string, time: string, date: string) => void;
 }
-
-const THAI_DAY_SHORT = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
 // แถบสีบาง ๆ ด้านซ้ายของ chip ตามสถานะ
 const DOT_STYLE: Record<string, string> = {
@@ -43,7 +43,8 @@ export default function CalendarWeekGrid({
   onSelectBooking,
   onCreate,
 }: Props) {
-  const activeTeachers = teachers.filter((t) => t.bookable);
+  const { lang, t } = useI18n();
+  const activeTeachers = teachers.filter((tc) => tc.bookable);
   const today = dayjs().format("YYYY-MM-DD");
 
   const cellBookings = (teacherId: string, date: string) =>
@@ -65,10 +66,10 @@ export default function CalendarWeekGrid({
       >
         {/* Header row */}
         <div className="sticky left-0 top-0 z-20 border-b border-r border-default-200 bg-content1 p-3 text-xs font-medium text-default-400">
-          ครู \ วัน
+          {t("calendar.teacherDay")}
         </div>
         {weekDays.map((day) => {
-          const d = dayjs(day);
+          const d = dayjs(day).locale(lang);
           const isToday = day === today;
           return (
             <div
@@ -78,7 +79,7 @@ export default function CalendarWeekGrid({
               }`}
             >
               <p className={`text-sm font-semibold leading-none ${isToday ? "text-primary" : ""}`}>
-                {THAI_DAY_SHORT[d.day()]}
+                {d.format("dd")}
               </p>
               <p className="mt-1 text-xs text-default-400">{d.format("D MMM")}</p>
             </div>
@@ -86,16 +87,16 @@ export default function CalendarWeekGrid({
         })}
 
         {/* Teacher rows */}
-        {activeTeachers.map((t) => (
-          <div key={t.id} className="contents">
+        {activeTeachers.map((tc) => (
+          <div key={tc.id} className="contents">
             <div className="sticky left-0 z-10 flex flex-col gap-1.5 border-r border-t border-default-100 bg-content1 p-3">
-              <p className="truncate text-sm font-semibold leading-none">{t.nickname}</p>
-              <TeacherTypeChip type={t.type} />
+              <p className="truncate text-sm font-semibold leading-none">{tc.nickname}</p>
+              <TeacherTypeChip type={tc.type} />
             </div>
 
             {weekDays.map((day) => {
-              const items = cellBookings(t.id, day);
-              const canBook = bookableOnDate(t, day);
+              const items = cellBookings(tc.id, day);
+              const canBook = bookableOnDate(tc, day);
               return (
                 <div
                   key={day}
@@ -124,9 +125,9 @@ export default function CalendarWeekGrid({
                   {canBook && (
                     <button
                       type="button"
-                      onClick={() => onCreate(t.id, TIME_SLOTS[0], day)}
+                      onClick={() => onCreate(tc.id, TIME_SLOTS[0], day)}
                       className="flex w-full items-center justify-center rounded-lg border border-dashed border-default-200 py-1 text-default-300 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
-                      aria-label="เพิ่มการจอง"
+                      aria-label={t("calendar.addBooking")}
                     >
                       <Plus size={14} />
                     </button>

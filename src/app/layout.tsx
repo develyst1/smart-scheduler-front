@@ -16,7 +16,7 @@ const notoSansThai = Noto_Sans_Thai({
 
 export const metadata: Metadata = {
   title: "Smart Scheduler",
-  description: "ระบบจัดตารางเรียนและบันทึกเวลาเข้าเรียน",
+  description: "Tutoring schedule & attendance management system",
 };
 
 export default async function RootLayout({
@@ -25,7 +25,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="th" {...mantineHtmlProps} className={notoSansThai.variable}>
+    <html lang="en" {...mantineHtmlProps} className={notoSansThai.variable}>
       <head>
         <ColorSchemeScript defaultColorScheme="light" />
       </head>

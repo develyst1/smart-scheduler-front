@@ -6,9 +6,11 @@ import { Button, Paper, PasswordInput, TextInput, Title } from "@mantine/core";
 import { CalendarDays } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { notify } from "@/lib/ui/notify";
+import { useT } from "@/lib/i18n";
 
 export default function LoginPage() {
   const router = useRouter();
+  const t = useT();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,8 +25,8 @@ export default function LoginPage() {
     });
     if (res?.error) {
       notify({
-        title: "เข้าสู่ระบบไม่สำเร็จ",
-        description: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+        title: t("login.failTitle"),
+        description: t("login.failDesc"),
         color: "danger",
       });
       setLoading(false);
@@ -42,12 +44,12 @@ export default function LoginPage() {
             <CalendarDays size={24} />
           </span>
           <Title order={3}>Smart Scheduler</Title>
-          <p className="text-sm text-default-500">เข้าสู่ระบบสำหรับทีมงาน</p>
+          <p className="text-sm text-default-500">{t("login.subtitle")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <TextInput
-            label="ชื่อผู้ใช้"
+            label={t("login.username")}
             placeholder="admin"
             value={username}
             onChange={(e) => setUsername(e.currentTarget.value)}
@@ -55,14 +57,14 @@ export default function LoginPage() {
             autoFocus
           />
           <PasswordInput
-            label="รหัสผ่าน"
+            label={t("login.password")}
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.currentTarget.value)}
             required
           />
           <Button type="submit" loading={loading} fullWidth mt="xs">
-            เข้าสู่ระบบ
+            {t("login.submit")}
           </Button>
         </form>
       </Paper>

@@ -20,6 +20,7 @@ import StudentSelect, { type StudentSelectValue } from "@/components/common/Stud
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { useCreateCoursePackage, useTeachers } from "@/hooks/scheduler";
+import { useT } from "@/lib/i18n";
 import {
   LEAVE_QUOTA_BY_SIZE,
   MAX_WEEK_BY_SIZE,
@@ -28,11 +29,7 @@ import {
 } from "@/types/app/scheduler";
 import type { CreateCoursePackageResponse } from "@/types/api/contract";
 
-const SIZE_OPTIONS: { value: string; label: string }[] = [
-  { value: "4", label: "4 ครั้ง (ลาได้ 1 · ขยายถึงสัปดาห์ที่ 5)" },
-  { value: "6", label: "6 ครั้ง (ลาได้ 2 · ขยายถึงสัปดาห์ที่ 8)" },
-  { value: "10", label: "10 ครั้ง (ลาได้ 3 · ขยายถึงสัปดาห์ที่ 13)" },
-];
+const SIZES: PackageSize[] = [4, 6, 10];
 
 interface Props {
   opened: boolean;
@@ -40,8 +37,13 @@ interface Props {
 }
 
 export default function CreateCourseModal({ opened, onClose }: Props) {
+  const t = useT();
   const { data: teachers = [] } = useTeachers();
   const create = useCreateCoursePackage();
+  const sizeOptions = SIZES.map((s) => ({
+    value: String(s),
+    label: t("course.sizeOption", { size: s, leave: LEAVE_QUOTA_BY_SIZE[s], week: MAX_WEEK_BY_SIZE[s] }),
+  }));
 
   const [student, setStudent] = useState<StudentSelectValue | null>(null);
   const [teacherId, setTeacherId] = useState("");
@@ -52,11 +54,9 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
   const [note, setNote] = useState("");
   const [preview, setPreview] = useState<CreateCoursePackageResponse | null>(null);
 
-  const selectedTeacher = teachers.find((t) => t.id === teacherId);
+  const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
-  const bookableTeachers = teachers.filter((t) =>
-    bookableOnDate(t, startDate),
-  );
+  const bookableTeachers = teachers.filter((tc) => bookableOnDate(tc, startDate));
 
   useEffect(() => {
     if (!opened) {
@@ -99,8 +99,8 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
     });
     setPreview(result);
     notify({
-      title: "สมัครคอร์สสำเร็จ",
-      description: `สร้าง ${result.bookings.length} คาบรายสัปดาห์แล้ว`,
+      title: t("course.successTitle"),
+      description: t("course.successDesc", { count: result.bookings.length }),
       color: "success",
     });
   };
@@ -116,7 +116,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
       title={
         <span className="flex items-center gap-2 font-semibold">
           <CalendarPlus size={18} />
-          สมัครคอร์สรายสัปดาห์
+          {t("course.formTitle")}
         </span>
       }
       size="lg"
@@ -124,13 +124,16 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
     >
       {preview ? (
         <Stack gap="md">
-          <Alert color="green" title="สร้างคอร์สและล็อกตารางแล้ว">
-            {preview.course.student.name} · คอร์ส {preview.course.size} ครั้ง · หมดอายุ{" "}
-            {preview.course.expiryDate}
+          <Alert color="green" title={t("course.createdAlertTitle")}>
+            {t("course.createdSummary", {
+              name: preview.course.student.name,
+              size: preview.course.size,
+              expiry: preview.course.expiryDate,
+            })}
           </Alert>
           <div>
             <Text size="sm" fw={600} mb={4}>
-              คาบที่สร้าง ({preview.bookings.length})
+              {t("course.sessionsCreated", { count: preview.bookings.length })}
             </Text>
             <List size="sm" spacing={4}>
               {preview.bookings.map((b) => (
@@ -140,20 +143,22 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
               ))}
             </List>
           </div>
-          <Button onClick={handleClose}>ปิด</Button>
+          <Button onClick={handleClose}>{t("common.close")}</Button>
         </Stack>
       ) : (
         <Stack gap="md">
           <Alert color="blue" icon={<Info size={16} />} variant="light">
-            ระบบจะสร้างคาบรายสัปดาห์ตามวัน-เวลาเริ่มต้น · ลาได้{" "}
-            {LEAVE_QUOTA_BY_SIZE[size]} ครั้ง · ขยายได้ถึงสัปดาห์ที่ {MAX_WEEK_BY_SIZE[size]}
+            {t("course.infoAlert", {
+              leave: LEAVE_QUOTA_BY_SIZE[size],
+              week: MAX_WEEK_BY_SIZE[size],
+            })}
           </Alert>
 
           <StudentSelect value={student} onChange={setStudent} required />
 
           <Select
-            label="ครูผู้สอน"
-            placeholder="เลือกครู"
+            label={t("course.teacher")}
+            placeholder={t("course.pickTeacher")}
             value={teacherId}
             onChange={(v) => v && setTeacherId(v)}
             data={teacherSelectData(bookableTeachers)}
@@ -165,8 +170,8 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
           />
 
           <Select
-            label="โปรแกรม"
-            placeholder={teacherId ? "เลือกโปรแกรม" : "เลือกครูก่อน"}
+            label={t("course.program")}
+            placeholder={teacherId ? t("course.pickProgram") : t("course.pickTeacherFirst")}
             value={subjectId}
             onChange={(v) => v && setSubjectId(v)}
             data={subjectOptions.map((s) => ({ value: s.id, label: s.name }))}
@@ -176,16 +181,16 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
           />
 
           <Select
-            label="ขนาดคอร์ส"
+            label={t("course.courseSize")}
             value={String(size)}
             onChange={(v) => v && setSize(Number(v) as PackageSize)}
-            data={SIZE_OPTIONS}
+            data={sizeOptions}
             allowDeselect={false}
           />
 
           <Group grow align="flex-start">
             <DatePickerInput
-              label="วันเริ่มคาบแรก"
+              label={t("course.firstDate")}
               value={startDate}
               onChange={(v) => v && setStartDate(v)}
               valueFormat="D MMM YYYY"
@@ -193,26 +198,26 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
               required
             />
             <Select
-              label="เวลา"
+              label={t("course.time")}
               value={startTime}
               onChange={(v) => v && setStartTime(v)}
-              data={TIME_SLOTS.map((t) => ({ value: t, label: t }))}
+              data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
               allowDeselect={false}
             />
           </Group>
 
           <TextInput
-            label="หมายเหตุ (ถ้ามี)"
+            label={t("course.noteField")}
             value={note}
             onChange={(e) => setNote(e.currentTarget.value)}
           />
 
           <Group justify="flex-end">
             <Button variant="subtle" color="gray" onClick={handleClose}>
-              ยกเลิก
+              {t("common.cancel")}
             </Button>
             <Button loading={create.isPending} disabled={!valid} onClick={handleSubmit}>
-              สมัคร + สร้างคาบ
+              {t("course.submitBtn")}
             </Button>
           </Group>
         </Stack>

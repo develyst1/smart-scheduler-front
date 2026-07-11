@@ -15,6 +15,7 @@ import { Ticket, Info } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { useCreateVoucher } from "@/hooks/scheduler";
+import { useT } from "@/lib/i18n";
 import type { CreateVoucherResponse } from "@/types/api/contract";
 
 interface Props {
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export default function CreateVoucherModal({ opened, onClose }: Props) {
+  const t = useT();
   const create = useCreateVoucher();
 
   const [student, setStudent] = useState<StudentSelectValue | null>(null);
@@ -53,8 +55,11 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
     });
     setResult(res);
     notify({
-      title: "ออกวอยเชอร์แล้ว",
-      description: `${res.voucher.student.name} · ${res.voucher.totalHours} ชม.`,
+      title: t("voucher.issuedTitle"),
+      description: t("voucher.issuedDesc", {
+        name: res.voucher.student.name,
+        hours: res.voucher.totalHours,
+      }),
       color: "success",
     });
   };
@@ -66,7 +71,7 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
       title={
         <span className="flex items-center gap-2 font-semibold">
           <Ticket size={18} />
-          ออกวอยเชอร์ชั่วโมง
+          {t("voucher.title")}
         </span>
       }
       size="md"
@@ -77,54 +82,57 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
           <Paper withBorder p="md" radius="md">
             <Text fw={600}>{result.voucher.student.name}</Text>
             <Text size="sm" c="dimmed" mt={4}>
-              {result.voucher.totalHours} ชม. · เหลือ {result.voucher.remaining} ชม.
+              {t("voucher.summaryLine", {
+                hours: result.voucher.totalHours,
+                remaining: result.voucher.remaining,
+              })}
             </Text>
             <Text size="xs" c="dimmed" mt={2}>
-              วันหมดอายุชั่วคราว: {result.voucher.expiryDate} (นับจากวันจองครั้งแรก)
+              {t("voucher.provisionalExpiry", { date: result.voucher.expiryDate })}
             </Text>
             <Text size="xs" c="dimmed" mt={2}>
-              ตั้งอายุ: {expiryMonths} เดือน (ยังไม่ผูก backend)
+              {t("voucher.setValidity", { months: expiryMonths })}
             </Text>
           </Paper>
-          <Button onClick={onClose}>ปิด</Button>
+          <Button onClick={onClose}>{t("common.close")}</Button>
         </Stack>
       ) : (
         <Stack gap="md">
           <Alert color="blue" icon={<Info size={16} />} variant="light">
-            วอยเชอร์ไม่ล็อกครู/เวลา — นักเรียนใช้จองทีหลังผ่านปฏิทิน · อายุนับจากวันจองครั้งแรก
+            {t("voucher.infoAlert")}
           </Alert>
 
           <StudentSelect value={student} onChange={setStudent} required />
 
           <Group grow align="flex-start">
             <NumberInput
-              label="จำนวนชั่วโมง"
+              label={t("voucher.hoursField")}
               value={totalHours}
               onChange={(v) => setTotalHours(typeof v === "number" ? v : 0)}
               min={1}
               step={1}
               allowDecimal={false}
-              suffix=" ชม."
+              suffix={t("voucher.hoursFieldSuffix")}
               required
             />
             <NumberInput
-              label="หมดอายุ (เดือน)"
+              label={t("voucher.validityField")}
               value={expiryMonths}
               onChange={(v) => setExpiryMonths(typeof v === "number" ? v : 0)}
               min={1}
               step={1}
               allowDecimal={false}
-              suffix=" เดือน"
+              suffix={t("voucher.validityFieldSuffix")}
               required
             />
           </Group>
 
           <Group justify="flex-end">
             <Button variant="subtle" color="gray" onClick={onClose}>
-              ยกเลิก
+              {t("common.cancel")}
             </Button>
             <Button loading={create.isPending} disabled={!valid} onClick={handleSubmit}>
-              ออกวอยเชอร์
+              {t("voucher.issueBtn")}
             </Button>
           </Group>
         </Stack>

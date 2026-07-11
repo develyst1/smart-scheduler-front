@@ -5,6 +5,7 @@ import { DatesProvider } from "@mantine/dates";
 import { Notifications } from "@mantine/notifications";
 import { SessionProvider } from "next-auth/react";
 import { QueryProvider } from "@/context/query/QueryProvider";
+import { I18nProvider, useI18n } from "@/lib/i18n";
 import "dayjs/locale/th";
 
 // Calm back-office theme: blue primary aligned with Tailwind palette,
@@ -28,15 +29,25 @@ const theme = createTheme({
   },
 });
 
+// Date-picker locale follows the active language (en default, th when switched).
+function LocalizedDates({ children }: { children: React.ReactNode }) {
+  const { lang } = useI18n();
+  return (
+    <DatesProvider settings={{ locale: lang, firstDayOfWeek: 0 }}>{children}</DatesProvider>
+  );
+}
+
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <MantineProvider theme={theme} defaultColorScheme="light">
-        <DatesProvider settings={{ locale: "th", firstDayOfWeek: 0 }}>
-          <Notifications position="top-right" autoClose={4000} />
-          <QueryProvider>{children}</QueryProvider>
-        </DatesProvider>
-      </MantineProvider>
+      <I18nProvider>
+        <MantineProvider theme={theme} defaultColorScheme="light">
+          <LocalizedDates>
+            <Notifications position="top-right" autoClose={4000} />
+            <QueryProvider>{children}</QueryProvider>
+          </LocalizedDates>
+        </MantineProvider>
+      </I18nProvider>
     </SessionProvider>
   );
 }

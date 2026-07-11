@@ -10,15 +10,16 @@ import { useAllBookings, useTeachers } from "@/hooks/scheduler";
 import type { BookingStatus, BookingType } from "@/types/app/scheduler";
 import { BOOKING_STATUS_LABEL } from "@/types/app/scheduler";
 import { BOOKING_TYPE_OPTIONS } from "@/components/partials/Calendar/Calendar.config";
+import { useT } from "@/lib/i18n";
 
 type DateRange = "ALL" | "TODAY" | "WEEK" | "MONTH";
 
-const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
-  { value: "ALL", label: "ทุกช่วงเวลา" },
-  { value: "TODAY", label: "วันนี้" },
-  { value: "WEEK", label: "สัปดาห์นี้" },
-  { value: "MONTH", label: "เดือนนี้" },
-];
+const DATE_RANGE_KEYS: Record<DateRange, string> = {
+  ALL: "bookings.rangeAll",
+  TODAY: "bookings.rangeToday",
+  WEEK: "bookings.rangeWeek",
+  MONTH: "bookings.rangeMonth",
+};
 
 const inRange = (date: string, range: DateRange) => {
   if (range === "ALL") return true;
@@ -33,6 +34,7 @@ const inRange = (date: string, range: DateRange) => {
 };
 
 export default function BookingsTable() {
+  const t = useT();
   const { data: bookings = [], isLoading } = useAllBookings();
   const { data: teachers = [] } = useTeachers();
 
@@ -50,7 +52,7 @@ export default function BookingsTable() {
     setPage(1);
   }, [search, typeFilter, statusFilter, teacherFilter, dateRange]);
 
-  const teacherName = (id: string) => teachers.find((t) => t.id === id)?.nickname ?? "-";
+  const teacherName = (id: string) => teachers.find((tc) => tc.id === id)?.nickname ?? "-";
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -72,7 +74,7 @@ export default function BookingsTable() {
       <Card padding="lg">
         <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-default-500">
           <Loader size="md" />
-          กำลังโหลด...
+          {t("common.loading")}
         </div>
       </Card>
     );
@@ -82,8 +84,8 @@ export default function BookingsTable() {
     <Card padding="lg" className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
         <TextInput
-          label="ค้นชื่อนักเรียน"
-          placeholder="พิมพ์ชื่อ..."
+          label={t("bookings.searchStudent")}
+          placeholder={t("bookings.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.currentTarget.value)}
           leftSection={<Search size={16} />}
@@ -91,72 +93,75 @@ export default function BookingsTable() {
           className="min-w-52 flex-1"
         />
         <Select
-          label="สถานะ"
+          label={t("bookings.status")}
           size="sm"
           className="max-w-44"
           value={statusFilter}
           onChange={(v) => setStatusFilter((v || "ALL") as BookingStatus | "ALL")}
           allowDeselect={false}
           data={[
-            { value: "ALL", label: "ทุกสถานะ" },
+            { value: "ALL", label: t("bookings.allStatuses") },
             ...(Object.keys(BOOKING_STATUS_LABEL) as BookingStatus[]).map((s) => ({
               value: s,
-              label: BOOKING_STATUS_LABEL[s],
+              label: t(`bookingStatus.${s}`),
             })),
           ]}
         />
         <Select
-          label="ครู"
+          label={t("bookings.teacher")}
           size="sm"
           className="max-w-40"
           value={teacherFilter}
           onChange={(v) => setTeacherFilter(v || "ALL")}
           allowDeselect={false}
-          data={[{ value: "ALL", label: "ครูทุกคน" }, ...teacherSelectData(teachers)]}
+          data={[{ value: "ALL", label: t("bookings.allTeachers") }, ...teacherSelectData(teachers)]}
           renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
         />
         <Select
-          label="รูปแบบ"
+          label={t("bookings.type")}
           size="sm"
           className="max-w-40"
           value={typeFilter}
           onChange={(v) => setTypeFilter((v || "ALL") as BookingType | "ALL")}
           allowDeselect={false}
-          data={[{ key: "ALL", label: "ทุกรูปแบบ" }, ...BOOKING_TYPE_OPTIONS].map((o) => ({
-            value: o.key,
-            label: o.label,
-          }))}
+          data={[
+            { value: "ALL", label: t("bookings.allTypes") },
+            ...BOOKING_TYPE_OPTIONS.map((k) => ({ value: k, label: t(`bookingType.${k}`) })),
+          ]}
         />
         <Select
-          label="ช่วงวันที่"
+          label={t("bookings.dateRange")}
           size="sm"
           className="max-w-40"
           value={dateRange}
           onChange={(v) => setDateRange((v || "ALL") as DateRange)}
           allowDeselect={false}
-          data={DATE_RANGE_OPTIONS}
+          data={(Object.keys(DATE_RANGE_KEYS) as DateRange[]).map((r) => ({
+            value: r,
+            label: t(DATE_RANGE_KEYS[r]),
+          }))}
         />
       </div>
 
-      <p className="text-xs text-default-400">พบ {rows.length} รายการ</p>
+      <p className="text-xs text-default-400">{t("bookings.found", { count: rows.length })}</p>
 
-      <Table highlightOnHover verticalSpacing="sm" withTableBorder aria-label="รายการการจอง">
+      <Table highlightOnHover verticalSpacing="sm" withTableBorder aria-label={t("bookings.tableLabel")}>
         <Table.Thead className="bg-default-100">
           <Table.Tr className="text-xs uppercase tracking-wide text-default-500">
-            <Table.Th>นักเรียน</Table.Th>
-            <Table.Th>วิชา</Table.Th>
-            <Table.Th>ครู</Table.Th>
-            <Table.Th>วันที่</Table.Th>
-            <Table.Th>เวลา</Table.Th>
-            <Table.Th>รูปแบบ</Table.Th>
-            <Table.Th>สถานะ</Table.Th>
+            <Table.Th>{t("bookings.colStudent")}</Table.Th>
+            <Table.Th>{t("bookings.colSubject")}</Table.Th>
+            <Table.Th>{t("bookings.colTeacher")}</Table.Th>
+            <Table.Th>{t("bookings.colDate")}</Table.Th>
+            <Table.Th>{t("bookings.colTime")}</Table.Th>
+            <Table.Th>{t("bookings.colType")}</Table.Th>
+            <Table.Th>{t("bookings.colStatus")}</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
           {rows.length === 0 ? (
             <Table.Tr>
               <Table.Td colSpan={7} className="text-center text-sm text-default-400">
-                ไม่พบรายการที่ตรงเงื่อนไข
+                {t("bookings.noMatch")}
               </Table.Td>
             </Table.Tr>
           ) : (

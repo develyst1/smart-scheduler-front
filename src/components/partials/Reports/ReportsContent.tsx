@@ -27,18 +27,20 @@ import {
 import { BookingTypeChip, TeacherTypeChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { useDailyReport, useTeachers } from "@/hooks/scheduler";
+import { useT } from "@/lib/i18n";
 
 const STAT_CARDS = [
-  { key: "totalBooked", label: "ลงเรียนทั้งหมด", icon: Users, color: "blue" },
-  { key: "attended", label: "มาเรียนจริง", icon: CheckCircle2, color: "green" },
-  { key: "confirmed", label: "ยืนยันแล้ว", icon: Bell, color: "cyan" },
-  { key: "pending", label: "รอยืนยัน", icon: Clock, color: "orange" },
-  { key: "reschedulePending", label: "รอผู้ปกครอง (ย้าย)", icon: ArrowLeftRight, color: "red" },
-  { key: "onLeave", label: "ลา/ป่วย", icon: CalendarOff, color: "gray" },
-  { key: "cancelled", label: "ยกเลิก", icon: Ban, color: "gray" },
+  { key: "totalBooked", labelKey: "reports.statTotalBooked", icon: Users, color: "blue" },
+  { key: "attended", labelKey: "reports.statAttended", icon: CheckCircle2, color: "green" },
+  { key: "confirmed", labelKey: "reports.statConfirmed", icon: Bell, color: "cyan" },
+  { key: "pending", labelKey: "reports.statPending", icon: Clock, color: "orange" },
+  { key: "reschedulePending", labelKey: "reports.statReschedulePending", icon: ArrowLeftRight, color: "red" },
+  { key: "onLeave", labelKey: "reports.statOnLeave", icon: CalendarOff, color: "gray" },
+  { key: "cancelled", labelKey: "reports.statCancelled", icon: Ban, color: "gray" },
 ] as const;
 
 export default function ReportsContent() {
+  const t = useT();
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [teacherId, setTeacherId] = useState<string>("ALL");
   const { data: teachers = [] } = useTeachers();
@@ -47,9 +49,9 @@ export default function ReportsContent() {
     teacherId === "ALL" ? undefined : teacherId,
   );
 
-  const teacherName = (id: string) => teachers.find((t) => t.id === id)?.nickname ?? id;
-  const teacherType = (id: string) => teachers.find((t) => t.id === id)?.type;
-  const maxTeacherCount = report?.byTeacher.reduce((m, t) => Math.max(m, t.count), 0) ?? 0;
+  const teacherName = (id: string) => teachers.find((tc) => tc.id === id)?.nickname ?? id;
+  const teacherType = (id: string) => teachers.find((tc) => tc.id === id)?.type;
+  const maxTeacherCount = report?.byTeacher.reduce((m, tc) => Math.max(m, tc.count), 0) ?? 0;
 
   const rateColor =
     !report || report.attendanceRate >= 80
@@ -62,7 +64,7 @@ export default function ReportsContent() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end gap-3">
         <DatePickerInput
-          label="เลือกวันที่"
+          label={t("reports.pickDate")}
           value={date}
           onChange={(v) => v && setDate(v)}
           valueFormat="D MMM YYYY"
@@ -72,7 +74,7 @@ export default function ReportsContent() {
           leftSection={<CalendarDays size={16} />}
         />
         <Select
-          label="ครูผู้สอน"
+          label={t("reports.teacher")}
           value={teacherId}
           onChange={(v) => setTeacherId(v ?? "ALL")}
           allowDeselect={false}
@@ -80,7 +82,7 @@ export default function ReportsContent() {
           radius="md"
           className="max-w-64"
           leftSection={<User size={16} />}
-          data={[{ value: "ALL", label: "ครูทุกคน" }, ...teacherSelectData(teachers)]}
+          data={[{ value: "ALL", label: t("reports.allTeachers") }, ...teacherSelectData(teachers)]}
           renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
         />
       </div>
@@ -88,7 +90,7 @@ export default function ReportsContent() {
       {isLoading || !report ? (
         <div className="flex h-48 flex-col items-center justify-center gap-3 text-sm text-default-500">
           <Loader size="md" />
-          กำลังสรุปยอด...
+          {t("reports.summarizing")}
         </div>
       ) : (
         <>
@@ -106,7 +108,7 @@ export default function ReportsContent() {
                       {report.attendanceRate}%
                     </Text>
                     <Text size="xs" c="dimmed">
-                      อัตรามาเรียน
+                      {t("reports.attendanceRate")}
                     </Text>
                     <Text size="xs" c="dimmed">
                       {report.attended}/{report.totalBooked}
@@ -129,7 +131,7 @@ export default function ReportsContent() {
                         <p className="text-2xl font-bold leading-none tracking-tight">
                           {report[s.key]}
                         </p>
-                        <p className="mt-1 text-xs text-default-400">{s.label}</p>
+                        <p className="mt-1 text-xs text-default-400">{t(s.labelKey)}</p>
                       </div>
                     </div>
                   </Card>
@@ -141,7 +143,7 @@ export default function ReportsContent() {
           {/* แยกตามรูปแบบ */}
           <Card padding="lg">
             <Text size="sm" fw={600} mb="md">
-              แยกตามรูปแบบการจอง
+              {t("reports.byType")}
             </Text>
             <div className="flex flex-wrap gap-3">
               {report.byBookingType.map((item) => (
@@ -162,19 +164,19 @@ export default function ReportsContent() {
           {teacherId === "ALL" && (
             <Card padding="lg">
               <Text size="sm" fw={600} mb="md">
-                จำนวนคาบต่อครู (workload)
+                {t("reports.workload")}
               </Text>
               {report.byTeacher.length === 0 ? (
-                <p className="text-sm text-default-400">ไม่มีคาบเรียนในวันนี้</p>
+                <p className="text-sm text-default-400">{t("reports.noSessions")}</p>
               ) : (
                 <div className="space-y-3">
-                  {report.byTeacher.map((t) => {
-                    const type = teacherType(t.teacherId);
+                  {report.byTeacher.map((tc) => {
+                    const type = teacherType(tc.teacherId);
                     return (
-                      <div key={t.teacherId} className="flex items-center gap-3">
+                      <div key={tc.teacherId} className="flex items-center gap-3">
                         <div className="flex w-40 shrink-0 items-center gap-2">
                           <span className="truncate text-sm font-medium">
-                            {teacherName(t.teacherId)}
+                            {teacherName(tc.teacherId)}
                           </span>
                           {type && <TeacherTypeChip type={type} />}
                         </div>
@@ -182,11 +184,11 @@ export default function ReportsContent() {
                           className="flex-1"
                           size="lg"
                           radius="xl"
-                          value={maxTeacherCount > 0 ? (t.count / maxTeacherCount) * 100 : 0}
+                          value={maxTeacherCount > 0 ? (tc.count / maxTeacherCount) * 100 : 0}
                           color="blue"
                         />
                         <span className="w-24 shrink-0 text-right text-xs text-default-500">
-                          {t.count} คาบ · มา {t.attended}
+                          {t("reports.sessionsAttended", { count: tc.count, attended: tc.attended })}
                         </span>
                       </div>
                     );

@@ -4,22 +4,25 @@ import { Card, Table, Progress, Text, Badge, Group, Loader } from "@mantine/core
 import { Ticket } from "lucide-react";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import { useVouchers } from "@/hooks/scheduler";
+import { useT } from "@/lib/i18n";
 
 function RemainingBadge({ remaining }: { remaining: number }) {
+  const t = useT();
   if (remaining === 0)
     return (
       <Badge color={MANTINE_COLOR.danger} variant="light" radius="sm">
-        ใช้หมด
+        {t("voucher.used")}
       </Badge>
     );
   return (
     <Badge color={MANTINE_COLOR.success} variant="light" radius="sm">
-      ใช้ได้
+      {t("voucher.usable")}
     </Badge>
   );
 }
 
 export default function VoucherPanel() {
+  const t = useT();
   const { data: vouchers = [], isLoading } = useVouchers();
 
   if (isLoading) {
@@ -27,7 +30,7 @@ export default function VoucherPanel() {
       <Card padding="xl">
         <Group justify="center" c="dimmed" gap="xs">
           <Loader size="sm" />
-          <Text size="sm">กำลังโหลดวอยเชอร์...</Text>
+          <Text size="sm">{t("voucher.panelLoading")}</Text>
         </Group>
       </Card>
     );
@@ -38,7 +41,7 @@ export default function VoucherPanel() {
       <Card padding="xl">
         <Group justify="center" c="dimmed" gap="xs">
           <Ticket size={18} />
-          <Text size="sm">ยังไม่มีวอยเชอร์</Text>
+          <Text size="sm">{t("voucher.empty")}</Text>
         </Group>
       </Card>
     );
@@ -49,11 +52,11 @@ export default function VoucherPanel() {
       <Table verticalSpacing="sm" horizontalSpacing="md" highlightOnHover>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th>นักเรียน</Table.Th>
-            <Table.Th>ชั่วโมงรวม</Table.Th>
-            <Table.Th>ใช้ไป / เหลือ</Table.Th>
-            <Table.Th>หมดอายุ</Table.Th>
-            <Table.Th>สถานะ</Table.Th>
+            <Table.Th>{t("voucher.colStudent")}</Table.Th>
+            <Table.Th>{t("voucher.colTotal")}</Table.Th>
+            <Table.Th>{t("voucher.colUsage")}</Table.Th>
+            <Table.Th>{t("voucher.colExpiry")}</Table.Th>
+            <Table.Th>{t("voucher.colStatus")}</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -69,11 +72,11 @@ export default function VoucherPanel() {
                     </Text>
                   )}
                 </Table.Td>
-                <Table.Td>{v.totalHours} ชม.</Table.Td>
+                <Table.Td>{v.totalHours} {t("voucher.hoursShort")}</Table.Td>
                 <Table.Td style={{ minWidth: 160 }}>
                   <div className="mb-1 flex justify-between text-xs text-default-500">
-                    <span>ใช้ {v.usedHours}</span>
-                    <span>เหลือ {v.remaining}</span>
+                    <span>{t("voucher.usedN", { n: v.usedHours })}</span>
+                    <span>{t("voucher.leftN", { n: v.remaining })}</span>
                   </div>
                   <Progress
                     size="sm"

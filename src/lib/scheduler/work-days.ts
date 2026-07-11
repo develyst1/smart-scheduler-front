@@ -1,24 +1,26 @@
 import dayjs from "dayjs";
+import "dayjs/locale/th";
 import type { Teacher, TeacherView } from "@/types/app/scheduler";
 
-const THAI_SHORT = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"] as const;
 const WEEKEND_DAYS = [6, 0];
 const WEEKDAY_DAYS = [1, 2, 3, 4, 5];
 
 export const ALL_WORK_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
 
-export const WORK_DAY_OPTIONS = ALL_WORK_DAYS.map((d) => ({
-  value: String(d),
-  label: THAI_SHORT[d],
-}));
+/** Locale-aware short weekday name (0=Sun … 6=Sat). */
+export const dayShort = (d: number, lang: string) => dayjs().day(d).locale(lang).format("dd");
 
-/** ปุ่มลัดในหน้าจัดการครู */
-export const WORK_DAY_PRESETS: { label: string; days: number[] }[] = [
-  { label: "ทุกวัน", days: [...ALL_WORK_DAYS] },
-  { label: "เสาร์–อาทิตย์", days: [...WEEKEND_DAYS] },
-  { label: "จ–ศ", days: [...WEEKDAY_DAYS] },
-  { label: "เสาร์", days: [6] },
-  { label: "อาทิตย์", days: [0] },
+/** 7 day buttons for the working-days picker, labelled in the active language. */
+export const workDayOptions = (lang: string) =>
+  ALL_WORK_DAYS.map((d) => ({ value: String(d), label: dayShort(d, lang) }));
+
+/** ปุ่มลัดในหน้าจัดการครู — labelKey resolved with t() in the component. */
+export const WORK_DAY_PRESETS: { labelKey: string; days: number[] }[] = [
+  { labelKey: "workdays.presetAll", days: [...ALL_WORK_DAYS] },
+  { labelKey: "workdays.presetWeekend", days: [...WEEKEND_DAYS] },
+  { labelKey: "workdays.presetWeekdays", days: [...WEEKDAY_DAYS] },
+  { labelKey: "workdays.presetSat", days: [6] },
+  { labelKey: "workdays.presetSun", days: [0] },
 ];
 
 export function teacherWorksOnDay(workDays: readonly number[] | undefined, weekday: number): boolean {
@@ -34,8 +36,13 @@ export function bookableOnDate(teacher: TeacherView, date: string): boolean {
   return teacher.bookable && teacherWorksOnDate(teacher, date);
 }
 
-export function formatWorkDaysLabel(workDays: readonly number[] | undefined): string {
-  if (!workDays?.length || workDays.length === 7) return "ทุกวัน";
+/** Localized summary of a teacher's working days. `labels` come from t() in the component. */
+export function formatWorkDaysLabel(
+  workDays: readonly number[] | undefined,
+  lang: string,
+  labels: { allDays: string; weekdays: string; weekend: string },
+): string {
+  if (!workDays?.length || workDays.length === 7) return labels.allDays;
   const sorted = [...new Set(workDays)].sort((a, b) => {
     const order = (d: number) => (d === 0 ? 7 : d);
     return order(a) - order(b);
@@ -44,13 +51,13 @@ export function formatWorkDaysLabel(workDays: readonly number[] | undefined): st
     sorted.length === WEEKDAY_DAYS.length &&
     WEEKDAY_DAYS.every((d) => sorted.includes(d))
   ) {
-    return "จ–ศ (วันธรรมดา)";
+    return labels.weekdays;
   }
   if (
     sorted.length === WEEKEND_DAYS.length &&
     WEEKEND_DAYS.every((d) => sorted.includes(d))
   ) {
-    return "เสาร์–อาทิตย์";
+    return labels.weekend;
   }
-  return sorted.map((d) => THAI_SHORT[d] ?? String(d)).join(", ");
+  return sorted.map((d) => dayShort(d, lang)).join(", ");
 }

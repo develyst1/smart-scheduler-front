@@ -5,17 +5,19 @@ import { LockKeyholeOpen, Lock, GraduationCap } from "lucide-react";
 import { useAdminUnlockCourse, useCoursePackages } from "@/hooks/scheduler";
 import { notify } from "@/lib/ui/notify";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
+import { useT } from "@/lib/i18n";
 import type { CoursePackageView } from "@/types/app/scheduler";
 
 export default function CoursePackagePanel() {
+  const t = useT();
   const { data: courses = [], isLoading } = useCoursePackages();
   const unlock = useAdminUnlockCourse();
 
   const handleUnlock = async (c: CoursePackageView) => {
     await unlock.mutateAsync(c.id);
     notify({
-      title: "ปลดล็อกการลาแล้ว (กรณีพิเศษ)",
-      description: `${c.studentName} สามารถเลื่อนตารางเพิ่มได้`,
+      title: t("course.unlockedTitle"),
+      description: t("course.unlockedDesc", { student: c.studentName }),
       color: "warning",
     });
   };
@@ -24,7 +26,7 @@ export default function CoursePackagePanel() {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-default-500">
         <Loader size="md" />
-        กำลังโหลด...
+        {t("common.loading")}
       </div>
     );
   }
@@ -34,7 +36,7 @@ export default function CoursePackagePanel() {
       <Card padding="xl">
         <Group justify="center" c="dimmed" gap="xs">
           <GraduationCap size={18} />
-          <Text size="sm">ยังไม่มีคอร์ส</Text>
+          <Text size="sm">{t("course.empty")}</Text>
         </Group>
       </Card>
     );
@@ -56,20 +58,20 @@ export default function CoursePackagePanel() {
                 <div>
                   <p className="font-semibold">{c.studentName}</p>
                   <p className="text-xs text-default-400">
-                    คอร์ส {c.size} ครั้ง · หมดอายุ {c.expiryDate}
+                    {t("course.summary", { size: c.size, expiry: c.expiryDate })}
                   </p>
                 </div>
                 {c.leaveLocked ? (
                   <Badge color="red" variant="light" leftSection={<Lock size={13} />}>
-                    ล็อก
+                    {t("course.locked")}
                   </Badge>
                 ) : c.adminUnlocked ? (
                   <Badge color="orange" variant="light">
-                    ปลดล็อกพิเศษ
+                    {t("course.specialUnlock")}
                   </Badge>
                 ) : (
                   <Badge color="green" variant="light">
-                    ปกติ
+                    {t("course.normal")}
                   </Badge>
                 )}
               </div>
@@ -86,7 +88,7 @@ export default function CoursePackagePanel() {
                         {c.usedSessions}/{c.size}
                       </Text>
                       <Text size="xs" c="dimmed">
-                        ครั้ง
+                        {t("course.sessionsUnit")}
                       </Text>
                     </div>
                   }
@@ -94,8 +96,8 @@ export default function CoursePackagePanel() {
 
                 <div className="flex-1">
                   <div className="mb-1 flex justify-between text-xs text-default-500">
-                    <span>สิทธิ์การลา</span>
-                    <span>เหลือ {c.leaveRemaining}</span>
+                    <span>{t("course.leaveQuota")}</span>
+                    <span>{t("course.leftN", { n: c.leaveRemaining })}</span>
                   </div>
                   <Progress
                     size="md"
@@ -104,7 +106,7 @@ export default function CoursePackagePanel() {
                     color={leaveColor}
                   />
                   <p className="mt-1.5 text-[11px] text-default-400">
-                    ใช้ไป {c.leaveUsed}/{c.leaveQuota} · ขยายได้ถึงสัปดาห์ที่ {c.maxWeek}
+                    {t("course.usage", { used: c.leaveUsed, quota: c.leaveQuota, week: c.maxWeek })}
                   </p>
                 </div>
               </Group>
@@ -119,7 +121,7 @@ export default function CoursePackagePanel() {
                   loading={unlock.isPending}
                   onClick={() => handleUnlock(c)}
                 >
-                  ปลดล็อก (แอดมิน)
+                  {t("course.unlockBtn")}
                 </Button>
               )}
             </Stack>

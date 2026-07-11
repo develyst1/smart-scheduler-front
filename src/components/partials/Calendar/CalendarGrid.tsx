@@ -3,11 +3,8 @@
 import { Plus } from "lucide-react";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
-import {
-  BOOKING_STATUS_COLOR,
-  BOOKING_TYPE_LABEL,
-  TIME_SLOTS,
-} from "@/types/app/scheduler";
+import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
+import { useT } from "@/lib/i18n";
 
 interface Props {
   teachers: TeacherView[];
@@ -37,7 +34,8 @@ const ACCENT_STYLE: Record<string, string> = {
 };
 
 export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCreate }: Props) {
-  const activeTeachers = teachers.filter((t) => t.bookable);
+  const t = useT();
+  const activeTeachers = teachers.filter((tt) => tt.bookable);
 
   const findBooking = (teacherId: string, time: string) =>
     bookings.find(
@@ -56,15 +54,15 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
       >
         {/* Header row */}
         <div className="sticky left-0 top-0 z-20 border-b border-r border-default-200 bg-content1 p-3 text-xs font-medium text-default-400">
-          เวลา
+          {t("calendar.time")}
         </div>
-        {activeTeachers.map((t) => (
+        {activeTeachers.map((tc) => (
           <div
-            key={t.id}
+            key={tc.id}
             className="sticky top-0 z-10 flex flex-col items-center gap-1.5 border-b border-l border-default-100 bg-content1 p-3"
           >
-            <p className="truncate text-sm font-semibold leading-none">{t.nickname}</p>
-            <TeacherTypeChip type={t.type} />
+            <p className="truncate text-sm font-semibold leading-none">{tc.nickname}</p>
+            <TeacherTypeChip type={tc.type} />
           </div>
         ))}
 
@@ -97,16 +95,17 @@ function Row({
   onSelectBooking: (b: Booking) => void;
   onCreate: (teacherId: string, time: string) => void;
 }) {
+  const t = useT();
   return (
     <>
       <div className="sticky left-0 z-10 flex items-start justify-end border-r border-t border-default-100 bg-content1 p-2 pr-3 text-xs font-medium text-default-500">
         {time}
       </div>
-      {teachers.map((t) => {
-        const booking = findBooking(t.id, time);
+      {teachers.map((tc) => {
+        const booking = findBooking(tc.id, time);
         const accent = booking ? BOOKING_STATUS_COLOR[booking.status] : "default";
         return (
-          <div key={t.id} className="min-h-20 border-l border-t border-default-100 p-1.5">
+          <div key={tc.id} className="min-h-20 border-l border-t border-default-100 p-1.5">
             {booking ? (
               <button
                 type="button"
@@ -117,15 +116,15 @@ function Row({
                 <span className="truncate text-sm font-semibold">{booking.studentName}</span>
                 <span className="truncate text-xs text-default-500">{booking.subject}</span>
                 <span className="truncate text-[10px] uppercase tracking-wide text-default-400">
-                  {BOOKING_TYPE_LABEL[booking.bookingType]}
+                  {t(`bookingType.${booking.bookingType}`)}
                 </span>
               </button>
             ) : (
               <button
                 type="button"
-                onClick={() => onCreate(t.id, time)}
+                onClick={() => onCreate(tc.id, time)}
                 className="flex h-full min-h-16 w-full items-center justify-center rounded-xl border border-dashed border-default-200 text-default-300 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
-                aria-label="เพิ่มการจอง"
+                aria-label={t("calendar.addBooking")}
               >
                 <Plus size={16} />
               </button>

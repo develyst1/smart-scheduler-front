@@ -10,6 +10,7 @@ import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOpt
 import type { TeacherType, TeacherView } from "@/types/app/scheduler";
 import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
+import { useI18n } from "@/lib/i18n";
 import { STATUS_LEGEND } from "./Calendar.config";
 
 export type CalendarView = "day" | "week";
@@ -41,16 +42,23 @@ export default function CalendarHeader({
   selectedTypes = [],
   onChangeTypes,
 }: Props) {
-  const d = dayjs(date).locale("th");
+  const { lang, t } = useI18n();
+  const d = dayjs(date).locale(lang);
   const step = view === "week" ? 7 : 1;
   const shift = (n: number) => onChangeDate(d.add(n * step, "day").format("YYYY-MM-DD"));
   const isToday = date === dayjs().format("YYYY-MM-DD");
 
-  const dayLabel = `วัน${THAI_DAYS[d.day()]} ที่ ${d.format("D MMMM")} พ.ศ. ${d.year() + 543}`;
+  // th → Thai weekday + Buddhist era; en → Gregorian English.
+  const dayLabel =
+    lang === "th"
+      ? `วัน${THAI_DAYS[d.day()]} ที่ ${d.format("D MMMM")} พ.ศ. ${d.year() + 543}`
+      : d.format("dddd, D MMMM YYYY");
   const weekLabel = (() => {
-    const start = dayjs(weekDays[0]).locale("th");
-    const end = dayjs(weekDays[6]).locale("th");
-    return `${start.format("D MMM")} – ${end.format("D MMM")} พ.ศ. ${end.year() + 543}`;
+    const start = dayjs(weekDays[0]).locale(lang);
+    const end = dayjs(weekDays[6]).locale(lang);
+    return lang === "th"
+      ? `${start.format("D MMM")} – ${end.format("D MMM")} พ.ศ. ${end.year() + 543}`
+      : `${start.format("D MMM")} – ${end.format("D MMM YYYY")}`;
   })();
 
   return (
@@ -69,13 +77,13 @@ export default function CalendarHeader({
               value={view}
               onChange={(v) => onChangeView(v as CalendarView)}
               data={[
-                { label: "รายวัน", value: "day" },
-                { label: "รายสัปดาห์", value: "week" },
+                { label: t("calendar.daily"), value: "day" },
+                { label: t("calendar.weekly"), value: "week" },
               ]}
             />
 
-            <Tooltip label={view === "week" ? "สัปดาห์ก่อนหน้า" : "วันก่อนหน้า"}>
-              <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(-1)} aria-label="ก่อนหน้า">
+            <Tooltip label={view === "week" ? t("calendar.prevWeek") : t("calendar.prevDay")}>
+              <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(-1)} aria-label={t("calendar.prev")}>
                 <ChevronLeft size={18} />
               </ActionIcon>
             </Tooltip>
@@ -89,11 +97,11 @@ export default function CalendarHeader({
               popoverProps={{ withinPortal: true }}
               leftSection={<CalendarDays size={16} />}
               className="min-w-52"
-              aria-label="เลือกวันที่"
+              aria-label={t("calendar.pickDate")}
             />
 
-            <Tooltip label={view === "week" ? "สัปดาห์ถัดไป" : "วันถัดไป"}>
-              <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(1)} aria-label="ถัดไป">
+            <Tooltip label={view === "week" ? t("calendar.nextWeek") : t("calendar.nextDay")}>
+              <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(1)} aria-label={t("calendar.next")}>
                 <ChevronRight size={18} />
               </ActionIcon>
             </Tooltip>
@@ -104,14 +112,14 @@ export default function CalendarHeader({
               radius="md"
               onClick={() => onChangeDate(dayjs().format("YYYY-MM-DD"))}
             >
-              วันนี้
+              {t("calendar.today")}
             </Button>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
-          {STATUS_LEGEND.map((l) => (
-            <StatusChip key={l.status} status={l.status} size="md" />
+          {STATUS_LEGEND.map((status) => (
+            <StatusChip key={status} status={status} size="md" />
           ))}
         </div>
       </div>
@@ -120,8 +128,8 @@ export default function CalendarHeader({
       {teachers.length > 0 && (
         <div className="flex flex-wrap items-end gap-3 border-t border-default-100 pt-3">
           <MultiSelect
-            label="ครูผู้สอน"
-            placeholder={selectedTeacherIds.length > 0 ? undefined : "ครูทั้งหมด"}
+            label={t("calendar.teacher")}
+            placeholder={selectedTeacherIds.length > 0 ? undefined : t("calendar.allTeachers")}
             value={selectedTeacherIds}
             onChange={onChangeTeacherIds}
             data={teacherSelectData(
@@ -143,12 +151,12 @@ export default function CalendarHeader({
               pillsList: "!flex-nowrap overflow-x-auto scroll-smooth py-0.5",
               inputField: "min-w-12",
             }}
-            aria-label="กรองครู"
+            aria-label={t("calendar.filterTeacher")}
           />
 
           <MultiSelect
-            label="ประเภท"
-            placeholder={selectedTypes.length > 0 ? undefined : "ทุกประเภท"}
+            label={t("calendar.type")}
+            placeholder={selectedTypes.length > 0 ? undefined : t("calendar.allTypes")}
             value={selectedTypes}
             onChange={onChangeTypes}
             data={(Object.keys(TEACHER_TYPE_LABEL) as TeacherType[]).map((type) => ({
@@ -164,7 +172,7 @@ export default function CalendarHeader({
             classNames={{
               pillsList: "!flex-nowrap overflow-x-auto scroll-smooth py-0.5",
             }}
-            aria-label="กรองประเภทครู"
+            aria-label={t("calendar.filterType")}
           />
         </div>
       )}

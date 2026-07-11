@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarRange } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { NAV_ITEMS, APP_NAME } from "../AdminLayout.config";
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 }
 
 function Brand({ collapsed }: { collapsed: boolean }) {
+  const t = useT();
   return (
     <div className="flex items-center gap-3 px-5 py-5">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-blue-700 text-primary-foreground shadow-md shadow-primary/30">
@@ -22,11 +24,16 @@ function Brand({ collapsed }: { collapsed: boolean }) {
       {!collapsed && (
         <div className="leading-tight">
           <p className="text-sm font-semibold tracking-tight">{APP_NAME}</p>
-          <p className="text-xs text-default-400">จัดตารางเรียนหลังบ้าน</p>
+          <p className="text-xs text-default-400">{t("brand.tagline")}</p>
         </div>
       )}
     </div>
   );
+}
+
+function SidebarFooter() {
+  const t = useT();
+  return <div className="px-5 py-4 text-xs text-default-400">{t("brand.footer")}</div>;
 }
 
 function NavList({
@@ -37,18 +44,20 @@ function NavList({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon;
         const active = pathname?.startsWith(item.href);
+        const label = t(item.labelKey);
         return (
           <Link
             key={item.key}
             href={item.href}
             onClick={onNavigate}
-            title={collapsed ? item.label : undefined}
+            title={collapsed ? label : undefined}
             className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
               collapsed ? "justify-center" : ""
             } ${
@@ -69,7 +78,7 @@ function NavList({
             >
               <Icon size={18} />
             </span>
-            {!collapsed && item.label}
+            {!collapsed && label}
           </Link>
         );
       })}
@@ -89,7 +98,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: Props)
         <Brand collapsed={collapsed} />
         <NavList collapsed={collapsed} />
         {!collapsed && (
-          <div className="px-5 py-4 text-xs text-default-400">v0.1 · ทีมงานหลังบ้าน</div>
+          <SidebarFooter />
         )}
       </aside>
 
@@ -104,7 +113,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: Props)
           <aside className="absolute left-0 top-0 flex h-full w-64 flex-col border-r border-default-200 bg-content1 shadow-xl">
             <Brand collapsed={false} />
             <NavList collapsed={false} onNavigate={onCloseMobile} />
-            <div className="px-5 py-4 text-xs text-default-400">v0.1 · ทีมงานหลังบ้าน</div>
+            <SidebarFooter />
           </aside>
         </div>
       )}
