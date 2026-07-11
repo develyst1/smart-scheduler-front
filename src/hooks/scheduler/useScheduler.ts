@@ -3,17 +3,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminUnlockCourse,
-  cancelReschedule,
   confirmBooking,
-  confirmReschedule,
   createBooking,
-  createBookingWithReschedule,
   detectConflict,
   getAllBookings,
   getCalendar,
   getBookingsByDate,
   getBookingsInRange,
-  type RescheduleResolution,
+  moveBooking,
+  type MoveBookingInput,
   createCoursePackage,
   createVoucher,
   getCoursePackages,
@@ -178,32 +176,12 @@ export const useDetectConflict = () =>
     }) => detectConflict(teacherId, date, startTime),
   });
 
-export const useCreateBookingWithReschedule = () => {
+/** ย้าย/แก้คาบด้วยมือ (UC-003) — ครู/วัน/เวลา */
+export const useMoveBooking = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      input,
-      resolution,
-    }: {
-      input: CreateBookingInput;
-      resolution: RescheduleResolution;
-    }) => createBookingWithReschedule(input, resolution),
-    onSuccess: () => invalidateAll(qc),
-  });
-};
-
-export const useConfirmReschedule = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (oldId: string) => confirmReschedule(oldId),
-    onSuccess: () => invalidateAll(qc),
-  });
-};
-
-export const useCancelReschedule = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (oldId: string) => cancelReschedule(oldId),
+    mutationFn: ({ id, patch }: { id: string; patch: MoveBookingInput }) =>
+      moveBooking(id, patch),
     onSuccess: () => invalidateAll(qc),
   });
 };

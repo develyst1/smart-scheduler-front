@@ -15,7 +15,6 @@ import type {
   BookingType,
   CoursePackageView,
   DailyReport,
-  RescheduleReason,
   Teacher,
   TeacherType,
   TeacherView,
@@ -162,95 +161,27 @@ export const createBooking = (input: CreateBookingInput) => {
   return delay(clone(newBooking));
 };
 
-export interface RescheduleResolution {
-  reason: RescheduleReason;
-  date: string;
-  teacherId: string;
-  startTime: string;
-}
-
-export interface RescheduleResult {
-  existing?: Booking;
-  incoming: Booking;
-}
-
-export const createBookingWithReschedule = (
-  input: CreateBookingInput,
-  resolution: RescheduleResolution,
-): Promise<RescheduleResult> => {
-  const existing = slotOccupant(input.teacherId, input.date, input.startTime);
-  if (!existing) {
-    const created: Booking = {
-      id: nextBookingId(),
-      ...input,
-      endTime: endOf(input.startTime),
-      status: "PENDING",
-    };
-    bookings.push(created);
-    return delay({ existing: undefined, incoming: clone(created) });
+/** ย้าย/แก้คาบด้วยมือ (UC-003) — ครู/วัน/เวลา */
+export const moveBooking = (
+  id: string,
+  patch: {
+    teacherId?: string;
+    subjectId?: string;
+    date?: string;
+    startTime?: string;
+    note?: string;
+  },
+): Promise<Booking> => {
+  const b = bookings.find((x) => x.id === id);
+  if (!b) return delay(undefined as unknown as Booking);
+  if (patch.teacherId) b.teacherId = patch.teacherId;
+  if (patch.date) b.date = patch.date;
+  if (patch.startTime) {
+    b.startTime = patch.startTime;
+    b.endTime = endOf(patch.startTime);
   }
-
-  const incoming: Booking = {
-    id: nextBookingId(),
-    ...input,
-    endTime: endOf(input.startTime),
-    status: "PENDING",
-    pendingSlot: true,
-  };
-  bookings.push(incoming);
-
-  existing.status = "PENDING_RESCHEDULE";
-  existing.incomingBookingId = incoming.id;
-  existing.rescheduleTo = {
-    reason: resolution.reason,
-    date: resolution.date,
-    teacherId: resolution.teacherId,
-    startTime: resolution.startTime,
-    endTime: endOf(resolution.startTime),
-  };
-
-  console.info(
-    `[Line notify] ขอย้ายคาบ ${existing.studentName} → ${existing.rescheduleTo.date} ${existing.rescheduleTo.startTime} (รอตอบรับ)`,
-  );
-
-  return delay({ existing: clone(existing), incoming: clone(incoming) });
-};
-
-export const confirmReschedule = (oldId: string) => {
-  const old = bookings.find((b) => b.id === oldId);
-  if (!old || !old.rescheduleTo) return delay(undefined);
-
-  const t = old.rescheduleTo;
-  old.date = t.date;
-  old.teacherId = t.teacherId;
-  old.startTime = t.startTime;
-  old.endTime = t.endTime;
-  old.status = "CONFIRMED";
-  old.note = "ย้ายคาบจากการจองทับ (ผู้ปกครองตกลง)";
-
-  if (old.incomingBookingId) {
-    const incoming = bookings.find((b) => b.id === old.incomingBookingId);
-    if (incoming) incoming.pendingSlot = false;
-  }
-  old.rescheduleTo = undefined;
-  old.incomingBookingId = undefined;
-
-  return delay(clone(old));
-};
-
-export const cancelReschedule = (oldId: string) => {
-  const old = bookings.find((b) => b.id === oldId);
-  if (!old) return delay(undefined);
-
-  if (old.incomingBookingId) {
-    const idx = bookings.findIndex((b) => b.id === old.incomingBookingId);
-    if (idx !== -1) bookings.splice(idx, 1);
-  }
-  old.status = "CONFIRMED";
-  old.rescheduleTo = undefined;
-  old.incomingBookingId = undefined;
-
-  return delay(clone(old));
+  if (patch.note !== undefined) b.note = patch.note;
+  return delay(clone(b));
 };
 
 export const getCoursePackages = (): Promise<CoursePackageView[]> =>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import dayjs from "dayjs";
 import {
   Modal,
   Button,
@@ -10,33 +9,26 @@ import {
   Group,
   Stack,
   Alert,
-  Paper,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight } from "lucide-react";
+import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
+import { ApiClientError } from "@/lib/api/client";
 import {
-  useCancelReschedule,
   useConfirmBooking,
-  useConfirmReschedule,
   useCreateBooking,
-  useCreateBookingWithReschedule,
   useDetectConflict,
   useMarkAttended,
   useMarkSickLeave,
+  useMoveBooking,
 } from "@/hooks/scheduler";
-import type {
-  Booking,
-  BookingType,
-  RescheduleReason,
-  TeacherView,
-} from "@/types/app/scheduler";
-import type { CreateBookingInput } from "@/services/scheduler.service";
-import { RESCHEDULE_REASON_LABEL, TIME_SLOTS } from "@/types/app/scheduler";
+import type { Booking, BookingType, TeacherView } from "@/types/app/scheduler";
+import type { CreateBookingInput, MoveBookingInput } from "@/services/scheduler.service";
+import { TIME_SLOTS } from "@/types/app/scheduler";
 import { BOOKING_TYPE_OPTIONS } from "../Calendar.config";
 
 interface Props {
@@ -48,6 +40,9 @@ interface Props {
   bookings: Booking[];
   onOverbook: (b: Booking) => void;
 }
+
+/** คาบที่ย้ายด้วยมือได้ (UC-003) — ไม่รวมที่มาเรียน/ลา/ยกเลิกแล้ว */
+const MOVABLE_STATUSES: Booking["status"][] = ["PENDING", "CONFIRMED", "EXTENDED"];
 
 export default function BookingModal({
   isOpen,
@@ -82,13 +77,12 @@ export default function BookingModal({
       }
     >
       {isCreate && createSlot ? (
-        <CreateForm createSlot={createSlot} teachers={teachers} onClose={onClose} />
+        <CreateForm createSlot={createSlot} teachers={teachers} bookings={bookings} onClose={onClose} />
       ) : booking ? (
         <ViewBooking
           booking={booking}
           teacherName={teacher?.name ?? "-"}
           teachers={teachers}
-          bookings={bookings}
           onOverbook={onOverbook}
           onClose={onClose}
         />
@@ -103,30 +97,20 @@ function ViewBooking({
   booking,
   teacherName,
   teachers,
-  bookings,
   onOverbook,
   onClose,
 }: {
   booking: Booking;
   teacherName: string;
   teachers: TeacherView[];
-  bookings: Booking[];
   onOverbook: (b: Booking) => void;
   onClose: () => void;
 }) {
   const confirm = useConfirmBooking();
   const attended = useMarkAttended();
   const sickLeave = useMarkSickLeave();
-  const confirmMove = useConfirmReschedule();
-  const cancelMove = useCancelReschedule();
 
-  const isRescheduling = booking.status === "PENDING_RESCHEDULE";
-  const incoming = booking.incomingBookingId
-    ? bookings.find((b) => b.id === booking.incomingBookingId)
-    : undefined;
-  const targetTeacher = booking.rescheduleTo
-    ? teachers.find((t) => t.id === booking.rescheduleTo!.teacherId)
-    : undefined;
+  const [moving, setMoving] = useState(false);
 
   const handleConfirm = async () => {
     const res = await confirm.mutateAsync(booking.id);
@@ -179,76 +163,22 @@ function ViewBooking({
     onClose();
   };
 
-  const handleConfirmMove = async () => {
-    await confirmMove.mutateAsync(booking.id);
-    notify({
-      title: "ยืนยันการย้ายแล้ว",
-      description: "ย้ายคาบเดิมไปช่องใหม่ และปล่อยช่องนี้ให้การจองใหม่",
-      color: "success",
-    });
-    onClose();
-  };
-
-  const handleCancelMove = async () => {
-    await cancelMove.mutateAsync(booking.id);
-    notify({
-      title: "ยกเลิกการย้าย",
-      description: "คืนคาบเดิมไว้ที่เดิม และยกเลิกการจองใหม่",
-      color: "default",
-    });
-    onClose();
-  };
-
-  // ── โหมดรอย้าย (จองทับ) ──
-  if (isRescheduling && booking.rescheduleTo) {
-    const t = booking.rescheduleTo;
+  // ── โหมดย้ายคาบด้วยมือ (UC-003) ──
+  if (moving) {
     return (
-      <Stack gap="md">
-        <Alert color="orange" icon={<AlertTriangle size={18} />} title="รอผู้ปกครองตอบรับการย้าย">
-          คาบนี้ถูกขอย้ายเพราะมีการจองทับ — ส่ง Line แจ้งผู้ปกครองแล้ว ของเดิมยังคาที่ช่องนี้จนกว่าจะยืนยัน
-        </Alert>
-
-        <dl className="grid grid-cols-2 gap-3 text-sm">
-          <Field label="ครู (เดิม)" value={teacherName} />
-          <Field label="คาบเดิม" value={`${booking.date} ${booking.startTime}`} />
-          <Field label="วิธีย้าย" value={RESCHEDULE_REASON_LABEL[t.reason]} />
-          <Field
-            label="ปลายทาง"
-            value={`${targetTeacher?.nickname ?? teacherName} · ${t.date} ${t.startTime}`}
-          />
-        </dl>
-
-        {incoming && (
-          <Paper withBorder p="sm" className="bg-default-100/60">
-            <p className="text-xs text-default-400">การจองใหม่ที่รอช่องนี้</p>
-            <p className="text-sm font-medium">
-              {incoming.studentName} · {incoming.subject}
-            </p>
-          </Paper>
-        )}
-
-        <Group justify="flex-end" gap="sm" wrap="wrap">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            ปิด
-          </Button>
-          <Button
-            variant="light"
-            color="red"
-            loading={cancelMove.isPending}
-            onClick={handleCancelMove}
-          >
-            ยกเลิกการย้าย
-          </Button>
-          <Button color="green" loading={confirmMove.isPending} onClick={handleConfirmMove}>
-            ผู้ปกครองตกลง — ยืนยันย้าย
-          </Button>
-        </Group>
-      </Stack>
+      <MoveBookingForm
+        booking={booking}
+        teachers={teachers}
+        onCancel={() => setMoving(false)}
+        onClose={onClose}
+      />
     );
   }
 
   // ── โหมดดูปกติ ──
-  const canOverbook = !["CANCELLED", "PENDING_RESCHEDULE"].includes(booking.status);
+  // จองทับได้เฉพาะช่องที่นักเรียนเดิม "ลา" เท่านั้น (UC-004)
+  const canOverbook = booking.status === "SICK_LEAVE";
+  const canMove = MOVABLE_STATUSES.includes(booking.status);
 
   return (
     <Stack gap="md">
@@ -266,18 +196,28 @@ function ViewBooking({
       )}
 
       <Group justify="space-between" gap="sm" wrap="wrap">
-        {canOverbook ? (
-          <Button
-            variant="light"
-            color="orange"
-            leftSection={<ArrowLeftRight size={16} />}
-            onClick={() => onOverbook(booking)}
-          >
-            จองทับ (จัดการของเดิม)
-          </Button>
-        ) : (
-          <span />
-        )}
+        <Group gap="sm" wrap="wrap">
+          {canOverbook && (
+            <Button
+              variant="light"
+              color="orange"
+              leftSection={<ArrowLeftRight size={16} />}
+              onClick={() => onOverbook(booking)}
+            >
+              จองทับ (นักเรียนลา)
+            </Button>
+          )}
+          {canMove && (
+            <Button
+              variant="light"
+              color="grape"
+              leftSection={<Move size={16} />}
+              onClick={() => setMoving(true)}
+            >
+              ย้ายคาบ
+            </Button>
+          )}
+        </Group>
 
         <Group gap="sm" wrap="wrap">
           <Button variant="subtle" color="gray" onClick={onClose}>
@@ -317,6 +257,100 @@ function ViewBooking({
   );
 }
 
+// ───────────────────────── Manual move (UC-003) ─────────────────────────
+
+function MoveBookingForm({
+  booking,
+  teachers,
+  onCancel,
+  onClose,
+}: {
+  booking: Booking;
+  teachers: TeacherView[];
+  onCancel: () => void;
+  onClose: () => void;
+}) {
+  const move = useMoveBooking();
+  const [teacherId, setTeacherId] = useState(booking.teacherId);
+  const [date, setDate] = useState(booking.date);
+  const [startTime, setStartTime] = useState(booking.startTime);
+
+  const bookableTeachers = teachers.filter((t) => bookableOnDate(t, date));
+
+  const handleSubmit = async () => {
+    const patch: MoveBookingInput = {};
+    if (teacherId !== booking.teacherId) patch.teacherId = teacherId;
+    if (date !== booking.date) patch.date = date;
+    if (startTime !== booking.startTime) patch.startTime = startTime;
+
+    if (Object.keys(patch).length === 0) {
+      notify({ title: "ไม่มีการเปลี่ยนแปลง", color: "default" });
+      onCancel();
+      return;
+    }
+
+    try {
+      await move.mutateAsync({ id: booking.id, patch });
+      notify({
+        title: "ย้ายคาบแล้ว",
+        description: `${date} ${startTime}`,
+        color: "success",
+      });
+      onClose();
+    } catch (e) {
+      const msg =
+        e instanceof ApiClientError && e.code === "SLOT_TAKEN"
+          ? "ครูมีคาบในช่วงเวลานี้แล้ว — เลือกวัน/เวลา/ครูอื่น"
+          : e instanceof ApiClientError
+            ? e.message
+            : "ย้ายคาบไม่สำเร็จ";
+      notify({ title: "ย้ายคาบไม่สำเร็จ", description: msg, color: "danger" });
+    }
+  };
+
+  return (
+    <Stack gap="md">
+      <Alert color="grape" icon={<Move size={18} />} title="ย้ายคาบด้วยมือ">
+        ย้ายครู / วัน / เวลา สำหรับกรณีพิเศษ — ถ้าช่องปลายทางมีคาบอยู่แล้วจะย้ายไม่ได้
+      </Alert>
+
+      <Select
+        label="ครูผู้สอน"
+        value={teacherId}
+        onChange={(v) => v && setTeacherId(v)}
+        allowDeselect={false}
+        data={teacherSelectData(bookableTeachers)}
+        renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <DatePickerInput
+          label="วันที่"
+          value={date}
+          onChange={(v) => v && setDate(v)}
+          valueFormat="D MMM YYYY"
+          styles={{ input: { textAlign: "left" } }}
+        />
+        <Select
+          label="เวลา"
+          value={startTime}
+          onChange={(v) => v && setStartTime(v)}
+          allowDeselect={false}
+          data={TIME_SLOTS.map((t) => ({ value: t, label: t }))}
+        />
+      </div>
+
+      <Group justify="flex-end" gap="sm">
+        <Button variant="subtle" color="gray" onClick={onCancel}>
+          ย้อนกลับ
+        </Button>
+        <Button color="grape" loading={move.isPending} onClick={handleSubmit}>
+          ยืนยันย้ายคาบ
+        </Button>
+      </Group>
+    </Stack>
+  );
+}
+
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -326,26 +360,29 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ───────────────────────── Create form (+ conflict) ─────────────────────────
+// ───────────────────────── Create form (+ จองทับคนลา) ─────────────────────────
 
 function CreateForm({
   createSlot,
   teachers,
+  bookings,
   onClose,
 }: {
   createSlot: { teacherId: string; time: string; date: string };
   teachers: TeacherView[];
+  bookings: Booking[];
   onClose: () => void;
 }) {
   const create = useCreateBooking();
   const detect = useDetectConflict();
-  const reschedule = useCreateBookingWithReschedule();
 
   const [student, setStudent] = useState<StudentSelectValue | null>(null);
   const [teacherId, setTeacherId] = useState(createSlot.teacherId);
   const [subjectId, setSubjectId] = useState("");
   const [startTime, setStartTime] = useState(createSlot.time);
   const [bookingType, setBookingType] = useState<BookingType>("SINGLE_SESSION");
+  // ช่องที่ถูกจองอยู่แล้วและ "ไม่ใช่การลา" → จองทับไม่ได้ (UC-004)
+  const [blocked, setBlocked] = useState<Booking | undefined>();
 
   const selectedTeacher = teachers.find((t) => t.id === teacherId);
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
@@ -354,11 +391,14 @@ function CreateForm({
     if (subjectOptions.length === 1) setSubjectId(subjectOptions[0].id);
   }, [teacherId, subjectOptions.length]);
 
-  // conflict state
-  const [conflict, setConflict] = useState<Booking | undefined>();
-  const [reason, setReason] = useState<RescheduleReason>("MOVE_DAY");
-  const [targetDate, setTargetDate] = useState<string>(createSlot.date);
-  const [targetTeacherId, setTargetTeacherId] = useState<string>(createSlot.teacherId);
+  // นักเรียนเดิมที่ลาในช่องนี้ (ถ้ามี) — จองทับได้เฉพาะกรณีนี้
+  const leaveOccupant = bookings.find(
+    (b) =>
+      b.teacherId === createSlot.teacherId &&
+      b.date === createSlot.date &&
+      b.startTime === createSlot.time &&
+      b.status === "SICK_LEAVE",
+  );
 
   const valid = student?.name.trim() && subjectId && teacherId && startTime;
 
@@ -382,110 +422,49 @@ function CreateForm({
   const handleSubmit = async () => {
     if (!valid) return;
     const existing = await detect.mutateAsync({ teacherId, date: createSlot.date, startTime });
-    if (existing) {
-      // มีคนจองช่องนี้แล้ว → เข้าโหมดจัดการของเดิม
-      setConflict(existing);
-      setReason("MOVE_DAY");
-      setTargetDate(dayjs(existing.date).add(1, "day").format("YYYY-MM-DD"));
-      setTargetTeacherId(existing.teacherId);
+    // มีคาบอยู่แล้วและไม่ใช่การลา → ห้ามจองทับ (UC-004)
+    if (existing && existing.status !== "SICK_LEAVE") {
+      setBlocked(existing);
       return;
     }
+    // ช่องว่าง หรือ นักเรียนเดิมลา → สร้างได้ (จองทับคาบที่ลา)
     await create.mutateAsync(input);
-    notify({ title: "สร้างการจองแล้ว", description: "สถานะ: รอยืนยัน", color: "success" });
-    onClose();
-  };
-
-  const onReasonChange = (r: RescheduleReason) => {
-    setReason(r);
-    if (!conflict) return;
-    if (r === "MOVE_DAY") setTargetDate(dayjs(conflict.date).add(1, "day").format("YYYY-MM-DD"));
-    if (r === "MOVE_WEEK") setTargetDate(dayjs(conflict.date).add(1, "week").format("YYYY-MM-DD"));
-    if (r === "MOVE_TEACHER") setTargetTeacherId(conflict.teacherId);
-  };
-
-  const handleReschedule = async () => {
-    if (!conflict) return;
-    await reschedule.mutateAsync({
-      input,
-      resolution: {
-        reason,
-        date: reason === "MOVE_TEACHER" ? conflict.date : targetDate,
-        teacherId: reason === "MOVE_TEACHER" ? targetTeacherId : conflict.teacherId,
-        startTime: conflict.startTime,
-      },
-    });
     notify({
-      title: "ส่งคำขอย้ายแล้ว",
-      description: "แจ้งผู้ปกครองทาง Line ของเดิมยังคาที่เดิมจนกว่าจะตอบรับ",
-      color: "warning",
+      title: existing ? "จองแทนคาบที่ลาแล้ว" : "สร้างการจองแล้ว",
+      description: "สถานะ: รอยืนยัน",
+      color: "success",
     });
     onClose();
   };
 
-  // ── โหมดจัดการการจองทับ ──
-  if (conflict) {
-    const bookableTeachers = teachers.filter(
-      (t) => bookableOnDate(t, conflict.date) && t.id !== conflict.teacherId,
-    );
+  // ── ช่องนี้มีการจองอยู่แล้ว (ไม่ใช่การลา) → จองทับไม่ได้ ──
+  if (blocked) {
     return (
       <Stack gap="md">
-        <Alert color="orange" icon={<AlertTriangle size={18} />} title="ช่องนี้มีการจองอยู่แล้ว">
-          {conflict.studentName} · {conflict.subject} ({conflict.startTime}) — เลือกวิธีจัดการของเดิมก่อน
-          ระบบจะแจ้งผู้ปกครองและรอตอบรับ
+        <Alert color="red" icon={<AlertTriangle size={18} />} title="ช่องนี้มีการจองอยู่แล้ว">
+          {blocked.studentName} · {blocked.subject} ({blocked.startTime}) — จองทับได้เฉพาะกรณีที่
+          นักเรียนคนเดิม<b>ลา</b>เท่านั้น
         </Alert>
-
-        <Select
-          label="ย้ายการจองเดิมไป"
-          value={reason}
-          onChange={(v) => v && onReasonChange(v as RescheduleReason)}
-          allowDeselect={false}
-          data={(Object.keys(RESCHEDULE_REASON_LABEL) as RescheduleReason[]).map((r) => ({
-            value: r,
-            label: RESCHEDULE_REASON_LABEL[r],
-          }))}
-        />
-
-        {reason === "MOVE_TEACHER" ? (
-          <Select
-            label="ครูคนใหม่ (วัน-เวลาเดิม)"
-            value={targetTeacherId}
-            onChange={(v) => v && setTargetTeacherId(v)}
-            allowDeselect={false}
-            placeholder="เลือกครู"
-            data={teacherSelectData(bookableTeachers)}
-            renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
-          />
-        ) : (
-          <DatePickerInput
-            label="วันใหม่ (เวลาเดิม)"
-            value={targetDate}
-            onChange={(v) => v && setTargetDate(v)}
-            valueFormat="D MMM YYYY"
-            minDate={dayjs(conflict.date).add(1, "day").toDate()}
-            styles={{ input: { textAlign: "left" } }}
-          />
-        )}
-
         <Group justify="flex-end" gap="sm">
-          <Button variant="subtle" color="gray" onClick={() => setConflict(undefined)}>
+          <Button variant="subtle" color="gray" onClick={() => setBlocked(undefined)}>
             ย้อนกลับ
           </Button>
-          <Button
-            color="orange"
-            loading={reschedule.isPending}
-            disabled={reason === "MOVE_TEACHER" && !targetTeacherId}
-            onClick={handleReschedule}
-          >
-            ส่งคำขอย้าย + แจ้งผู้ปกครอง
+          <Button variant="light" color="gray" onClick={onClose}>
+            ปิด
           </Button>
         </Group>
       </Stack>
     );
   }
 
-  // ── ฟอร์มสร้างปกติ ──
+  // ── ฟอร์มสร้างปกติ (+ แจ้งเมื่อกำลังจองทับคาบที่ลา) ──
   return (
     <Stack gap="md">
+      {leaveOccupant && (
+        <Alert color="orange" icon={<ArrowLeftRight size={18} />} title="จองแทนคาบที่นักเรียนลา">
+          ช่องนี้ {leaveOccupant.studentName} ลา — การจองนี้จะเข้าไปแทนในช่องเวลาเดิม
+        </Alert>
+      )}
       <StudentSelect value={student} onChange={setStudent} required />
       <Select
         label="ครูผู้สอน"

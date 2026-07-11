@@ -20,7 +20,6 @@ import type {
   Booking,
   CoursePackageView,
   DailyReport,
-  RescheduleReason,
   Teacher,
   TeacherType,
   TeacherView,
@@ -29,11 +28,10 @@ import type {
   BookingsResponse,
   CalendarResponse,
   CoursesResponse,
-  CreateBookingWithRescheduleResponse,
   CreateCoursePackageResponse,
   CreateVoucherResponse,
   DailyReportResponse,
-  RescheduleDecisionResponse,
+  MoveBookingResponse,
   SetTeacherWorkDaysResponse,
   TeachersResponse,
   TeacherTypeOrderResponse,
@@ -42,8 +40,6 @@ import type {
 import type { PackageSize } from "@/types/app/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import * as mock from "./scheduler.mock.service";
-
-export type { RescheduleResolution, RescheduleResult } from "./scheduler.mock.service";
 
 const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
@@ -292,46 +288,22 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
   return dtoToBooking(data.booking);
 };
 
-export const createBookingWithReschedule = async (
-  input: CreateBookingInput,
-  resolution: mock.RescheduleResolution,
-): Promise<mock.RescheduleResult> => {
-  if (useMock) return mock.createBookingWithReschedule(input, resolution);
-  if (!input.subjectId) {
-    throw new ApiClientError("VALIDATION", "เลือกวิชาก่อนจอง (ไม่พบ subjectId)", 400);
-  }
-  const { data } = await api.post<CreateBookingWithRescheduleResponse>(
-    "/bookings/with-reschedule",
-    {
-      student: studentPayload(input),
-      teacherId: input.teacherId,
-      subjectId: input.subjectId,
-      date: input.date,
-      startTime: input.startTime,
-      bookingType: input.bookingType,
-      resolution,
-    },
-  );
-  return {
-    existing: data.existing ? dtoToBooking(data.existing) : undefined,
-    incoming: dtoToBooking(data.incoming),
-  };
-};
+/** ย้าย/แก้คาบด้วยมือ (UC-003) — ครู/วัน/เวลา. ชนช่อง → 409 SLOT_TAKEN. */
+export interface MoveBookingInput {
+  teacherId?: string;
+  subjectId?: string;
+  date?: string;
+  startTime?: string;
+  note?: string;
+}
 
-export const confirmReschedule = async (oldId: string): Promise<Booking | undefined> => {
-  if (useMock) return mock.confirmReschedule(oldId);
-  const { data } = await api.patch<RescheduleDecisionResponse>(
-    `/bookings/${oldId}/reschedule/confirm`,
-  );
-  return data.booking ? dtoToBooking(data.booking) : undefined;
-};
-
-export const cancelReschedule = async (oldId: string): Promise<Booking | undefined> => {
-  if (useMock) return mock.cancelReschedule(oldId);
-  const { data } = await api.patch<RescheduleDecisionResponse>(
-    `/bookings/${oldId}/reschedule/cancel`,
-  );
-  return data.booking ? dtoToBooking(data.booking) : undefined;
+export const moveBooking = async (
+  id: string,
+  patch: MoveBookingInput,
+): Promise<Booking> => {
+  if (useMock) return mock.moveBooking(id, patch);
+  const { data } = await api.patch<MoveBookingResponse>(`/bookings/${id}`, patch);
+  return dtoToBooking(data.booking);
 };
 
 // ───────────────────────── Course packages ─────────────────────────

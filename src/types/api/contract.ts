@@ -205,20 +205,9 @@ export interface CreateBookingResponse {
   course: CourseSummary | null;
 }
 
-export interface CreateBookingWithRescheduleRequest extends CreateBookingRequest {
-  resolution: {
-    reason: RescheduleReason;
-    date: IsoDate;
-    teacherId: string;
-    startTime: HhMm;
-  };
-}
-export interface CreateBookingWithRescheduleResponse {
-  existing: BookingDTO | null;
-  incoming: BookingDTO;
-}
-export interface RescheduleDecisionResponse {
-  booking: BookingDTO | null;
+/** PATCH /api/bookings/:id — ย้าย/แก้คาบด้วยมือ (UC-003). */
+export interface MoveBookingResponse {
+  booking: BookingDTO;
 }
 
 export type BookingStatusAction = "confirm" | "attend" | "sick-leave" | "cancel";
