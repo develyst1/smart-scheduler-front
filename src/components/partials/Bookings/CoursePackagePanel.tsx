@@ -1,6 +1,7 @@
 "use client";
 
-import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader } from "@mantine/core";
+import { useState } from "react";
+import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader, Modal } from "@mantine/core";
 import { LockKeyholeOpen, Lock, GraduationCap } from "lucide-react";
 import { useSetCourseAdminUnlock, useCoursePackages } from "@/hooks/scheduler";
 import { notify } from "@/lib/ui/notify";
@@ -14,33 +15,38 @@ export default function CoursePackagePanel() {
   const { data: courses = [], isLoading } = useCoursePackages();
   const setUnlock = useSetCourseAdminUnlock();
 
-  const handleUnlock = async (c: CoursePackageView) => {
-    try {
-      await setUnlock.mutateAsync({ id: c.id, unlocked: true });
-      notify({
-        title: t("course.unlockedTitle"),
-        description: t("course.unlockedDesc", { student: c.studentName }),
-        color: "warning",
-      });
-    } catch (e) {
-      const msg =
-        e instanceof ApiClientError ? e.message : t("course.unlockFailGeneric");
-      notify({ title: t("course.unlockFailTitle"), description: msg, color: "danger" });
-    }
-  };
+  // คอร์ส + ทิศทาง (unlock/relock) ที่รอการยืนยันใน modal
+  const [pending, setPending] = useState<{ course: CoursePackageView; unlock: boolean } | null>(null);
 
-  const handleRelock = async (c: CoursePackageView) => {
+  const runUnlock = async () => {
+    if (!pending) return;
+    const { course: c, unlock } = pending;
+    setPending(null);
     try {
-      await setUnlock.mutateAsync({ id: c.id, unlocked: false });
-      notify({
-        title: t("course.relockedTitle"),
-        description: t("course.relockedDesc", { student: c.studentName }),
-        color: "default",
-      });
+      await setUnlock.mutateAsync({ id: c.id, unlocked: unlock });
+      notify(
+        unlock
+          ? {
+              title: t("course.unlockedTitle"),
+              description: t("course.unlockedDesc", { student: c.studentName }),
+              color: "warning",
+            }
+          : {
+              title: t("course.relockedTitle"),
+              description: t("course.relockedDesc", { student: c.studentName }),
+              color: "default",
+            },
+      );
     } catch (e) {
       const msg =
-        e instanceof ApiClientError ? e.message : t("course.relockFailGeneric");
-      notify({ title: t("course.relockFailTitle"), description: msg, color: "danger" });
+        e instanceof ApiClientError
+          ? e.message
+          : t(unlock ? "course.unlockFailGeneric" : "course.relockFailGeneric");
+      notify({
+        title: t(unlock ? "course.unlockFailTitle" : "course.relockFailTitle"),
+        description: msg,
+        color: "danger",
+      });
     }
   };
 
@@ -141,7 +147,7 @@ export default function CoursePackagePanel() {
                   fullWidth
                   leftSection={<LockKeyholeOpen size={15} />}
                   loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
-                  onClick={() => handleUnlock(c)}
+                  onClick={() => setPending({ course: c, unlock: true })}
                 >
                   {t("course.unlockBtn")}
                 </Button>
@@ -154,7 +160,7 @@ export default function CoursePackagePanel() {
                     fullWidth
                     leftSection={<Lock size={15} />}
                     loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
-                    onClick={() => handleRelock(c)}
+                    onClick={() => setPending({ course: c, unlock: false })}
                   >
                     {t("course.relockBtn")}
                   </Button>
@@ -164,6 +170,38 @@ export default function CoursePackagePanel() {
           </Card>
         );
       })}
+
+      <Modal
+        opened={pending !== null}
+        onClose={() => setPending(null)}
+        centered
+        title={
+          pending?.unlock ? t("course.unlockConfirmTitle") : t("course.relockConfirmTitle")
+        }
+      >
+        <Stack gap="lg">
+          <Text size="sm">
+            {pending
+              ? t(pending.unlock ? "course.unlockConfirmMsg" : "course.relockConfirmMsg", {
+                  student: pending.course.studentName,
+                })
+              : null}
+          </Text>
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" onClick={() => setPending(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              color={pending?.unlock ? "orange" : "gray"}
+              leftSection={pending?.unlock ? <LockKeyholeOpen size={15} /> : <Lock size={15} />}
+              loading={setUnlock.isPending}
+              onClick={runUnlock}
+            >
+              {t("common.confirm")}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </div>
   );
 }
