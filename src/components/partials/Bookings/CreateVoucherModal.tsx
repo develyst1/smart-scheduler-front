@@ -74,11 +74,12 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
           {t("voucher.title")}
         </span>
       }
-      size="md"
+      size="lg"
       centered
+      styles={{ body: { minHeight: 340, display: "flex", flexDirection: "column" } }}
     >
       {result ? (
-        <Stack gap="md">
+        <Stack gap="md" style={{ flex: 1 }}>
           <Paper withBorder p="md" radius="md">
             <Text fw={600}>{result.voucher.student.name}</Text>
             <Text size="sm" c="dimmed" mt={4}>
@@ -94,10 +95,10 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
               {t("voucher.setValidity", { months: expiryMonths })}
             </Text>
           </Paper>
-          <Button onClick={onClose}>{t("common.close")}</Button>
+          <Button onClick={onClose} mt="auto">{t("common.close")}</Button>
         </Stack>
       ) : (
-        <Stack gap="md">
+        <Stack gap="md" style={{ flex: 1 }}>
           <Alert color="blue" icon={<Info size={16} />} variant="light">
             {t("voucher.infoAlert")}
           </Alert>
@@ -127,7 +128,7 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
             />
           </Group>
 
-          <Group justify="flex-end">
+          <Group justify="flex-end" mt="auto">
             <Button variant="subtle" color="gray" onClick={onClose}>
               {t("common.cancel")}
             </Button>

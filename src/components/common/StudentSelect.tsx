@@ -72,7 +72,7 @@ export default function StudentSelect({ value, onChange, label, required }: Prop
 
   return (
     <div className="flex flex-col gap-2">
-      <Combobox store={combobox} onOptionSubmit={handleSubmit} withinPortal={false}>
+      <Combobox store={combobox} onOptionSubmit={handleSubmit}>
         <Combobox.Target>
           <InputBase
             label={label ?? t("student.label")}
