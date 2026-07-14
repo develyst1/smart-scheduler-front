@@ -167,6 +167,7 @@ export default function CalendarHeader({
             size="sm"
             radius="md"
             clearable
+            searchable
             maxDropdownHeight={280}
             className="min-w-44 basis-0 grow-[4]"
             classNames={{

@@ -166,6 +166,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
               <TeacherOption option={option} teachers={bookableTeachers} />
             )}
             allowDeselect={false}
+            searchable
             required
           />
 
@@ -177,6 +178,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
             data={subjectOptions.map((s) => ({ value: s.id, label: s.name }))}
             disabled={!teacherId || subjectOptions.length === 0}
             allowDeselect={false}
+            searchable
             required
           />
 
@@ -186,6 +188,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
             onChange={(v) => v && setSize(Number(v) as PackageSize)}
             data={sizeOptions}
             allowDeselect={false}
+            searchable
           />
 
           <Group grow align="flex-start">
@@ -203,6 +206,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
               onChange={(v) => v && setStartTime(v)}
               data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
               allowDeselect={false}
+              searchable
             />
           </Group>
 

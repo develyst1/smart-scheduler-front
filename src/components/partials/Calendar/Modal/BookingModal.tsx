@@ -9,9 +9,11 @@ import {
   Group,
   Stack,
   Alert,
+  Menu,
+  ActionIcon,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move } from "lucide-react";
+import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -63,7 +65,7 @@ export default function BookingModal({
     <Modal
       opened={isOpen}
       onClose={onClose}
-      size="lg"
+      size="xl"
       centered
       title={
         isCreate ? (
@@ -199,64 +201,82 @@ function ViewBooking({
         </>
       )}
 
-      <Group justify="space-between" gap="sm" wrap="wrap">
-        <Group gap="sm" wrap="wrap">
-          {canOverbook && (
-            <Button
-              variant="light"
-              color="orange"
-              leftSection={<ArrowLeftRight size={16} />}
-              onClick={() => onOverbook(booking)}
-            >
-              {t("booking.overbookBtn")}
-            </Button>
-          )}
-          {canMove && (
-            <Button
-              variant="light"
-              color="grape"
-              leftSection={<Move size={16} />}
-              onClick={() => setMoving(true)}
-            >
-              {t("booking.moveBtn")}
-            </Button>
-          )}
-        </Group>
+      <Divider />
 
-        <Group gap="sm" wrap="wrap">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            {t("common.close")}
-          </Button>
+      {/* Close ซ้ายสุด · ปุ่มหลัก (Attended · Confirm) ขวา · คำสั่งจัดการอยู่ใน kebab ⋯
+          จอแคบ: stack เต็มกว้าง, Confirm บนสุด (flex-col-reverse) */}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+        <Button
+          variant="subtle"
+          color="gray"
+          onClick={onClose}
+          className="w-full sm:mr-auto sm:w-auto"
+        >
+          {t("common.close")}
+        </Button>
+
+        <Button
+          variant="light"
+          color="green"
+          leftSection={<BadgeCheck size={16} />}
+          loading={attended.isPending}
+          onClick={handleAttended}
+          className="w-full sm:w-auto"
+        >
+          {t("booking.attendBtn")}
+        </Button>
+        {booking.status === "PENDING" && (
           <Button
-            variant="light"
-            color="gray"
-            leftSection={<CalendarX2 size={16} />}
-            loading={sickLeave.isPending}
-            onClick={handleSickLeave}
+            color="blue"
+            leftSection={<Bell size={16} />}
+            loading={confirm.isPending}
+            onClick={handleConfirm}
+            className="w-full sm:w-auto"
           >
-            {t("booking.sickLeaveBtn")}
+            {t("booking.confirmBtn")}
           </Button>
-          <Button
-            variant="light"
-            color="green"
-            leftSection={<BadgeCheck size={16} />}
-            loading={attended.isPending}
-            onClick={handleAttended}
-          >
-            {t("booking.attendBtn")}
-          </Button>
-          {booking.status === "PENDING" && (
-            <Button
-              color="blue"
-              leftSection={<Bell size={16} />}
-              loading={confirm.isPending}
-              onClick={handleConfirm}
+        )}
+
+        <Menu position="top-end" withinPortal shadow="md" width={220}>
+          <Menu.Target>
+            <ActionIcon
+              variant="default"
+              size="lg"
+              aria-label={t("booking.moreActions")}
+              className="w-full sm:w-auto"
             >
-              {t("booking.confirmBtn")}
-            </Button>
-          )}
-        </Group>
-      </Group>
+              <MoreVertical size={18} />
+            </ActionIcon>
+          </Menu.Target>
+          <Menu.Dropdown>
+            {canOverbook && (
+              <Menu.Item
+                color="orange"
+                leftSection={<ArrowLeftRight size={16} />}
+                onClick={() => onOverbook(booking)}
+              >
+                {t("booking.overbookBtn")}
+              </Menu.Item>
+            )}
+            {canMove && (
+              <Menu.Item
+                color="grape"
+                leftSection={<Move size={16} />}
+                onClick={() => setMoving(true)}
+              >
+                {t("booking.moveBtn")}
+              </Menu.Item>
+            )}
+            <Menu.Item
+              leftSection={<CalendarX2 size={16} />}
+              onClick={handleSickLeave}
+              disabled={booking.status === "SICK_LEAVE"}
+            >
+              {t("booking.sickLeaveBtn")}
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      </div>
     </Stack>
   );
 }
@@ -281,8 +301,15 @@ function MoveBookingForm({
   const [startTime, setStartTime] = useState(booking.startTime);
 
   const bookableTeachers = teachers.filter((tc) => bookableOnDate(tc, date));
+  const teacherOff = !!teacherId && !bookableTeachers.some((tc) => tc.id === teacherId);
+
+  // ย้ายไปวันที่ครูเดิมไม่ได้สอน → ล้างครู บังคับเลือกใหม่ (กันจองครูในวันหยุด)
+  useEffect(() => {
+    if (teacherOff) setTeacherId("");
+  }, [teacherOff]);
 
   const handleSubmit = async () => {
+    if (!teacherId) return;
     const patch: MoveBookingInput = {};
     if (teacherId !== booking.teacherId) patch.teacherId = teacherId;
     if (date !== booking.date) patch.date = date;
@@ -321,11 +348,14 @@ function MoveBookingForm({
 
       <Select
         label={t("booking.teacher")}
-        value={teacherId}
+        placeholder={t("booking.movePickTeacher")}
+        value={teacherId || null}
         onChange={(v) => v && setTeacherId(v)}
         allowDeselect={false}
+        searchable
         data={teacherSelectData(bookableTeachers)}
         renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+        error={!teacherId ? t("booking.moveTeacherOff") : undefined}
       />
       <div className="grid grid-cols-2 gap-3">
         <DatePickerInput
@@ -340,18 +370,25 @@ function MoveBookingForm({
           value={startTime}
           onChange={(v) => v && setStartTime(v)}
           allowDeselect={false}
+          searchable
           data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
         />
       </div>
 
-      <Group justify="flex-end" gap="sm">
-        <Button variant="subtle" color="gray" onClick={onCancel}>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button variant="subtle" color="gray" onClick={onCancel} className="w-full sm:w-auto">
           {t("common.back")}
         </Button>
-        <Button color="grape" loading={move.isPending} onClick={handleSubmit}>
+        <Button
+          color="grape"
+          loading={move.isPending}
+          disabled={!teacherId}
+          onClick={handleSubmit}
+          className="w-full sm:w-auto"
+        >
           {t("booking.confirmMoveBtn")}
         </Button>
-      </Group>
+      </div>
     </Stack>
   );
 }
@@ -497,6 +534,7 @@ function CreateForm({
         }}
         data={teacherSelectData(teachers.filter((tc) => bookableOnDate(tc, createSlot.date)))}
         allowDeselect={false}
+        searchable
         renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
       />
       <div className="grid grid-cols-2 gap-3">
@@ -507,6 +545,7 @@ function CreateForm({
           placeholder={subjectOptions.length ? t("booking.subjectPlaceholder") : t("booking.subjectPlaceholderNoTeacher")}
           data={subjectOptions.map((s) => ({ value: s.id, label: s.name }))}
           allowDeselect={false}
+          searchable
           required
           disabled={!subjectOptions.length}
         />
@@ -516,6 +555,7 @@ function CreateForm({
           onChange={(v) => setStartTime(v ?? "")}
           data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
           allowDeselect={false}
+          searchable
         />
       </div>
       <Select
@@ -524,6 +564,7 @@ function CreateForm({
         onChange={(v) => setBookingType((v ?? "SINGLE_SESSION") as BookingType)}
         data={BOOKING_TYPE_OPTIONS.map((k) => ({ value: k, label: t(`bookingType.${k}`) }))}
         allowDeselect={false}
+        searchable
       />
 
       {isVoucher && (
@@ -547,6 +588,7 @@ function CreateForm({
             }),
           }))}
           disabled={!student?.id || usableVouchers.length === 0}
+          searchable
           nothingFoundMessage={t("booking.voucherNone")}
           required
         />

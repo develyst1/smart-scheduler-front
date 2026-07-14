@@ -78,6 +78,7 @@ export default function ReportsContent() {
           value={teacherId}
           onChange={(v) => setTeacherId(v ?? "ALL")}
           allowDeselect={false}
+          searchable
           size="sm"
           radius="md"
           className="max-w-64"
