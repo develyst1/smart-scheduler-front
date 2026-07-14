@@ -2,8 +2,9 @@
 
 import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader } from "@mantine/core";
 import { LockKeyholeOpen, Lock, GraduationCap } from "lucide-react";
-import { useAdminUnlockCourse, useCoursePackages } from "@/hooks/scheduler";
+import { useSetCourseAdminUnlock, useCoursePackages } from "@/hooks/scheduler";
 import { notify } from "@/lib/ui/notify";
+import { ApiClientError } from "@/lib/api/client";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import { useT } from "@/lib/i18n";
 import type { CoursePackageView } from "@/types/app/scheduler";
@@ -11,15 +12,36 @@ import type { CoursePackageView } from "@/types/app/scheduler";
 export default function CoursePackagePanel() {
   const t = useT();
   const { data: courses = [], isLoading } = useCoursePackages();
-  const unlock = useAdminUnlockCourse();
+  const setUnlock = useSetCourseAdminUnlock();
 
   const handleUnlock = async (c: CoursePackageView) => {
-    await unlock.mutateAsync(c.id);
-    notify({
-      title: t("course.unlockedTitle"),
-      description: t("course.unlockedDesc", { student: c.studentName }),
-      color: "warning",
-    });
+    try {
+      await setUnlock.mutateAsync({ id: c.id, unlocked: true });
+      notify({
+        title: t("course.unlockedTitle"),
+        description: t("course.unlockedDesc", { student: c.studentName }),
+        color: "warning",
+      });
+    } catch (e) {
+      const msg =
+        e instanceof ApiClientError ? e.message : t("course.unlockFailGeneric");
+      notify({ title: t("course.unlockFailTitle"), description: msg, color: "danger" });
+    }
+  };
+
+  const handleRelock = async (c: CoursePackageView) => {
+    try {
+      await setUnlock.mutateAsync({ id: c.id, unlocked: false });
+      notify({
+        title: t("course.relockedTitle"),
+        description: t("course.relockedDesc", { student: c.studentName }),
+        color: "default",
+      });
+    } catch (e) {
+      const msg =
+        e instanceof ApiClientError ? e.message : t("course.relockFailGeneric");
+      notify({ title: t("course.relockFailTitle"), description: msg, color: "danger" });
+    }
   };
 
   if (isLoading) {
@@ -111,18 +133,32 @@ export default function CoursePackagePanel() {
                 </div>
               </Group>
 
-              {c.leaveLocked && (
+              {c.leaveLocked ? (
                 <Button
                   size="xs"
                   color="orange"
                   variant="light"
                   fullWidth
                   leftSection={<LockKeyholeOpen size={15} />}
-                  loading={unlock.isPending}
+                  loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
                   onClick={() => handleUnlock(c)}
                 >
                   {t("course.unlockBtn")}
                 </Button>
+              ) : (
+                c.adminUnlocked && (
+                  <Button
+                    size="xs"
+                    color="gray"
+                    variant="light"
+                    fullWidth
+                    leftSection={<Lock size={15} />}
+                    loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
+                    onClick={() => handleRelock(c)}
+                  >
+                    {t("course.relockBtn")}
+                  </Button>
+                )
               )}
             </Stack>
           </Card>
