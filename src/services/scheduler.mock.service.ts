@@ -13,6 +13,7 @@ import { sortByTypeOrder, toTeacherView } from "@/lib/scheduler/teacher";
 import type {
   Booking,
   BookingType,
+  BookingStatus,
   CoursePackageView,
   DailyReport,
   Teacher,
@@ -64,7 +65,31 @@ export const setTeacherWorkDays = (id: string, workDays: number[]) => {
 export const getBookingsByDate = (date: string) =>
   delay(clone(bookings.filter((b) => b.date === date)));
 
-export const getAllBookings = () => delay(clone(bookings));
+export const getAllBookings = (query: {
+  q?: string;
+  type?: BookingType;
+  status?: BookingStatus;
+  teacherId?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
+} = {}) => {
+  const page = query.page ?? 1;
+  const limit = query.limit ?? 50;
+  const q = query.q?.trim().toLowerCase();
+  const filtered = bookings
+    .filter((b) => !b.pendingSlot)
+    .filter((b) => (q ? b.studentName.toLowerCase().includes(q) : true))
+    .filter((b) => (query.type ? b.bookingType === query.type : true))
+    .filter((b) => (query.status ? b.status === query.status : true))
+    .filter((b) => (query.teacherId ? b.teacherId === query.teacherId : true))
+    .filter((b) => (query.from ? b.date >= query.from : true))
+    .filter((b) => (query.to ? b.date <= query.to : true))
+    .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
+  const items = filtered.slice((page - 1) * limit, page * limit);
+  return delay({ items: clone(items), page, limit, total: filtered.length });
+};
 
 export const getBookingsInRange = (start: string, end: string) =>
   delay(clone(bookings.filter((b) => b.date >= start && b.date <= end)));
@@ -188,9 +213,9 @@ export const moveBooking = (
 export const getCoursePackages = (): Promise<CoursePackageView[]> =>
   delay(coursePackages.map((c) => toCourseView(clone(c))));
 
-export const adminUnlockCourse = (id: string) => {
+export const setCourseAdminUnlock = (id: string, unlocked: boolean) => {
   const c = coursePackages.find((x) => x.id === id);
-  if (c) c.adminUnlocked = true;
+  if (c) c.adminUnlocked = unlocked;
   return delay(c ? toCourseView(clone(c)) : undefined);
 };
 

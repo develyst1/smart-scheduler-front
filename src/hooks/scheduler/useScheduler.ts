@@ -1,12 +1,13 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  adminUnlockCourse,
+  setCourseAdminUnlock,
   confirmBooking,
   createBooking,
   detectConflict,
   getAllBookings,
+  type BookingQuery,
   getCalendar,
   getBookingsByDate,
   getBookingsInRange,
@@ -121,8 +122,12 @@ export const useBookingsInRange = (start: string, end: string) =>
     queryFn: () => getBookingsInRange(start, end),
   });
 
-export const useAllBookings = () =>
-  useQuery({ queryKey: [...BOOKINGS_KEY, "all"], queryFn: getAllBookings });
+export const useAllBookings = (query: BookingQuery = {}) =>
+  useQuery({
+    queryKey: [...BOOKINGS_KEY, "all", query],
+    queryFn: () => getAllBookings(query),
+    placeholderData: keepPreviousData,
+  });
 
 const invalidateAll = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: BOOKINGS_KEY });
@@ -194,10 +199,11 @@ export const useMoveBooking = () => {
 export const useCoursePackages = () =>
   useQuery({ queryKey: COURSES_KEY, queryFn: getCoursePackages });
 
-export const useAdminUnlockCourse = () => {
+export const useSetCourseAdminUnlock = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => adminUnlockCourse(id),
+    mutationFn: ({ id, unlocked }: { id: string; unlocked: boolean }) =>
+      setCourseAdminUnlock(id, unlocked),
     onSuccess: () => invalidateAll(qc),
   });
 };

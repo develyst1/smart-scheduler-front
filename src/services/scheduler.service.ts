@@ -17,6 +17,7 @@ import {
 import { toTeacherView } from "@/lib/scheduler/teacher";
 import type {
   BookingType,
+  BookingStatus,
   Booking,
   CoursePackageView,
   DailyReport,
@@ -161,12 +162,43 @@ export const getBookingsByDate = async (date: string) => {
   return calendarDayBookings(cal, date);
 };
 
-export const getAllBookings = async () => {
-  if (useMock) return mock.getAllBookings();
+/** พารามิเตอร์ค้นหา/กรอง/แบ่งหน้า ของ GET /bookings (ส่งเฉพาะ key ที่มีค่า) */
+export interface BookingQuery {
+  q?: string;
+  type?: BookingType;
+  status?: BookingStatus;
+  teacherId?: string;
+  from?: string; // YYYY-MM-DD
+  to?: string; // YYYY-MM-DD
+  page?: number;
+  limit?: number;
+}
+
+/** ผลลัพธ์แบ่งหน้าของรายการจอง */
+export interface PagedBookings {
+  items: Booking[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
+/** ตัด key ที่เป็น undefined/"" ออก เพื่อไม่ส่ง query ว่างเข้า API */
+const cleanParams = (q: BookingQuery): Record<string, string | number> => {
+  const out: Record<string, string | number> = {};
+  for (const [k, v] of Object.entries(q)) {
+    if (v !== undefined && v !== "") out[k] = v as string | number;
+  }
+  return out;
+};
+
+export const getAllBookings = async (query: BookingQuery = {}): Promise<PagedBookings> => {
+  const page = query.page ?? 1;
+  const limit = query.limit ?? 50;
+  if (useMock) return mock.getAllBookings({ ...query, page, limit });
   const { data } = await api.get<BookingsResponse>("/bookings", {
-    params: { page: 1, limit: 200 },
+    params: cleanParams({ ...query, page, limit }),
   });
-  return data.items.map(dtoToBooking);
+  return { items: data.items.map(dtoToBooking), page: data.page, limit: data.limit, total: data.total };
 };
 
 export const getBookingsInRange = async (start: string, end: string) => {
@@ -319,10 +351,10 @@ export const getCoursePackages = async (): Promise<CoursePackageView[]> => {
   return data.map(dtoToCourseView);
 };
 
-export const adminUnlockCourse = async (id: string) => {
-  if (useMock) return mock.adminUnlockCourse(id);
+export const setCourseAdminUnlock = async (id: string, unlocked: boolean) => {
+  if (useMock) return mock.setCourseAdminUnlock(id, unlocked);
   const { data } = await api.patch<CoursesResponse[number]>(`/courses/${id}`, {
-    adminUnlocked: true,
+    adminUnlocked: unlocked,
   });
   return dtoToCourseView(data);
 };

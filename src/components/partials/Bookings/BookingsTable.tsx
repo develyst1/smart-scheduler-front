@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { Table, Select, Loader, TextInput, Card, Pagination, Group } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import { Search } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
@@ -21,53 +22,61 @@ const DATE_RANGE_KEYS: Record<DateRange, string> = {
   MONTH: "bookings.rangeMonth",
 };
 
-const inRange = (date: string, range: DateRange) => {
-  if (range === "ALL") return true;
-  const d = dayjs(date);
+/** แปลง preset ช่วงเวลา → from/to (YYYY-MM-DD) สำหรับส่งเข้า API */
+const rangeToDates = (range: DateRange): { from?: string; to?: string } => {
+  if (range === "ALL") return {};
   const now = dayjs();
-  if (range === "TODAY") return d.isSame(now, "day");
-  if (range === "MONTH") return d.isSame(now, "month");
+  if (range === "TODAY") {
+    const d = now.format("YYYY-MM-DD");
+    return { from: d, to: d };
+  }
+  if (range === "MONTH") {
+    return { from: now.startOf("month").format("YYYY-MM-DD"), to: now.endOf("month").format("YYYY-MM-DD") };
+  }
   // WEEK (อา–ส)
-  const start = now.day(0).startOf("day");
-  const end = now.day(6).endOf("day");
-  return (d.isAfter(start) || d.isSame(start)) && (d.isBefore(end) || d.isSame(end));
+  return { from: now.day(0).format("YYYY-MM-DD"), to: now.day(6).format("YYYY-MM-DD") };
 };
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
 export default function BookingsTable() {
   const t = useT();
-  const { data: bookings = [], isLoading } = useAllBookings();
   const { data: teachers = [] } = useTeachers();
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(search, 350);
   const [typeFilter, setTypeFilter] = useState<BookingType | "ALL">("ALL");
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "ALL">("ALL");
   const [teacherFilter, setTeacherFilter] = useState<string>("ALL");
   const [dateRange, setDateRange] = useState<DateRange>("ALL");
-
-  const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0]);
 
-  // กลับไปหน้า 1 เมื่อเปลี่ยนเงื่อนไขกรอง
+  // กลับไปหน้า 1 เมื่อเปลี่ยนเงื่อนไขกรอง/จำนวนต่อหน้า
   useEffect(() => {
     setPage(1);
-  }, [search, typeFilter, statusFilter, teacherFilter, dateRange]);
+  }, [debouncedSearch, typeFilter, statusFilter, teacherFilter, dateRange, pageSize]);
+
+  const query = useMemo(() => {
+    const { from, to } = rangeToDates(dateRange);
+    return {
+      q: debouncedSearch.trim() || undefined,
+      type: typeFilter === "ALL" ? undefined : typeFilter,
+      status: statusFilter === "ALL" ? undefined : statusFilter,
+      teacherId: teacherFilter === "ALL" ? undefined : teacherFilter,
+      from,
+      to,
+      page,
+      limit: pageSize,
+    };
+  }, [debouncedSearch, typeFilter, statusFilter, teacherFilter, dateRange, page, pageSize]);
+
+  const { data, isLoading } = useAllBookings(query);
+  const rows = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const teacherName = (id: string) => teachers.find((tc) => tc.id === id)?.nickname ?? "-";
-
-  const rows = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return [...bookings]
-      .filter((b) => !b.pendingSlot)
-      .filter((b) => (q ? b.studentName.toLowerCase().includes(q) : true))
-      .filter((b) => typeFilter === "ALL" || b.bookingType === typeFilter)
-      .filter((b) => statusFilter === "ALL" || b.status === statusFilter)
-      .filter((b) => teacherFilter === "ALL" || b.teacherId === teacherFilter)
-      .filter((b) => inRange(b.date, dateRange))
-      .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
-  }, [bookings, search, typeFilter, statusFilter, teacherFilter, dateRange]);
-
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   if (isLoading) {
     return (
@@ -99,6 +108,7 @@ export default function BookingsTable() {
           value={statusFilter}
           onChange={(v) => setStatusFilter((v || "ALL") as BookingStatus | "ALL")}
           allowDeselect={false}
+          searchable
           data={[
             { value: "ALL", label: t("bookings.allStatuses") },
             ...(Object.keys(BOOKING_STATUS_LABEL) as BookingStatus[]).map((s) => ({
@@ -114,6 +124,7 @@ export default function BookingsTable() {
           value={teacherFilter}
           onChange={(v) => setTeacherFilter(v || "ALL")}
           allowDeselect={false}
+          searchable
           data={[{ value: "ALL", label: t("bookings.allTeachers") }, ...teacherSelectData(teachers)]}
           renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
         />
@@ -124,6 +135,7 @@ export default function BookingsTable() {
           value={typeFilter}
           onChange={(v) => setTypeFilter((v || "ALL") as BookingType | "ALL")}
           allowDeselect={false}
+          searchable
           data={[
             { value: "ALL", label: t("bookings.allTypes") },
             ...BOOKING_TYPE_OPTIONS.map((k) => ({ value: k, label: t(`bookingType.${k}`) })),
@@ -136,6 +148,7 @@ export default function BookingsTable() {
           value={dateRange}
           onChange={(v) => setDateRange((v || "ALL") as DateRange)}
           allowDeselect={false}
+          searchable
           data={(Object.keys(DATE_RANGE_KEYS) as DateRange[]).map((r) => ({
             value: r,
             label: t(DATE_RANGE_KEYS[r]),
@@ -143,7 +156,7 @@ export default function BookingsTable() {
         />
       </div>
 
-      <p className="text-xs text-default-400">{t("bookings.found", { count: rows.length })}</p>
+      <p className="text-xs text-default-400">{t("bookings.found", { count: total })}</p>
 
       <Table highlightOnHover verticalSpacing="sm" withTableBorder aria-label={t("bookings.tableLabel")}>
         <Table.Thead className="bg-default-100">
@@ -165,7 +178,7 @@ export default function BookingsTable() {
               </Table.Td>
             </Table.Tr>
           ) : (
-            pageRows.map((b) => (
+            rows.map((b) => (
               <Table.Tr key={b.id}>
                 <Table.Td className="font-medium">{b.studentName}</Table.Td>
                 <Table.Td>{b.subject}</Table.Td>
@@ -186,7 +199,19 @@ export default function BookingsTable() {
         </Table.Tbody>
       </Table>
 
-      <Group justify="flex-end" pt="xs">
+      <Group justify="space-between" pt="xs">
+        <Select
+          aria-label={t("bookings.perPage")}
+          size="sm"
+          className="w-40 shrink-0"
+          value={String(pageSize)}
+          onChange={(v) => setPageSize(Number(v) || PAGE_SIZE_OPTIONS[0])}
+          allowDeselect={false}
+          data={PAGE_SIZE_OPTIONS.map((n) => ({
+            value: String(n),
+            label: `${n} / ${t("bookings.perPage")}`,
+          }))}
+        />
         <Pagination total={totalPages} value={page} onChange={setPage} size="sm" radius="md" />
       </Group>
     </Card>
