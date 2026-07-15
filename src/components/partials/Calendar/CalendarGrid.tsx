@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
+import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
 import { useT } from "@/lib/i18n";
 
 interface Props {
@@ -118,6 +119,26 @@ function Row({
                 <span className="truncate text-[10px] uppercase tracking-wide text-default-400">
                   {t(`bookingType.${booking.bookingType}`)}
                 </span>
+                {(booking.badges ?? []).length > 0 && (
+                  <span className="flex flex-wrap gap-1">
+                    {(booking.badges ?? []).map((bd) => (
+                      <span
+                        key={bd.valueId}
+                        className="inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[9px] font-medium leading-tight"
+                        style={{
+                          backgroundColor: badgeColorSoftVar(bd.color ?? "gray"),
+                          color: badgeColorVar(bd.color ?? "gray"),
+                        }}
+                      >
+                        <span
+                          className="h-1.5 w-1.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: badgeColorVar(bd.color ?? "gray") }}
+                        />
+                        {bd.label}
+                      </span>
+                    ))}
+                  </span>
+                )}
               </button>
             ) : (
               <button

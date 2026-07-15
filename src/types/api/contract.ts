@@ -79,6 +79,59 @@ export interface CourseSummary {
   expiryDate: IsoDate;
 }
 
+/** Badge value as embedded on a booking. */
+export interface BookingBadgeDTO {
+  typeId: string;
+  typeName: string | null;
+  valueId: string;
+  label: string | null;
+  color: string | null;
+}
+
+export interface BadgeValueDTO {
+  id: string;
+  typeId: string;
+  label: string;
+  color: string;
+  active: boolean;
+  sortOrder: number;
+}
+
+export interface BadgeTypeDTO {
+  id: string;
+  name: string;
+  active: boolean;
+  sortOrder: number;
+  values: BadgeValueDTO[];
+}
+export type BadgesResponse = BadgeTypeDTO[];
+
+export interface BadgeReportResponse {
+  from: IsoDate;
+  to: IsoDate;
+  byValue: Array<{
+    valueId: string;
+    label: string;
+    color: string;
+    typeId: string;
+    typeName: string;
+    count: number;
+  }>;
+  byTeacher: Array<{
+    teacherId: string;
+    teacherNickname: string;
+    valueId: string;
+    label: string;
+    color: string;
+    count: number;
+  }>;
+}
+
+export interface SetBookingBadgesResponse {
+  bookingId: string;
+  badges: BookingBadgeDTO[];
+}
+
 export interface BookingDTO {
   id: string;
   date: IsoDate;
@@ -91,6 +144,7 @@ export interface BookingDTO {
   teacher: Pick<TeacherDTO, "id" | "name" | "nickname" | "type">;
   subject: SubjectRef;
   course: CourseSummary | null;
+  badges?: BookingBadgeDTO[]; // always present from the real API; optional so mocks can omit it
   // Conflict resolution (B.1)
   pendingSlot: boolean;
   incomingBookingId: string | null;
@@ -199,6 +253,7 @@ export interface CreateBookingRequest {
   courseId?: string;
   voucherId?: string;
   note?: string;
+  badgeValueIds?: string[];
 }
 
 export interface CreateBookingResponse {
@@ -258,6 +313,7 @@ export type ApiErrorCode =
   | "SLOT_TAKEN"
   | "COURSE_EXPIRED"
   | "LEAVE_LOCKED"
+  | "LEAVE_NOTICE_TOO_LATE"
   | "CONFLICT";
 
 export interface ApiError {

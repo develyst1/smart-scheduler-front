@@ -7,7 +7,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { calendarDayBookings, calendarToBookings } from "@/lib/api/mappers";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { useT } from "@/lib/i18n";
-import { useCalendar, useTeachers } from "@/hooks/scheduler";
+import { useBadges, useCalendar, useTeachers } from "@/hooks/scheduler";
 import type { Booking } from "@/types/app/scheduler";
 import CalendarHeader, { type CalendarView } from "./CalendarHeader";
 import CalendarGrid from "./CalendarGrid";
@@ -20,6 +20,7 @@ export default function CalendarContent() {
   const [view, setView] = useState<CalendarView>("day");
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedBadgeValueIds, setSelectedBadgeValueIds] = useState<string[]>([]);
 
   const weekStart = dayjs(date).day(0);
   const weekDays = Array.from({ length: 7 }, (_, i) => weekStart.add(i, "day").format("YYYY-MM-DD"));
@@ -27,14 +28,23 @@ export default function CalendarContent() {
   const calView = view === "day" ? "day" : "week";
   const { data: teachers = [], isLoading: loadingTeachers } = useTeachers();
   const { data: calendar, isLoading: loadingCalendar } = useCalendar(date, calView);
+  const { data: badgeTypes = [] } = useBadges();
+
+  // Badge filter (OR): keep bookings carrying at least one selected badge value.
+  const byBadge = (list: Booking[]) =>
+    selectedBadgeValueIds.length === 0
+      ? list
+      : list.filter((b) =>
+          (b.badges ?? []).some((bd) => selectedBadgeValueIds.includes(bd.valueId)),
+        );
 
   const dayBookings = useMemo(
-    () => (calendar ? calendarDayBookings(calendar, date) : []),
-    [calendar, date],
+    () => byBadge(calendar ? calendarDayBookings(calendar, date) : []),
+    [calendar, date, selectedBadgeValueIds],
   );
   const weekBookings = useMemo(
-    () => (calendar && view === "week" ? calendarToBookings(calendar) : []),
-    [calendar, view],
+    () => byBadge(calendar && view === "week" ? calendarToBookings(calendar) : []),
+    [calendar, view, selectedBadgeValueIds],
   );
 
   // กรองครูตามประเภท + รายชื่อ — ว่าง = แสดงทั้งหมด
@@ -83,6 +93,9 @@ export default function CalendarContent() {
         onChangeTeacherIds={setSelectedTeacherIds}
         selectedTypes={selectedTypes}
         onChangeTypes={setSelectedTypes}
+        badgeTypes={badgeTypes}
+        selectedBadgeValueIds={selectedBadgeValueIds}
+        onChangeBadgeValueIds={setSelectedBadgeValueIds}
       />
 
       {loading ? (

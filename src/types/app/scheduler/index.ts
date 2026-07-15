@@ -120,6 +120,56 @@ export interface Booking {
   incomingBookingId?: string;
   /** true = การจองใหม่ที่ยังรอช่องว่าง (ไม่แสดงในตารางจนกว่าของเดิมจะย้าย) */
   pendingSlot?: boolean;
+  /** badge ที่ติดกับการจอง (type ละ ≤ 1 ค่า) — real API ส่งมาเสมอ (mapper coalesce เป็น []) */
+  badges?: BookingBadge[];
+}
+
+// ──────────────────────────── Badges ────────────────────────────
+// Admin-defined tags on bookings. A type groups values; a booking carries ≤ 1
+// value per type. Colour is a palette key mapped to Mantine in lib/ui/colors.
+
+export type BadgeColor =
+  | "blue"
+  | "cyan"
+  | "teal"
+  | "green"
+  | "lime"
+  | "yellow"
+  | "orange"
+  | "red"
+  | "pink"
+  | "grape"
+  | "violet"
+  | "gray";
+
+export const BADGE_COLORS: BadgeColor[] = [
+  "blue", "cyan", "teal", "green", "lime", "yellow",
+  "orange", "red", "pink", "grape", "violet", "gray",
+];
+
+export interface BookingBadge {
+  typeId: string;
+  typeName: string | null;
+  valueId: string;
+  label: string | null;
+  color: BadgeColor | string | null;
+}
+
+export interface BadgeValue {
+  id: string;
+  typeId: string;
+  label: string;
+  color: BadgeColor;
+  active: boolean;
+  sortOrder: number;
+}
+
+export interface BadgeType {
+  id: string;
+  name: string;
+  active: boolean;
+  sortOrder: number;
+  values: BadgeValue[];
 }
 
 // ──────────────────────── Course package + leave quota ────────────────────────

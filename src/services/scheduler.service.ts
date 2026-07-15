@@ -270,6 +270,8 @@ export interface CreateBookingInput {
   bookingType: BookingType;
   /** ต้องระบุเมื่อ bookingType === "VOUCHER" — วอยเชอร์ที่จะตัดชั่วโมง */
   voucherId?: string;
+  /** badge value ids ที่จะติดกับการจอง (type ละ ≤ 1) */
+  badgeValueIds?: string[];
 }
 
 /** Existing id → { id }; otherwise an inline new student (+ optional parent phone). */
@@ -325,6 +327,7 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
     startTime: input.startTime,
     bookingType: input.bookingType,
     voucherId: input.bookingType === "VOUCHER" ? input.voucherId : undefined,
+    badgeValueIds: input.badgeValueIds?.length ? input.badgeValueIds : undefined,
   });
   return dtoToBooking(data.booking);
 };

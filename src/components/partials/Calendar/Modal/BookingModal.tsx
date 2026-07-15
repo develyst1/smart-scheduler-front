@@ -22,14 +22,17 @@ import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import {
+  useBadges,
   useConfirmBooking,
   useCreateBooking,
   useDetectConflict,
   useMarkAttended,
   useMarkSickLeave,
   useMoveBooking,
+  useSetBookingBadges,
   useVouchers,
 } from "@/hooks/scheduler";
+import { badgeColorVar } from "@/lib/ui/badge-colors";
 import type { Booking, BookingType, TeacherView } from "@/types/app/scheduler";
 import type { CreateBookingInput, MoveBookingInput } from "@/services/scheduler.service";
 import { TIME_SLOTS } from "@/types/app/scheduler";
@@ -115,12 +118,39 @@ function ViewBooking({
   const confirm = useConfirmBooking();
   const attended = useMarkAttended();
   const sickLeave = useMarkSickLeave();
+  const setBadges = useSetBookingBadges();
 
   const [moving, setMoving] = useState(false);
   const [noticeError, setNoticeError] = useState<string | null>(null);
 
-  // Clear a stale advance-notice alert when a different booking is shown.
-  useEffect(() => setNoticeError(null), [booking.id]);
+  // Editable badges (view mode): one value per active type, seeded from the booking.
+  const { data: badgeTypes = [] } = useBadges();
+  const activeBadgeTypes = badgeTypes.filter(
+    (bt) => bt.active && bt.values.some((v) => v.active),
+  );
+  const seedBadges = () => {
+    const m: Record<string, string | null> = {};
+    for (const b of booking.badges ?? []) m[b.typeId] = b.valueId;
+    return m;
+  };
+  const [badgeByType, setBadgeByType] = useState<Record<string, string | null>>(seedBadges);
+
+  // Clear a stale advance-notice alert + reseed badges when a different booking is shown.
+  useEffect(() => {
+    setNoticeError(null);
+    setBadgeByType(seedBadges());
+  }, [booking.id]);
+
+  const selectedBadgeIds = Object.values(badgeByType).filter((v): v is string => !!v);
+  const initialBadgeIds = (booking.badges ?? []).map((b) => b.valueId);
+  const badgesChanged =
+    selectedBadgeIds.slice().sort().join(",") !== initialBadgeIds.slice().sort().join(",");
+
+  const handleSaveBadges = async () => {
+    await setBadges.mutateAsync({ bookingId: booking.id, badgeValueIds: selectedBadgeIds });
+    notify({ title: t("badges.updated"), color: "success" });
+    onClose();
+  };
 
   const handleConfirm = async () => {
     const res = await confirm.mutateAsync(booking.id);
@@ -211,6 +241,51 @@ function ViewBooking({
         <>
           <Divider />
           <p className="text-sm text-default-500">{t("booking.noteLabel")}: {booking.note}</p>
+        </>
+      )}
+
+      {activeBadgeTypes.length > 0 && (
+        <>
+          <Divider label={t("calendar.badge")} labelPosition="left" />
+          <div className="grid grid-cols-2 gap-3">
+            {activeBadgeTypes.map((bt) => {
+              const colorOf = new Map(bt.values.map((v) => [v.id, v.color]));
+              return (
+                <Select
+                  key={bt.id}
+                  label={bt.name}
+                  value={badgeByType[bt.id] ?? null}
+                  onChange={(v) => setBadgeByType((prev) => ({ ...prev, [bt.id]: v }))}
+                  data={bt.values
+                    .filter((v) => v.active)
+                    .map((v) => ({ value: v.id, label: v.label }))}
+                  placeholder={t("booking.badgePlaceholder")}
+                  clearable
+                  searchable
+                  renderOption={({ option }) => (
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: badgeColorVar(colorOf.get(option.value) ?? "gray") }}
+                      />
+                      {option.label}
+                    </div>
+                  )}
+                />
+              );
+            })}
+          </div>
+          {badgesChanged && (
+            <Button
+              size="xs"
+              variant="light"
+              className="self-start"
+              loading={setBadges.isPending}
+              onClick={handleSaveBadges}
+            >
+              {t("booking.saveBadges")}
+            </Button>
+          )}
         </>
       )}
 
@@ -462,6 +537,12 @@ function CreateForm({
   const [startTime, setStartTime] = useState(createSlot.time);
   const [bookingType, setBookingType] = useState<BookingType>("SINGLE_SESSION");
   const [voucherId, setVoucherId] = useState<string | null>(null);
+  // badge ที่เลือก — type ละ ≤ 1 ค่า (key = typeId)
+  const [badgeByType, setBadgeByType] = useState<Record<string, string | null>>({});
+  const { data: badgeTypes = [] } = useBadges();
+  const activeBadgeTypes = badgeTypes.filter(
+    (bt) => bt.active && bt.values.some((v) => v.active),
+  );
   // ช่องที่ถูกจองอยู่แล้วและ "ไม่ใช่การลา" → จองทับไม่ได้ (UC-004)
   const [blocked, setBlocked] = useState<Booking | undefined>();
 
@@ -510,6 +591,7 @@ function CreateForm({
     startTime,
     bookingType,
     voucherId: isVoucher ? voucherId ?? undefined : undefined,
+    badgeValueIds: Object.values(badgeByType).filter((v): v is string => !!v),
   };
 
   const handleSubmit = async () => {
@@ -603,6 +685,37 @@ function CreateForm({
         allowDeselect={false}
         searchable
       />
+
+      {activeBadgeTypes.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          {activeBadgeTypes.map((bt) => {
+            const colorOf = new Map(bt.values.map((v) => [v.id, v.color]));
+            return (
+              <Select
+                key={bt.id}
+                label={bt.name}
+                value={badgeByType[bt.id] ?? null}
+                onChange={(v) => setBadgeByType((prev) => ({ ...prev, [bt.id]: v }))}
+                data={bt.values
+                  .filter((v) => v.active)
+                  .map((v) => ({ value: v.id, label: v.label }))}
+                placeholder={t("booking.badgePlaceholder")}
+                clearable
+                searchable
+                renderOption={({ option }) => (
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: badgeColorVar(colorOf.get(option.value) ?? "gray") }}
+                    />
+                    {option.label}
+                  </div>
+                )}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {isVoucher && (
         <Select

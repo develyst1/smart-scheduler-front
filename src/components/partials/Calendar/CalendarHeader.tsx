@@ -4,10 +4,10 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 import { ActionIcon, Button, MultiSelect, Paper, SegmentedControl, Tooltip } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users, Tag } from "lucide-react";
 import { StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
-import type { TeacherType, TeacherView } from "@/types/app/scheduler";
+import type { BadgeType, TeacherType, TeacherView } from "@/types/app/scheduler";
 import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { useI18n } from "@/lib/i18n";
@@ -26,6 +26,9 @@ interface Props {
   onChangeTeacherIds?: (ids: string[]) => void;
   selectedTypes?: string[];
   onChangeTypes?: (types: string[]) => void;
+  badgeTypes?: BadgeType[];
+  selectedBadgeValueIds?: string[];
+  onChangeBadgeValueIds?: (ids: string[]) => void;
 }
 
 const THAI_DAYS = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
@@ -41,8 +44,21 @@ export default function CalendarHeader({
   onChangeTeacherIds,
   selectedTypes = [],
   onChangeTypes,
+  badgeTypes = [],
+  selectedBadgeValueIds = [],
+  onChangeBadgeValueIds,
 }: Props) {
   const { lang, t } = useI18n();
+  // Grouped select data: one group per badge type, active values only.
+  const badgeSelectData = badgeTypes
+    .filter((bt) => bt.active)
+    .map((bt) => ({
+      group: bt.name,
+      items: bt.values
+        .filter((v) => v.active)
+        .map((v) => ({ value: v.id, label: v.label })),
+    }))
+    .filter((g) => g.items.length > 0);
   const d = dayjs(date).locale(lang);
   const step = view === "week" ? 7 : 1;
   const shift = (n: number) => onChangeDate(d.add(n * step, "day").format("YYYY-MM-DD"));
@@ -175,6 +191,27 @@ export default function CalendarHeader({
             }}
             aria-label={t("calendar.filterType")}
           />
+
+          {badgeSelectData.length > 0 && (
+            <MultiSelect
+              label={t("calendar.badge")}
+              placeholder={selectedBadgeValueIds.length > 0 ? undefined : t("calendar.allBadges")}
+              value={selectedBadgeValueIds}
+              onChange={onChangeBadgeValueIds}
+              data={badgeSelectData}
+              leftSection={<Tag size={15} />}
+              size="sm"
+              radius="md"
+              clearable
+              searchable
+              maxDropdownHeight={280}
+              className="min-w-44 basis-0 grow-[4]"
+              classNames={{
+                pillsList: "!flex-nowrap overflow-x-auto scroll-smooth py-0.5",
+              }}
+              aria-label={t("calendar.filterBadge")}
+            />
+          )}
         </div>
       )}
     </Paper>
