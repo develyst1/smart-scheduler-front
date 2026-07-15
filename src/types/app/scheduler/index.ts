@@ -63,12 +63,8 @@ export type BookingType =
   | "COURSE_PACKAGE" // แพ็คเกจคอร์ส 4/6/10
   | "VOUCHER"; // บัตรกำนัล 5/10/15 ชม.
 
-export const BOOKING_TYPE_LABEL: Record<BookingType, string> = {
-  FIRST_TRIAL: "ทดลองเรียน",
-  SINGLE_SESSION: "จองรายครั้ง",
-  COURSE_PACKAGE: "คอร์สรายสัปดาห์",
-  VOUCHER: "Voucher",
-};
+// Display labels for booking types/statuses come from the i18n dictionary via
+// t(`bookingType.*`) / t(`bookingStatus.*`) — see src/lib/i18n/dictionaries.ts.
 
 export type BookingStatus =
   | "PENDING" // รอยืนยัน
@@ -78,16 +74,6 @@ export type BookingStatus =
   | "EXTENDED" // คาบที่ขยายต่อท้ายจากการลา
   | "PENDING_RESCHEDULE" // รอย้าย — แจ้งผู้ปกครองแล้ว รอตอบรับ (จองทับ)
   | "CANCELLED"; // ยกเลิก
-
-export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
-  PENDING: "รอยืนยัน",
-  CONFIRMED: "ยืนยันแล้ว",
-  ATTENDED: "มาเรียน",
-  SICK_LEAVE: "ลา/ป่วย",
-  EXTENDED: "ขยายคาบ",
-  PENDING_RESCHEDULE: "รอย้าย (รอผู้ปกครอง)",
-  CANCELLED: "ยกเลิก",
-};
 
 /** สี semantic ตามสถานะ — map เป็นสี Mantine ใน lib/ui/colors.ts (ใช้สีน้อย เรียบตา) */
 export const BOOKING_STATUS_COLOR: Record<
@@ -105,12 +91,6 @@ export const BOOKING_STATUS_COLOR: Record<
 
 /** วิธีย้ายการจองเดิมเมื่อมีการจองทับ */
 export type RescheduleReason = "MOVE_DAY" | "MOVE_WEEK" | "MOVE_TEACHER";
-
-export const RESCHEDULE_REASON_LABEL: Record<RescheduleReason, string> = {
-  MOVE_DAY: "ย้ายไปวันอื่น",
-  MOVE_WEEK: "ย้ายไปสัปดาห์อื่น",
-  MOVE_TEACHER: "ย้ายไปครูคนอื่น",
-};
 
 /** ปลายทางที่จะย้ายการจองเดิมไป (รอผู้ปกครองตอบรับ) */
 export interface RescheduleTarget {

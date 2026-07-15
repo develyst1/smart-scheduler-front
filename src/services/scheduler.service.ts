@@ -231,10 +231,14 @@ export interface SickLeaveResult {
   locked: boolean;
 }
 
-export const markSickLeave = async (id: string): Promise<SickLeaveResult> => {
+export const markSickLeave = async (
+  id: string,
+  override = false,
+): Promise<SickLeaveResult> => {
   if (useMock) return mock.markSickLeave(id);
   const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {
     action: "sick-leave",
+    ...(override ? { override: true } : {}),
   });
   return {
     booking: dtoToBooking(data.booking),

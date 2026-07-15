@@ -126,6 +126,9 @@ const en = {
     leaveLockedDesc: "The student has used all their leave — an admin must unlock it on the Bookings/Students page",
     leaveSavedTitle: "Leave recorded",
     leaveExtendedDesc: "Auto-created a make-up session next week ({date})",
+    // advance-notice rule (UC-029)
+    leaveNoticeTitle: "Leave notice is too late",
+    leaveOverrideBtn: "Override (admin)",
     attendedTitle: "Attendance recorded",
     // manual move
     moveTitle: "Move session manually",
@@ -466,6 +469,9 @@ const th: typeof en = {
     leaveLockedDesc: "นักเรียนใช้สิทธิ์การลาครบแล้ว ต้องให้แอดมินปลดล็อกที่หน้า การจอง/นักเรียน",
     leaveSavedTitle: "บันทึกการลาแล้ว",
     leaveExtendedDesc: "สร้างคาบเรียนชดเชยอัตโนมัติในสัปดาห์ถัดไป ({date})",
+    // กฎแจ้งลาล่วงหน้า (UC-029)
+    leaveNoticeTitle: "แจ้งลาไม่ทันกำหนด",
+    leaveOverrideBtn: "ยืนยันลา (แอดมิน)",
     attendedTitle: "บันทึกการเข้าเรียนแล้ว",
     moveTitle: "ย้ายคาบด้วยมือ",
     moveHint: "ย้ายครู / วัน / เวลา สำหรับกรณีพิเศษ — ถ้าช่องปลายทางมีคาบอยู่แล้วจะย้ายไม่ได้",

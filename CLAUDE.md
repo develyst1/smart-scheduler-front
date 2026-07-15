@@ -58,7 +58,8 @@ Conventions:
 - Use the semantic color set (`default/primary/secondary/success/warning/danger`) — **restrained
   color is an explicit client request**; keep the calendar calm/uncluttered.
 - Toasts go through `notify(...)`; never hand-roll Mantine notifications in partials.
-- Thai is the UI language — keep Thai domain terms in user-facing copy.
+- The UI is **English-default** via the in-repo i18n layer ([src/lib/i18n](src/lib/i18n)); Thai is a
+  toggle. Never hardcode user-facing copy — add keys to `dictionaries.ts` and render via `t(...)`.
 
 ## Connecting to the backend
 
@@ -67,9 +68,10 @@ Set `NEXT_PUBLIC_API_URL` (default `http://localhost:3001/api`). Use `NEXT_PUBLI
 for offline mock ([scheduler.mock.service.ts](src/services/scheduler.mock.service.ts)).
 - **LINE push is the backend's job.** `confirmBooking` only calls the API; the server enqueues LINE
   via the outbox. The browser must never hold LINE tokens.
-- **Conflict reschedule** (จองทับ) works on the real API (backend **B.1** shipped): `POST
-  /bookings/with-reschedule` + `PATCH /bookings/:id/reschedule/{confirm,cancel}`. Run
-  `bunx drizzle-kit migrate` in `smart-scheduler-back` before using it.
+- **Overbooking (จองทับ)** — the old move-to-another-day/week/teacher reschedule flow and its
+  `PENDING_RESCHEDULE` status were **removed 2026-07-11 (UC-006)**. Staff may now only overbook a
+  slot whose occupant is on leave (`SICK_LEAVE`); a plain `createBooking` inserts into the freed
+  slot, and overbooking an active slot 409s (`SLOT_TAKEN`). No `with-reschedule` endpoints exist.
 
 ## Domain logic you must not break (from requirement.md)
 

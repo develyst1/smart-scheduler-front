@@ -149,7 +149,8 @@ export const useConfirmBooking = () => {
 export const useMarkSickLeave = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => markSickLeave(id),
+    mutationFn: (vars: { id: string; override?: boolean }) =>
+      markSickLeave(vars.id, vars.override),
     onSuccess: () => invalidateAll(qc),
   });
 };

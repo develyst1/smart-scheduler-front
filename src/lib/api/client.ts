@@ -14,10 +14,10 @@ export class ApiClientError extends Error {
 }
 
 const baseURL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "/api";
 
 const baseAuthURL =
-  process.env.NEXT_PUBLIC_AUTH_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
+  process.env.AUTH_URL?.replace(/\/$/, "") ?? "/api";
 console.log("baseURL", baseURL);
 console.log("baseAuthURL", baseAuthURL);
 export const useMockData = process.env.NEXT_PUBLIC_USE_MOCK === "true";

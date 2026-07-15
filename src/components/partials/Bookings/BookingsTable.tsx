@@ -9,7 +9,7 @@ import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { useAllBookings, useTeachers } from "@/hooks/scheduler";
 import type { BookingStatus, BookingType } from "@/types/app/scheduler";
-import { BOOKING_STATUS_LABEL } from "@/types/app/scheduler";
+import { BOOKING_STATUS_COLOR } from "@/types/app/scheduler";
 import { BOOKING_TYPE_OPTIONS } from "@/components/partials/Calendar/Calendar.config";
 import { useT } from "@/lib/i18n";
 
@@ -111,7 +111,7 @@ export default function BookingsTable() {
           searchable
           data={[
             { value: "ALL", label: t("bookings.allStatuses") },
-            ...(Object.keys(BOOKING_STATUS_LABEL) as BookingStatus[]).map((s) => ({
+            ...(Object.keys(BOOKING_STATUS_COLOR) as BookingStatus[]).map((s) => ({
               value: s,
               label: t(`bookingStatus.${s}`),
             })),

@@ -14,9 +14,9 @@ const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 // Same base as the API (e.g. `…/api`); login lives at `…/api/auth/login`.
 const apiAuthBase =
-  process.env.NEXT_PUBLIC_AUTH_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
+  process.env.AUTH_URL?.replace(/\/$/, "") ?? "/api";
 const apiBase =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "/api";
 
   console.log("apiAuthBase", apiAuthBase);
   console.log("apiBase", apiBase);

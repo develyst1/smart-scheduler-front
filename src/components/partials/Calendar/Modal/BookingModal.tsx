@@ -117,6 +117,10 @@ function ViewBooking({
   const sickLeave = useMarkSickLeave();
 
   const [moving, setMoving] = useState(false);
+  const [noticeError, setNoticeError] = useState<string | null>(null);
+
+  // Clear a stale advance-notice alert when a different booking is shown.
+  useEffect(() => setNoticeError(null), [booking.id]);
 
   const handleConfirm = async () => {
     const res = await confirm.mutateAsync(booking.id);
@@ -143,24 +147,33 @@ function ViewBooking({
     onClose();
   };
 
-  const handleSickLeave = async () => {
-    const res = await sickLeave.mutateAsync(booking.id);
-    if (res.locked) {
-      notify({
-        title: t("booking.leaveLockedTitle"),
-        description: t("booking.leaveLockedDesc"),
-        color: "danger",
-      });
-    } else if (res.extended) {
-      notify({
-        title: t("booking.leaveSavedTitle"),
-        description: t("booking.leaveExtendedDesc", { date: res.extended.date }),
-        color: "success",
-      });
-    } else {
-      notify({ title: t("booking.leaveSavedTitle"), color: "default" });
+  const handleSickLeave = async (override = false) => {
+    try {
+      const res = await sickLeave.mutateAsync({ id: booking.id, override });
+      if (res.locked) {
+        notify({
+          title: t("booking.leaveLockedTitle"),
+          description: t("booking.leaveLockedDesc"),
+          color: "danger",
+        });
+      } else if (res.extended) {
+        notify({
+          title: t("booking.leaveSavedTitle"),
+          description: t("booking.leaveExtendedDesc", { date: res.extended.date }),
+          color: "success",
+        });
+      } else {
+        notify({ title: t("booking.leaveSavedTitle"), color: "default" });
+      }
+      onClose();
+    } catch (err) {
+      // UC-029: leave requested too late for this teacher type — offer an admin override.
+      if (err instanceof ApiClientError && err.code === "LEAVE_NOTICE_TOO_LATE") {
+        setNoticeError(err.message);
+      } else {
+        throw err;
+      }
     }
-    onClose();
   };
 
   const handleAttended = async () => {
@@ -202,6 +215,30 @@ function ViewBooking({
       )}
 
       <Divider />
+
+      {noticeError && (
+        <Alert
+          color="orange"
+          icon={<AlertTriangle size={16} />}
+          title={t("booking.leaveNoticeTitle")}
+        >
+          {noticeError}
+          <div className="mt-2">
+            <Button
+              size="xs"
+              color="orange"
+              variant="light"
+              loading={sickLeave.isPending}
+              onClick={() => {
+                setNoticeError(null);
+                void handleSickLeave(true);
+              }}
+            >
+              {t("booking.leaveOverrideBtn")}
+            </Button>
+          </div>
+        </Alert>
+      )}
 
       {/* Close ซ้ายสุด · ปุ่มหลัก (Attended · Confirm) ขวา · คำสั่งจัดการอยู่ใน kebab ⋯
           จอแคบ: stack เต็มกว้าง, Confirm บนสุด (flex-col-reverse) */}
@@ -269,7 +306,7 @@ function ViewBooking({
             )}
             <Menu.Item
               leftSection={<CalendarX2 size={16} />}
-              onClick={handleSickLeave}
+              onClick={() => handleSickLeave()}
               disabled={booking.status === "SICK_LEAVE"}
             >
               {t("booking.sickLeaveBtn")}
