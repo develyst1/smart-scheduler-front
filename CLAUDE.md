@@ -6,8 +6,9 @@ workspace root `../CLAUDE.md`.
 ## What this is
 
 The **frontoffice web app** — the staff-facing screen that replaces the manual **Excel**
-scheduling workflow for a tutoring school, to cut **human error**. Audience: **internal
-staff/admins** (not students/parents). Part of **Option C (Ultimate)** — the scheduling
+scheduling workflow for a **balance / wheeled-sports activity center** (bike, scooter, surfskate,
+skate — customer คุณฟีน; **not** a tutoring school despite older docs), to cut **human error**.
+Audience: **internal staff/admins** (not students/parents). Part of **Option C (Ultimate)** — the scheduling
 frontoffice; most-built repo in the workspace.
 
 > Business spec (Thai): **[docs/requirement-timeline.md](docs/requirement-timeline.md)** (living
