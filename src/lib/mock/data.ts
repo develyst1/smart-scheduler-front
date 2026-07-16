@@ -21,8 +21,8 @@ export const teachers: Teacher[] = [
   { id: "t2", name: "ครูบีม รุ่งโรจน์", nickname: "บีม", type: "FULL_TIME", subjects: ["อังกฤษ"], active: true, workDays: [0, 1, 2, 3, 4, 5, 6] },
   { id: "t3", name: "ครูแคท ปิยะดา", nickname: "แคท", type: "PART_TIME", subjects: ["เคมี", "ชีวะ"], active: true, workDays: [6, 0] },
   { id: "t4", name: "ครูดิว ธนพล", nickname: "ดิว", type: "PART_TIME", subjects: ["คณิต"], active: true, workDays: [1, 2, 3, 4, 5] },
-  { id: "t5", name: "ครูเอิร์ธ กิตติ", nickname: "เอิร์ธ", type: "FREELANCE", subjects: ["อังกฤษ", "IELTS"], active: true, hourlyRate: 500, incomeLimit: 20000, limitOverride: false, workDays: [0, 1, 2, 3, 4, 5, 6] },
-  { id: "t6", name: "ครูฟ้า ชนิดา", nickname: "ฟ้า", type: "FREELANCE", subjects: ["ภาษาไทย"], active: false, hourlyRate: 450, incomeLimit: 15000, limitOverride: false, workDays: [0, 1, 2, 3, 4, 5, 6] },
+  { id: "t5", name: "ครูเอิร์ธ กิตติ", nickname: "เอิร์ธ", type: "FREELANCE", subjects: ["อังกฤษ", "IELTS"], active: true, hourlyRate: 500, quotaRemaining: 32, overLimit: false, limitOverride: false, workDays: [0, 1, 2, 3, 4, 5, 6] },
+  { id: "t6", name: "ครูฟ้า ชนิดา", nickname: "ฟ้า", type: "FREELANCE", subjects: ["ภาษาไทย"], active: false, hourlyRate: 450, quotaRemaining: 0, overLimit: true, limitOverride: false, workDays: [0, 1, 2, 3, 4, 5, 6] },
 ];
 
 const today = dayjs().format("YYYY-MM-DD");
