@@ -17,7 +17,7 @@ import BookingModal from "./Modal/BookingModal";
 export default function CalendarContent() {
   const t = useT();
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
-  const [view, setView] = useState<CalendarView>("day");
+  const [view, setView] = useState<CalendarView>("week");
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedBadgeValueIds, setSelectedBadgeValueIds] = useState<string[]>([]);

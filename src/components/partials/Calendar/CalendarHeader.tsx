@@ -93,8 +93,8 @@ export default function CalendarHeader({
               value={view}
               onChange={(v) => onChangeView(v as CalendarView)}
               data={[
-                { label: t("calendar.daily"), value: "day" },
                 { label: t("calendar.weekly"), value: "week" },
+                { label: t("calendar.daily"), value: "day" },
               ]}
             />
 
