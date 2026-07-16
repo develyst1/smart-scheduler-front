@@ -4,11 +4,11 @@ import type { Booking, Teacher, TeacherType, TeacherView } from "@/types/app/sch
 /**
  * คำนวณรายได้เดือนปัจจุบันของครู + สถานะ over-limit
  *
- * กฎ (จากคุยกับลูกค้า):
- *  - นับ "ทุก booking ที่ assign" ให้ครู ในเดือนปัจจุบัน (1 booking = 1 ชม.)
- *  - รายได้ = hourlyRate × ชั่วโมง
- *  - เกิน incomeLimit และยังไม่ override → overLimit = true → ไม่ขึ้นในตารางจอง
- *  - มีผลเฉพาะ Freelance (มี hourlyRate); ประเภทอื่นเหมาจ่าย ไม่คิด limit
+ * กฎ (item-centric — Phase 2):
+ *  - ครู Freelance = EXPENSE item มีโควต้าชั่วโมงรายเดือนใน back-office
+ *  - ทำงานทีละชม. → back-office ตัดโควต้า; โควต้าหมด → back-office ตั้ง overLimit
+ *  - overLimit และยังไม่ override → ไม่ขึ้นในตารางจอง (กระจายงานให้คนอื่น)
+ *  - monthlyHours/monthlyIncome คำนวณจาก booking ที่โหลด ไว้แสดงผลเท่านั้น
  */
 export function toTeacherView(
   teacher: Teacher,
@@ -22,13 +22,9 @@ export function toTeacherView(
   const rate = teacher.hourlyRate ?? 0;
   const monthlyIncome = rate * monthlyHours;
 
-  const hasLimit =
-    teacher.type === "FREELANCE" &&
-    typeof teacher.incomeLimit === "number" &&
-    teacher.incomeLimit > 0;
-
-  const overLimit =
-    hasLimit && monthlyIncome >= (teacher.incomeLimit as number) && !teacher.limitOverride;
+  // Ceiling comes from the back-office quota (server sets overLimit at quota ≤ 0). Admin
+  // can still force the teacher bookable via limitOverride.
+  const overLimit = teacher.type === "FREELANCE" && !!teacher.overLimit && !teacher.limitOverride;
 
   return {
     ...teacher,

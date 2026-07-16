@@ -64,6 +64,12 @@ export interface TeacherDTO {
   subjects: SubjectRef[];
   lineLinked: boolean;
   workDays: number[];
+  /** THB/hour = the teacher's EXPENSE item unit price in backoffice (UC-016). */
+  hourlyRate?: number | null;
+  /** Hours of monthly work quota left (backoffice item stock); null when none. */
+  quotaRemaining?: number | null;
+  /** Quota exhausted → hide from the calendar. */
+  overLimit?: boolean;
 }
 
 export interface CourseSummary {

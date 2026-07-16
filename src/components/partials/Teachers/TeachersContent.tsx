@@ -202,14 +202,20 @@ function FreelanceRow({ teacher, onToggle }: { teacher: TeacherView; onToggle: (
   const { format } = useWorkDays();
   const setOverride = useSetLimitOverride();
 
-  // เพดานรายได้มาจาก back-office (read-only ในระบบนี้)
-  const limitNum = teacher.incomeLimit ?? 0;
-  const pct = limitNum > 0 ? Math.min(100, (teacher.monthlyIncome / limitNum) * 100) : 0;
-  const reached = limitNum > 0 && teacher.monthlyIncome >= limitNum;
+  // โควต้าชั่วโมงทำงานคงเหลือมาจาก back-office EXPENSE item (ตัดทีละชม.ตอนสอนจริง)
+  const remaining = teacher.quotaRemaining ?? null;
+  const impliedTotal = remaining != null ? teacher.monthlyHours + remaining : 0;
+  const pct =
+    impliedTotal > 0
+      ? Math.min(100, (teacher.monthlyHours / impliedTotal) * 100)
+      : teacher.overLimit
+        ? 100
+        : 0;
+  const reached = !!teacher.overLimit;
 
   const barColor = teacher.overLimit
     ? MANTINE_COLOR.danger
-    : pct >= 80
+    : remaining != null && remaining <= 5
       ? MANTINE_COLOR.warning
       : MANTINE_COLOR.success;
 
@@ -262,10 +268,10 @@ function FreelanceRow({ teacher, onToggle }: { teacher: TeacherView; onToggle: (
           </span>
           <span>
             ฿{thb(teacher.monthlyIncome)}{" "}
-            {limitNum > 0 && (
-              <span className="text-default-400">{t("teachers.capOf", { limit: thb(limitNum) })}</span>
-            )}{" "}
             · {t("teachers.hours", { n: teacher.monthlyHours })}
+            {remaining != null && (
+              <span className="text-default-400"> · เหลือโควต้า {remaining} ชม.</span>
+            )}
           </span>
         </div>
         <Progress size="md" radius="xl" value={pct} color={barColor} />

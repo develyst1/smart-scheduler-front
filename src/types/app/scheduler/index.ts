@@ -20,11 +20,13 @@ export interface Teacher {
   lineLinked?: boolean;
   /** ปิด = ไม่แสดงในตารางจองของเดือนนั้น (เช่น ประหยัดงบครู Freelance) */
   active: boolean;
-  /** เรทค่าจ้างต่อชั่วโมง (จากระบบ back-office) — ใช้กับ Freelance */
+  /** เรทค่าจ้างต่อชั่วโมง (= ราคาต่อหน่วยของ EXPENSE item ใน back-office) — Freelance */
   hourlyRate?: number;
-  /** เพดานรายได้ต่อเดือน (จาก back-office, read-only) — เกินแล้ว auto-disable (Freelance) */
-  incomeLimit?: number;
-  /** เปิดรับงานต่อแม้รายได้เกิน limit (กรณีพิเศษ ทีมงานกดเอง) */
+  /** โควต้าชั่วโมงทำงานคงเหลือเดือนนี้ (จาก back-office item stock) */
+  quotaRemaining?: number;
+  /** โควต้าหมด (back-office คำนวณจาก quota ≤ 0) → auto-disable */
+  overLimit?: boolean;
+  /** เปิดรับงานต่อแม้โควต้าหมด (กรณีพิเศษ ทีมงานกดเอง) */
   limitOverride?: boolean;
   /** 0=Sun … 6=Sat — วันที่ครูมาสอนได้ */
   workDays?: number[];

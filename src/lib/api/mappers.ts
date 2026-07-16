@@ -39,6 +39,10 @@ export function dtoToTeacher(dto: TeacherDTO, limitOverride = false): Teacher {
     active: dto.active,
     lineLinked: dto.lineLinked,
     workDays: dto.workDays,
+    // UC-016: rate + remaining quota from the teacher's backoffice EXPENSE item.
+    hourlyRate: dto.hourlyRate ?? undefined,
+    quotaRemaining: dto.quotaRemaining ?? undefined,
+    overLimit: dto.overLimit ?? undefined,
     limitOverride,
   };
 }
