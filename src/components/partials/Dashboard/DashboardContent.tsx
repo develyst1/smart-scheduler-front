@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import { Card, Loader, Group, Table } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { useT } from "@/lib/i18n";
-import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
+import { badgeColorVar } from "@/lib/ui/badge-colors";
 import { useBadgeReport } from "@/hooks/scheduler";
 
 export default function DashboardContent() {
@@ -60,24 +60,23 @@ export default function DashboardContent() {
             <div className="space-y-2.5">
               {byValue.map((v) => (
                 <div key={v.valueId} className="flex items-center gap-3">
-                  <span className="w-28 shrink-0 truncate text-xs text-default-500">
-                    {v.typeName}
+                  <span
+                    className="w-28 shrink-0 truncate text-xs font-semibold text-default-800"
+                    title={v.label}
+                  >
+                    {v.label}
                   </span>
                   <div className="flex grow items-center gap-2">
-                    <div
-                      className="h-5 rounded"
-                      style={{
-                        width: `${Math.max(6, (v.count / maxCount) * 100)}%`,
-                        backgroundColor: badgeColorVar(v.color),
-                      }}
-                    />
-                    <span
-                      className="rounded-full px-2 py-0.5 text-xs font-medium"
-                      style={{ backgroundColor: badgeColorSoftVar(v.color), color: badgeColorVar(v.color) }}
-                    >
-                      {v.label}
-                    </span>
-                    <span className="text-sm font-semibold tabular-nums">{v.count}</span>
+                    <div className="min-w-0 grow">
+                      <div
+                        className="h-5 rounded"
+                        style={{
+                          width: `${Math.max(6, (v.count / maxCount) * 100)}%`,
+                          backgroundColor: badgeColorVar(v.color),
+                        }}
+                      />
+                    </div>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums">{v.count}</span>
                   </div>
                 </div>
               ))}
