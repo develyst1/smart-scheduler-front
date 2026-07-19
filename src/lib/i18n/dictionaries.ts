@@ -50,6 +50,10 @@ const en = {
     createdValue: "Badge value added",
     updated: "Saved",
     saveError: "Could not save",
+    confirmAddType: "Add this badge type?",
+    confirmAddTypeBody: "A new badge type will be created:",
+    confirmAddValue: "Add this value?",
+    confirmAddValueBody: "A new value will be added to this type:",
   },
 
   dashboard: {
@@ -435,6 +439,10 @@ const th: typeof en = {
     createdValue: "เพิ่มค่า badge แล้ว",
     updated: "บันทึกแล้ว",
     saveError: "บันทึกไม่สำเร็จ",
+    confirmAddType: "เพิ่มประเภท badge นี้?",
+    confirmAddTypeBody: "จะสร้างประเภท badge ใหม่:",
+    confirmAddValue: "เพิ่มค่านี้?",
+    confirmAddValueBody: "จะเพิ่มค่าใหม่ให้ประเภทนี้:",
   },
 
   dashboard: {

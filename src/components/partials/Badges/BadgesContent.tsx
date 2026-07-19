@@ -7,13 +7,16 @@ import {
   Button,
   Group,
   Stack,
+  Text,
   TextInput,
   Switch,
   ColorSwatch,
   Badge,
   Tooltip,
   ActionIcon,
+  Modal,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { Plus, Power, PowerOff } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
@@ -33,6 +36,13 @@ export default function BadgesContent() {
   const createType = useCreateBadgeType();
 
   const [newType, setNewType] = useState("");
+  const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
+
+  // Validate first, then ask for confirmation before creating.
+  const requestAddType = () => {
+    if (!newType.trim()) return;
+    openConfirm();
+  };
 
   const addType = () => {
     const name = newType.trim();
@@ -43,8 +53,12 @@ export default function BadgesContent() {
         onSuccess: () => {
           notify({ title: t("badges.createdType"), color: "success" });
           setNewType("");
+          closeConfirm();
         },
-        onError: () => notify({ title: t("badges.saveError"), color: "danger" }),
+        onError: () => {
+          notify({ title: t("badges.saveError"), color: "danger" });
+          closeConfirm();
+        },
       },
     );
   };
@@ -72,14 +86,37 @@ export default function BadgesContent() {
             placeholder={t("badges.typeNamePlaceholder")}
             value={newType}
             onChange={(e) => setNewType(e.currentTarget.value)}
-            onKeyDown={(e) => e.key === "Enter" && addType()}
+            onKeyDown={(e) => e.key === "Enter" && requestAddType()}
             className="grow"
           />
-          <Button leftSection={<Plus size={16} />} onClick={addType} loading={createType.isPending}>
+          <Button leftSection={<Plus size={16} />} onClick={requestAddType}>
             {t("badges.addType")}
           </Button>
         </Group>
       </Card>
+
+      <Modal
+        opened={confirmOpen}
+        onClose={closeConfirm}
+        title={t("badges.confirmAddType")}
+        centered
+        size="sm"
+      >
+        <Text size="sm" c="dimmed">
+          {t("badges.confirmAddTypeBody")}
+        </Text>
+        <Text size="sm" fw={600} mt={4}>
+          {newType.trim()}
+        </Text>
+        <Group justify="flex-end" gap="sm" mt="lg">
+          <Button variant="subtle" color="gray" onClick={closeConfirm} disabled={createType.isPending}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={addType} loading={createType.isPending}>
+            {t("common.confirm")}
+          </Button>
+        </Group>
+      </Modal>
 
       {types.length === 0 ? (
         <p className="py-10 text-center text-sm text-default-400">{t("badges.noTypes")}</p>
@@ -102,6 +139,13 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
 
   const [label, setLabel] = useState("");
   const [color, setColor] = useState<BadgeColor>(BADGE_COLORS[0]);
+  const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
+
+  // Validate first, then ask for confirmation before creating.
+  const requestAddValue = () => {
+    if (!label.trim()) return;
+    openConfirm();
+  };
 
   const addValue = () => {
     const trimmed = label.trim();
@@ -112,8 +156,12 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
         onSuccess: () => {
           notify({ title: t("badges.createdValue"), color: "success" });
           setLabel("");
+          closeConfirm();
         },
-        onError: () => notify({ title: t("badges.saveError"), color: "danger" }),
+        onError: () => {
+          notify({ title: t("badges.saveError"), color: "danger" });
+          closeConfirm();
+        },
       },
     );
   };
@@ -170,7 +218,7 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
           placeholder={t("badges.valuePlaceholder")}
           value={label}
           onChange={(e) => setLabel(e.currentTarget.value)}
-          onKeyDown={(e) => e.key === "Enter" && addValue()}
+          onKeyDown={(e) => e.key === "Enter" && requestAddValue()}
           className="grow"
           size="sm"
         />
@@ -199,12 +247,39 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
           size="sm"
           variant="light"
           leftSection={<Plus size={15} />}
-          onClick={addValue}
-          loading={createValue.isPending}
+          onClick={requestAddValue}
         >
           {t("badges.addValue")}
         </Button>
       </Group>
+
+      <Modal
+        opened={confirmOpen}
+        onClose={closeConfirm}
+        title={t("badges.confirmAddValue")}
+        centered
+        size="sm"
+      >
+        <Text size="sm" c="dimmed">
+          {t("badges.confirmAddValueBody")}
+        </Text>
+        <Group gap="xs" mt={8}>
+          <Badge variant="light" color={color}>
+            {label.trim()}
+          </Badge>
+          <Text size="xs" c="dimmed">
+            {type.name}
+          </Text>
+        </Group>
+        <Group justify="flex-end" gap="sm" mt="lg">
+          <Button variant="subtle" color="gray" onClick={closeConfirm} disabled={createValue.isPending}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={addValue} loading={createValue.isPending}>
+            {t("common.confirm")}
+          </Button>
+        </Group>
+      </Modal>
     </Card>
   );
 }
