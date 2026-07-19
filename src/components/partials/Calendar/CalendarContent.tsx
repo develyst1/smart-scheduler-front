@@ -22,7 +22,8 @@ export default function CalendarContent() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedBadgeValueIds, setSelectedBadgeValueIds] = useState<string[]>([]);
 
-  const weekStart = dayjs(date).day(0);
+  // Week starts on Monday. dayjs weeks default to Sunday, so pull Sunday back to the prior Monday.
+  const weekStart = dayjs(date).day(dayjs(date).day() === 0 ? -6 : 1);
   const weekDays = Array.from({ length: 7 }, (_, i) => weekStart.add(i, "day").format("YYYY-MM-DD"));
 
   const calView = view === "day" ? "day" : "week";

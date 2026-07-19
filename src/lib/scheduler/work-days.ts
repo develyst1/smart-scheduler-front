@@ -5,7 +5,8 @@ import type { Teacher, TeacherView } from "@/types/app/scheduler";
 const WEEKEND_DAYS = [6, 0];
 const WEEKDAY_DAYS = [1, 2, 3, 4, 5];
 
-export const ALL_WORK_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
+// Monday-first ordering (Sunday last) to match the calendar's week start.
+export const ALL_WORK_DAYS = [1, 2, 3, 4, 5, 6, 0] as const;
 
 /** Locale-aware short weekday name (0=Sun … 6=Sat). */
 export const dayShort = (d: number, lang: string) => dayjs().day(d).locale(lang).format("dd");
