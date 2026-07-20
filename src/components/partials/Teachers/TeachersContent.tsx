@@ -31,6 +31,8 @@ import type { TeacherType, TeacherView } from "@/types/app/scheduler";
 import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 
 const thb = (n: number) => n.toLocaleString("th-TH");
+/** satang → whole-baht string (freelance budgets are whole baht). */
+const bahtOfSatang = (satang: number) => thb(Math.round(satang / 100));
 
 export default function TeachersContent() {
   const t = useT();
@@ -202,20 +204,27 @@ function FreelanceRow({ teacher, onToggle }: { teacher: TeacherView; onToggle: (
   const { format } = useWorkDays();
   const setOverride = useSetLimitOverride();
 
-  // โควต้าชั่วโมงทำงานคงเหลือมาจาก back-office EXPENSE item (ตัดทีละชม.ตอนสอนจริง)
-  const remaining = teacher.quotaRemaining ?? null;
-  const impliedTotal = remaining != null ? teacher.monthlyHours + remaining : 0;
-  const pct =
-    impliedTotal > 0
-      ? Math.min(100, (teacher.monthlyHours / impliedTotal) * 100)
-      : teacher.overLimit
-        ? 100
-        : 0;
-  const reached = !!teacher.overLimit;
+  // งบฟรีแลนซ์รายเดือน (สตางค์) มาจาก back-office EXPENSE item — ตัดตอนจอง (SPEC-001).
+  const remainingMinor = teacher.remainingMinor ?? null;
+  const budgetMinor = teacher.budgetMinor ?? null;
+  const hasBudget = remainingMinor != null || budgetMinor != null;
+  // rawOver = งบหมดจริง (ก่อนคิด override) → ใช้โชว์สวิตช์ override ให้กดปิดได้แม้เปิดค้างอยู่
+  const rawOver = remainingMinor != null && remainingMinor <= 0;
+  const nearCap =
+    !rawOver &&
+    remainingMinor != null &&
+    teacher.reorderMinor != null &&
+    remainingMinor <= teacher.reorderMinor;
+  const reached = rawOver;
 
-  const barColor = teacher.overLimit
+  const pct =
+    budgetMinor != null && budgetMinor > 0
+      ? Math.min(100, Math.max(0, (Math.max(0, remainingMinor ?? 0) / budgetMinor) * 100))
+      : 0;
+
+  const barColor = rawOver
     ? MANTINE_COLOR.danger
-    : remaining != null && remaining <= 5
+    : nearCap
       ? MANTINE_COLOR.warning
       : MANTINE_COLOR.success;
 
@@ -260,21 +269,34 @@ function FreelanceRow({ teacher, onToggle }: { teacher: TeacherView; onToggle: (
         </div>
       </div>
 
-      {/* income vs limit (เพดานจาก back-office) */}
+      {/* รายได้เดือนนี้ + งบฟรีแลนซ์คงเหลือ (บาท, จาก back-office) */}
       <div className="mt-3">
         <div className="mb-1 flex items-center justify-between text-xs text-default-500">
           <span className="flex items-center gap-1">
             <Wallet size={13} /> {t("teachers.monthIncome")}
           </span>
           <span>
-            ฿{thb(teacher.monthlyIncome)}{" "}
-            · {t("teachers.hours", { n: teacher.monthlyHours })}
-            {remaining != null && (
-              <span className="text-default-400"> · เหลือโควต้า {remaining} ชม.</span>
-            )}
+            ฿{thb(teacher.monthlyIncome)} · {t("teachers.hours", { n: teacher.monthlyHours })}
           </span>
         </div>
-        <Progress size="md" radius="xl" value={pct} color={barColor} />
+        {hasBudget && (
+          <>
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span className="text-default-500">{t("teachers.budgetRemaining")}</span>
+              <span
+                className={`font-medium ${
+                  rawOver ? "text-danger" : nearCap ? "text-warning" : "text-default-600"
+                }`}
+              >
+                ฿{bahtOfSatang(remainingMinor ?? 0)}
+                {budgetMinor != null && (
+                  <span className="text-default-400"> / ฿{bahtOfSatang(budgetMinor)}</span>
+                )}
+              </span>
+            </div>
+            <Progress size="md" radius="xl" value={pct} color={barColor} />
+          </>
+        )}
       </div>
 
       {reached && (

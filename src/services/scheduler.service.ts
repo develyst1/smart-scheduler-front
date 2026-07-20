@@ -10,9 +10,7 @@ import {
 } from "@/lib/api/mappers";
 import {
   DEFAULT_TEACHER_TYPE_ORDER,
-  readLimitOverrides,
   readTeacherTypeOrder,
-  writeLimitOverride,
 } from "@/lib/api/teacher-order-store";
 import { toTeacherView } from "@/lib/scheduler/teacher";
 import type {
@@ -34,6 +32,7 @@ import type {
   DailyReportResponse,
   MoveBookingResponse,
   SetTeacherWorkDaysResponse,
+  TeacherDTO,
   TeachersResponse,
   TeacherTypeOrderResponse,
   UpdateBookingStatusResponse,
@@ -60,10 +59,10 @@ async function fetchMonthBookings(): Promise<Booking[]> {
 }
 
 function teachersToViews(dtos: ReturnType<typeof flattenTeachers>, bookings: Booking[]): TeacherView[] {
-  const overrides = readLimitOverrides();
   // Order is applied server-side: GET /teachers returns groups in the persisted
   // type order (B.2), and flattenTeachers preserves it — no client re-sort needed.
-  return dtos.map((dto) => toTeacherView(dtoToTeacher(dto, !!overrides[dto.id]), bookings));
+  // limitOverride is now on the DTO (server-persisted, TASK-008).
+  return dtos.map((dto) => toTeacherView(dtoToTeacher(dto), bookings));
 }
 
 // ───────────────────────────── Calendar aggregate ─────────────────────────────
@@ -85,8 +84,7 @@ export function parseCalendarTeachers(cal: CalendarResponse, allTeachers?: Teach
     .map((col) => {
       const existing = allTeachers?.find((t) => t.id === col.teacher.id);
       if (existing) return existing;
-      const overrides = readLimitOverrides();
-      const teacher = dtoToTeacher(col.teacher, !!overrides[col.teacher.id]);
+      const teacher = dtoToTeacher(col.teacher);
       return toTeacherView(teacher, calendarToBookings(cal));
     })
     .sort((a, b) => rank(a.type) - rank(b.type) || a.nickname.localeCompare(b.nickname, "th"));
@@ -145,13 +143,12 @@ export const setTeacherWorkDays = async (id: string, workDays: number[]) => {
 };
 
 export const setTeacherLimitOverride = async (id: string, override: boolean) => {
-  writeLimitOverride(id, override);
   if (useMock) return mock.setTeacherLimitOverride(id, override);
-  const teachers = await getTeachers();
-  const view = teachers.find((t) => t.id === id);
-  if (!view) throw new ApiClientError("NOT_FOUND", "ไม่พบครู", 404);
-  const { id: _id, monthlyHours, monthlyIncome, overLimit, bookable, ...base } = view;
-  return { ...base, limitOverride: override } as Teacher;
+  // Durable server-side persistence (TASK-008): the booking/confirm path reads this
+  // as allowNegative. The caller (useSetLimitOverride) invalidates TEACHERS_KEY, so
+  // the refetched DTO reflects the new limitOverride — no client store needed.
+  const { data } = await api.patch<TeacherDTO>(`/teachers/${id}/limit-override`, { override });
+  return dtoToTeacher(data);
 };
 
 // ───────────────────────────── Bookings ─────────────────────────────

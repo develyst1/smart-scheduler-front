@@ -28,7 +28,7 @@ export function dtoToBooking(dto: BookingDTO): Booking {
   };
 }
 
-export function dtoToTeacher(dto: TeacherDTO, limitOverride = false): Teacher {
+export function dtoToTeacher(dto: TeacherDTO): Teacher {
   return {
     id: dto.id,
     name: dto.name,
@@ -39,11 +39,14 @@ export function dtoToTeacher(dto: TeacherDTO, limitOverride = false): Teacher {
     active: dto.active,
     lineLinked: dto.lineLinked,
     workDays: dto.workDays,
-    // UC-016: rate + remaining quota from the teacher's backoffice EXPENSE item.
+    // UC-016 / SPEC-001: rate (baht) + budget fields (satang) from the teacher's
+    // backoffice EXPENSE item; limitOverride is now persisted server-side (TASK-008).
     hourlyRate: dto.hourlyRate ?? undefined,
-    quotaRemaining: dto.quotaRemaining ?? undefined,
+    remainingMinor: dto.remainingMinor ?? undefined,
+    budgetMinor: dto.budgetMinor ?? undefined,
+    reorderMinor: dto.reorderMinor ?? undefined,
     overLimit: dto.overLimit ?? undefined,
-    limitOverride,
+    limitOverride: dto.limitOverride ?? false,
   };
 }
 

@@ -66,10 +66,16 @@ export interface TeacherDTO {
   workDays: number[];
   /** THB/hour = the teacher's EXPENSE item unit price in backoffice (UC-016). */
   hourlyRate?: number | null;
-  /** Hours of monthly work quota left (backoffice item stock); null when none. */
-  quotaRemaining?: number | null;
-  /** Quota exhausted → hide from the calendar. */
+  /** Remaining monthly freelance budget in **satang** (backoffice item stock); null when none. */
+  remainingMinor?: number | null;
+  /** Configured monthly budget in **satang** (metadata.monthlyBudgetMinor); null when none. */
+  budgetMinor?: number | null;
+  /** Near-cap warning threshold in **satang** (reorder_level); null when none. */
+  reorderMinor?: number | null;
+  /** Budget exhausted (remainingMinor ≤ 0) → hide from the calendar. */
   overLimit?: boolean;
+  /** Admin keeps the teacher bookable past the cap (durable, server-persisted). */
+  limitOverride?: boolean;
 }
 
 export interface CourseSummary {

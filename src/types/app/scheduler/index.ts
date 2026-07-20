@@ -20,13 +20,17 @@ export interface Teacher {
   lineLinked?: boolean;
   /** ปิด = ไม่แสดงในตารางจองของเดือนนั้น (เช่น ประหยัดงบครู Freelance) */
   active: boolean;
-  /** เรทค่าจ้างต่อชั่วโมง (= ราคาต่อหน่วยของ EXPENSE item ใน back-office) — Freelance */
+  /** เรทค่าจ้างต่อชั่วโมง (บาท) (= ราคาต่อหน่วยของ EXPENSE item ใน back-office) — Freelance */
   hourlyRate?: number;
-  /** โควต้าชั่วโมงทำงานคงเหลือเดือนนี้ (จาก back-office item stock) */
-  quotaRemaining?: number;
-  /** โควต้าหมด (back-office คำนวณจาก quota ≤ 0) → auto-disable */
+  /** งบฟรีแลนซ์คงเหลือเดือนนี้ (สตางค์ — จาก back-office item stock) */
+  remainingMinor?: number;
+  /** งบรายเดือนที่ตั้งไว้ (สตางค์ — metadata.monthlyBudgetMinor) */
+  budgetMinor?: number;
+  /** เกณฑ์เตือนใกล้เต็มงบ (สตางค์ — reorder_level) */
+  reorderMinor?: number;
+  /** งบหมด (back-office คำนวณจาก remainingMinor ≤ 0) → auto-disable */
   overLimit?: boolean;
-  /** เปิดรับงานต่อแม้โควต้าหมด (กรณีพิเศษ ทีมงานกดเอง) */
+  /** เปิดรับงานต่อแม้งบหมด (กรณีพิเศษ ทีมงานกดเอง — เก็บถาวรฝั่ง server) */
   limitOverride?: boolean;
   /** 0=Sun … 6=Sat — วันที่ครูมาสอนได้ */
   workDays?: number[];
