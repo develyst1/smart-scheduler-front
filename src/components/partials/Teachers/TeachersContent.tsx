@@ -11,6 +11,7 @@ import {
   Paper,
   Progress,
   Badge,
+  Tooltip,
 } from "@mantine/core";
 import { PowerOff, Power, Wallet, GripVertical, UserPlus } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
@@ -208,6 +209,33 @@ export default function TeachersContent() {
   );
 }
 
+// ───────────── ป้ายวิชา (โชว์ 3 ตัวแรก, ที่เหลือยุบเป็น +N + hover ดูครบ) ─────────────
+
+const SUBJECT_CHIP_LIMIT = 3;
+
+function SubjectChips({ subjects }: { subjects: string[] }) {
+  if (subjects.length === 0) return null;
+  const shown = subjects.slice(0, SUBJECT_CHIP_LIMIT);
+  const rest = subjects.slice(SUBJECT_CHIP_LIMIT);
+
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+      {shown.map((s) => (
+        <Badge key={s} color="gray" variant="light" size="sm" radius="sm" tt="none">
+          {s}
+        </Badge>
+      ))}
+      {rest.length > 0 && (
+        <Tooltip label={rest.join(", ")} withArrow multiline maw={260}>
+          <Badge color="gray" variant="outline" size="sm" radius="sm" className="cursor-default">
+            +{rest.length}
+          </Badge>
+        </Tooltip>
+      )}
+    </div>
+  );
+}
+
 // ───────────── แถวครูทั่วไป ─────────────
 
 function TeacherRow({
@@ -232,10 +260,8 @@ function TeacherRow({
           <p className="font-medium">{teacher.name}</p>
           <p className="text-xs text-default-400">
             ({teacher.nickname}) · {format(teacher.workDays)}
-            {teacher.subjects.length > 0
-              ? ` · ${teacher.subjects.slice(0, 3).join(", ")}${teacher.subjects.length > 3 ? "…" : ""}`
-              : ""}
           </p>
+          <SubjectChips subjects={teacher.subjects} />
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {teacher.setupIncomplete ? (
@@ -316,11 +342,12 @@ function FreelanceRow({
       } ${!teacher.active && !teacher.overLimit ? "opacity-60" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="font-medium">{teacher.name}</p>
           <p className="text-xs text-default-400">
             ({teacher.nickname}) · {format(teacher.workDays)} · ฿{thb(teacher.hourlyRate ?? 0)}{t("teachers.perHour")}
           </p>
+          <SubjectChips subjects={teacher.subjects} />
         </div>
         <div className="flex items-center gap-2">
           {teacher.setupIncomplete ? (
