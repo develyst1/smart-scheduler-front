@@ -76,6 +76,10 @@ export interface TeacherDTO {
   overLimit?: boolean;
   /** Admin keeps the teacher bookable past the cap (durable, server-persisted). */
   limitOverride?: boolean;
+  /** No money configured yet (FREELANCE→no budget item, FT/PT→no open salary) → not bookable (SPEC-004). */
+  setupIncomplete?: boolean;
+  /** Soft-archived (offboarded); excluded from GET /teachers unless ?archived=true. */
+  archived?: boolean;
 }
 
 export interface CourseSummary {

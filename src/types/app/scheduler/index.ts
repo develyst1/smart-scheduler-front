@@ -32,6 +32,10 @@ export interface Teacher {
   overLimit?: boolean;
   /** เปิดรับงานต่อแม้งบหมด (กรณีพิเศษ ทีมงานกดเอง — เก็บถาวรฝั่ง server) */
   limitOverride?: boolean;
+  /** ยังไม่ตั้งเงิน (freelance ยังไม่มีงบ / ประจำ-พาร์ทไทม์ยังไม่มีเงินเดือน) → จองไม่ได้ (SPEC-004) */
+  setupIncomplete?: boolean;
+  /** เก็บ/ออกจากงานแล้ว — ซ่อนจาก roster + ปฏิทิน */
+  archived?: boolean;
   /** 0=Sun … 6=Sat — วันที่ครูมาสอนได้ */
   workDays?: number[];
 }

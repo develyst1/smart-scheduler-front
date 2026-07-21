@@ -47,6 +47,8 @@ export function dtoToTeacher(dto: TeacherDTO): Teacher {
     reorderMinor: dto.reorderMinor ?? undefined,
     overLimit: dto.overLimit ?? undefined,
     limitOverride: dto.limitOverride ?? false,
+    setupIncomplete: dto.setupIncomplete ?? false,
+    archived: dto.archived ?? false,
   };
 }
 

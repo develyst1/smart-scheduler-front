@@ -151,6 +151,55 @@ export const setTeacherLimitOverride = async (id: string, override: boolean) => 
   return dtoToTeacher(data);
 };
 
+// ─────────────────── Teacher lifecycle (SPEC-004 / TASK-017) ───────────────────
+
+export interface CreateTeacherInput {
+  name: string;
+  nickname: string;
+  type: TeacherType;
+  workDays?: number[];
+  subjectIds?: string[];
+}
+
+export interface UpdateTeacherInput {
+  name?: string;
+  nickname?: string;
+  type?: TeacherType;
+  subjectIds?: string[];
+}
+
+export const createTeacher = async (input: CreateTeacherInput): Promise<Teacher> => {
+  if (useMock) return mock.createTeacher(input);
+  const { data } = await api.post<TeacherDTO>("/teachers", input);
+  return dtoToTeacher(data);
+};
+
+export const updateTeacher = async (id: string, input: UpdateTeacherInput): Promise<Teacher> => {
+  if (useMock) return mock.updateTeacher(id, input);
+  const { data } = await api.patch<TeacherDTO>(`/teachers/${id}`, input);
+  return dtoToTeacher(data);
+};
+
+export const archiveTeacher = async (id: string): Promise<Teacher> => {
+  if (useMock) return mock.archiveTeacher(id);
+  const { data } = await api.post<TeacherDTO>(`/teachers/${id}/archive`, {});
+  return dtoToTeacher(data);
+};
+
+export const reactivateTeacher = async (id: string): Promise<Teacher> => {
+  if (useMock) return mock.reactivateTeacher(id);
+  const { data } = await api.post<TeacherDTO>(`/teachers/${id}/reactivate`, {});
+  return dtoToTeacher(data);
+};
+
+export const getArchivedTeachers = async (): Promise<Teacher[]> => {
+  if (useMock) return mock.getArchivedTeachers();
+  const { data: groups } = await api.get<TeachersResponse>("/teachers", {
+    params: { archived: true },
+  });
+  return flattenTeachers(groups).map((d) => dtoToTeacher(d));
+};
+
 // ───────────────────────────── Bookings ─────────────────────────────
 
 export const getBookingsByDate = async (date: string) => {

@@ -27,9 +27,16 @@ import {
   setTeacherTypeActive,
   setTeacherTypeOrder,
   setTeacherWorkDays,
+  createTeacher,
+  updateTeacher,
+  archiveTeacher,
+  reactivateTeacher,
+  getArchivedTeachers,
   type CreateBookingInput,
   type CreateCourseInput,
   type CreateVoucherInput,
+  type CreateTeacherInput,
+  type UpdateTeacherInput,
 } from "@/services/scheduler.service";
 import type { TeacherType } from "@/types/app/scheduler";
 
@@ -97,6 +104,52 @@ export const useSetLimitOverride = () => {
     mutationFn: ({ id, override }: { id: string; override: boolean }) =>
       setTeacherLimitOverride(id, override),
     onSuccess: () => qc.invalidateQueries({ queryKey: TEACHERS_KEY }),
+  });
+};
+
+// ─────────────────── Teacher lifecycle (SPEC-004 / TASK-017) ───────────────────
+
+export const ARCHIVED_TEACHERS_KEY = ["teachers", "archived"] as const;
+
+const invalidateTeacherRoster = (qc: ReturnType<typeof useQueryClient>) => {
+  qc.invalidateQueries({ queryKey: TEACHERS_KEY });
+  qc.invalidateQueries({ queryKey: CALENDAR_KEY });
+  qc.invalidateQueries({ queryKey: ARCHIVED_TEACHERS_KEY });
+};
+
+export const useArchivedTeachers = () =>
+  useQuery({ queryKey: ARCHIVED_TEACHERS_KEY, queryFn: getArchivedTeachers });
+
+export const useCreateTeacher = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateTeacherInput) => createTeacher(input),
+    onSuccess: () => invalidateTeacherRoster(qc),
+  });
+};
+
+export const useUpdateTeacher = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateTeacherInput }) =>
+      updateTeacher(id, input),
+    onSuccess: () => invalidateTeacherRoster(qc),
+  });
+};
+
+export const useArchiveTeacher = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => archiveTeacher(id),
+    onSuccess: () => invalidateTeacherRoster(qc),
+  });
+};
+
+export const useReactivateTeacher = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => reactivateTeacher(id),
+    onSuccess: () => invalidateTeacherRoster(qc),
   });
 };
 

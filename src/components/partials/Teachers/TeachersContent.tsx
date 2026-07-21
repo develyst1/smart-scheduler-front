@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   Card,
   Switch,
@@ -11,13 +12,16 @@ import {
   Progress,
   Badge,
 } from "@mantine/core";
-import { PowerOff, Power, Wallet, GripVertical } from "lucide-react";
+import { PowerOff, Power, Wallet, GripVertical, UserPlus } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import { notify } from "@/lib/ui/notify";
 import { useWorkDays } from "@/lib/scheduler/useWorkDays";
 import { useT } from "@/lib/i18n";
 import TeacherWorkDaysSelect from "./TeacherWorkDaysSelect";
+import TeacherRowActions from "./TeacherRowActions";
+import TeacherFormModal from "./TeacherFormModal";
+import ArchivedTeachers from "./ArchivedTeachers";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import {
   useTeachers,
@@ -27,7 +31,7 @@ import {
   useSetTeacherTypeOrder,
   useSetLimitOverride,
 } from "@/hooks/scheduler";
-import type { TeacherType, TeacherView } from "@/types/app/scheduler";
+import type { Teacher, TeacherType, TeacherView } from "@/types/app/scheduler";
 import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 
 const thb = (n: number) => n.toLocaleString("th-TH");
@@ -41,6 +45,26 @@ export default function TeachersContent() {
   const toggle = useToggleTeacher();
   const toggleType = useToggleTeacherType();
   const setOrder = useSetTeacherTypeOrder();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
+
+  // Subject picker options = the union of subjects already assigned across the roster
+  // (no standalone subjects catalog exists on the FE — see TASK-017 Questions).
+  const subjectCatalog = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const tc of teachers) for (const s of tc.subjectOptions ?? []) map.set(s.id, s.name);
+    return [...map.entries()].map(([value, label]) => ({ value, label }));
+  }, [teachers]);
+
+  const openAdd = () => {
+    setEditTeacher(null);
+    setFormOpen(true);
+  };
+  const openEdit = (tc: Teacher) => {
+    setEditTeacher(tc);
+    setFormOpen(true);
+  };
 
   if (loadingTeachers || loadingOrder) {
     return (
@@ -120,7 +144,12 @@ export default function TeachersContent() {
         </DragDropContext>
       </Paper>
 
-      <p className="text-sm text-default-500">{t("teachers.pageHint")}</p>
+      <Group justify="space-between" align="center">
+        <p className="text-sm text-default-500">{t("teachers.pageHint")}</p>
+        <Button leftSection={<UserPlus size={16} />} onClick={openAdd}>
+          {t("teachers.addTeacher")}
+        </Button>
+      </Group>
 
       {typeOrder.map((type) => {
         const group = teachers.filter((tc) => tc.type === type);
@@ -147,22 +176,49 @@ export default function TeachersContent() {
             <Stack gap="xs">
               {group.map((tc) =>
                 tc.type === "FREELANCE" ? (
-                  <FreelanceRow key={tc.id} teacher={tc} onToggle={() => toggle.mutate({ id: tc.id, active: !tc.active })} />
+                  <FreelanceRow
+                    key={tc.id}
+                    teacher={tc}
+                    onToggle={() => toggle.mutate({ id: tc.id, active: !tc.active })}
+                    onEdit={() => openEdit(tc)}
+                  />
                 ) : (
-                  <TeacherRow key={tc.id} teacher={tc} onToggle={() => toggle.mutate({ id: tc.id, active: !tc.active })} />
+                  <TeacherRow
+                    key={tc.id}
+                    teacher={tc}
+                    onToggle={() => toggle.mutate({ id: tc.id, active: !tc.active })}
+                    onEdit={() => openEdit(tc)}
+                  />
                 ),
               )}
             </Stack>
           </Card>
         );
       })}
+
+      <ArchivedTeachers />
+
+      <TeacherFormModal
+        opened={formOpen}
+        teacher={editTeacher}
+        subjectCatalog={subjectCatalog}
+        onClose={() => setFormOpen(false)}
+      />
     </div>
   );
 }
 
 // ───────────── แถวครูทั่วไป ─────────────
 
-function TeacherRow({ teacher, onToggle }: { teacher: TeacherView; onToggle: () => void }) {
+function TeacherRow({
+  teacher,
+  onToggle,
+  onEdit,
+}: {
+  teacher: TeacherView;
+  onToggle: () => void;
+  onEdit: () => void;
+}) {
   const t = useT();
   const { format } = useWorkDays();
   return (
@@ -181,15 +237,23 @@ function TeacherRow({ teacher, onToggle }: { teacher: TeacherView; onToggle: () 
               : ""}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <span className={`text-xs ${teacher.active ? "text-success" : "text-default-400"}`}>
-            {teacher.active ? t("teachers.active") : t("teachers.inactive")}
-          </span>
+        <div className="flex shrink-0 items-center gap-2">
+          {teacher.setupIncomplete ? (
+            <Badge color="yellow" variant="light">
+              {t("teachers.setupIncomplete")}
+            </Badge>
+          ) : (
+            <span className={`text-xs ${teacher.active ? "text-success" : "text-default-400"}`}>
+              {teacher.active ? t("teachers.active") : t("teachers.inactive")}
+            </span>
+          )}
           <Switch
             checked={teacher.active}
             onChange={onToggle}
+            disabled={teacher.setupIncomplete}
             aria-label={t("teachers.toggleStatus", { name: teacher.name })}
           />
+          <TeacherRowActions teacher={teacher} onEdit={onEdit} />
         </div>
       </div>
       <TeacherWorkDaysSelect teacherId={teacher.id} nickname={teacher.nickname} workDays={teacher.workDays} />
@@ -199,7 +263,15 @@ function TeacherRow({ teacher, onToggle }: { teacher: TeacherView; onToggle: () 
 
 // ───────────── แถวครู Freelance (มี income + limit) ─────────────
 
-function FreelanceRow({ teacher, onToggle }: { teacher: TeacherView; onToggle: () => void }) {
+function FreelanceRow({
+  teacher,
+  onToggle,
+  onEdit,
+}: {
+  teacher: TeacherView;
+  onToggle: () => void;
+  onEdit: () => void;
+}) {
   const t = useT();
   const { format } = useWorkDays();
   const setOverride = useSetLimitOverride();
@@ -250,8 +322,12 @@ function FreelanceRow({ teacher, onToggle }: { teacher: TeacherView; onToggle: (
             ({teacher.nickname}) · {format(teacher.workDays)} · ฿{thb(teacher.hourlyRate ?? 0)}{t("teachers.perHour")}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {teacher.overLimit ? (
+        <div className="flex items-center gap-2">
+          {teacher.setupIncomplete ? (
+            <Badge color="yellow" variant="light">
+              {t("teachers.setupIncomplete")}
+            </Badge>
+          ) : teacher.overLimit ? (
             <Badge color="red" variant="light">
               {t("teachers.overCap")}
             </Badge>
@@ -263,9 +339,10 @@ function FreelanceRow({ teacher, onToggle }: { teacher: TeacherView; onToggle: (
           <Switch
             checked={teacher.active}
             onChange={onToggle}
-            disabled={teacher.overLimit && !teacher.limitOverride}
+            disabled={(teacher.overLimit && !teacher.limitOverride) || teacher.setupIncomplete}
             aria-label={t("teachers.toggleStatus", { name: teacher.name })}
           />
+          <TeacherRowActions teacher={teacher} onEdit={onEdit} />
         </div>
       </div>
 

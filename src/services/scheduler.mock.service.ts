@@ -27,9 +27,64 @@ const delay = <T>(value: T, ms = 200) =>
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 
 export const getTeachers = (): Promise<TeacherView[]> => {
-  const views = teachers.map((t) => toTeacherView(t, bookings));
+  const views = teachers.filter((t) => !t.archived).map((t) => toTeacherView(t, bookings));
   return delay(sortByTypeOrder(clone(views), teacherTypeOrder));
 };
+
+export const createTeacher = (input: {
+  name: string;
+  nickname: string;
+  type: TeacherType;
+  workDays?: number[];
+}): Promise<Teacher> => {
+  const teacher: Teacher = {
+    id: `mock-${teachers.length + 1}`,
+    name: input.name,
+    nickname: input.nickname,
+    type: input.type,
+    subjects: [],
+    active: true,
+    workDays: input.workDays ?? [],
+    setupIncomplete: true, // no money yet — set in backoffice
+    archived: false,
+  };
+  teachers.push(teacher);
+  return delay(clone(teacher));
+};
+
+export const updateTeacher = (
+  id: string,
+  input: { name?: string; nickname?: string; type?: TeacherType },
+): Promise<Teacher> => {
+  const t = teachers.find((x) => x.id === id);
+  if (t) {
+    if (input.name !== undefined) t.name = input.name;
+    if (input.nickname !== undefined) t.nickname = input.nickname;
+    if (input.type !== undefined) t.type = input.type;
+  }
+  return delay(clone(t) as Teacher);
+};
+
+export const archiveTeacher = (id: string): Promise<Teacher> => {
+  const t = teachers.find((x) => x.id === id);
+  if (t) {
+    t.archived = true;
+    t.active = false;
+  }
+  return delay(clone(t) as Teacher);
+};
+
+export const reactivateTeacher = (id: string): Promise<Teacher> => {
+  const t = teachers.find((x) => x.id === id);
+  if (t) {
+    t.archived = false;
+    t.active = true;
+  }
+  return delay(clone(t) as Teacher);
+};
+
+export const getArchivedTeachers = (): Promise<Teacher[]> =>
+  delay(clone(teachers.filter((t) => t.archived)));
 
 export const setTeacherActive = (id: string, active: boolean) => {
   const t = teachers.find((x) => x.id === id);

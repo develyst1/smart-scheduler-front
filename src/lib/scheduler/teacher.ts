@@ -26,12 +26,14 @@ export function toTeacherView(
   // can still force the teacher bookable via limitOverride.
   const overLimit = teacher.type === "FREELANCE" && !!teacher.overLimit && !teacher.limitOverride;
 
+  // A teacher with no money set up (SPEC-004) is never bookable — the single choke point
+  // that auto-suppresses them from calendar columns + booking/course modals.
   return {
     ...teacher,
     monthlyHours,
     monthlyIncome,
     overLimit,
-    bookable: teacher.active && !overLimit,
+    bookable: teacher.active && !overLimit && !teacher.setupIncomplete,
   };
 }
 
