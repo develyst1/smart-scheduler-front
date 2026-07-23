@@ -86,6 +86,32 @@ export const reactivateTeacher = (id: string): Promise<Teacher> => {
 export const getArchivedTeachers = (): Promise<Teacher[]> =>
   delay(clone(teachers.filter((t) => t.archived)));
 
+export const setFreelanceBudget = (
+  id: string,
+  input: { monthlyBudgetMinor: number; rateMinor: number; reorderMinor?: number | null },
+): Promise<void> => {
+  const t = teachers.find((x) => x.id === id);
+  if (t) {
+    const firstSet = t.budgetMinor == null;
+    t.budgetMinor = input.monthlyBudgetMinor;
+    t.hourlyRate = Math.round(input.rateMinor / 100);
+    t.reorderMinor = input.reorderMinor ?? undefined;
+    if (firstSet) t.remainingMinor = input.monthlyBudgetMinor; // edit doesn't touch remaining
+    t.overLimit = (t.remainingMinor ?? 0) <= 0;
+    t.setupIncomplete = false;
+  }
+  return delay(undefined);
+};
+
+export const topUpFreelanceBudget = (id: string, amountMinor: number): Promise<void> => {
+  const t = teachers.find((x) => x.id === id);
+  if (t) {
+    t.remainingMinor = (t.remainingMinor ?? 0) + amountMinor;
+    t.overLimit = t.remainingMinor <= 0;
+  }
+  return delay(undefined);
+};
+
 export const setTeacherActive = (id: string, active: boolean) => {
   const t = teachers.find((x) => x.id === id);
   if (t) t.active = active;

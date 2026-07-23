@@ -380,6 +380,18 @@ const en = {
     reactivatedOk: "Teacher reactivated",
     archivedSection: "Archived teachers",
     archivedEmpty: "No archived teachers",
+    // TASK-020 — local freelance budget admin
+    setBudget: "Set / edit budget",
+    topUp: "Top up",
+    budgetModalTitle: "Set / edit freelance budget",
+    fieldMonthlyBudget: "Monthly budget (THB)",
+    fieldRate: "Rate per hour (THB)",
+    fieldNearCap: "Warn when remaining reaches (THB)",
+    budgetEditNote: "Editing the monthly budget sets the target for the next reset — current remaining doesn't change. Use Top up to add to remaining now.",
+    topUpTitle: "Top up budget",
+    topUpAmount: "Amount to add (THB)",
+    budgetSaved: "Budget saved",
+    toppedUp: "Budget topped up",
   },
 
   reports: {
@@ -791,6 +803,18 @@ const th: typeof en = {
     reactivatedOk: "นำครูกลับมาทำงานแล้ว",
     archivedSection: "ครูที่เก็บไว้ (ออกจากงาน)",
     archivedEmpty: "ยังไม่มีครูที่ถูกเก็บ",
+    // TASK-020 — local freelance budget admin
+    setBudget: "ตั้ง/แก้งบ",
+    topUp: "เติมงบ",
+    budgetModalTitle: "ตั้ง/แก้งบครูฟรีแลนซ์",
+    fieldMonthlyBudget: "งบรายเดือน (บาท)",
+    fieldRate: "เรตต่อชั่วโมง (บาท)",
+    fieldNearCap: "เตือนเมื่อเหลือถึง (บาท)",
+    budgetEditNote: "การแก้ ‘งบรายเดือน’ เป็นการตั้งยอดสำหรับรอบเดือนถัดไป — งบคงเหลือปัจจุบันไม่เปลี่ยน หากต้องการเพิ่มคงเหลือทันทีให้ใช้ ‘เติมงบ’",
+    topUpTitle: "เติมงบครู",
+    topUpAmount: "จำนวนที่เติม (บาท)",
+    budgetSaved: "บันทึกงบแล้ว",
+    toppedUp: "เติมงบแล้ว",
   },
 
   reports: {

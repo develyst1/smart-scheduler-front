@@ -32,11 +32,14 @@ import {
   archiveTeacher,
   reactivateTeacher,
   getArchivedTeachers,
+  setFreelanceBudget,
+  topUpFreelanceBudget,
   type CreateBookingInput,
   type CreateCourseInput,
   type CreateVoucherInput,
   type CreateTeacherInput,
   type UpdateTeacherInput,
+  type SetFreelanceBudgetInput,
 } from "@/services/scheduler.service";
 import type { TeacherType } from "@/types/app/scheduler";
 
@@ -149,6 +152,26 @@ export const useReactivateTeacher = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => reactivateTeacher(id),
+    onSuccess: () => invalidateTeacherRoster(qc),
+  });
+};
+
+// ───────── Local freelance budget admin (SPEC-005 / TASK-020) ─────────
+
+export const useSetFreelanceBudget = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: SetFreelanceBudgetInput }) =>
+      setFreelanceBudget(id, input),
+    onSuccess: () => invalidateTeacherRoster(qc),
+  });
+};
+
+export const useTopUpFreelanceBudget = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, amountMinor }: { id: string; amountMinor: number }) =>
+      topUpFreelanceBudget(id, amountMinor),
     onSuccess: () => invalidateTeacherRoster(qc),
   });
 };

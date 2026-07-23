@@ -23,6 +23,7 @@ import TeacherWorkDaysSelect from "./TeacherWorkDaysSelect";
 import TeacherRowActions from "./TeacherRowActions";
 import TeacherFormModal from "./TeacherFormModal";
 import ArchivedTeachers from "./ArchivedTeachers";
+import FreelanceBudgetControls from "./FreelanceBudgetControls";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import {
   useTeachers,
@@ -414,6 +415,8 @@ function FreelanceRow({
           />
         </div>
       )}
+
+      <FreelanceBudgetControls teacher={teacher} />
 
       <TeacherWorkDaysSelect teacherId={teacher.id} nickname={teacher.nickname} workDays={teacher.workDays} />
     </div>

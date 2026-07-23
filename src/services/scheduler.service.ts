@@ -200,6 +200,30 @@ export const getArchivedTeachers = async (): Promise<Teacher[]> => {
   return flattenTeachers(groups).map((d) => dtoToTeacher(d));
 };
 
+// ───────── Local freelance budget admin (SPEC-005 / TASK-020) — no ops calls ─────────
+
+export interface SetFreelanceBudgetInput {
+  monthlyBudgetMinor: number;
+  rateMinor: number;
+  reorderMinor?: number | null;
+}
+
+/** Set/edit a freelance's monthly budget + rate + near-cap. Edit is the next-reset target —
+ *  it does NOT change current remaining (use top-up for that). Invalidation refetches the row. */
+export const setFreelanceBudget = async (
+  id: string,
+  input: SetFreelanceBudgetInput,
+): Promise<void> => {
+  if (useMock) return mock.setFreelanceBudget(id, input);
+  await api.put(`/teachers/${id}/budget`, input);
+};
+
+/** Add to the current remaining budget immediately. */
+export const topUpFreelanceBudget = async (id: string, amountMinor: number): Promise<void> => {
+  if (useMock) return mock.topUpFreelanceBudget(id, amountMinor);
+  await api.post(`/teachers/${id}/budget/topup`, { amountMinor });
+};
+
 // ───────────────────────────── Bookings ─────────────────────────────
 
 export const getBookingsByDate = async (date: string) => {
