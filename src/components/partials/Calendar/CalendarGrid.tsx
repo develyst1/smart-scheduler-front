@@ -6,6 +6,7 @@ import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
 import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
 import { useT } from "@/lib/i18n";
+import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 
 interface Props {
   teachers: TeacherView[];
@@ -64,6 +65,7 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
           >
             <p className="truncate text-sm font-semibold leading-none">{tc.nickname}</p>
             <TeacherTypeChip type={tc.type} />
+            <FreelanceBudgetStrip teacher={tc} />
           </div>
         ))}
 

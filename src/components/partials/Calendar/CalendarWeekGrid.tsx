@@ -8,6 +8,7 @@ import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
 import { useI18n } from "@/lib/i18n";
+import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 
 interface Props {
   teachers: TeacherView[];
@@ -92,6 +93,7 @@ export default function CalendarWeekGrid({
             <div className="sticky left-0 z-10 flex flex-col gap-1.5 border-r border-t border-default-100 bg-content1 p-3">
               <p className="truncate text-sm font-semibold leading-none">{tc.nickname}</p>
               <TeacherTypeChip type={tc.type} />
+              <FreelanceBudgetStrip teacher={tc} />
             </div>
 
             {weekDays.map((day) => {

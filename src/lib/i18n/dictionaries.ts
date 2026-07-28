@@ -134,6 +134,7 @@ const en = {
     time: "Time",
     teacherDay: "Teacher \\ Day",
     addBooking: "Add booking",
+    freelanceBudget: "Freelance budget (remaining / monthly)",
   },
 
   student: {
@@ -562,6 +563,7 @@ const th: typeof en = {
     time: "เวลา",
     teacherDay: "ครู \\ วัน",
     addBooking: "เพิ่มการจอง",
+    freelanceBudget: "งบครูฟรีแลนซ์ (คงเหลือ / รายเดือน)",
   },
 
   student: {
