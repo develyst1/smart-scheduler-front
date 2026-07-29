@@ -88,6 +88,12 @@ export default function CoursePackagePanel() {
                   <p className="text-xs text-default-400">
                     {t("course.summary", { size: c.size, expiry: c.expiryDate })}
                   </p>
+                  {c.subject?.name && (
+                    <p className="mt-0.5 text-xs text-default-400">
+                      {t("course.program")}:{" "}
+                      <span className="font-medium text-default-600">{c.subject.name}</span>
+                    </p>
+                  )}
                 </div>
                 {c.leaveLocked ? (
                   <Badge color="red" variant="light" leftSection={<Lock size={13} />}>

@@ -93,6 +93,9 @@ export interface CourseSummary {
   leaveLocked: boolean;
   adminUnlocked: boolean;
   expiryDate: IsoDate;
+  /** Sport program of the course, derived from its bookings (SPEC-010). The `/courses` list carries it
+   *  (TASK-034); other embeds (e.g. `BookingDTO.course`) / post-mutation responses may omit it → optional. */
+  subject?: SubjectRef | null;
 }
 
 /** Badge value as embedded on a booking. */

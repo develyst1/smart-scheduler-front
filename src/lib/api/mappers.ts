@@ -68,6 +68,7 @@ export function dtoToCourseView(row: CourseSummary & { student: StudentRef }): C
     leaveRemaining: row.leaveRemaining,
     maxWeek: row.maxWeek,
     leaveLocked: row.leaveLocked,
+    subject: row.subject ?? null,
   };
 }
 

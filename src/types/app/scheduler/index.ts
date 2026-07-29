@@ -212,6 +212,8 @@ export interface CoursePackage {
   weekday: number; // 0-6
   startTime: string; // HH:mm
   expiryDate: string; // YYYY-MM-DD
+  /** โปรแกรมกีฬาของคอร์ส (มาจาก booking ของคอร์ส — SPEC-010); null เมื่อไม่มีข้อมูล */
+  subject?: SubjectOption | null;
 }
 
 export interface CoursePackageView extends CoursePackage {
