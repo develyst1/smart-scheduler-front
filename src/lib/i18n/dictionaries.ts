@@ -21,6 +21,7 @@ const en = {
     edit: "Edit",
     remove: "Remove",
     noData: "No data",
+    error: "Something went wrong",
   },
 
   nav: {
@@ -239,6 +240,15 @@ const en = {
     colType: "Type",
     colStatus: "Status",
     noMatch: "No bookings match the filters",
+    // Bulk-confirm (SPEC-011)
+    bulkConfirmSelected: "Confirm selected ({n})",
+    bulkSelectRow: "Select this booking",
+    bulkSelectAll: "Select all pending (this page)",
+    bulkResultTitle: "Confirmation results",
+    bulkResultSummary: "{confirmed} confirmed · {already} already confirmed · {skipped} skipped",
+    bulkOutcomeConfirmed: "Confirmed",
+    bulkOutcomeAlready: "Already confirmed",
+    bulkOutcomeSkipped: "Skipped",
   },
 
   course: {
@@ -450,6 +460,7 @@ const th: typeof en = {
     edit: "แก้ไข",
     remove: "ลบ",
     noData: "ไม่มีข้อมูล",
+    error: "เกิดข้อผิดพลาด",
   },
 
   nav: {
@@ -664,6 +675,15 @@ const th: typeof en = {
     colType: "รูปแบบ",
     colStatus: "สถานะ",
     noMatch: "ไม่พบรายการที่ตรงเงื่อนไข",
+    // ยืนยันหลายรายการ (SPEC-011)
+    bulkConfirmSelected: "ยืนยันที่เลือก ({n})",
+    bulkSelectRow: "เลือกคาบนี้",
+    bulkSelectAll: "เลือกทั้งหมดที่รอยืนยัน (หน้านี้)",
+    bulkResultTitle: "ผลการยืนยัน",
+    bulkResultSummary: "ยืนยัน {confirmed} · ยืนยันอยู่แล้ว {already} · ข้าม {skipped}",
+    bulkOutcomeConfirmed: "ยืนยันแล้ว",
+    bulkOutcomeAlready: "ยืนยันอยู่แล้ว",
+    bulkOutcomeSkipped: "ข้าม",
   },
 
   course: {

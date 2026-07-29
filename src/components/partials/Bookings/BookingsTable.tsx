@@ -2,15 +2,32 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import { Table, Select, Loader, TextInput, Card, Pagination, Group } from "@mantine/core";
+import {
+  Table,
+  Select,
+  Loader,
+  TextInput,
+  Card,
+  Pagination,
+  Group,
+  Checkbox,
+  Button,
+  Modal,
+  Badge,
+  Stack,
+  Text,
+  ScrollArea,
+} from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { Search } from "lucide-react";
+import { Search, CheckCheck } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
-import { useAllBookings, useTeachers } from "@/hooks/scheduler";
+import { useAllBookings, useBulkConfirm, useTeachers } from "@/hooks/scheduler";
 import type { BookingStatus, BookingType } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR } from "@/types/app/scheduler";
+import type { BulkConfirmResult } from "@/types/api/contract";
 import { BOOKING_TYPE_OPTIONS } from "@/components/partials/Calendar/Calendar.config";
+import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
 
 type DateRange = "ALL" | "TODAY" | "WEEK" | "MONTH";
@@ -77,6 +94,46 @@ export default function BookingsTable() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const teacherName = (id: string) => teachers.find((tc) => tc.id === id)?.nickname ?? "-";
+
+  // ── Bulk-confirm (SPEC-011): tick PENDING rows → confirm in one call ──
+  const bulk = useBulkConfirm();
+  const [selected, setSelected] = useState<string[]>([]);
+  const [results, setResults] = useState<BulkConfirmResult[] | null>(null);
+
+  // Selection only makes sense within a single page/filter view → clear when the query changes.
+  useEffect(() => setSelected([]), [query]);
+
+  const pendingIds = rows.filter((b) => b.status === "PENDING").map((b) => b.id);
+  const allPendingSelected = pendingIds.length > 0 && pendingIds.every((id) => selected.includes(id));
+  const somePendingSelected = selected.length > 0 && !allPendingSelected;
+
+  const toggleOne = (id: string) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const toggleAllPending = () => setSelected(allPendingSelected ? [] : pendingIds);
+
+  const studentName = (id: string) => rows.find((b) => b.id === id)?.studentName ?? id;
+
+  const handleBulkConfirm = async () => {
+    if (selected.length === 0) return;
+    try {
+      const res = await bulk.mutateAsync(selected);
+      setResults(res);
+      setSelected([]);
+    } catch {
+      notify({ title: t("common.error"), color: "danger" });
+    }
+  };
+
+  const OUTCOME_LABEL: Record<BulkConfirmResult["outcome"], string> = {
+    confirmed: t("bookings.bulkOutcomeConfirmed"),
+    already_confirmed: t("bookings.bulkOutcomeAlready"),
+    skipped: t("bookings.bulkOutcomeSkipped"),
+  };
+  const OUTCOME_COLOR: Record<BulkConfirmResult["outcome"], string> = {
+    confirmed: "green",
+    already_confirmed: "blue",
+    skipped: "orange",
+  };
 
   if (isLoading) {
     return (
@@ -156,11 +213,32 @@ export default function BookingsTable() {
         />
       </div>
 
-      <p className="text-xs text-default-400">{t("bookings.found", { count: total })}</p>
+      <Group justify="space-between" align="center">
+        <p className="text-xs text-default-400">{t("bookings.found", { count: total })}</p>
+        {selected.length > 0 && (
+          <Button
+            size="xs"
+            leftSection={<CheckCheck size={15} />}
+            loading={bulk.isPending}
+            onClick={handleBulkConfirm}
+          >
+            {t("bookings.bulkConfirmSelected", { n: selected.length })}
+          </Button>
+        )}
+      </Group>
 
       <Table highlightOnHover verticalSpacing="sm" withTableBorder aria-label={t("bookings.tableLabel")}>
         <Table.Thead className="bg-default-100">
           <Table.Tr className="text-xs uppercase tracking-wide text-default-500">
+            <Table.Th w={40}>
+              <Checkbox
+                aria-label={t("bookings.bulkSelectAll")}
+                checked={allPendingSelected}
+                indeterminate={somePendingSelected}
+                disabled={pendingIds.length === 0}
+                onChange={toggleAllPending}
+              />
+            </Table.Th>
             <Table.Th>{t("bookings.colStudent")}</Table.Th>
             <Table.Th>{t("bookings.colSubject")}</Table.Th>
             <Table.Th>{t("bookings.colTeacher")}</Table.Th>
@@ -173,13 +251,22 @@ export default function BookingsTable() {
         <Table.Tbody>
           {rows.length === 0 ? (
             <Table.Tr>
-              <Table.Td colSpan={7} className="text-center text-sm text-default-400">
+              <Table.Td colSpan={8} className="text-center text-sm text-default-400">
                 {t("bookings.noMatch")}
               </Table.Td>
             </Table.Tr>
           ) : (
             rows.map((b) => (
               <Table.Tr key={b.id}>
+                <Table.Td>
+                  {b.status === "PENDING" && (
+                    <Checkbox
+                      aria-label={t("bookings.bulkSelectRow")}
+                      checked={selected.includes(b.id)}
+                      onChange={() => toggleOne(b.id)}
+                    />
+                  )}
+                </Table.Td>
                 <Table.Td className="font-medium">{b.studentName}</Table.Td>
                 <Table.Td>{b.subject}</Table.Td>
                 <Table.Td>{teacherName(b.teacherId)}</Table.Td>
@@ -214,6 +301,51 @@ export default function BookingsTable() {
         />
         <Pagination total={totalPages} value={page} onChange={setPage} size="sm" radius="md" />
       </Group>
+
+      <Modal
+        opened={results !== null}
+        onClose={() => setResults(null)}
+        centered
+        title={t("bookings.bulkResultTitle")}
+      >
+        {results && (
+          <Stack gap="sm">
+            <Text size="sm" c="dimmed">
+              {t("bookings.bulkResultSummary", {
+                confirmed: results.filter((r) => r.outcome === "confirmed").length,
+                already: results.filter((r) => r.outcome === "already_confirmed").length,
+                skipped: results.filter((r) => r.outcome === "skipped").length,
+              })}
+            </Text>
+            <ScrollArea.Autosize mah={320}>
+              <Stack gap="xs">
+                {results.map((r) => (
+                  <Group key={r.id} justify="space-between" wrap="nowrap" gap="sm">
+                    <div className="min-w-0">
+                      <Text size="sm" truncate>
+                        {studentName(r.id)}
+                      </Text>
+                      {r.reason && (
+                        <Text size="xs" c="dimmed">
+                          {r.reason}
+                        </Text>
+                      )}
+                    </div>
+                    <Badge color={OUTCOME_COLOR[r.outcome]} variant="light" className="shrink-0">
+                      {OUTCOME_LABEL[r.outcome]}
+                    </Badge>
+                  </Group>
+                ))}
+              </Stack>
+            </ScrollArea.Autosize>
+            <Group justify="flex-end">
+              <Button variant="default" onClick={() => setResults(null)}>
+                {t("common.close")}
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
     </Card>
   );
 }

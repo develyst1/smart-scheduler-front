@@ -280,6 +280,18 @@ export interface CreateBookingResponse {
   course: CourseSummary | null;
 }
 
+/** Bulk-confirm (SPEC-011): per-booking outcome, in input order. Partial-success, no batch rollback. */
+export type BulkConfirmOutcome = "confirmed" | "already_confirmed" | "skipped";
+export interface BulkConfirmResult {
+  id: string;
+  outcome: BulkConfirmOutcome;
+  /** Thai reason when `skipped` (e.g. INSUFFICIENT_BUDGET / not-pending / not-found). */
+  reason?: string;
+}
+export interface BulkConfirmResponse {
+  results: BulkConfirmResult[];
+}
+
 /** PATCH /api/bookings/:id — ย้าย/แก้คาบด้วยมือ (UC-003). */
 export interface MoveBookingResponse {
   booking: BookingDTO;

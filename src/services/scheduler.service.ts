@@ -25,6 +25,8 @@ import type {
 } from "@/types/app/scheduler";
 import type {
   BookingsResponse,
+  BulkConfirmResponse,
+  BulkConfirmResult,
   CalendarResponse,
   CoursesResponse,
   CreateCoursePackageResponse,
@@ -323,6 +325,13 @@ export const markAttended = async (id: string) => {
     action: "attend",
   });
   return dtoToBooking(data.booking);
+};
+
+/** SPEC-011: confirm many PENDING bookings in one call. Partial-success — per-booking outcome in input order. */
+export const bulkConfirm = async (ids: string[]): Promise<BulkConfirmResult[]> => {
+  if (useMock) return mock.bulkConfirm(ids);
+  const { data } = await api.post<BulkConfirmResponse>("/bookings/bulk-confirm", { ids });
+  return data.results;
 };
 
 export interface CreateBookingInput {

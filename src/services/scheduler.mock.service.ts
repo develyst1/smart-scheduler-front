@@ -20,6 +20,7 @@ import type {
   TeacherType,
   TeacherView,
 } from "@/types/app/scheduler";
+import type { BulkConfirmResult } from "@/types/api/contract";
 
 const delay = <T>(value: T, ms = 200) =>
   new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
@@ -222,6 +223,18 @@ export const markAttended = (id: string) => {
   const b = bookings.find((x) => x.id === id);
   if (b) b.status = "ATTENDED";
   return delay(clone(b) as Booking);
+};
+
+export const bulkConfirm = (ids: string[]): Promise<BulkConfirmResult[]> => {
+  const results: BulkConfirmResult[] = ids.map((id) => {
+    const b = bookings.find((x) => x.id === id);
+    if (!b) return { id, outcome: "skipped", reason: "ไม่พบคาบเรียน" };
+    if (b.status === "CONFIRMED" || b.status === "ATTENDED") return { id, outcome: "already_confirmed" };
+    if (b.status !== "PENDING") return { id, outcome: "skipped", reason: "ไม่ใช่คาบที่รอยืนยัน" };
+    b.status = "CONFIRMED";
+    return { id, outcome: "confirmed" };
+  });
+  return delay(results);
 };
 
 export interface CreateBookingInput {

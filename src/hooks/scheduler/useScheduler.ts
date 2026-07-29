@@ -21,6 +21,7 @@ import {
   getTeachers,
   getTeacherTypeOrder,
   markAttended,
+  bulkConfirm,
   markSickLeave,
   setTeacherActive,
   setTeacherLimitOverride,
@@ -218,6 +219,14 @@ export const useConfirmBooking = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => confirmBooking(id),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+export const useBulkConfirm = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => bulkConfirm(ids),
     onSuccess: () => invalidateAll(qc),
   });
 };
