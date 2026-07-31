@@ -11,10 +11,11 @@ import {
   Paper,
   Text,
 } from "@mantine/core";
-import { Ticket, Info } from "lucide-react";
+import { Ticket, Info, AlertTriangle } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { useCreateVoucher } from "@/hooks/scheduler";
+import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import type { CreateVoucherResponse } from "@/types/api/contract";
 
@@ -33,6 +34,7 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
   // BE ยังคำนวณวันหมดอายุจากจำนวนชั่วโมงเอง ตาม contract เดิม)
   const [expiryMonths, setExpiryMonths] = useState<number>(6);
   const [result, setResult] = useState<CreateVoucherResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!opened) {
@@ -40,6 +42,7 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
       setTotalHours(10);
       setExpiryMonths(6);
       setResult(null);
+      setError(null);
     }
   }, [opened]);
 
@@ -47,21 +50,28 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
 
   const handleSubmit = async () => {
     if (!valid) return;
-    const res = await create.mutateAsync({
-      studentName: student?.name.trim() ?? "",
-      studentId: student?.id,
-      studentPhone: student?.phone,
-      totalHours: totalHours as 5 | 10 | 15,
-    });
-    setResult(res);
-    notify({
-      title: t("voucher.issuedTitle"),
-      description: t("voucher.issuedDesc", {
-        name: res.voucher.student.name,
-        hours: res.voucher.totalHours,
-      }),
-      color: "success",
-    });
+    setError(null);
+    try {
+      const res = await create.mutateAsync({
+        studentName: student?.name.trim() ?? "",
+        studentId: student?.id,
+        studentPhone: student?.phone,
+        totalHours: totalHours as 5 | 10 | 15,
+      });
+      setResult(res);
+      notify({
+        title: t("voucher.issuedTitle"),
+        description: t("voucher.issuedDesc", {
+          name: res.voucher.student.name,
+          hours: res.voucher.totalHours,
+        }),
+        color: "success",
+      });
+    } catch (e) {
+      // e.g. a suspended household can't be sold to (TASK-058) → show the backend message, not a dead button.
+      if (e instanceof ApiClientError) setError(e.message);
+      else throw e;
+    }
   };
 
   return (
@@ -104,6 +114,12 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
           </Alert>
 
           <StudentSelect value={student} onChange={setStudent} required />
+
+          {error && (
+            <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
+              {error}
+            </Alert>
+          )}
 
           <Group grow align="flex-start">
             <NumberInput

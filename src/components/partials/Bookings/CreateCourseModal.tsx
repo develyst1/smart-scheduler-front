@@ -14,12 +14,13 @@ import {
   List,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { CalendarPlus, Info } from "lucide-react";
+import { CalendarPlus, Info, AlertTriangle } from "lucide-react";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { useCreateCoursePackage, useTeachers } from "@/hooks/scheduler";
+import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import {
   LEAVE_QUOTA_BY_SIZE,
@@ -53,6 +54,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
   const [startTime, setStartTime] = useState("10:00");
   const [note, setNote] = useState("");
   const [preview, setPreview] = useState<CreateCoursePackageResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
@@ -68,6 +70,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
       setStartTime("10:00");
       setNote("");
       setPreview(null);
+      setError(null);
     }
   }, [opened]);
 
@@ -86,23 +89,30 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
 
   const handleSubmit = async () => {
     if (!valid || !startDate) return;
-    const result = await create.mutateAsync({
-      studentName: student?.name.trim() ?? "",
-      studentId: student?.id,
-      studentPhone: student?.phone,
-      teacherId,
-      subjectId,
-      size,
-      startDate,
-      startTime,
-      note: note.trim() || undefined,
-    });
-    setPreview(result);
-    notify({
-      title: t("course.successTitle"),
-      description: t("course.successDesc", { count: result.bookings.length }),
-      color: "success",
-    });
+    setError(null);
+    try {
+      const result = await create.mutateAsync({
+        studentName: student?.name.trim() ?? "",
+        studentId: student?.id,
+        studentPhone: student?.phone,
+        teacherId,
+        subjectId,
+        size,
+        startDate,
+        startTime,
+        note: note.trim() || undefined,
+      });
+      setPreview(result);
+      notify({
+        title: t("course.successTitle"),
+        description: t("course.successDesc", { count: result.bookings.length }),
+        color: "success",
+      });
+    } catch (e) {
+      // e.g. a suspended household can't be sold to (TASK-058) → show the backend message, not a dead button.
+      if (e instanceof ApiClientError) setError(e.message);
+      else throw e;
+    }
   };
 
   const handleClose = () => {
@@ -155,6 +165,12 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
           </Alert>
 
           <StudentSelect value={student} onChange={setStudent} required />
+
+          {error && (
+            <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
+              {error}
+            </Alert>
+          )}
 
           <Select
             label={t("course.teacher")}

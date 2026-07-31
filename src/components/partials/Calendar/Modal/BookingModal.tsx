@@ -801,7 +801,7 @@ function CreateForm({
         </>
       ) : (
         <>
-          <StudentSelect value={student} onChange={setStudent} required bookable />
+          <StudentSelect value={student} onChange={setStudent} required />
           <Select
             label={t("booking.teacher")}
             value={teacherId}
