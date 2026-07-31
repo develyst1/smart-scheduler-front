@@ -31,6 +31,7 @@ const en = {
     bookings: "Bookings / Students",
     badges: "Badges",
     dashboard: "Dashboard",
+    attention: "Needs attention",
     reports: "Daily report",
   },
 
@@ -472,6 +473,26 @@ const en = {
     unsuspendedOk: "Account un-suspended",
   },
 
+  attention: {
+    title: "Needs attention",
+    subtitle: "What the daily 08:00 digest flags — handle it here.",
+    neverRun: "⚠️ The daily digest has never run — the 08:00 scheduled task is not set up.",
+    lastSent: "Digest last sent: {time}",
+    ranNothing: "Digest last ran {time} — nothing was outstanding.",
+    allClear: "All clear",
+    couldntCheck: "Couldn't be checked",
+    nothingOutstanding: "Nothing needs attention right now.",
+    checks: {
+      unconfirmed_bookings: "Unconfirmed bookings (today / tomorrow)",
+      teachers_without_line: "Teachers not linked to LINE",
+      expiring_entitlements: "Courses / vouchers expiring soon",
+      nearly_finished_courses: "Courses nearly finished (renewal)",
+      freelance_near_cap: "Freelance teachers near / over budget",
+      incomplete_students: "Students with incomplete info",
+      yesterday_no_shows: "No-shows yesterday",
+    },
+  },
+
   reports: {
     pickDate: "Select date",
     teacher: "Teacher",
@@ -537,6 +558,7 @@ const th: typeof en = {
     bookings: "การจอง / นักเรียน",
     badges: "Badge",
     dashboard: "แดชบอร์ด",
+    attention: "รายการที่ต้องดูแล",
     reports: "รายงานประจำวัน",
   },
 
@@ -971,6 +993,26 @@ const th: typeof en = {
     unsuspendBody: "จะเปิดการใช้งาน LINE บอท และสร้างการจองใหม่ได้อีกครั้ง",
     suspendedOk: "ระงับบัญชีแล้ว",
     unsuspendedOk: "ยกเลิกการระงับแล้ว",
+  },
+
+  attention: {
+    title: "รายการที่ต้องดูแล",
+    subtitle: "สิ่งที่ไดเจสต์ 08:00 แจ้งเตือน — จัดการได้ที่นี่",
+    neverRun: "⚠️ ไดเจสต์รายวันยังไม่เคยรัน — งานตั้งเวลา 08:00 ยังไม่ถูกตั้งค่า",
+    lastSent: "ส่งไดเจสต์ล่าสุด: {time}",
+    ranNothing: "รันไดเจสต์ล่าสุด {time} — ไม่มีรายการค้าง",
+    allClear: "เรียบร้อย",
+    couldntCheck: "ตรวจสอบไม่สำเร็จ",
+    nothingOutstanding: "ตอนนี้ไม่มีรายการที่ต้องดูแล",
+    checks: {
+      unconfirmed_bookings: "การจองที่ยังไม่ยืนยัน (วันนี้/พรุ่งนี้)",
+      teachers_without_line: "ครูที่ยังไม่ผูก LINE",
+      expiring_entitlements: "คอร์ส/วอยเชอร์ใกล้หมดอายุ",
+      nearly_finished_courses: "คอร์สที่ใกล้จบ (ต่ออายุ)",
+      freelance_near_cap: "ครูฟรีแลนซ์ใกล้/เกินเพดานงบ",
+      incomplete_students: "นักเรียนที่ข้อมูลไม่ครบ",
+      yesterday_no_shows: "ไม่มาเรียนเมื่อวาน",
+    },
   },
 
   reports: {
