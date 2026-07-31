@@ -19,6 +19,8 @@ interface Props {
   onChange: (value: StudentSelectValue | null) => void;
   label?: string;
   required?: boolean;
+  /** Booking picker only: hide students of a suspended household (server-enforced, TASK-057). */
+  bookable?: boolean;
 }
 
 const NEW = "__new__";
@@ -28,7 +30,7 @@ const NEW = "__new__";
  * (by name or parent phone); pick an existing student, or create a new one — when
  * creating, an optional parent-phone field appears so siblings can share a number.
  */
-export default function StudentSelect({ value, onChange, label, required }: Props) {
+export default function StudentSelect({ value, onChange, label, required, bookable }: Props) {
   const t = useT();
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
@@ -36,7 +38,7 @@ export default function StudentSelect({ value, onChange, label, required }: Prop
 
   const [search, setSearch] = useState(value?.name ?? "");
   const [debounced] = useDebouncedValue(search, 250);
-  const { data: results = [], isFetching } = useStudentSearch(debounced.trim());
+  const { data: results = [], isFetching } = useStudentSearch(debounced.trim(), { bookable });
 
   const isNew = !!value && !value.id;
   const exactMatch = results.some(
