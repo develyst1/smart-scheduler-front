@@ -16,6 +16,7 @@ import type {
   BookingStatus,
   CoursePackageView,
   DailyReport,
+  EligibleStudent,
   Teacher,
   TeacherType,
   TeacherView,
@@ -223,6 +224,39 @@ export const markAttended = (id: string) => {
   const b = bookings.find((x) => x.id === id);
   if (b) b.status = "ATTENDED";
   return delay(clone(b) as Booking);
+};
+
+export const getEligibleStudents = (type: "COURSE_PACKAGE" | "VOUCHER"): Promise<EligibleStudent[]> => {
+  const QUOTA: Record<number, number> = { 4: 1, 6: 2, 10: 3 };
+  if (type === "COURSE_PACKAGE") {
+    const rows: EligibleStudent[] = coursePackages
+      .map((c, i) => ({
+        id: `elig-course-${i}`,
+        name: c.studentName,
+        nickname: c.studentName,
+        context: {
+          courseId: c.id,
+          subject: { id: "subj-surf", name: "Surfskate" },
+          size: c.size,
+          usedSessions: c.usedSessions,
+          remainingSessions: Math.max(0, c.size - c.usedSessions),
+          leaveUsed: c.leaveUsed,
+          leaveQuota: QUOTA[c.size] ?? 0,
+          expiryDate: c.expiryDate,
+        },
+      }))
+      .filter((s) => (s.context as { remainingSessions: number }).remainingSessions > 0);
+    return delay(clone(rows));
+  }
+  const vouchers: EligibleStudent[] = [
+    {
+      id: "elig-v1",
+      name: "น้องวิว สายลม",
+      nickname: "วิว",
+      context: { voucherId: "v-mock-1", totalHours: 10, usedHours: 3, remainingHours: 7, expiryDate: "2026-12-31" },
+    },
+  ];
+  return delay(clone(vouchers));
 };
 
 export const bulkConfirm = (ids: string[]): Promise<BulkConfirmResult[]> => {

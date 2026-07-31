@@ -19,6 +19,7 @@ import type {
   Booking,
   CoursePackageView,
   DailyReport,
+  EligibleStudent,
   Teacher,
   TeacherType,
   TeacherView,
@@ -334,6 +335,18 @@ export const bulkConfirm = async (ids: string[]): Promise<BulkConfirmResult[]> =
   return data.results;
 };
 
+/** SPEC-017: students who hold an active course/voucher, with the context the booking modal shows.
+ *  One row per entitlement (a student with two active courses appears twice). */
+export const getEligibleStudents = async (
+  type: "COURSE_PACKAGE" | "VOUCHER",
+): Promise<EligibleStudent[]> => {
+  if (useMock) return mock.getEligibleStudents(type);
+  const { data } = await api.get<{ students: EligibleStudent[] }>("/students/eligible", {
+    params: { type },
+  });
+  return data.students;
+};
+
 export interface CreateBookingInput {
   studentName: string;
   /** existing student id (from the dropdown). When set, name/phone are ignored by the API. */
@@ -349,6 +362,8 @@ export interface CreateBookingInput {
   bookingType: BookingType;
   /** ต้องระบุเมื่อ bookingType === "VOUCHER" — วอยเชอร์ที่จะตัดชั่วโมง */
   voucherId?: string;
+  /** ต้องระบุเมื่อ bookingType === "COURSE_PACKAGE" — คอร์สที่ session นี้ตัดโควตา (SPEC-017) */
+  courseId?: string;
   /** badge value ids ที่จะติดกับการจอง (type ละ ≤ 1) */
   badgeValueIds?: string[];
 }
@@ -406,6 +421,7 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
     startTime: input.startTime,
     bookingType: input.bookingType,
     voucherId: input.bookingType === "VOUCHER" ? input.voucherId : undefined,
+    courseId: input.bookingType === "COURSE_PACKAGE" ? input.courseId : undefined,
     badgeValueIds: input.badgeValueIds?.length ? input.badgeValueIds : undefined,
   });
   return dtoToBooking(data.booking);

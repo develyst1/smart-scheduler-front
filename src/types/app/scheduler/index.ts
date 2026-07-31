@@ -182,6 +182,36 @@ export interface BadgeType {
   values: BadgeValue[];
 }
 
+// ──────────────── Eligible students for booking (SPEC-017 / TASK-051) ────────────────
+// GET /students/eligible?type=COURSE_PACKAGE|VOUCHER → students holding an active
+// course/voucher, each with the context the booking modal shows. One row per entitlement.
+
+export interface CourseContext {
+  courseId: string;
+  subject: SubjectOption | null;
+  size: number;
+  usedSessions: number;
+  remainingSessions: number;
+  leaveUsed: number;
+  leaveQuota: number;
+  expiryDate: string; // YYYY-MM-DD
+}
+
+export interface VoucherContext {
+  voucherId: string;
+  totalHours: number;
+  usedHours: number;
+  remainingHours: number;
+  expiryDate: string; // YYYY-MM-DD
+}
+
+export interface EligibleStudent {
+  id: string;
+  name: string;
+  nickname: string | null;
+  context: CourseContext | VoucherContext;
+}
+
 // ──────────────────────── Course package + leave quota ────────────────────────
 
 export type PackageSize = 4 | 6 | 10;

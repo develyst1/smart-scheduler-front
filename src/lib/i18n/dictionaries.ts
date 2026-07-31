@@ -205,6 +205,16 @@ const en = {
     createdTitle: "Booking created",
     overbookCreatedTitle: "Booked over the leave slot",
     statusPending: "Status: pending",
+    // type-driven tabs (SPEC-017)
+    student: "Student",
+    pickCourseStudent: "Select a student with a course",
+    pickVoucherStudent: "Select a student with a voucher",
+    noCourseStudents: "No students with an active course",
+    noVoucherStudents: "No students with an active voucher",
+    courseContext: "Program {subject} · {used}/{size} used · leave {leaveUsed}/{leaveQuota} · expires {expiry}",
+    voucherContext: "{remaining}h remaining · expires {expiry}",
+    voucherNoSlot: "A voucher booking doesn't pick a teacher or fixed time — it uses this slot: {teacher} · {time}.",
+    dateRejectedTitle: "Can't book this date",
   },
 
   bookings: {
@@ -697,6 +707,16 @@ const th: typeof en = {
     createdTitle: "สร้างการจองแล้ว",
     overbookCreatedTitle: "จองแทนคาบที่ลาแล้ว",
     statusPending: "สถานะ: รอยืนยัน",
+    // แท็บตามประเภทการจอง (SPEC-017)
+    student: "นักเรียน",
+    pickCourseStudent: "เลือกนักเรียนที่มีคอร์ส",
+    pickVoucherStudent: "เลือกนักเรียนที่มีวอยเชอร์",
+    noCourseStudents: "ไม่มีนักเรียนที่มีคอร์สที่ใช้งานอยู่",
+    noVoucherStudents: "ไม่มีนักเรียนที่มีวอยเชอร์ที่ใช้งานอยู่",
+    courseContext: "โปรแกรม {subject} · ใช้ไป {used}/{size} · ลา {leaveUsed}/{leaveQuota} · หมดอายุ {expiry}",
+    voucherContext: "เหลือ {remaining} ชม. · หมดอายุ {expiry}",
+    voucherNoSlot: "การจองด้วยวอยเชอร์ไม่เลือกครูหรือเวลาตายตัว — จะใช้ช่องนี้: ครู {teacher} · {time}",
+    dateRejectedTitle: "จองวันที่นี้ไม่ได้",
   },
 
   bookings: {

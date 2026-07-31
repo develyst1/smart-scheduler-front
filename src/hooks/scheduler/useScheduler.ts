@@ -22,6 +22,7 @@ import {
   getTeacherTypeOrder,
   markAttended,
   bulkConfirm,
+  getEligibleStudents,
   markSickLeave,
   setTeacherActive,
   setTeacherLimitOverride,
@@ -222,6 +223,13 @@ export const useConfirmBooking = () => {
     onSuccess: () => invalidateAll(qc),
   });
 };
+
+export const useEligibleStudents = (type: "COURSE_PACKAGE" | "VOUCHER", enabled: boolean) =>
+  useQuery({
+    queryKey: ["students", "eligible", type],
+    queryFn: () => getEligibleStudents(type),
+    enabled,
+  });
 
 export const useBulkConfirm = () => {
   const qc = useQueryClient();

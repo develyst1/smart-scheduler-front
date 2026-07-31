@@ -11,6 +11,8 @@ import {
   Alert,
   Menu,
   ActionIcon,
+  Tabs,
+  Text,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical } from "lucide-react";
@@ -26,17 +28,23 @@ import {
   useConfirmBooking,
   useCreateBooking,
   useDetectConflict,
+  useEligibleStudents,
   useMarkAttended,
   useMarkSickLeave,
   useMoveBooking,
   useSetBookingBadges,
-  useVouchers,
 } from "@/hooks/scheduler";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
-import type { Booking, BookingType, TeacherView } from "@/types/app/scheduler";
+import type {
+  Booking,
+  BookingType,
+  CourseContext,
+  EligibleStudent,
+  TeacherView,
+  VoucherContext,
+} from "@/types/app/scheduler";
 import type { CreateBookingInput, MoveBookingInput } from "@/services/scheduler.service";
 import { TIME_SLOTS } from "@/types/app/scheduler";
-import { BOOKING_TYPE_OPTIONS } from "../Calendar.config";
 
 interface Props {
   isOpen: boolean;
@@ -516,6 +524,9 @@ function Field({ label, value }: { label: string; value: string }) {
 
 // ───────────────────────── Create form (+ จองทับคนลา) ─────────────────────────
 
+// SPEC-017: booking type is the FIRST choice (tabs), then only the fields that type can use.
+const BOOKING_TABS: BookingType[] = ["FIRST_TRIAL", "SINGLE_SESSION", "COURSE_PACKAGE", "VOUCHER"];
+
 function CreateForm({
   createSlot,
   teachers,
@@ -531,39 +542,56 @@ function CreateForm({
   const create = useCreateBooking();
   const detect = useDetectConflict();
 
+  const [bookingType, setBookingType] = useState<BookingType>("SINGLE_SESSION");
+  // Trial / Single — free student picker + teacher + subject + time.
   const [student, setStudent] = useState<StudentSelectValue | null>(null);
   const [teacherId, setTeacherId] = useState(createSlot.teacherId);
   const [subjectId, setSubjectId] = useState("");
   const [startTime, setStartTime] = useState(createSlot.time);
-  const [bookingType, setBookingType] = useState<BookingType>("SINGLE_SESSION");
-  const [voucherId, setVoucherId] = useState<string | null>(null);
-  // badge ที่เลือก — type ละ ≤ 1 ค่า (key = typeId)
+  // Course / Voucher — the selected entitlement (keyed by courseId/voucherId; one row per entitlement).
+  const [entitlementId, setEntitlementId] = useState<string | null>(null);
   const [badgeByType, setBadgeByType] = useState<Record<string, string | null>>({});
   const { data: badgeTypes = [] } = useBadges();
-  const activeBadgeTypes = badgeTypes.filter(
-    (bt) => bt.active && bt.values.some((v) => v.active),
-  );
-  // ช่องที่ถูกจองอยู่แล้วและ "ไม่ใช่การลา" → จองทับไม่ได้ (UC-004)
+  const activeBadgeTypes = badgeTypes.filter((bt) => bt.active && bt.values.some((v) => v.active));
   const [blocked, setBlocked] = useState<Booking | undefined>();
+  // SPEC-017 #7: a student eligible TODAY can still be refused for a far-future date (e.g. voucher expires
+  // before then). Surface that submit-time backend rejection clearly instead of a form that silently won't save.
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const isCourse = bookingType === "COURSE_PACKAGE";
+  const isVoucher = bookingType === "VOUCHER";
+  const usesEligible = isCourse || isVoucher;
+
+  const { data: courseStudents = [], isLoading: courseLoading } = useEligibleStudents("COURSE_PACKAGE", isCourse);
+  const { data: voucherStudents = [], isLoading: voucherLoading } = useEligibleStudents("VOUCHER", isVoucher);
+  const eligible: EligibleStudent[] = isCourse ? courseStudents : isVoucher ? voucherStudents : [];
+  const eligibleLoading = isCourse ? courseLoading : voucherLoading;
+  const entKey = (e: EligibleStudent) =>
+    isCourse ? (e.context as CourseContext).courseId : (e.context as VoucherContext).voucherId;
+  const selectedEligible = eligible.find((e) => entKey(e) === entitlementId) ?? null;
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
-
   useEffect(() => {
     if (subjectOptions.length === 1) setSubjectId(subjectOptions[0].id);
   }, [teacherId, subjectOptions.length]);
 
-  // วอยเชอร์ (UC-008): จองแบบ Voucher ต้องเลือกวอยเชอร์ของนักเรียนคนนั้น (มีชั่วโมงเหลือ+ไม่หมดอายุ)
-  const isVoucher = bookingType === "VOUCHER";
-  const { data: vouchers = [] } = useVouchers(student?.id, isVoucher && !!student?.id);
-  const usableVouchers = vouchers.filter(
-    (v) => v.remaining > 0 && v.expiryDate >= createSlot.date,
-  );
-  useEffect(() => {
-    setVoucherId(null); // เปลี่ยนนักเรียน/ประเภท → ล้างวอยเชอร์ที่เลือก
-  }, [student?.id, bookingType]);
+  // A Voucher booking has no chosen teacher/slot (domain rule), so it lands in the slot the modal was opened
+  // on — the backend payload is unchanged (teacher/subject/time still required); we just don't ask for them.
+  const slotTeacher = teachers.find((tc) => tc.id === createSlot.teacherId);
+  const slotSubjectId = slotTeacher?.subjectOptions?.[0]?.id ?? "";
+  const slotSubjectName = slotTeacher?.subjectOptions?.[0]?.name ?? slotTeacher?.subjects[0] ?? "";
 
-  // นักเรียนเดิมที่ลาในช่องนี้ (ถ้ามี) — จองทับได้เฉพาะกรณีนี้
+  const changeTab = (v: BookingType) => {
+    setBookingType(v);
+    setStudent(null);
+    setEntitlementId(null);
+    setSubmitError(null);
+    setTeacherId(createSlot.teacherId);
+    setStartTime(createSlot.time);
+    setSubjectId("");
+  };
+
   const leaveOccupant = bookings.find(
     (b) =>
       b.teacherId === createSlot.teacherId &&
@@ -572,47 +600,92 @@ function CreateForm({
       b.status === "SICK_LEAVE",
   );
 
-  const valid =
-    student?.name.trim() && subjectId && teacherId && startTime && (!isVoucher || voucherId);
+  const badgeValueIds = Object.values(badgeByType).filter((v): v is string => !!v);
+  const trialSubjectName =
+    subjectOptions.find((s) => s.id === subjectId)?.name ?? selectedTeacher?.subjects[0] ?? "";
 
-  const subjectName =
-    subjectOptions.find((s) => s.id === subjectId)?.name ??
-    selectedTeacher?.subjects[0] ??
-    "";
-
-  const input: CreateBookingInput = {
-    studentName: student?.name.trim() ?? "",
-    studentId: student?.id,
-    studentPhone: student?.phone,
-    teacherId,
-    subject: subjectName,
-    subjectId,
-    date: createSlot.date,
-    startTime,
-    bookingType,
-    voucherId: isVoucher ? voucherId ?? undefined : undefined,
-    badgeValueIds: Object.values(badgeByType).filter((v): v is string => !!v),
-  };
+  // Build the payload for the active tab. `POST /bookings` is unchanged (teacher/subject/time always required).
+  let input: CreateBookingInput | null = null;
+  let valid = false;
+  if (isVoucher) {
+    const ctx = selectedEligible?.context as VoucherContext | undefined;
+    valid = !!selectedEligible && !!ctx && !!createSlot.teacherId && !!slotSubjectId && !!createSlot.time;
+    if (selectedEligible && ctx) {
+      input = {
+        studentName: selectedEligible.name,
+        studentId: selectedEligible.id,
+        teacherId: createSlot.teacherId,
+        subject: slotSubjectName,
+        subjectId: slotSubjectId,
+        date: createSlot.date,
+        startTime: createSlot.time,
+        bookingType: "VOUCHER",
+        voucherId: ctx.voucherId,
+        badgeValueIds,
+      };
+    }
+  } else if (isCourse) {
+    const ctx = selectedEligible?.context as CourseContext | undefined;
+    const subjId = ctx?.subject?.id ?? (subjectId || slotSubjectId);
+    const subjName = ctx?.subject?.name ?? (trialSubjectName || slotSubjectName);
+    valid = !!selectedEligible && !!teacherId && !!subjId && !!startTime;
+    if (selectedEligible) {
+      input = {
+        studentName: selectedEligible.name,
+        studentId: selectedEligible.id,
+        teacherId,
+        subject: subjName,
+        subjectId: subjId,
+        date: createSlot.date,
+        startTime,
+        bookingType: "COURSE_PACKAGE",
+        courseId: ctx?.courseId,
+        badgeValueIds,
+      };
+    }
+  } else {
+    valid = !!(student?.name.trim() && subjectId && teacherId && startTime);
+    input = {
+      studentName: student?.name.trim() ?? "",
+      studentId: student?.id,
+      studentPhone: student?.phone,
+      teacherId,
+      subject: trialSubjectName,
+      subjectId,
+      date: createSlot.date,
+      startTime,
+      bookingType,
+      badgeValueIds,
+    };
+  }
 
   const handleSubmit = async () => {
-    if (!valid) return;
-    const existing = await detect.mutateAsync({ teacherId, date: createSlot.date, startTime });
-    // มีคาบอยู่แล้วและไม่ใช่การลา → ห้ามจองทับ (UC-004)
-    if (existing && existing.status !== "SICK_LEAVE") {
-      setBlocked(existing);
-      return;
+    if (!valid || !input) return;
+    setSubmitError(null);
+    try {
+      const existing = await detect.mutateAsync({
+        teacherId: input.teacherId,
+        date: input.date,
+        startTime: input.startTime,
+      });
+      if (existing && existing.status !== "SICK_LEAVE") {
+        setBlocked(existing);
+        return;
+      }
+      await create.mutateAsync(input);
+      notify({
+        title: existing ? t("booking.overbookCreatedTitle") : t("booking.createdTitle"),
+        description: t("booking.statusPending"),
+        color: "success",
+      });
+      onClose();
+    } catch (e) {
+      // SPEC-017 #7: show the backend's specific rejection (e.g. "voucher expires before that date").
+      if (e instanceof ApiClientError) setSubmitError(e.message);
+      else throw e;
     }
-    // ช่องว่าง หรือ นักเรียนเดิมลา → สร้างได้ (จองทับคาบที่ลา)
-    await create.mutateAsync(input);
-    notify({
-      title: existing ? t("booking.overbookCreatedTitle") : t("booking.createdTitle"),
-      description: t("booking.statusPending"),
-      color: "success",
-    });
-    onClose();
   };
 
-  // ── ช่องนี้มีการจองอยู่แล้ว (ไม่ใช่การลา) → จองทับไม่ได้ ──
   if (blocked) {
     return (
       <Stack gap="md">
@@ -635,56 +708,135 @@ function CreateForm({
     );
   }
 
-  // ── ฟอร์มสร้างปกติ (+ แจ้งเมื่อกำลังจองทับคาบที่ลา) ──
+  const eligiblePlaceholder = eligibleLoading
+    ? t("common.loading")
+    : eligible.length
+      ? t(isCourse ? "booking.pickCourseStudent" : "booking.pickVoucherStudent")
+      : t(isCourse ? "booking.noCourseStudents" : "booking.noVoucherStudents");
+
   return (
     <Stack gap="md">
+      <Tabs value={bookingType} onChange={(v) => v && changeTab(v as BookingType)}>
+        <Tabs.List grow>
+          {BOOKING_TABS.map((k) => (
+            <Tabs.Tab key={k} value={k}>
+              {t(`bookingType.${k}`)}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+      </Tabs>
+
       {leaveOccupant && (
         <Alert color="orange" icon={<ArrowLeftRight size={18} />} title={t("booking.overbookBannerTitle")}>
           {t("booking.overbookBannerDesc", { student: leaveOccupant.studentName })}
         </Alert>
       )}
-      <StudentSelect value={student} onChange={setStudent} required />
-      <Select
-        label={t("booking.teacher")}
-        value={teacherId}
-        onChange={(v) => {
-          setTeacherId(v ?? "");
-          setSubjectId("");
-        }}
-        data={teacherSelectData(teachers.filter((tc) => bookableOnDate(tc, createSlot.date)))}
-        allowDeselect={false}
-        searchable
-        renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
-      />
-      <div className="grid grid-cols-2 gap-3">
-        <Select
-          label={t("booking.subject")}
-          value={subjectId || null}
-          onChange={(v) => setSubjectId(v ?? "")}
-          placeholder={subjectOptions.length ? t("booking.subjectPlaceholder") : t("booking.subjectPlaceholderNoTeacher")}
-          data={subjectOptions.map((s) => ({ value: s.id, label: s.name }))}
-          allowDeselect={false}
-          searchable
-          required
-          disabled={!subjectOptions.length}
-        />
-        <Select
-          label={t("booking.time")}
-          value={startTime}
-          onChange={(v) => setStartTime(v ?? "")}
-          data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
-          allowDeselect={false}
-          searchable
-        />
-      </div>
-      <Select
-        label={t("booking.typeLabel")}
-        value={bookingType}
-        onChange={(v) => setBookingType((v ?? "SINGLE_SESSION") as BookingType)}
-        data={BOOKING_TYPE_OPTIONS.map((k) => ({ value: k, label: t(`bookingType.${k}`) }))}
-        allowDeselect={false}
-        searchable
-      />
+
+      {usesEligible ? (
+        <>
+          <Select
+            label={t("booking.student")}
+            placeholder={eligiblePlaceholder}
+            data={eligible.map((e) => ({ value: entKey(e), label: e.nickname || e.name }))}
+            value={entitlementId}
+            onChange={setEntitlementId}
+            disabled={!eligible.length}
+            searchable
+            nothingFoundMessage={eligiblePlaceholder}
+            required
+          />
+
+          {selectedEligible && isCourse && (
+            <ContextCard
+              text={t("booking.courseContext", {
+                subject: (selectedEligible.context as CourseContext).subject?.name ?? "-",
+                used: (selectedEligible.context as CourseContext).usedSessions,
+                size: (selectedEligible.context as CourseContext).size,
+                leaveUsed: (selectedEligible.context as CourseContext).leaveUsed,
+                leaveQuota: (selectedEligible.context as CourseContext).leaveQuota,
+                expiry: (selectedEligible.context as CourseContext).expiryDate,
+              })}
+            />
+          )}
+          {selectedEligible && isVoucher && (
+            <ContextCard
+              text={t("booking.voucherContext", {
+                remaining: (selectedEligible.context as VoucherContext).remainingHours,
+                expiry: (selectedEligible.context as VoucherContext).expiryDate,
+              })}
+            />
+          )}
+
+          {isVoucher ? (
+            <Alert variant="light" color="blue">
+              <Text fz="sm">
+                {t("booking.voucherNoSlot", {
+                  teacher: slotTeacher?.nickname ?? "-",
+                  time: createSlot.time,
+                })}
+              </Text>
+            </Alert>
+          ) : (
+            // Course: teacher + time (subject comes from the course). Teacher defaults to the clicked column.
+            <div className="grid grid-cols-2 gap-3">
+              <Select
+                label={t("booking.teacher")}
+                value={teacherId}
+                onChange={(v) => setTeacherId(v ?? "")}
+                data={teacherSelectData(teachers.filter((tc) => bookableOnDate(tc, createSlot.date)))}
+                allowDeselect={false}
+                searchable
+                renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+              />
+              <Select
+                label={t("booking.time")}
+                value={startTime}
+                onChange={(v) => setStartTime(v ?? "")}
+                data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
+                allowDeselect={false}
+                searchable
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <StudentSelect value={student} onChange={setStudent} required />
+          <Select
+            label={t("booking.teacher")}
+            value={teacherId}
+            onChange={(v) => {
+              setTeacherId(v ?? "");
+              setSubjectId("");
+            }}
+            data={teacherSelectData(teachers.filter((tc) => bookableOnDate(tc, createSlot.date)))}
+            allowDeselect={false}
+            searchable
+            renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label={t("booking.subject")}
+              value={subjectId || null}
+              onChange={(v) => setSubjectId(v ?? "")}
+              placeholder={subjectOptions.length ? t("booking.subjectPlaceholder") : t("booking.subjectPlaceholderNoTeacher")}
+              data={subjectOptions.map((s) => ({ value: s.id, label: s.name }))}
+              allowDeselect={false}
+              searchable
+              required
+              disabled={!subjectOptions.length}
+            />
+            <Select
+              label={t("booking.time")}
+              value={startTime}
+              onChange={(v) => setStartTime(v ?? "")}
+              data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
+              allowDeselect={false}
+              searchable
+            />
+          </div>
+        </>
+      )}
 
       {activeBadgeTypes.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
@@ -696,9 +848,7 @@ function CreateForm({
                 label={bt.name}
                 value={badgeByType[bt.id] ?? null}
                 onChange={(v) => setBadgeByType((prev) => ({ ...prev, [bt.id]: v }))}
-                data={bt.values
-                  .filter((v) => v.active)
-                  .map((v) => ({ value: v.id, label: v.label }))}
+                data={bt.values.filter((v) => v.active).map((v) => ({ value: v.id, label: v.label }))}
                 placeholder={t("booking.badgePlaceholder")}
                 clearable
                 searchable
@@ -717,31 +867,10 @@ function CreateForm({
         </div>
       )}
 
-      {isVoucher && (
-        <Select
-          label={t("booking.voucherLabel")}
-          value={voucherId}
-          onChange={setVoucherId}
-          placeholder={
-            !student?.id
-              ? t("booking.voucherPickStudentFirst")
-              : usableVouchers.length
-                ? t("booking.voucherPick")
-                : t("booking.voucherNone")
-          }
-          data={usableVouchers.map((v) => ({
-            value: v.id,
-            label: t("booking.voucherOption", {
-              hours: v.totalHours,
-              remaining: v.remaining,
-              expiry: v.expiryDate,
-            }),
-          }))}
-          disabled={!student?.id || usableVouchers.length === 0}
-          searchable
-          nothingFoundMessage={t("booking.voucherNone")}
-          required
-        />
+      {submitError && (
+        <Alert color="red" icon={<AlertTriangle size={16} />} title={t("booking.dateRejectedTitle")}>
+          {submitError}
+        </Alert>
       )}
 
       <Group justify="flex-end" gap="sm">
@@ -758,5 +887,13 @@ function CreateForm({
         </Button>
       </Group>
     </Stack>
+  );
+}
+
+function ContextCard({ text }: { text: string }) {
+  return (
+    <div className="rounded-lg border border-default-200 bg-default-50 px-3 py-2">
+      <Text fz="sm">{text}</Text>
+    </div>
   );
 }
