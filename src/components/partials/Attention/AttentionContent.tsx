@@ -2,11 +2,17 @@
 
 import dayjs from "dayjs";
 import "dayjs/locale/th";
-import { Card, Stack, Text, Badge, Alert, Loader, Group } from "@mantine/core";
+import Link from "next/link";
+import { Card, Stack, Text, Badge, Alert, Loader, Group, Anchor } from "@mantine/core";
 import { AlertTriangle, CircleCheck, Clock } from "lucide-react";
 import { useAttention } from "@/hooks/scheduler";
 import { useI18n } from "@/lib/i18n";
 import type { AttentionCheck } from "@/types/app/attention";
+
+/** Checks whose work is cleared on a specific screen. Keyed by the API's check key. */
+const CHECK_LINKS: Record<string, string> = {
+  pending_teacher_links: "/scheduler/link-requests",
+};
 
 export default function AttentionContent() {
   const { t, lang } = useI18n();
@@ -78,9 +84,18 @@ export default function AttentionContent() {
         <Card key={c.key} withBorder padding="md">
           <Group justify="space-between" wrap="nowrap">
             <Text fw={600}>{resolveTitle(c)}</Text>
-            <Badge color="red" variant="light" size="lg">
-              {c.count}
-            </Badge>
+            <Group gap="sm" wrap="nowrap">
+              {/* Counts-only checks have nowhere to click; send staff to the screen that clears them.
+                  A link, not a second counter — the badge above is the one source of the number. */}
+              {CHECK_LINKS[c.key] && (
+                <Anchor component={Link} href={CHECK_LINKS[c.key]} size="sm">
+                  {t("attention.open")}
+                </Anchor>
+              )}
+              <Badge color="red" variant="light" size="lg">
+                {c.count}
+              </Badge>
+            </Group>
           </Group>
           {c.items.length > 0 && (
             <Stack gap={4} mt="sm">

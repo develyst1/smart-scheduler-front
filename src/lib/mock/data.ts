@@ -17,12 +17,15 @@ export const setTeacherTypeOrderStore = (order: TeacherType[]) => {
 // interactive. Swap services/lib-api to real endpoints later (Phase 3).
 
 export const teachers: Teacher[] = [
-  { id: "t1", name: "ครูแอน สมใจ", nickname: "แอน", type: "FULL_TIME", subjects: ["คณิต", "ฟิสิกส์"], active: true, workDays: [0, 1, 2, 3, 4, 5, 6] },
-  { id: "t2", name: "ครูบีม รุ่งโรจน์", nickname: "บีม", type: "FULL_TIME", subjects: ["อังกฤษ"], active: true, workDays: [0, 1, 2, 3, 4, 5, 6] },
+  { id: "t1", name: "ครูแอน สมใจ", nickname: "แอน", type: "FULL_TIME", subjects: ["คณิต", "ฟิสิกส์"], active: true, lineLinked: true, workDays: [0, 1, 2, 3, 4, 5, 6] },
+  { id: "t2", name: "ครูบีม รุ่งโรจน์", nickname: "บีม", type: "FULL_TIME", subjects: ["อังกฤษ"], active: true, lineLinked: true, workDays: [0, 1, 2, 3, 4, 5, 6] },
   { id: "t3", name: "ครูแคท ปิยะดา", nickname: "แคท", type: "PART_TIME", subjects: ["เคมี", "ชีวะ"], active: true, workDays: [6, 0] },
   { id: "t4", name: "ครูดิว ธนพล", nickname: "ดิว", type: "PART_TIME", subjects: ["คณิต"], active: true, workDays: [1, 2, 3, 4, 5] },
   { id: "t5", name: "ครูเอิร์ธ กิตติ", nickname: "เอิร์ธ", type: "FREELANCE", subjects: ["อังกฤษ", "IELTS"], active: true, hourlyRate: 500, budgetMinor: 2000000, remainingMinor: 1600000, reorderMinor: 200000, overLimit: false, limitOverride: false, workDays: [0, 1, 2, 3, 4, 5, 6] },
   { id: "t6", name: "ครูฟ้า ชนิดา", nickname: "ฟ้า", type: "FREELANCE", subjects: ["ภาษาไทย"], active: false, hourlyRate: 450, budgetMinor: 1500000, remainingMinor: 0, reorderMinor: 150000, overLimit: true, limitOverride: false, workDays: [0, 1, 2, 3, 4, 5, 6] },
+  // Shares the nickname "ดิว" with t4 on purpose — the LINE-link collision case (SPEC-023) needs two real
+  // teachers to choose between, not a fabricated candidate.
+  { id: "t7", name: "ครูดิว ณัฐวรรณ", nickname: "ดิว", type: "PART_TIME", subjects: ["อังกฤษ"], active: true, workDays: [1, 2, 3, 4, 5] },
 ];
 
 const today = dayjs().format("YYYY-MM-DD");

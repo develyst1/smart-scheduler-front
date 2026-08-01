@@ -59,6 +59,15 @@ const mockAttention = (): AttentionResponse => {
         count: null, // degraded — the query errored
         items: [],
       },
+      {
+        // 9th check (TASK-075) — counts-only by design: a worklist, not a person. The panel links it to
+        // the queue screen so a check with no items still has somewhere to act.
+        key: "pending_teacher_links",
+        titleKey: "att_pending_teacher_links",
+        title: "คำขอผูก LINE ของครูที่รออนุมัติ",
+        count: 3,
+        items: [],
+      },
     ],
     lastRun: neverRun ? null : { runDate: "2026-08-01", finishedAt: "2026-08-01T08:00:12.000Z", sent: true },
   };
