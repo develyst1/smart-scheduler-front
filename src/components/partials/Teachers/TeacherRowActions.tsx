@@ -28,6 +28,12 @@ export default function TeacherRowActions({
     setNewType(teacher.type);
     setChangeTypeOpen(true);
   };
+
+  // TASK-061: changing FREELANCE → FT/PT closes their monthly freelance budget server-side (TASK-060).
+  // Warn before saving, naming the remaining baht (the same `remainingMinor` the calendar strip shows).
+  const closingBudget =
+    teacher.type === "FREELANCE" && newType !== "FREELANCE" && teacher.remainingMinor != null;
+  const remainingBaht = ((teacher.remainingMinor ?? 0) / 100).toLocaleString("th-TH");
   const openArchive = () => {
     setArchiveError(null);
     setArchiveOpen(true);
@@ -97,6 +103,13 @@ export default function TeacherRowActions({
           <Alert variant="light" color="yellow">
             <Text fz="sm">{t("teachers.changeTypeWarn")}</Text>
           </Alert>
+          {closingBudget && (
+            <Alert variant="light" color="red">
+              <Text fz="sm">
+                {t("teachers.closeBudgetWarn", { name: teacher.nickname, amount: remainingBaht })}
+              </Text>
+            </Alert>
+          )}
           <Group justify="flex-end">
             <Button variant="subtle" color="gray" onClick={() => setChangeTypeOpen(false)}>
               {t("common.cancel")}
