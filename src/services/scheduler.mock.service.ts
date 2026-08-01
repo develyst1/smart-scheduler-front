@@ -338,8 +338,15 @@ export const moveBooking = (
   return delay(clone(b));
 };
 
-export const getCoursePackages = (): Promise<CoursePackageView[]> =>
-  delay(coursePackages.map((c) => toCourseView(clone(c))));
+export const getCoursePackages = (query: { q?: string; page?: number; limit?: number } = {}) => {
+  const q = query.q?.trim().toLowerCase();
+  const page = query.page ?? 1;
+  const limit = query.limit ?? 12;
+  const filtered = coursePackages
+    .map((c) => toCourseView(clone(c)))
+    .filter((c) => (q ? c.studentName.toLowerCase().includes(q) : true));
+  return delay({ items: filtered.slice((page - 1) * limit, page * limit), page, limit, total: filtered.length });
+};
 
 export const setCourseAdminUnlock = (id: string, unlocked: boolean) => {
   const c = coursePackages.find((x) => x.id === id);
@@ -426,8 +433,18 @@ const MOCK_VOUCHERS = [
   { id: "v3", totalHours: 15, usedHours: 2, remaining: 13, expiryDate: "2027-03-30", student: { id: "s3", name: "น้องพลอย", nickname: "พลอย" } },
 ];
 
-export const getVouchers = (studentId?: string) =>
-  delay(clone(studentId ? MOCK_VOUCHERS.filter((v) => v.student.id === studentId) : MOCK_VOUCHERS));
+export const getVouchers = (
+  query: { q?: string; page?: number; limit?: number; studentId?: string } = {},
+) => {
+  const q = query.q?.trim().toLowerCase();
+  const page = query.page ?? 1;
+  const limit = query.limit ?? 20;
+  const filtered = MOCK_VOUCHERS.filter((v) => (query.studentId ? v.student.id === query.studentId : true)).filter(
+    (v) =>
+      q ? v.student.name.toLowerCase().includes(q) || (v.student.nickname ?? "").toLowerCase().includes(q) : true,
+  );
+  return delay({ items: clone(filtered.slice((page - 1) * limit, page * limit)), page, limit, total: filtered.length });
+};
 
 export const createVoucher = (input: { studentName: string; totalHours: 5 | 10 | 15 }) =>
   delay({

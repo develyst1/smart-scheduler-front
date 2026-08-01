@@ -191,7 +191,16 @@ export interface TeachersResponse {
   }>;
 }
 
-export type CoursesResponse = Array<CourseSummary & { student: StudentRef }>;
+/** Generic server-paged list envelope (TASK-070) — the shape `/bookings`, `/courses` and `/vouchers` share. */
+export interface Paged<T> {
+  items: T[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
+export type CourseListItem = CourseSummary & { student: StudentRef };
+export type CoursesResponse = Paged<CourseListItem>;
 
 export interface CreateCoursePackageRequest {
   student: StudentInput;
@@ -215,7 +224,7 @@ export interface VoucherSummary {
   expiryDate: IsoDate;
   student: StudentRef;
 }
-export type VouchersResponse = VoucherSummary[];
+export type VouchersResponse = Paged<VoucherSummary>;
 export interface CreateVoucherRequest {
   student: StudentInput;
   totalHours: 5 | 10 | 15;

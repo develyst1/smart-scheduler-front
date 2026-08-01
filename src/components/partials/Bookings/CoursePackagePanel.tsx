@@ -1,18 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader, Modal } from "@mantine/core";
-import { LockKeyholeOpen, Lock, GraduationCap } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader, Modal, TextInput } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
+import { LockKeyholeOpen, Lock, GraduationCap, Search } from "lucide-react";
 import { useSetCourseAdminUnlock, useCoursePackages } from "@/hooks/scheduler";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
+import PagerBar from "@/components/common/PagerBar";
 import { useT } from "@/lib/i18n";
 import type { CoursePackageView } from "@/types/app/scheduler";
 
+const PAGE_SIZE = 9;
+
 export default function CoursePackagePanel() {
   const t = useT();
-  const { data: courses = [], isLoading } = useCoursePackages();
+  const [search, setSearch] = useState("");
+  const [debounced] = useDebouncedValue(search, 300);
+  const [page, setPage] = useState(1);
+  useEffect(() => setPage(1), [debounced]);
+  const { data, isLoading } = useCoursePackages({ q: debounced.trim() || undefined, page, limit: PAGE_SIZE });
+  const courses = data?.items ?? [];
+  const total = data?.total ?? 0;
   const setUnlock = useSetCourseAdminUnlock();
 
   // คอร์ส + ทิศทาง (unlock/relock) ที่รอการยืนยันใน modal
@@ -50,29 +60,30 @@ export default function CoursePackagePanel() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-default-500">
-        <Loader size="md" />
-        {t("common.loading")}
-      </div>
-    );
-  }
-
-  if (courses.length === 0) {
-    return (
-      <Card padding="xl">
-        <Group justify="center" c="dimmed" gap="xs">
-          <GraduationCap size={18} />
-          <Text size="sm">{t("course.empty")}</Text>
-        </Group>
-      </Card>
-    );
-  }
-
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {courses.map((c) => {
+    <Stack gap="md">
+      <TextInput
+        placeholder={t("bookings.searchPlaceholder")}
+        value={search}
+        onChange={(e) => setSearch(e.currentTarget.value)}
+        leftSection={<Search size={16} />}
+        className="max-w-md"
+      />
+      {isLoading ? (
+        <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-default-500">
+          <Loader size="md" />
+          {t("common.loading")}
+        </div>
+      ) : courses.length === 0 ? (
+        <Card padding="xl">
+          <Group justify="center" c="dimmed" gap="xs">
+            <GraduationCap size={18} />
+            <Text size="sm">{debounced.trim() ? t("bookings.noMatch") : t("course.empty")}</Text>
+          </Group>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {courses.map((c) => {
         const leaveColor = c.leaveLocked
           ? MANTINE_COLOR.danger
           : c.leaveRemaining === 0
@@ -175,7 +186,11 @@ export default function CoursePackagePanel() {
             </Stack>
           </Card>
         );
-      })}
+          })}
+        </div>
+      )}
+
+      <PagerBar total={total} page={page} limit={PAGE_SIZE} onPage={setPage} />
 
       <Modal
         opened={pending !== null}
@@ -208,6 +223,6 @@ export default function CoursePackagePanel() {
           </Group>
         </Stack>
       </Modal>
-    </div>
+    </Stack>
   );
 }

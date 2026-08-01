@@ -29,7 +29,9 @@ import type {
   BulkConfirmResponse,
   BulkConfirmResult,
   CalendarResponse,
+  CourseListItem,
   CoursesResponse,
+  Paged,
   CreateCoursePackageResponse,
   CreateVoucherResponse,
   DailyReportResponse,
@@ -447,15 +449,23 @@ export const moveBooking = async (
 
 // ───────────────────────── Course packages ─────────────────────────
 
-export const getCoursePackages = async (): Promise<CoursePackageView[]> => {
-  if (useMock) return mock.getCoursePackages();
-  const { data } = await api.get<CoursesResponse>("/courses");
-  return data.map(dtoToCourseView);
+export interface CoursesQuery {
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+
+export const getCoursePackages = async (
+  query: CoursesQuery = {},
+): Promise<Paged<CoursePackageView>> => {
+  if (useMock) return mock.getCoursePackages(query);
+  const { data } = await api.get<CoursesResponse>("/courses", { params: query });
+  return { items: data.items.map(dtoToCourseView), page: data.page, limit: data.limit, total: data.total };
 };
 
 export const setCourseAdminUnlock = async (id: string, unlocked: boolean) => {
   if (useMock) return mock.setCourseAdminUnlock(id, unlocked);
-  const { data } = await api.patch<CoursesResponse[number]>(`/courses/${id}`, {
+  const { data } = await api.patch<CourseListItem>(`/courses/${id}`, {
     adminUnlocked: unlocked,
   });
   return dtoToCourseView(data);
@@ -507,12 +517,17 @@ export const createVoucher = async (
   return data;
 };
 
-/** รายการวอยเชอร์ (แท็บวอยเชอร์ + ตัวเลือกตอนจอง) — กรองตามนักเรียนได้ */
-export const getVouchers = async (studentId?: string): Promise<VoucherSummary[]> => {
-  if (useMock) return mock.getVouchers(studentId);
-  const { data } = await api.get<VouchersResponse>("/vouchers", {
-    params: studentId ? { studentId } : undefined,
-  });
+export interface VouchersQuery {
+  q?: string;
+  page?: number;
+  limit?: number;
+  studentId?: string;
+}
+
+/** รายการวอยเชอร์ (แท็บวอยเชอร์) — ค้นหา/แบ่งหน้า server-side (TASK-070). */
+export const getVouchers = async (query: VouchersQuery = {}): Promise<Paged<VoucherSummary>> => {
+  if (useMock) return mock.getVouchers(query);
+  const { data } = await api.get<VouchersResponse>("/vouchers", { params: query });
   return data;
 };
 

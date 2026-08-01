@@ -8,7 +8,6 @@ import {
   Loader,
   TextInput,
   Card,
-  Pagination,
   Group,
   Checkbox,
   Button,
@@ -18,9 +17,11 @@ import {
   Text,
   ScrollArea,
 } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import { useDebouncedValue } from "@mantine/hooks";
 import { Search, CheckCheck } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
+import PagerBar from "@/components/common/PagerBar";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { useAllBookings, useBulkConfirm, useTeachers } from "@/hooks/scheduler";
 import type { BookingStatus, BookingType } from "@/types/app/scheduler";
@@ -30,13 +31,14 @@ import { BOOKING_TYPE_OPTIONS } from "@/components/partials/Calendar/Calendar.co
 import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
 
-type DateRange = "ALL" | "TODAY" | "WEEK" | "MONTH";
+type DateRange = "ALL" | "TODAY" | "WEEK" | "MONTH" | "CUSTOM";
 
 const DATE_RANGE_KEYS: Record<DateRange, string> = {
   ALL: "bookings.rangeAll",
   TODAY: "bookings.rangeToday",
   WEEK: "bookings.rangeWeek",
   MONTH: "bookings.rangeMonth",
+  CUSTOM: "bookings.rangeCustom",
 };
 
 /** แปลง preset ช่วงเวลา → from/to (YYYY-MM-DD) สำหรับส่งเข้า API */
@@ -66,16 +68,21 @@ export default function BookingsTable() {
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "ALL">("ALL");
   const [teacherFilter, setTeacherFilter] = useState<string>("ALL");
   const [dateRange, setDateRange] = useState<DateRange>("ALL");
+  const [customFrom, setCustomFrom] = useState<string | null>(null);
+  const [customTo, setCustomTo] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0]);
 
   // กลับไปหน้า 1 เมื่อเปลี่ยนเงื่อนไขกรอง/จำนวนต่อหน้า
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, typeFilter, statusFilter, teacherFilter, dateRange, pageSize]);
+  }, [debouncedSearch, typeFilter, statusFilter, teacherFilter, dateRange, customFrom, customTo, pageSize]);
 
   const query = useMemo(() => {
-    const { from, to } = rangeToDates(dateRange);
+    const { from, to } =
+      dateRange === "CUSTOM"
+        ? { from: customFrom ?? undefined, to: customTo ?? undefined }
+        : rangeToDates(dateRange);
     return {
       q: debouncedSearch.trim() || undefined,
       type: typeFilter === "ALL" ? undefined : typeFilter,
@@ -86,12 +93,11 @@ export default function BookingsTable() {
       page,
       limit: pageSize,
     };
-  }, [debouncedSearch, typeFilter, statusFilter, teacherFilter, dateRange, page, pageSize]);
+  }, [debouncedSearch, typeFilter, statusFilter, teacherFilter, dateRange, customFrom, customTo, page, pageSize]);
 
   const { data, isLoading } = useAllBookings(query);
   const rows = data?.items ?? [];
   const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const teacherName = (id: string) => teachers.find((tc) => tc.id === id)?.nickname ?? "-";
 
@@ -211,6 +217,32 @@ export default function BookingsTable() {
             label: t(DATE_RANGE_KEYS[r]),
           }))}
         />
+        {dateRange === "CUSTOM" && (
+          <>
+            <DatePickerInput
+              label={t("bookings.rangeFrom")}
+              size="sm"
+              className="max-w-40"
+              value={customFrom}
+              onChange={setCustomFrom}
+              valueFormat="D MMM YYYY"
+              clearable
+              maxDate={customTo ?? undefined}
+              popoverProps={{ withinPortal: true }}
+            />
+            <DatePickerInput
+              label={t("bookings.rangeTo")}
+              size="sm"
+              className="max-w-40"
+              value={customTo}
+              onChange={setCustomTo}
+              valueFormat="D MMM YYYY"
+              clearable
+              minDate={customFrom ?? undefined}
+              popoverProps={{ withinPortal: true }}
+            />
+          </>
+        )}
       </div>
 
       <Group justify="space-between" align="center">
@@ -299,7 +331,7 @@ export default function BookingsTable() {
             label: `${n} / ${t("bookings.perPage")}`,
           }))}
         />
-        <Pagination total={totalPages} value={page} onChange={setPage} size="sm" radius="md" />
+        <PagerBar total={total} page={page} limit={pageSize} onPage={setPage} />
       </Group>
 
       <Modal

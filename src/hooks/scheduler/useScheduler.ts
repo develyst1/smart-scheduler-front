@@ -38,7 +38,9 @@ import {
   topUpFreelanceBudget,
   type CreateBookingInput,
   type CreateCourseInput,
+  type CoursesQuery,
   type CreateVoucherInput,
+  type VouchersQuery,
   type CreateTeacherInput,
   type UpdateTeacherInput,
   type SetFreelanceBudgetInput,
@@ -290,8 +292,12 @@ export const useMoveBooking = () => {
 
 // ───────────────────────── Course packages ─────────────────────────
 
-export const useCoursePackages = () =>
-  useQuery({ queryKey: COURSES_KEY, queryFn: getCoursePackages });
+export const useCoursePackages = (query: CoursesQuery = {}) =>
+  useQuery({
+    queryKey: [...COURSES_KEY, query],
+    queryFn: () => getCoursePackages(query),
+    placeholderData: keepPreviousData,
+  });
 
 export const useSetCourseAdminUnlock = () => {
   const qc = useQueryClient();
@@ -318,12 +324,13 @@ export const useCreateVoucher = () => {
   });
 };
 
-/** รายการวอยเชอร์ — ทั้งหมด (แท็บวอยเชอร์) หรือของนักเรียนคนเดียว (ตัวเลือกตอนจอง) */
-export const useVouchers = (studentId?: string, enabled = true) =>
+/** รายการวอยเชอร์ (แท็บวอยเชอร์) — ค้นหา/แบ่งหน้า server-side. */
+export const useVouchers = (query: VouchersQuery = {}, enabled = true) =>
   useQuery({
-    queryKey: [...VOUCHERS_KEY, studentId ?? "all"],
-    queryFn: () => getVouchers(studentId),
+    queryKey: [...VOUCHERS_KEY, query],
+    queryFn: () => getVouchers(query),
     enabled,
+    placeholderData: keepPreviousData,
   });
 
 // ───────────────────────────── Reports ─────────────────────────────
