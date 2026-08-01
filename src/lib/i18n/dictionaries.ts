@@ -452,6 +452,8 @@ const en = {
     phone: "Phone",
     province: "Parent's province (home address)",
     provincePlaceholder: "Select a province",
+    parentNote: "Note",
+    parentNotePlaceholder: "Anything staff should know about this family (optional)",
     phoneRequired: "A phone number is required",
     parentSaved: "Parent saved",
     // student modal
@@ -1082,6 +1084,8 @@ const th: typeof en = {
     phone: "เบอร์โทร",
     province: "จังหวัดของผู้ปกครอง (ที่อยู่)",
     provincePlaceholder: "เลือกจังหวัด",
+    parentNote: "หมายเหตุ",
+    parentNotePlaceholder: "สิ่งที่เจ้าหน้าที่ควรรู้เกี่ยวกับครอบครัวนี้ (ไม่บังคับ)",
     phoneRequired: "กรุณาระบุเบอร์โทร",
     parentSaved: "บันทึกผู้ปกครองแล้ว",
     // student modal

@@ -20,6 +20,8 @@ export interface ParentInput {
   phone: string;
   name?: string | null;
   province?: string | null;
+  /** TASK-050 made `parents.note` reachable; TASK-069 surfaces it. Max 500 server-side. */
+  note?: string | null;
 }
 
 export const createParent = async (input: ParentInput): Promise<Parent> => {
@@ -34,7 +36,7 @@ export const updateParent = async (id: string, input: Partial<ParentInput>): Pro
   return data;
 };
 
-/** Demographics settable via PATCH /students/:id (create takes only name/nickname/note). */
+/** Demographics — accepted by BOTH `POST /parents/:id/students` (TASK-050) and `PATCH /students/:id`. */
 export interface StudentDemographics {
   gender?: string | null;
   birthDate?: string | null;
@@ -47,24 +49,18 @@ export interface CreateStudentInput extends StudentDemographics {
 }
 
 /**
- * Create a student under a parent. The backend create endpoint accepts name/nickname/note only, so
- * demographics (gender/DOB/nationality) are applied with a follow-up PATCH when provided.
+ * Create a student under a parent — **one request** (TASK-069). Since TASK-050 the create endpoint accepts
+ * demographics too, so the old create → PATCH pair is gone: a failure *between* the two left a student with
+ * no demographics, which is recoverable by editing but is exactly the kind of "usually fine" bug nobody can
+ * reproduce afterwards.
  */
 export const createStudentForParent = async (
   parentId: string,
   input: CreateStudentInput,
 ): Promise<Student> => {
   if (useMockData) return mock.createStudentForParent(parentId, input);
-  const { name, nickname, note, ...demo } = input;
-  const { data: created } = await api.post<Student>(`/parents/${parentId}/students`, {
-    name,
-    nickname,
-    note,
-  });
-  if (demo.gender != null || demo.birthDate != null || demo.nationality != null) {
-    return updateStudent(created.id, demo);
-  }
-  return created;
+  const { data } = await api.post<Student>(`/parents/${parentId}/students`, input);
+  return data;
 };
 
 export interface UpdateStudentInput extends StudentDemographics {

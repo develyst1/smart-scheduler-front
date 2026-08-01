@@ -15,6 +15,7 @@ const parents: Parent[] = [
     phone: "0811111111",
     name: "สมชาย ใจดี",
     province: "กรุงเทพมหานคร",
+    note: "แพ้ถั่ว — แจ้งครูทุกครั้ง",
     suspendedAt: null,
     students: [
       { id: "s1", parentId: "p1", name: "เด็กชายพีรพัฒน์ ใจดี", nickname: "พีพี", gender: "male", birthDate: "2015-04-12", nationality: "ไทย", note: null },
@@ -26,6 +27,7 @@ const parents: Parent[] = [
     phone: "0822222222",
     name: "Jane Smith",
     province: "ภูเก็ต",
+    note: null,
     suspendedAt: null,
     students: [
       { id: "s3", parentId: "p2", name: "Leo Smith", nickname: "Leo", gender: "male", birthDate: "2016-02-20", nationality: "USA", note: null },
@@ -36,6 +38,7 @@ const parents: Parent[] = [
     phone: "0833333333",
     name: "สุดา รักเรียน",
     province: null,
+    note: null,
     suspendedAt: "2026-07-30T09:00:00.000Z",
     students: [],
   },
@@ -64,6 +67,7 @@ export const createParent = (input: ParentInput): Promise<Parent> => {
     phone: input.phone,
     name: input.name ?? null,
     province: input.province ?? null,
+    note: input.note ?? null,
     suspendedAt: null,
     students: [],
   };
@@ -76,6 +80,7 @@ export const updateParent = (id: string, input: Partial<ParentInput>): Promise<P
   if (input.name !== undefined) p.name = input.name ?? null;
   if (input.phone !== undefined) p.phone = input.phone;
   if (input.province !== undefined) p.province = input.province ?? null;
+  if (input.note !== undefined) p.note = input.note ?? null;
   return delay(clone(p));
 };
 

@@ -21,6 +21,8 @@ export interface Parent {
   name: string | null;
   /** Household address province (≠ the per-booking `จังหวัด` badge). */
   province: string | null;
+  /** Free-text staff note about the household (max 500). Reachable since TASK-050. */
+  note: string | null;
   /** ISO timestamp when suspended; null = active. */
   suspendedAt: string | null;
   students: Student[];

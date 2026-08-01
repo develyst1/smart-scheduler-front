@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Group, Modal, Select, Stack, TextInput } from "@mantine/core";
+import { Button, Group, Modal, Select, Stack, Textarea, TextInput } from "@mantine/core";
 import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
 import { useCreateParent, useUpdateParent } from "@/hooks/scheduler";
@@ -25,12 +25,14 @@ export default function ParentFormModal({ opened, parent, onClose }: Props) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [province, setProvince] = useState<string | null>(null);
+  const [note, setNote] = useState("");
 
   useEffect(() => {
     if (!opened) return;
     setName(parent?.name ?? "");
     setPhone(parent?.phone ?? "");
     setProvince(parent?.province ?? null);
+    setNote(parent?.note ?? "");
   }, [opened, parent]);
 
   const busy = create.isPending || update.isPending;
@@ -45,6 +47,7 @@ export default function ParentFormModal({ opened, parent, onClose }: Props) {
         name: name.trim() || null,
         phone: phone.trim(),
         province: province ?? null,
+        note: note.trim() || null,
       };
       if (isEdit && parent) {
         await update.mutateAsync({ id: parent.id, input });
@@ -96,6 +99,18 @@ export default function ParentFormModal({ opened, parent, onClose }: Props) {
           searchable
           clearable
           maxDropdownHeight={280}
+        />
+
+        {/* TASK-069 — `parents.note` existed in the schema but had no way in until TASK-050 opened it. */}
+        <Textarea
+          label={t("people.parentNote")}
+          placeholder={t("people.parentNotePlaceholder")}
+          value={note}
+          onChange={(e) => setNote(e.currentTarget.value)}
+          autosize
+          minRows={2}
+          maxRows={5}
+          maxLength={500}
         />
 
         <Group justify="flex-end" mt="sm">
