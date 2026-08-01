@@ -230,6 +230,7 @@ const en = {
     vouchersHint:
       "Vouchers 5/10/15h — no fixed teacher or time · validity counts from the first booking · book via the calendar (Voucher type)",
     issueVoucher: "Issue voucher",
+    importBalance: "Already in progress",
     searchStudent: "Search student",
     searchPlaceholder: "Type a name…",
     status: "Status",
@@ -543,6 +544,36 @@ const en = {
     },
   },
 
+  // Migrating a course/voucher that is already part-way through (SPEC-025). Never a sale.
+  importBalance: {
+    title: "Already in progress",
+    noPayment:
+      "For students who already bought and started. This records the remaining balance only — no payment is taken and no revenue is recorded.",
+    kindCourse: "Course",
+    kindVoucher: "Voucher",
+    size: "Sessions bought",
+    sizeHint: "The whole package, as originally purchased",
+    used: "Sessions already used",
+    usedHint: "How many they have already attended",
+    usedTooHigh: "Used cannot be more than bought.",
+    totalHours: "Hours bought",
+    usedHours: "Hours already used",
+    resumeDate: "Remaining sessions start",
+    resumeHint: "The first session from here on — not the original start",
+    expiry: "Expiry date",
+    expiryHint: "From the original purchase — entered, never calculated",
+    previewCourse: "{remaining} sessions remaining, first on {date}",
+    previewLast: "Last session {date}",
+    previewVoucher: "{remaining} hours remaining",
+    previewNothing: "Nothing remaining — no sessions would be created.",
+    saveAndNext: "Save and enter another",
+    done: "Done",
+    savedTitle: "Balance recorded",
+    savedDesc: "{student} was added. No payment was recorded.",
+    savedCount: "{n} entered",
+    failGeneric: "Could not save. Please check the details and try again.",
+  },
+
   // Teacher LINE-link approval queue (SPEC-023). Approval is the only action that grants a link.
   linkRequests: {
     title: "Teacher LINE links",
@@ -830,6 +861,7 @@ const th: typeof en = {
     vouchersHint:
       "วอยเชอร์ 5/10/15 ชม. — ไม่ล็อกครูหรือเวลา · อายุนับจากวันจองครั้งแรก · ใช้จองผ่านปฏิทิน (ประเภท Voucher)",
     issueVoucher: "ออกวอยเชอร์",
+    importBalance: "เรียนอยู่แล้ว (ย้ายข้อมูล)",
     searchStudent: "ค้นชื่อนักเรียน",
     searchPlaceholder: "พิมพ์ชื่อ...",
     status: "สถานะ",
@@ -1135,6 +1167,35 @@ const th: typeof en = {
       yesterday_no_shows: "ไม่มาเรียนเมื่อวาน",
       pending_teacher_links: "คำขอผูก LINE ของครูที่รออนุมัติ",
     },
+  },
+
+  importBalance: {
+    title: "เรียนอยู่แล้ว (ย้ายข้อมูล)",
+    noPayment:
+      "สำหรับนักเรียนที่ซื้อและเริ่มเรียนไปแล้ว — บันทึกเฉพาะยอดคงเหลือ ไม่มีการเก็บเงินและไม่บันทึกรายได้",
+    kindCourse: "คอร์ส",
+    kindVoucher: "วอยเชอร์",
+    size: "จำนวนครั้งที่ซื้อ",
+    sizeHint: "ทั้งแพ็กเกจตามที่ซื้อไว้เดิม",
+    used: "ใช้ไปแล้ว (ครั้ง)",
+    usedHint: "จำนวนครั้งที่เรียนไปแล้ว",
+    usedTooHigh: "จำนวนที่ใช้ไปต้องไม่เกินจำนวนที่ซื้อ",
+    totalHours: "ชั่วโมงที่ซื้อ",
+    usedHours: "ใช้ไปแล้ว (ชั่วโมง)",
+    resumeDate: "เริ่มคาบที่เหลือวันที่",
+    resumeHint: "คาบแรกนับจากนี้ไป ไม่ใช่วันเริ่มเดิม",
+    expiry: "วันหมดอายุ",
+    expiryHint: "ตามที่ซื้อไว้เดิม — กรอกเอง ระบบไม่คำนวณให้",
+    previewCourse: "เหลืออีก {remaining} ครั้ง คาบแรก {date}",
+    previewLast: "คาบสุดท้าย {date}",
+    previewVoucher: "เหลืออีก {remaining} ชั่วโมง",
+    previewNothing: "ไม่มีคาบเหลือ — จะไม่มีการสร้างคาบใด ๆ",
+    saveAndNext: "บันทึกและกรอกรายถัดไป",
+    done: "เสร็จแล้ว",
+    savedTitle: "บันทึกยอดคงเหลือแล้ว",
+    savedDesc: "เพิ่ม {student} เรียบร้อย ไม่มีการบันทึกการชำระเงิน",
+    savedCount: "บันทึกแล้ว {n} ราย",
+    failGeneric: "บันทึกไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองใหม่",
   },
 
   linkRequests: {

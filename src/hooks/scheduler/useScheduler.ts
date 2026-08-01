@@ -15,6 +15,10 @@ import {
   type MoveBookingInput,
   createCoursePackage,
   createVoucher,
+  importCoursePackage,
+  importVoucher,
+  type ImportCourseInput,
+  type ImportVoucherInput,
   getCoursePackages,
   getDailyReport,
   getVouchers,
@@ -340,3 +344,22 @@ export const useDailyReport = (date: string, teacherId?: string) =>
     queryKey: [...REPORT_KEY, date, teacherId ?? "all"],
     queryFn: () => getDailyReport(date, teacherId),
   });
+
+// ───── Migrating existing balances (SPEC-025 / TASK-080) ─────
+// These call the **import** endpoints, never the sale ones: nothing is charged and no revenue is posted.
+
+export const useImportCoursePackage = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ImportCourseInput) => importCoursePackage(input),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+export const useImportVoucher = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ImportVoucherInput) => importVoucher(input),
+    onSuccess: () => invalidateAll(qc),
+  });
+};

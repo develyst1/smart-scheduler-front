@@ -526,6 +526,64 @@ export const createVoucher = async (
   return data;
 };
 
+// ───── Migrating what already exists (SPEC-025 / TASK-080) ─────
+// These hit `/courses/import` and `/vouchers/import`, **never** the sale endpoints: the family already paid,
+// so nothing is charged and no revenue is posted. `size` is deliberately NOT restricted to the price card —
+// an off-card package they bought last year is still importable (TASK-079 allows it on purpose).
+
+export interface ImportCourseInput {
+  studentName: string;
+  studentId?: string;
+  studentPhone?: string;
+  teacherId: string;
+  subjectId: string;
+  size: number;
+  usedSessions: number;
+  /** When the REMAINING sessions resume — not when the course was originally bought. */
+  startDate: string;
+  startTime: string;
+  /** The original purchase's expiry, taken as given and never computed. */
+  expiryDate: string;
+  note?: string;
+}
+
+export const importCoursePackage = async (
+  input: ImportCourseInput,
+): Promise<{ remaining: number }> => {
+  if (useMock) return mock.importCoursePackage(input);
+  const { data } = await api.post<{ remaining: number }>("/courses/import", {
+    student: studentPayload(input),
+    teacherId: input.teacherId,
+    subjectId: input.subjectId,
+    size: input.size,
+    usedSessions: input.usedSessions,
+    startDate: input.startDate,
+    startTime: input.startTime,
+    expiryDate: input.expiryDate,
+    note: input.note,
+  });
+  return data;
+};
+
+export interface ImportVoucherInput {
+  studentName: string;
+  studentId?: string;
+  studentPhone?: string;
+  totalHours: number;
+  usedHours: number;
+  expiryDate: string;
+}
+
+export const importVoucher = async (input: ImportVoucherInput): Promise<void> => {
+  if (useMock) return mock.importVoucher(input);
+  await api.post("/vouchers/import", {
+    student: studentPayload(input),
+    totalHours: input.totalHours,
+    usedHours: input.usedHours,
+    expiryDate: input.expiryDate,
+  });
+};
+
 export interface VouchersQuery {
   q?: string;
   page?: number;

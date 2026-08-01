@@ -517,3 +517,63 @@ export const getDailyReport = (date: string, teacherId?: string): Promise<DailyR
       .sort((a, b) => b.count - a.count),
   });
 };
+
+// ── Migrating existing course/voucher balances (SPEC-025 / TASK-080) ──
+// Offline stand-in for the import endpoints. Mirrors the server: remaining = size - used, the REMAINING
+// sessions only are created (never the already-taught ones), and expiry is taken as given.
+export const importCoursePackage = (input: {
+  studentName: string;
+  teacherId: string;
+  subjectId: string;
+  size: number;
+  usedSessions: number;
+  startDate: string;
+  startTime: string;
+  expiryDate: string;
+}) => {
+  const remaining = Math.max(0, Math.floor(input.size) - Math.max(0, Math.floor(input.usedSessions)));
+  const id = `ci-${coursePackages.length + 1}`;
+  coursePackages.push({
+    id,
+    studentName: input.studentName,
+    size: input.size as never,
+    usedSessions: input.usedSessions,
+    startDate: input.startDate,
+    startTime: input.startTime,
+    expiryDate: input.expiryDate,
+    leaveUsed: 0,
+    adminUnlocked: false,
+  } as never);
+  for (let i = 0; i < remaining; i++) {
+    bookings.push({
+      id: `bi-${bookings.length + 1}-${i}`,
+      studentName: input.studentName,
+      teacherId: input.teacherId,
+      subject: "",
+      date: dayjs(input.startDate).add(i, "week").format("YYYY-MM-DD"),
+      startTime: input.startTime,
+      endTime: `${String(Number(input.startTime.slice(0, 2)) + 1).padStart(2, "0")}:00`,
+      bookingType: "COURSE_PACKAGE",
+      status: "CONFIRMED",
+      courseId: id,
+    } as never);
+  }
+  return delay({ remaining });
+};
+
+export const importVoucher = (input: {
+  studentName: string;
+  totalHours: number;
+  usedHours: number;
+  expiryDate: string;
+}) => {
+  MOCK_VOUCHERS.push({
+    id: `vi-${MOCK_VOUCHERS.length + 1}`,
+    totalHours: input.totalHours,
+    usedHours: input.usedHours,
+    remaining: Math.max(0, input.totalHours - input.usedHours),
+    expiryDate: input.expiryDate,
+    student: { id: `s-imp-${MOCK_VOUCHERS.length + 1}`, name: input.studentName, nickname: input.studentName },
+  });
+  return delay(undefined);
+};
