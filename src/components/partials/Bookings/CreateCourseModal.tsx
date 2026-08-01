@@ -19,7 +19,9 @@ import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOpt
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
-import { useCreateCoursePackage, useTeachers } from "@/hooks/scheduler";
+import { useCreateCoursePackage, useTeachers, useSellablePackages } from "@/hooks/scheduler";
+import { courseSizesFor, isUnpriced, packageFor } from "@/lib/scheduler/sellable";
+import { formatPriceMinor } from "@/types/app/pricing";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import {
@@ -30,8 +32,6 @@ import {
 } from "@/types/app/scheduler";
 import type { CreateCoursePackageResponse } from "@/types/api/contract";
 
-const SIZES: PackageSize[] = [4, 6, 10];
-
 interface Props {
   opened: boolean;
   onClose: () => void;
@@ -41,10 +41,7 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
   const t = useT();
   const { data: teachers = [] } = useTeachers();
   const create = useCreateCoursePackage();
-  const sizeOptions = SIZES.map((s) => ({
-    value: String(s),
-    label: t("course.sizeOption", { size: s, leave: LEAVE_QUOTA_BY_SIZE[s], week: MAX_WEEK_BY_SIZE[s] }),
-  }));
+  const { data: card } = useSellablePackages();
 
   const [student, setStudent] = useState<StudentSelectValue | null>(null);
   const [teacherId, setTeacherId] = useState("");
@@ -59,6 +56,28 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
   const bookableTeachers = teachers.filter((tc) => bookableOnDate(tc, startDate));
+
+  // TASK-078 — what this program actually sells, and at what price. Both come from the API; the FE keeps no
+  // price table, because a second copy drifts from the card the first time a price changes.
+  const sellableSizes = courseSizesFor(card, subjectId);
+  const unpriced = isUnpriced(card, subjectId);
+  const chosen = packageFor(card, subjectId, size);
+  const sizeOptions = sellableSizes.map((s) => ({
+    value: String(s),
+    label: t("course.sizeOption", {
+      size: s,
+      leave: LEAVE_QUOTA_BY_SIZE[s as PackageSize],
+      week: MAX_WEEK_BY_SIZE[s as PackageSize],
+    }),
+  }));
+
+  // Keep the chosen size legal for the chosen program: switching from Skate (4/6/10) to Onewheel (4/6) with
+  // 10 selected must not leave a size the card doesn't sell sitting in the form.
+  useEffect(() => {
+    if (sellableSizes.length > 0 && !sellableSizes.includes(size)) {
+      setSize(sellableSizes[0] as PackageSize);
+    }
+  }, [subjectId, sellableSizes.join(","), size]);
 
   useEffect(() => {
     if (!opened) {
@@ -83,6 +102,8 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
     student?.name.trim() &&
     teacherId &&
     subjectId &&
+    // The server refuses an off-card combination (TASK-077); don't offer a button that can only fail.
+    !!chosen &&
     startDate &&
     startTime &&
     !create.isPending;
@@ -198,14 +219,30 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
             required
           />
 
-          <Select
-            label={t("course.courseSize")}
-            value={String(size)}
-            onChange={(v) => v && setSize(Number(v) as PackageSize)}
-            data={sizeOptions}
-            allowDeselect={false}
-            searchable
-          />
+          {/* A program with no price group sells nothing — say that, rather than show an empty dropdown that
+              just looks broken. Only once a program is actually chosen. */}
+          {unpriced ? (
+            <Alert color="orange" icon={<AlertTriangle size={16} />} variant="light">
+              {t("course.noPackages")}
+            </Alert>
+          ) : (
+            <Select
+              label={t("course.courseSize")}
+              placeholder={subjectId ? undefined : t("course.pickProgramFirst")}
+              value={sizeOptions.length > 0 ? String(size) : null}
+              onChange={(v) => v && setSize(Number(v) as PackageSize)}
+              data={sizeOptions}
+              disabled={sizeOptions.length === 0}
+              allowDeselect={false}
+              searchable
+              // Prices are VAT-inclusive — the final amount the customer pays. Shown as-is, never netted down.
+              description={
+                chosen
+                  ? t("course.priceInclVat", { price: formatPriceMinor(chosen.priceMinor) })
+                  : undefined
+              }
+            />
+          )}
 
           <Group grow align="flex-start">
             <DatePickerInput

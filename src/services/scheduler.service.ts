@@ -238,6 +238,14 @@ export const getBookingsByDate = async (date: string) => {
 };
 
 /** พารามิเตอร์ค้นหา/กรอง/แบ่งหน้า ของ GET /bookings (ส่งเฉพาะ key ที่มีค่า) */
+/**
+ * Server-side date ordering (TASK-073). `upcoming` = today/future soonest-first, then the past most-recent
+ * first — it is a **pure sort**, nothing is hidden, so `total` is unchanged in every direction.
+ * ⚠️ `date_desc` is NOT "upcoming first" here: a course books every session weeks ahead at registration, so
+ * the newest booking is routinely months away. That's why `upcoming` exists and is the default.
+ */
+export type BookingSort = "upcoming" | "date_asc" | "date_desc";
+
 export interface BookingQuery {
   q?: string;
   type?: BookingType;
@@ -245,6 +253,7 @@ export interface BookingQuery {
   teacherId?: string;
   from?: string; // YYYY-MM-DD
   to?: string; // YYYY-MM-DD
+  sort?: BookingSort;
   page?: number;
   limit?: number;
 }

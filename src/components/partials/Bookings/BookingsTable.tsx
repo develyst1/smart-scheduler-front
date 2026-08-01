@@ -16,14 +16,16 @@ import {
   Stack,
   Text,
   ScrollArea,
+  UnstyledButton,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { useDebouncedValue } from "@mantine/hooks";
-import { Search, CheckCheck } from "lucide-react";
+import { Search, CheckCheck, ArrowDownWideNarrow, ArrowUpNarrowWide } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import PagerBar from "@/components/common/PagerBar";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { useAllBookings, useBulkConfirm, useTeachers } from "@/hooks/scheduler";
+import type { BookingSort } from "@/services/scheduler.service";
 import type { BookingStatus, BookingType } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR } from "@/types/app/scheduler";
 import type { BulkConfirmResult } from "@/types/api/contract";
@@ -72,11 +74,14 @@ export default function BookingsTable() {
   const [customTo, setCustomTo] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0]);
+  // TASK-074 — server-side date order. `upcoming` (the default) opens on the next thing that happens;
+  // flipping gives oldest-first. Both are pure sorts: no row is hidden either way.
+  const [sort, setSort] = useState<BookingSort>("upcoming");
 
-  // กลับไปหน้า 1 เมื่อเปลี่ยนเงื่อนไขกรอง/จำนวนต่อหน้า
+  // กลับไปหน้า 1 เมื่อเปลี่ยนเงื่อนไขกรอง/จำนวนต่อหน้า/การเรียงลำดับ
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, typeFilter, statusFilter, teacherFilter, dateRange, customFrom, customTo, pageSize]);
+  }, [debouncedSearch, typeFilter, statusFilter, teacherFilter, dateRange, customFrom, customTo, pageSize, sort]);
 
   const query = useMemo(() => {
     const { from, to } =
@@ -90,10 +95,11 @@ export default function BookingsTable() {
       teacherId: teacherFilter === "ALL" ? undefined : teacherFilter,
       from,
       to,
+      sort,
       page,
       limit: pageSize,
     };
-  }, [debouncedSearch, typeFilter, statusFilter, teacherFilter, dateRange, customFrom, customTo, page, pageSize]);
+  }, [debouncedSearch, typeFilter, statusFilter, teacherFilter, dateRange, customFrom, customTo, sort, page, pageSize]);
 
   const { data, isLoading } = useAllBookings(query);
   const rows = data?.items ?? [];
@@ -154,6 +160,12 @@ export default function BookingsTable() {
 
   return (
     <Card padding="lg" className="space-y-3">
+      {/* TASK-081 — every control here carries a **min** width, not just a max. A flex item defaults to
+          shrinking below its content, and an empty date input has no text to hold it open, so before this the
+          two CUSTOM pickers collapsed to ~30px while the text-bearing Selects looked fine. With a min, a row
+          that runs out of space **wraps** instead of crushing — which is also what protects the next control
+          anyone adds here. Measured: 1280px → all five presets on one line; CUSTOM sends From/To to their own
+          line at 176px each; 375px → one control per line, no horizontal overflow. */}
       <div className="flex flex-wrap items-end gap-3">
         <TextInput
           label={t("bookings.searchStudent")}
@@ -162,12 +174,12 @@ export default function BookingsTable() {
           onChange={(e) => setSearch(e.currentTarget.value)}
           leftSection={<Search size={16} />}
           size="sm"
-          className="min-w-52 flex-1"
+          className="min-w-40 flex-1"
         />
         <Select
           label={t("bookings.status")}
           size="sm"
-          className="max-w-44"
+          className="min-w-36 max-w-44"
           value={statusFilter}
           onChange={(v) => setStatusFilter((v || "ALL") as BookingStatus | "ALL")}
           allowDeselect={false}
@@ -183,7 +195,7 @@ export default function BookingsTable() {
         <Select
           label={t("bookings.teacher")}
           size="sm"
-          className="max-w-40"
+          className="min-w-36 max-w-40"
           value={teacherFilter}
           onChange={(v) => setTeacherFilter(v || "ALL")}
           allowDeselect={false}
@@ -194,7 +206,7 @@ export default function BookingsTable() {
         <Select
           label={t("bookings.type")}
           size="sm"
-          className="max-w-40"
+          className="min-w-36 max-w-40"
           value={typeFilter}
           onChange={(v) => setTypeFilter((v || "ALL") as BookingType | "ALL")}
           allowDeselect={false}
@@ -207,7 +219,7 @@ export default function BookingsTable() {
         <Select
           label={t("bookings.dateRange")}
           size="sm"
-          className="max-w-40"
+          className="min-w-36 max-w-40"
           value={dateRange}
           onChange={(v) => setDateRange((v || "ALL") as DateRange)}
           allowDeselect={false}
@@ -222,7 +234,7 @@ export default function BookingsTable() {
             <DatePickerInput
               label={t("bookings.rangeFrom")}
               size="sm"
-              className="max-w-40"
+              className="min-w-44 max-w-52"
               value={customFrom}
               onChange={setCustomFrom}
               valueFormat="D MMM YYYY"
@@ -233,7 +245,7 @@ export default function BookingsTable() {
             <DatePickerInput
               label={t("bookings.rangeTo")}
               size="sm"
-              className="max-w-40"
+              className="min-w-44 max-w-52"
               value={customTo}
               onChange={setCustomTo}
               valueFormat="D MMM YYYY"
@@ -274,7 +286,18 @@ export default function BookingsTable() {
             <Table.Th>{t("bookings.colStudent")}</Table.Th>
             <Table.Th>{t("bookings.colSubject")}</Table.Th>
             <Table.Th>{t("bookings.colTeacher")}</Table.Th>
-            <Table.Th>{t("bookings.colDate")}</Table.Th>
+            {/* The sort lives ON the date column rather than in another select — the filter row is already
+                full, and คุณฟีน's "ไม่อึดอัด" is why TASK-071 deferred this in the first place. */}
+            <Table.Th>
+              <UnstyledButton
+                onClick={() => setSort((s) => (s === "upcoming" ? "date_asc" : "upcoming"))}
+                aria-label={t(sort === "upcoming" ? "bookings.sortToOldest" : "bookings.sortToUpcoming")}
+                className="inline-flex items-center gap-1 text-xs uppercase tracking-wide text-default-500 hover:text-default-900"
+              >
+                {t("bookings.colDate")}
+                {sort === "upcoming" ? <ArrowDownWideNarrow size={13} /> : <ArrowUpNarrowWide size={13} />}
+              </UnstyledButton>
+            </Table.Th>
             <Table.Th>{t("bookings.colTime")}</Table.Th>
             <Table.Th>{t("bookings.colType")}</Table.Th>
             <Table.Th>{t("bookings.colStatus")}</Table.Th>

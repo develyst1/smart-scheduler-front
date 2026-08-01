@@ -5,3 +5,4 @@ export * from "./usePeople";
 export * from "./useAttention";
 export * from "./useSomReport";
 export * from "./useTeacherLink";
+export * from "./usePricing";

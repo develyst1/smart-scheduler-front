@@ -16,16 +16,29 @@ export const setTeacherTypeOrderStore = (order: TeacherType[]) => {
 // In-memory mock store. Replaces a real backend for now so the UI is fully
 // interactive. Swap services/lib-api to real endpoints later (Phase 3).
 
+// `subjectOptions` (id+name) are what the create-course modal offers, and their ids must line up with the
+// price groups in `pricing.mock.service.ts` so TASK-078's rules are exercisable offline: s1/s2 = bike-skate
+// (4/6/10), s3 = onewheel (**no 10**), s4/s5 = balance (**no 4**), s6 = Surfskate (**no price group at all**).
+// The legacy `subjects` display strings are left alone — rewriting every fixture to the wheeled-sports names
+// is a bigger change than this task, and nothing here depends on the two agreeing.
+const BIKE_SKATE = [{ id: "s1", name: "Bike" }, { id: "s2", name: "Skate" }];
+const ONEWHEEL = [{ id: "s3", name: "Onewheel" }];
+const BALANCE = [
+  { id: "s4", name: "Balance Play (Private)" },
+  { id: "s5", name: "Balance Play (Group)" },
+];
+const UNPRICED = [{ id: "s6", name: "Surfskate" }];
+
 export const teachers: Teacher[] = [
-  { id: "t1", name: "ครูแอน สมใจ", nickname: "แอน", type: "FULL_TIME", subjects: ["คณิต", "ฟิสิกส์"], active: true, lineLinked: true, workDays: [0, 1, 2, 3, 4, 5, 6] },
-  { id: "t2", name: "ครูบีม รุ่งโรจน์", nickname: "บีม", type: "FULL_TIME", subjects: ["อังกฤษ"], active: true, lineLinked: true, workDays: [0, 1, 2, 3, 4, 5, 6] },
-  { id: "t3", name: "ครูแคท ปิยะดา", nickname: "แคท", type: "PART_TIME", subjects: ["เคมี", "ชีวะ"], active: true, workDays: [6, 0] },
-  { id: "t4", name: "ครูดิว ธนพล", nickname: "ดิว", type: "PART_TIME", subjects: ["คณิต"], active: true, workDays: [1, 2, 3, 4, 5] },
-  { id: "t5", name: "ครูเอิร์ธ กิตติ", nickname: "เอิร์ธ", type: "FREELANCE", subjects: ["อังกฤษ", "IELTS"], active: true, hourlyRate: 500, budgetMinor: 2000000, remainingMinor: 1600000, reorderMinor: 200000, overLimit: false, limitOverride: false, workDays: [0, 1, 2, 3, 4, 5, 6] },
-  { id: "t6", name: "ครูฟ้า ชนิดา", nickname: "ฟ้า", type: "FREELANCE", subjects: ["ภาษาไทย"], active: false, hourlyRate: 450, budgetMinor: 1500000, remainingMinor: 0, reorderMinor: 150000, overLimit: true, limitOverride: false, workDays: [0, 1, 2, 3, 4, 5, 6] },
+  { id: "t1", name: "ครูแอน สมใจ", nickname: "แอน", type: "FULL_TIME", subjects: ["คณิต", "ฟิสิกส์"], subjectOptions: [...BIKE_SKATE, ...ONEWHEEL], active: true, lineLinked: true, workDays: [0, 1, 2, 3, 4, 5, 6] },
+  { id: "t2", name: "ครูบีม รุ่งโรจน์", nickname: "บีม", type: "FULL_TIME", subjects: ["อังกฤษ"], subjectOptions: UNPRICED, active: true, lineLinked: true, workDays: [0, 1, 2, 3, 4, 5, 6] },
+  { id: "t3", name: "ครูแคท ปิยะดา", nickname: "แคท", type: "PART_TIME", subjects: ["เคมี", "ชีวะ"], subjectOptions: BALANCE, active: true, workDays: [6, 0] },
+  { id: "t4", name: "ครูดิว ธนพล", nickname: "ดิว", type: "PART_TIME", subjects: ["คณิต"], subjectOptions: [...BIKE_SKATE, ...UNPRICED], active: true, workDays: [1, 2, 3, 4, 5] },
+  { id: "t5", name: "ครูเอิร์ธ กิตติ", nickname: "เอิร์ธ", type: "FREELANCE", subjects: ["อังกฤษ", "IELTS"], subjectOptions: BIKE_SKATE, active: true, hourlyRate: 500, budgetMinor: 2000000, remainingMinor: 1600000, reorderMinor: 200000, overLimit: false, limitOverride: false, workDays: [0, 1, 2, 3, 4, 5, 6] },
+  { id: "t6", name: "ครูฟ้า ชนิดา", nickname: "ฟ้า", type: "FREELANCE", subjects: ["ภาษาไทย"], subjectOptions: UNPRICED, active: false, hourlyRate: 450, budgetMinor: 1500000, remainingMinor: 0, reorderMinor: 150000, overLimit: true, limitOverride: false, workDays: [0, 1, 2, 3, 4, 5, 6] },
   // Shares the nickname "ดิว" with t4 on purpose — the LINE-link collision case (SPEC-023) needs two real
   // teachers to choose between, not a fabricated candidate.
-  { id: "t7", name: "ครูดิว ณัฐวรรณ", nickname: "ดิว", type: "PART_TIME", subjects: ["อังกฤษ"], active: true, workDays: [1, 2, 3, 4, 5] },
+  { id: "t7", name: "ครูดิว ณัฐวรรณ", nickname: "ดิว", type: "PART_TIME", subjects: ["อังกฤษ"], subjectOptions: BALANCE, active: true, workDays: [1, 2, 3, 4, 5] },
 ];
 
 const today = dayjs().format("YYYY-MM-DD");
@@ -79,6 +92,13 @@ export const bookings: Booking[] = [
   { id: "b7", studentName: "น้องกัน", teacherId: "t5", subject: "IELTS", date: today, startTime: "16:00", endTime: "17:00", bookingType: "VOUCHER", status: "CONFIRMED" },
   { id: "b8", studentName: "น้องมายด์", teacherId: "t3", subject: "ชีวะ", date: today, startTime: "16:00", endTime: "17:00", bookingType: "COURSE_PACKAGE", status: "EXTENDED", courseId: "c3", note: "คาบขยายจากการลาสัปดาห์ก่อน" },
   { id: "b9", studentName: "น้องนิว", teacherId: "t1", subject: "คณิต", date: dayjs().add(1, "day").format("YYYY-MM-DD"), startTime: "10:00", endTime: "11:00", bookingType: "COURSE_PACKAGE", status: "CONFIRMED", courseId: "c1" },
+  // Past + far-future rows so the date sort (TASK-073/074) is observably different. Without them every
+  // fixture row is today/tomorrow and "upcoming first" and "oldest first" render identically.
+  // b12 is the case that rules out a plain newest-first default: a course books every session weeks ahead
+  // at registration, so the *newest* booking is months away, not the next one.
+  { id: "b10", studentName: "น้องแทน", teacherId: "t2", subject: "อังกฤษ", date: dayjs().subtract(14, "day").format("YYYY-MM-DD"), startTime: "09:00", endTime: "10:00", bookingType: "SINGLE_SESSION", status: "ATTENDED" },
+  { id: "b11", studentName: "น้องปุย", teacherId: "t4", subject: "คณิต", date: dayjs().subtract(1, "day").format("YYYY-MM-DD"), startTime: "15:00", endTime: "16:00", bookingType: "COURSE_PACKAGE", status: "ATTENDED", courseId: "c2" },
+  { id: "b12", studentName: "น้องพีพี", teacherId: "t1", subject: "คณิต", date: dayjs().add(9, "week").format("YYYY-MM-DD"), startTime: "10:00", endTime: "11:00", bookingType: "COURSE_PACKAGE", status: "CONFIRMED", courseId: "c1" },
 ];
 
 let bookingSeq = bookings.length;

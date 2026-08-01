@@ -155,11 +155,27 @@ export const getAllBookings = (query: {
   teacherId?: string;
   from?: string;
   to?: string;
+  sort?: "upcoming" | "date_asc" | "date_desc";
   page?: number;
   limit?: number;
 } = {}) => {
   const page = query.page ?? 1;
   const limit = query.limit ?? 50;
+  const today = dayjs().format("YYYY-MM-DD");
+  // Mirrors TASK-073's server ordering so the control can be exercised offline. `upcoming` = today/future
+  // soonest-first, then the past most-recent-first. A pure sort — no row is removed in any direction.
+  const orderKey = (b: { date: string; startTime: string }) => b.date + b.startTime;
+  const compare = (a: { date: string; startTime: string }, b: { date: string; startTime: string }) => {
+    const sort = query.sort ?? "upcoming";
+    if (sort === "date_asc") return orderKey(a).localeCompare(orderKey(b));
+    if (sort === "date_desc") return orderKey(b).localeCompare(orderKey(a));
+    const aPast = a.date < today;
+    const bPast = b.date < today;
+    if (aPast !== bPast) return aPast ? 1 : -1; // future block first
+    return aPast
+      ? orderKey(b).localeCompare(orderKey(a)) // past: most recent first
+      : orderKey(a).localeCompare(orderKey(b)); // future: soonest first
+  };
   const q = query.q?.trim().toLowerCase();
   const filtered = bookings
     .filter((b) => !b.pendingSlot)
@@ -169,7 +185,7 @@ export const getAllBookings = (query: {
     .filter((b) => (query.teacherId ? b.teacherId === query.teacherId : true))
     .filter((b) => (query.from ? b.date >= query.from : true))
     .filter((b) => (query.to ? b.date <= query.to : true))
-    .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
+    .sort(compare);
   const items = filtered.slice((page - 1) * limit, page * limit);
   return delay({ items: clone(items), page, limit, total: filtered.length });
 };

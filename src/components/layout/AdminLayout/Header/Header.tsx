@@ -5,7 +5,7 @@ import { ActionIcon, Button } from "@mantine/core";
 import { LogOut, Menu, PanelLeft, PanelLeftClose } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useT, LanguageToggle } from "@/lib/i18n";
-import { NAV_ITEMS } from "../AdminLayout.config";
+import { HIDDEN_NAV_ITEMS, NAV_ITEMS } from "../AdminLayout.config";
 
 interface Props {
   collapsed: boolean;
@@ -16,7 +16,9 @@ interface Props {
 export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Props) {
   const pathname = usePathname();
   const t = useT();
-  const current = NAV_ITEMS.find((i) => pathname?.startsWith(i.href));
+  // Hidden entries are searched too: a hidden page still resolves when visited directly (REQ-026 Stage 1 hides
+  // the menu item, not the route), and it should keep its own title rather than fall back to the app name.
+  const current = [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS].find((i) => pathname?.startsWith(i.href));
 
   const { data: session } = useSession();
   const name = session?.user?.username ?? t("header.staff");
