@@ -242,7 +242,15 @@ export const markAttended = (id: string) => {
   return delay(clone(b) as Booking);
 };
 
-export const getEligibleStudents = (type: "COURSE_PACKAGE" | "VOUCHER"): Promise<EligibleStudent[]> => {
+export const getEligibleStudents = (
+  type: "COURSE_PACKAGE" | "VOUCHER",
+  q?: string,
+): Promise<EligibleStudent[]> => {
+  // Mirrors TASK-088: the SERVER filters on name/nickname/parent phone. Mock has no phone column, so it
+  // matches name+nickname only — the phone half is only provable against the real API (flagged in notes).
+  const needle = q?.trim().toLowerCase();
+  const match = (r: EligibleStudent) =>
+    !needle || r.name.toLowerCase().includes(needle) || (r.nickname ?? "").toLowerCase().includes(needle);
   const QUOTA: Record<number, number> = { 4: 1, 6: 2, 10: 3 };
   if (type === "COURSE_PACKAGE") {
     const rows: EligibleStudent[] = coursePackages
@@ -261,7 +269,8 @@ export const getEligibleStudents = (type: "COURSE_PACKAGE" | "VOUCHER"): Promise
           expiryDate: c.expiryDate,
         },
       }))
-      .filter((s) => (s.context as { remainingSessions: number }).remainingSessions > 0);
+      .filter((s) => (s.context as { remainingSessions: number }).remainingSessions > 0)
+      .filter(match);
     return delay(clone(rows));
   }
   const vouchers: EligibleStudent[] = [
@@ -271,8 +280,14 @@ export const getEligibleStudents = (type: "COURSE_PACKAGE" | "VOUCHER"): Promise
       nickname: "วิว",
       context: { voucherId: "v-mock-1", totalHours: 10, usedHours: 3, remainingHours: 7, expiryDate: "2026-12-31" },
     },
+    {
+      id: "elig-v2",
+      name: "น้องกัน ปิติ",
+      nickname: "กัน",
+      context: { voucherId: "v-mock-2", totalHours: 15, usedHours: 1, remainingHours: 14, expiryDate: "2027-01-31" },
+    },
   ];
-  return delay(clone(vouchers));
+  return delay(clone(vouchers.filter(match)));
 };
 
 export const bulkConfirm = (ids: string[]): Promise<BulkConfirmResult[]> => {

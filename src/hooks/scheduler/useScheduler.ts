@@ -230,11 +230,17 @@ export const useConfirmBooking = () => {
   });
 };
 
-export const useEligibleStudents = (type: "COURSE_PACKAGE" | "VOUCHER", enabled: boolean) =>
+export const useEligibleStudents = (
+  type: "COURSE_PACKAGE" | "VOUCHER",
+  enabled: boolean,
+  q?: string,
+) =>
   useQuery({
-    queryKey: ["students", "eligible", type],
-    queryFn: () => getEligibleStudents(type),
+    queryKey: ["students", "eligible", type, q ?? ""],
+    queryFn: () => getEligibleStudents(type, q),
     enabled,
+    // The list is a picker: keep the current options on screen while a new search resolves.
+    placeholderData: keepPreviousData,
   });
 
 export const useBulkConfirm = () => {

@@ -348,12 +348,17 @@ export const bulkConfirm = async (ids: string[]): Promise<BulkConfirmResult[]> =
 
 /** SPEC-017: students who hold an active course/voucher, with the context the booking modal shows.
  *  One row per entitlement (a student with two active courses appears twice). */
+/**
+ * Eligible students for an entitlement booking. `q` searches **server-side** on name · nickname · parent
+ * phone (TASK-088) — a local filter can't match a phone, because the payload doesn't carry one.
+ */
 export const getEligibleStudents = async (
   type: "COURSE_PACKAGE" | "VOUCHER",
+  q?: string,
 ): Promise<EligibleStudent[]> => {
-  if (useMock) return mock.getEligibleStudents(type);
+  if (useMock) return mock.getEligibleStudents(type, q);
   const { data } = await api.get<{ students: EligibleStudent[] }>("/students/eligible", {
-    params: { type },
+    params: { type, q: q || undefined },
   });
   return data.students;
 };
