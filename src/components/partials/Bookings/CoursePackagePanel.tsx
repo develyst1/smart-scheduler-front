@@ -14,7 +14,7 @@ import type { CoursePackageView } from "@/types/app/scheduler";
 
 const PAGE_SIZE = 9;
 
-export default function CoursePackagePanel() {
+export default function CoursePackagePanel({ onManage }: { onManage: (id: string) => void }) {
   const t = useT();
   const [search, setSearch] = useState("");
   const [debounced] = useDebouncedValue(search, 300);
@@ -155,6 +155,17 @@ export default function CoursePackagePanel() {
                   </p>
                 </div>
               </Group>
+
+              <Button
+                size="xs"
+                variant="light"
+                color="blue"
+                fullWidth
+                leftSection={<GraduationCap size={15} />}
+                onClick={() => onManage(c.id)}
+              >
+                {t("plan.manage")}
+              </Button>
 
               {c.leaveLocked ? (
                 <Button

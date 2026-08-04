@@ -40,6 +40,9 @@ import {
   getArchivedTeachers,
   setFreelanceBudget,
   topUpFreelanceBudget,
+  getEntitlementPlan,
+  applyPlanChange,
+  getSlotAvailability,
   type CreateBookingInput,
   type CreateCourseInput,
   type CoursesQuery,
@@ -49,7 +52,7 @@ import {
   type UpdateTeacherInput,
   type SetFreelanceBudgetInput,
 } from "@/services/scheduler.service";
-import type { TeacherType } from "@/types/app/scheduler";
+import type { PlanChange, TeacherType } from "@/types/app/scheduler";
 
 export const TEACHERS_KEY = ["teachers"] as const;
 export const BOOKINGS_KEY = ["bookings"] as const;
@@ -299,6 +302,32 @@ export const useMoveBooking = () => {
     onSuccess: () => invalidateAll(qc),
   });
 };
+
+// ─────────── Per-entitlement plan (SPEC-028 / REQ-030 — TASK-099) ───────────
+
+export const useEntitlementPlan = (id: string | null, enabled = true) =>
+  useQuery({
+    queryKey: [...COURSES_KEY, "plan", id ?? ""],
+    queryFn: () => getEntitlementPlan(id as string),
+    enabled: enabled && !!id,
+  });
+
+export const useApplyPlanChange = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, change }: { courseId: string; change: PlanChange }) =>
+      applyPlanChange(courseId, change),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/** Availability + clash for a slot. `enabled` gates until a date & time are chosen. */
+export const useSlotAvailability = (date: string | null, startTime: string | null, enabled = true) =>
+  useQuery({
+    queryKey: [...CALENDAR_KEY, "availability", date ?? "", startTime ?? ""],
+    queryFn: () => getSlotAvailability(date as string, startTime as string),
+    enabled: enabled && !!date && !!startTime,
+  });
 
 // ───────────────────────── Course packages ─────────────────────────
 

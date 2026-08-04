@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Table, Progress, Text, Badge, Group, Loader, Stack, TextInput } from "@mantine/core";
+import { Button, Card, Table, Progress, Text, Badge, Group, Loader, Stack, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { Ticket, Search } from "lucide-react";
+import { Ticket, Search, GraduationCap } from "lucide-react";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import { useVouchers } from "@/hooks/scheduler";
 import PagerBar from "@/components/common/PagerBar";
@@ -26,7 +26,7 @@ function RemainingBadge({ remaining }: { remaining: number }) {
   );
 }
 
-export default function VoucherPanel() {
+export default function VoucherPanel({ onManage }: { onManage: (id: string) => void }) {
   const t = useT();
   const [search, setSearch] = useState("");
   const [debounced] = useDebouncedValue(search, 300);
@@ -70,6 +70,7 @@ export default function VoucherPanel() {
                 <Table.Th>{t("voucher.colUsage")}</Table.Th>
                 <Table.Th>{t("voucher.colExpiry")}</Table.Th>
                 <Table.Th>{t("voucher.colStatus")}</Table.Th>
+                <Table.Th />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -103,6 +104,17 @@ export default function VoucherPanel() {
                     <Table.Td>{v.expiryDate}</Table.Td>
                     <Table.Td>
                       <RemainingBadge remaining={v.remaining} />
+                    </Table.Td>
+                    <Table.Td>
+                      <Button
+                        size="compact-xs"
+                        variant="light"
+                        color="blue"
+                        leftSection={<GraduationCap size={13} />}
+                        onClick={() => onManage(v.id)}
+                      >
+                        {t("plan.manage")}
+                      </Button>
                     </Table.Td>
                   </Table.Tr>
                 );

@@ -20,6 +20,9 @@ import type {
   CoursePackageView,
   DailyReport,
   EligibleStudent,
+  EntitlementPlan,
+  PlanChange,
+  SlotAvailability,
   Teacher,
   TeacherType,
   TeacherView,
@@ -658,6 +661,34 @@ export const getDailyReport = async (date: string, teacherId?: string): Promise<
     getBookingsByDate(date),
   ]);
   return enrichDailyReport(base, dayBookings, teacherId);
+};
+
+// ─────────────── Per-entitlement plan (SPEC-028 / REQ-030 — TASK-099) ───────────────
+
+/** The read model behind the plan view — course plan rows / voucher sessions, one shape. */
+export const getEntitlementPlan = async (id: string): Promise<EntitlementPlan> => {
+  if (useMock) return mock.getEntitlementPlan(id);
+  const { data } = await api.get<EntitlementPlan>(`/entitlements/${id}/plan`);
+  return data;
+};
+
+/** Apply one plan mutation (mark-absence / insert / move) through the shared atomic gate.
+ *  On refusal the server returns a typed reason as ApiClientError — surface it verbatim. */
+export const applyPlanChange = async (courseId: string, change: PlanChange): Promise<void> => {
+  if (useMock) return mock.applyPlanChange(courseId, change);
+  await api.post(`/courses/${courseId}/plan`, change);
+};
+
+/** Who's free / who clashes at a slot — the same predicates enforced at confirm (read-only). */
+export const getSlotAvailability = async (
+  date: string,
+  startTime: string,
+): Promise<SlotAvailability> => {
+  if (useMock) return mock.getSlotAvailability(date, startTime);
+  const { data } = await api.get<SlotAvailability>("/slots/availability", {
+    params: { date, startTime },
+  });
+  return data;
 };
 
 export { DEFAULT_TEACHER_TYPE_ORDER };

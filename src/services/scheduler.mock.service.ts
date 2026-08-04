@@ -17,6 +17,9 @@ import type {
   CoursePackageView,
   DailyReport,
   EligibleStudent,
+  EntitlementPlan,
+  PlanChange,
+  SlotAvailability,
   Teacher,
   TeacherType,
   TeacherView,
@@ -591,4 +594,59 @@ export const importVoucher = (input: {
     student: { id: `s-imp-${MOCK_VOUCHERS.length + 1}`, name: input.studentName, nickname: input.studentName },
   });
   return delay(undefined);
+};
+
+// ── Per-entitlement plan (SPEC-028 / TASK-099) — mock ──
+export const getEntitlementPlan = (id: string): Promise<EntitlementPlan> => {
+  const course = coursePackages.find((c) => c.id === id);
+  const rows = bookings.filter((b) => b.courseId === id);
+  const sessions = rows.map((b) => {
+    const teacher = teachers.find((t) => t.id === b.teacherId);
+    return {
+      id: b.id,
+      date: b.date,
+      startTime: b.startTime,
+      status: b.status as string,
+      teacher: teacher ? { id: teacher.id, name: teacher.name, nickname: teacher.nickname } : null,
+      subject: { id: "mock-subj", name: b.subject },
+    };
+  });
+  const liveEnd = rows.length ? rows[rows.length - 1].date : null;
+  const cv = course ? toCourseView(course) : undefined;
+  const plan: EntitlementPlan = {
+    kind: "course",
+    id,
+    student: course ? { id: `s-${id}`, name: course.studentName, nickname: course.studentName } : null,
+    sessions,
+    liveEndDate: liveEnd,
+    summary: {
+      kind: "course",
+      size: cv?.size ?? 4,
+      leaveUsed: cv?.leaveUsed ?? 0,
+      leaveQuota: cv?.leaveQuota ?? 1,
+      maxWeek: cv?.maxWeek ?? 5,
+      owedCount: Math.max(0, (cv?.size ?? 4) - sessions.length),
+      expiryDate: cv?.expiryDate ?? "",
+    },
+  };
+  return delay(clone(plan));
+};
+
+export const applyPlanChange = (_courseId: string, _change: PlanChange): Promise<void> =>
+  delay(undefined);
+
+export const getSlotAvailability = (date: string, startTime: string): Promise<SlotAvailability> => {
+  const out: SlotAvailability = {
+    date,
+    startTime,
+    teachers: teachers
+      .filter((t) => !t.archived)
+      .map((t) => ({
+        teacher: { id: t.id, name: t.name, nickname: t.nickname, type: t.type },
+        available: true,
+        reason: null,
+        clash: null,
+      })),
+  };
+  return delay(clone(out));
 };

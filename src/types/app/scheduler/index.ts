@@ -254,6 +254,85 @@ export interface CoursePackageView extends CoursePackage {
   leaveLocked: boolean;
 }
 
+// ──────────── Per-entitlement plan (SPEC-028 / REQ-030 — TASK-099) ────────────
+// Synced 1:1 with the backend `getEntitlementPlan` / `applyPlanChange` / `getSlotAvailability`
+// shapes (read model; no client-side money/end derivation — liveEndDate is server-derived).
+
+export type EntitlementKind = "course" | "voucher";
+
+export interface PlanSessionRef {
+  id: string;
+  name: string;
+  nickname: string;
+}
+
+export interface PlanSession {
+  id: string; // bookingId
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  /** BookingStatus (may include NO_SHOW, which the FE enum omits) — kept as string. */
+  status: string;
+  teacher: PlanSessionRef | null;
+  subject: { id: string; name: string } | null;
+}
+
+export interface CoursePlanSummary {
+  kind: "course";
+  size: number;
+  leaveUsed: number;
+  leaveQuota: number;
+  maxWeek: number;
+  owedCount: number;
+  expiryDate: string; // the MAX_WEEK ceiling (NOT the live end)
+}
+
+export interface VoucherPlanSummary {
+  kind: "voucher";
+  totalHours: number;
+  usedHours: number;
+  hoursRemaining: number;
+  expiryDate: string;
+}
+
+export interface EntitlementPlan {
+  kind: EntitlementKind;
+  id: string;
+  student: PlanSessionRef | null;
+  sessions: PlanSession[];
+  liveEndDate: string | null; // server-derived (max date over LIVE sessions)
+  summary: CoursePlanSummary | VoucherPlanSummary;
+}
+
+export interface SlotTeacher {
+  teacher: { id: string; name: string; nickname: string; type: TeacherType };
+  available: boolean;
+  reason: "NO_BUDGET" | "BOOKED" | null;
+  clash: { bookingId: string; student: string | null } | null;
+}
+
+export interface SlotAvailability {
+  date: string;
+  startTime: string;
+  teachers: SlotTeacher[];
+}
+
+/** applyPlanChange request union — matches the backend `v.planChange` discriminated union. */
+export type PlanChange =
+  | { kind: "mark-absence"; bookingId: string; planned: boolean; reason?: string; override?: boolean }
+  | { kind: "insert"; teacherId: string; subjectId: string; date: string; startTime: string }
+  | {
+      kind: "move";
+      bookingId: string;
+      teacherId?: string;
+      subjectId?: string;
+      date?: string;
+      startTime?: string;
+      override?: boolean;
+    };
+
+/** ATTENDED / NO_SHOW = delivered → read-only (SPEC-028 attended-immutability). */
+export const isDeliveredStatus = (s: string) => s === "ATTENDED" || s === "NO_SHOW";
+
 // ───────────────────────────── Daily report ─────────────────────────────
 
 export interface DailyReport {

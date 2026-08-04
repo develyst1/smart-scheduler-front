@@ -10,6 +10,7 @@ import BookingsTable from "./BookingsTable";
 import CreateCourseModal from "./CreateCourseModal";
 import CreateVoucherModal from "./CreateVoucherModal";
 import ImportBalanceModal from "./ImportBalanceModal";
+import PlanModal from "./PlanModal";
 
 export default function BookingsContent() {
   const t = useT();
@@ -18,6 +19,8 @@ export default function BookingsContent() {
   // SPEC-025 — migrating an existing balance is its own explicit action, never a mode of "sell". Selling
   // stays the primary button; this sits beside it as a plainly-labelled secondary.
   const [importOpen, setImportOpen] = useState(false);
+  // REQ-030 / TASK-099 — the shared per-entitlement plan editor, opened from a course/voucher card.
+  const [planId, setPlanId] = useState<string | null>(null);
 
   return (
     <>
@@ -47,7 +50,7 @@ export default function BookingsContent() {
               </Button>
             </Group>
           </Group>
-          <CoursePackagePanel />
+          <CoursePackagePanel onManage={setPlanId} />
         </Tabs.Panel>
 
         <Tabs.Panel value="vouchers" pt="md">
@@ -66,7 +69,7 @@ export default function BookingsContent() {
               </Button>
             </Group>
           </Group>
-          <VoucherPanel />
+          <VoucherPanel onManage={setPlanId} />
         </Tabs.Panel>
 
         <Tabs.Panel value="all" pt="md">
@@ -77,6 +80,7 @@ export default function BookingsContent() {
       <CreateCourseModal opened={courseOpen} onClose={() => setCourseOpen(false)} />
       <CreateVoucherModal opened={voucherOpen} onClose={() => setVoucherOpen(false)} />
       <ImportBalanceModal opened={importOpen} onClose={() => setImportOpen(false)} />
+      <PlanModal opened={!!planId} onClose={() => setPlanId(null)} entitlementId={planId} />
     </>
   );
 }
