@@ -10,6 +10,7 @@ export type BookingStatus =
   | "PENDING"
   | "CONFIRMED"
   | "ATTENDED"
+  | "NO_SHOW"
   | "SICK_LEAVE"
   | "EXTENDED"
   | "PENDING_RESCHEDULE"

@@ -62,6 +62,9 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
         </Card>
       ) : (
         <Card padding={0}>
+          {/* TASK-099 DEF-1: the added Manage column pushes past the card at 375 → scroll, don't clip
+              (else the only phone-width entry to the plan modal is off-surface). */}
+          <Table.ScrollContainer minWidth={640}>
           <Table verticalSpacing="sm" horizontalSpacing="md" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
@@ -121,6 +124,7 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
               })}
             </Table.Tbody>
           </Table>
+          </Table.ScrollContainer>
         </Card>
       )}
 

@@ -233,7 +233,7 @@ function SessionTable({
             return (
               <Table.Tr key={s.id} className={locked ? "opacity-60" : ""}>
                 <Table.Td className="font-num">{dayjs(s.date).format("D MMM")}</Table.Td>
-                <Table.Td className="font-num">{s.startTime}</Table.Td>
+                <Table.Td className="font-num">{s.startTime.slice(0, 5)}</Table.Td>
                 <Table.Td>{s.teacher?.nickname ?? "—"}</Table.Td>
                 <Table.Td>{s.subject?.name ?? "—"}</Table.Td>
                 <Table.Td>

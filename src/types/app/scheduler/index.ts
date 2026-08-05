@@ -80,6 +80,7 @@ export type BookingStatus =
   | "PENDING" // รอยืนยัน
   | "CONFIRMED" // ยืนยันแล้ว (ส่งแจ้งเตือน Line)
   | "ATTENDED" // มาเรียนจริง
+  | "NO_SHOW" // ไม่มาเรียน (ถือว่าเรียนแล้ว — ตัดคาบ)
   | "SICK_LEAVE" // ลา/ป่วย
   | "EXTENDED" // คาบที่ขยายต่อท้ายจากการลา
   | "PENDING_RESCHEDULE" // รอย้าย — แจ้งผู้ปกครองแล้ว รอตอบรับ (จองทับ)
@@ -93,6 +94,7 @@ export const BOOKING_STATUS_COLOR: Record<
   PENDING: "warning",
   CONFIRMED: "primary",
   ATTENDED: "success",
+  NO_SHOW: "danger",
   SICK_LEAVE: "default",
   EXTENDED: "secondary",
   PENDING_RESCHEDULE: "danger",
