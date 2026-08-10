@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Tabs, Button, Group } from "@mantine/core";
-import { CalendarPlus, Ticket, History } from "lucide-react";
+import { CalendarPlus, Ticket, History, PackageOpen } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import CoursePackagePanel from "./CoursePackagePanel";
 import VoucherPanel from "./VoucherPanel";
@@ -11,6 +11,7 @@ import CreatePlanFlow from "./CreatePlanFlow";
 import CreateVoucherModal from "./CreateVoucherModal";
 import ImportBalanceModal from "./ImportBalanceModal";
 import PlanModal from "./PlanModal";
+import RentalModal from "@/components/partials/Rental/RentalModal";
 
 export default function BookingsContent() {
   const t = useT();
@@ -21,6 +22,8 @@ export default function BookingsContent() {
   const [importOpen, setImportOpen] = useState(false);
   // REQ-030 / TASK-099 — the shared per-entitlement plan editor, opened from a course/voucher card.
   const [planId, setPlanId] = useState<string | null>(null);
+  // REQ-028 / TASK-109 — standalone equipment rental (walk-in), no booking to attach to.
+  const [rentalOpen, setRentalOpen] = useState(false);
 
   return (
     <>
@@ -73,6 +76,15 @@ export default function BookingsContent() {
         </Tabs.Panel>
 
         <Tabs.Panel value="all" pt="md">
+          <Group justify="flex-end" mb="md">
+            <Button
+              variant="default"
+              leftSection={<PackageOpen size={16} />}
+              onClick={() => setRentalOpen(true)}
+            >
+              {t("rental.standaloneBtn")}
+            </Button>
+          </Group>
           <BookingsTable />
         </Tabs.Panel>
       </Tabs>
@@ -81,6 +93,7 @@ export default function BookingsContent() {
       <CreateVoucherModal opened={voucherOpen} onClose={() => setVoucherOpen(false)} />
       <ImportBalanceModal opened={importOpen} onClose={() => setImportOpen(false)} />
       <PlanModal opened={!!planId} onClose={() => setPlanId(null)} entitlementId={planId} />
+      <RentalModal opened={rentalOpen} onClose={() => setRentalOpen(false)} />
     </>
   );
 }

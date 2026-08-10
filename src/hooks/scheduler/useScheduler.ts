@@ -45,6 +45,8 @@ import {
   applyPlanChange,
   previewPlanChange,
   addExtraSession,
+  getCourseHistory,
+  recordRental,
   getSlotAvailability,
   previewCoursePackage,
   type CreateBookingInput,
@@ -57,7 +59,7 @@ import {
   type SetFreelanceBudgetInput,
   type ExtraSessionInput,
 } from "@/services/scheduler.service";
-import type { PlanChange, TeacherType } from "@/types/app/scheduler";
+import type { PlanChange, RecordRentalInput, TeacherType } from "@/types/app/scheduler";
 
 export const TEACHERS_KEY = ["teachers"] as const;
 export const BOOKINGS_KEY = ["bookings"] as const;
@@ -341,6 +343,23 @@ export const usePreviewPlanChange = () =>
     mutationFn: ({ courseId, change }: { courseId: string; change: PlanChange }) =>
       previewPlanChange(courseId, change),
   });
+
+/** Read-only course deduction history (TASK-120). Gated until the modal opens. */
+export const useCourseHistory = (id: string | null, enabled = true) =>
+  useQuery({
+    queryKey: [...COURSES_KEY, "history", id ?? ""],
+    queryFn: () => getCourseHistory(id as string),
+    enabled: enabled && !!id,
+  });
+
+/** Record an equipment rental (TASK-109). Invalidates reports (rental is revenue); the caller shows the result. */
+export const useRecordRental = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: RecordRentalInput) => recordRental(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: REPORT_KEY }),
+  });
+};
 
 /** Add a charged SINGLE_SESSION extra to a course (TASK-113). */
 export const useAddExtraSession = () => {

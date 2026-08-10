@@ -22,6 +22,9 @@ export interface SellablePackagesResponse {
   packages: SellablePackage[];
   /** Programs with no price group — nothing sellable, so the UI says so instead of showing an empty control. */
   unpricedSubjects: PricedSubjectRef[];
+  /** SPEC-030 / TASK-106 — the price groups a voucher may book. The picker filters from here, never a hardcoded
+   *  list (the card changes before the code does). Excluded groups (Onewheel / Balance Play) are simply absent. */
+  voucherAllowedGroups: string[];
 }
 
 /** Satang → the displayed baht string. Display-only; no arithmetic on the price itself. */

@@ -669,6 +669,55 @@ export const addExtraSession = (
   _input: { teacherId: string; subjectId: string; date: string; startTime: string },
 ): Promise<void> => delay(undefined);
 
+export const getCourseHistory = (courseId: string) => {
+  const course = coursePackages.find((c) => c.id === courseId);
+  const cv = course ? toCourseView(course) : undefined;
+  const rows = bookings.filter((b) => b.courseId === courseId);
+  const events = rows.map((b) => ({
+    at: `${b.date}T${b.startTime}:00`,
+    kind: b.status === "ATTENDED" ? "attended" : b.status === "SICK_LEAVE" ? "sick-leave" : "scheduled",
+    sessionDate: b.date,
+    status: b.status as string,
+    teacher: null,
+    subject: { id: "mock-subj", name: b.subject },
+    reason: null,
+    makeupOfDate: null,
+    valueMinor: null,
+    actor: null as null,
+  }));
+  return delay({
+    courseId,
+    summary: {
+      size: cv?.size ?? 4,
+      usedSessions: cv?.usedSessions ?? 0,
+      leaveUsed: cv?.leaveUsed ?? 0,
+      remaining: (cv?.size ?? 4) - (cv?.usedSessions ?? 0),
+      liveEndDate: rows.length ? rows[rows.length - 1].date : null,
+    },
+    events,
+  });
+};
+
+// Mock rental: echo the same key the real service would build; a repeated key in one session reads as a duplicate.
+const _rentalSeen = new Set<string>();
+export const recordRental = (input: {
+  code: string;
+  hours: number;
+  refId?: string;
+  idempotencyKey?: string;
+}) => {
+  const idempotencyKey = `rental:${input.refId ?? input.idempotencyKey ?? "walkin"}:${input.code}`;
+  const duplicate = _rentalSeen.has(idempotencyKey);
+  _rentalSeen.add(idempotencyKey);
+  return delay({
+    status: (duplicate ? "duplicate" : "recorded") as "recorded" | "duplicate",
+    code: input.code,
+    hours: input.hours,
+    refId: input.refId ?? null,
+    idempotencyKey,
+  });
+};
+
 export const previewCoursePackage = (input: {
   teacherId: string;
   subjectId: string;

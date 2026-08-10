@@ -24,3 +24,20 @@ export const packageFor = (
  */
 export const isUnpriced = (data: SellablePackagesResponse | undefined, subjectId: string): boolean =>
   !!subjectId && !!data?.unpricedSubjects.some((s) => s.id === subjectId);
+
+/**
+ * SPEC-030 / TASK-106 (part b, FE half) — may a voucher book this program?
+ * The rule lives in the exposed `voucherAllowedGroups`, never a hardcoded list. A subject is excluded only when it
+ * maps to a KNOWN excluded price group (it has packages, none in the allowed set). A subject with no package
+ * (pricing unknown) is left selectable — the backend still enforces `VOUCHER_PROGRAM_EXCLUDED`, so this only avoids
+ * over-hiding a program the FE can't classify.
+ */
+export const voucherAllowsSubject = (
+  data: SellablePackagesResponse | undefined,
+  subjectId: string,
+): boolean => {
+  if (!data) return true; // card not loaded yet — don't hide; the server is the backstop
+  const pkgs = data.packages.filter((p) => p.subjects.some((s) => s.id === subjectId));
+  if (pkgs.length === 0) return true; // no price group here → can't classify, leave it to the server
+  return pkgs.some((p) => data.voucherAllowedGroups.includes(p.priceGroup));
+};

@@ -36,6 +36,8 @@ export const getSellablePackages = async (): Promise<SellablePackagesResponse> =
           ],
           // A program with no price group — so the "nothing sellable" state is exercisable offline.
           unpricedSubjects: [{ id: "s6", name: "Surfskate" }],
+          // TASK-106 — only bike-skate is voucher-bookable (matches the real card); onewheel/balance-* excluded.
+          voucherAllowedGroups: ["bike-skate"],
         }),
       200,
     ),

@@ -316,6 +316,60 @@ export interface PlanPreview {
   liveEndDate: string | null;
 }
 
+// ──────── Course deduction history (SPEC-035 / TASK-120) — read-only, server-built ────────
+
+export interface CourseHistoryEvent {
+  at: string; // ISO timestamp
+  /** attended · no-show · cancelled · sick-leave · scheduled · makeup-appended · extra-session-added
+   *  · freelance-drawn · freelance-refunded (kept as string — the FE maps known kinds, falls back gracefully). */
+  kind: string;
+  sessionDate?: string | null;
+  status?: string | null;
+  teacher?: PlanSessionRef | null;
+  subject?: { id: string; name: string } | null;
+  reason?: string | null;
+  makeupOfDate?: string | null;
+  valueMinor?: number | null;
+  actor: null; // who isn't tracked yet (one shared login)
+}
+
+export interface CourseHistorySummary {
+  size: number;
+  usedSessions: number;
+  leaveUsed: number;
+  remaining: number;
+  liveEndDate: string | null;
+}
+
+export interface CourseHistory {
+  courseId: string;
+  summary: CourseHistorySummary;
+  events: CourseHistoryEvent[];
+}
+
+// ──────── Equipment rental as revenue (SPEC-031 / REQ-028 — TASK-109) ────────
+
+/** The four rental codes are the frozen contract (BE `sale-items.ts`). Labels are FE i18n; price is BE-owned. */
+export const RENTAL_CODES = ["rental-set", "rental-ride", "rental-helmet", "rental-pads"] as const;
+export type RentalCode = (typeof RENTAL_CODES)[number];
+
+export interface RecordRentalInput {
+  code: RentalCode;
+  hours: number;
+  /** present = session add-on (idempotent on booking+code); absent = standalone walk-in. */
+  refId?: string;
+  /** a standalone rental has no natural key → the client mints one per action so a double-submit posts once (AC #4). */
+  idempotencyKey?: string;
+}
+
+export interface RentalResult {
+  status: "recorded" | "duplicate";
+  code: string;
+  hours: number;
+  refId: string | null;
+  idempotencyKey: string;
+}
+
 export interface SlotTeacher {
   teacher: { id: string; name: string; nickname: string; type: TeacherType };
   available: boolean;

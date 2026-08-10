@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader, Modal, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { LockKeyholeOpen, Lock, GraduationCap, Search } from "lucide-react";
+import { LockKeyholeOpen, Lock, GraduationCap, Search, History } from "lucide-react";
 import { useSetCourseAdminUnlock, useCoursePackages } from "@/hooks/scheduler";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import PagerBar from "@/components/common/PagerBar";
+import CourseHistoryModal from "./CourseHistoryModal";
 import { useT } from "@/lib/i18n";
 import type { CoursePackageView } from "@/types/app/scheduler";
 
@@ -27,6 +28,8 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
 
   // คอร์ส + ทิศทาง (unlock/relock) ที่รอการยืนยันใน modal
   const [pending, setPending] = useState<{ course: CoursePackageView; unlock: boolean } | null>(null);
+  // คอร์สที่กำลังเปิดดูประวัติการตัดคอร์ส (TASK-120)
+  const [historyId, setHistoryId] = useState<string | null>(null);
 
   const runUnlock = async () => {
     if (!pending) return;
@@ -156,16 +159,26 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                 </div>
               </Group>
 
-              <Button
-                size="xs"
-                variant="light"
-                color="blue"
-                fullWidth
-                leftSection={<GraduationCap size={15} />}
-                onClick={() => onManage(c.id)}
-              >
-                {t("plan.manage")}
-              </Button>
+              <Group gap="xs" grow>
+                <Button
+                  size="xs"
+                  variant="light"
+                  color="blue"
+                  leftSection={<GraduationCap size={15} />}
+                  onClick={() => onManage(c.id)}
+                >
+                  {t("plan.manage")}
+                </Button>
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="gray"
+                  leftSection={<History size={15} />}
+                  onClick={() => setHistoryId(c.id)}
+                >
+                  {t("history.button")}
+                </Button>
+              </Group>
 
               {c.leaveLocked ? (
                 <Button
@@ -234,6 +247,8 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
           </Group>
         </Stack>
       </Modal>
+
+      <CourseHistoryModal courseId={historyId} onClose={() => setHistoryId(null)} />
     </Stack>
   );
 }

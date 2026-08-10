@@ -17,10 +17,13 @@ import type {
   BookingType,
   BookingStatus,
   Booking,
+  CourseHistory,
   CoursePackageView,
   CoursePlanOverride,
   CoursePreview,
   DailyReport,
+  RecordRentalInput,
+  RentalResult,
   EligibleStudent,
   EntitlementPlan,
   PlanChange,
@@ -753,6 +756,21 @@ export interface ExtraSessionInput {
 export const addExtraSession = async (courseId: string, input: ExtraSessionInput): Promise<void> => {
   if (useMock) return mock.addExtraSession(courseId, input);
   await api.post(`/courses/${courseId}/extra-session`, input);
+};
+
+/** Read-only course deduction history (SPEC-035) — the server builds it; the FE only renders. */
+export const getCourseHistory = async (courseId: string): Promise<CourseHistory> => {
+  if (useMock) return mock.getCourseHistory(courseId);
+  const { data } = await api.get<CourseHistory>(`/courses/${courseId}/history`);
+  return data;
+};
+
+/** Record an equipment rental as revenue (SPEC-031). The post IS the event — the server surfaces recorded/duplicate,
+ *  or a 502 `RENTAL_NOT_POSTED` we let bubble as an ApiClientError for the caller to display. */
+export const recordRental = async (input: RecordRentalInput): Promise<RentalResult> => {
+  if (useMock) return mock.recordRental(input);
+  const { data } = await api.post<RentalResult>("/rentals", input);
+  return data;
 };
 
 export { DEFAULT_TEACHER_TYPE_ORDER };

@@ -17,7 +17,7 @@ import {
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { useDebouncedValue } from "@mantine/hooks";
-import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, Search } from "lucide-react";
+import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, Search, PackageOpen } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -34,8 +34,11 @@ import {
   useMarkAttended,
   useMarkSickLeave,
   useMoveBooking,
+  useSellablePackages,
   useSetBookingBadges,
 } from "@/hooks/scheduler";
+import { voucherAllowsSubject } from "@/lib/scheduler/sellable";
+import RentalModal from "@/components/partials/Rental/RentalModal";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
 import type {
   Booking,
@@ -132,6 +135,8 @@ function ViewBooking({
 
   const [moving, setMoving] = useState(false);
   const [noticeError, setNoticeError] = useState<string | null>(null);
+  // REQ-028 / TASK-109 — record an equipment rental as an add-on to this booking (refId = booking.id).
+  const [rentalOpen, setRentalOpen] = useState(false);
 
   // Editable badges (view mode): one value per active type, seeded from the booking.
   const { data: badgeTypes = [] } = useBadges();
@@ -396,9 +401,19 @@ function ViewBooking({
             >
               {t("booking.sickLeaveBtn")}
             </Menu.Item>
+            <Menu.Item leftSection={<PackageOpen size={16} />} onClick={() => setRentalOpen(true)}>
+              {t("rental.addonBtn")}
+            </Menu.Item>
           </Menu.Dropdown>
         </Menu>
       </div>
+
+      <RentalModal
+        opened={rentalOpen}
+        onClose={() => setRentalOpen(false)}
+        refId={booking.id}
+        contextName={booking.studentName}
+      />
     </Stack>
   );
 }
@@ -585,6 +600,17 @@ function CreateForm({
   const entKey = (e: EligibleStudent) =>
     isCourse ? (e.context as CourseContext).courseId : (e.context as VoucherContext).voucherId;
   const selectedEligible = eligible.find((e) => entKey(e) === entitlementId) ?? null;
+  // TASK-121 — a student with 2+ active courses would otherwise show identical name-only rows; enrich the
+  // COURSE label with subject + used/size so the row is pickable without guessing. Voucher rows stay name-only.
+  const eligibleLabel = (e: EligibleStudent) => {
+    const base = e.nickname || e.name;
+    if (isCourse && "courseId" in e.context) {
+      const c = e.context;
+      const subj = c.subject?.name;
+      return `${base}${subj ? ` · ${subj}` : ""} (${c.usedSessions}/${c.size})`;
+    }
+    return base;
+  };
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
@@ -599,7 +625,11 @@ function CreateForm({
   // required choice, and there is no positional fallback anywhere in this file.
   const slotTeacher = teachers.find((tc) => tc.id === createSlot.teacherId);
   const slotSubjectOptions = slotTeacher?.subjectOptions ?? [];
-  const voucherSubject = slotSubjectOptions.find((s) => s.id === voucherSubjectId) ?? null;
+  // SPEC-030/TASK-106 (b, FE): a voucher can't book Onewheel / Balance Play — omit the excluded programs from the
+  // picker, driven by the exposed `voucherAllowedGroups` (never a hardcoded list). Course bookings are unaffected.
+  const { data: sellable } = useSellablePackages();
+  const voucherSubjectOptions = slotSubjectOptions.filter((s) => voucherAllowsSubject(sellable, s.id));
+  const voucherSubject = voucherSubjectOptions.find((s) => s.id === voucherSubjectId) ?? null;
 
   const changeTab = (v: BookingType) => {
     setBookingType(v);
@@ -616,8 +646,8 @@ function CreateForm({
   // Preselect ONLY when there is exactly one thing to pick — and it still lands in state as a choice, so the
   // payload never reads an array position.
   useEffect(() => {
-    if (isVoucher && slotSubjectOptions.length === 1) setVoucherSubjectId(slotSubjectOptions[0].id);
-  }, [isVoucher, slotSubjectOptions.length]);
+    if (isVoucher && voucherSubjectOptions.length === 1) setVoucherSubjectId(voucherSubjectOptions[0].id);
+  }, [isVoucher, voucherSubjectOptions.length]);
 
   const leaveOccupant = bookings.find(
     (b) =>
@@ -777,7 +807,7 @@ function CreateForm({
           />
           <Select
             placeholder={eligiblePlaceholder}
-            data={eligible.map((e) => ({ value: entKey(e), label: e.nickname || e.name }))}
+            data={eligible.map((e) => ({ value: entKey(e), label: eligibleLabel(e) }))}
             value={entitlementId}
             onChange={setEntitlementId}
             disabled={!eligible.length}
@@ -787,16 +817,21 @@ function CreateForm({
 
           {/* 🔴 SPEC-026 — the voucher's program, chosen. Blocks submit until answered. */}
           {isVoucher &&
-            (slotSubjectOptions.length === 0 ? (
+            (voucherSubjectOptions.length === 0 ? (
               <Alert color="orange" icon={<AlertTriangle size={16} />} variant="light">
-                {t("booking.voucherNoProgram", { teacher: slotTeacher?.nickname ?? "-" })}
+                {t(
+                  slotSubjectOptions.length === 0
+                    ? "booking.voucherNoProgram"
+                    : "booking.voucherNoAllowedProgram",
+                  { teacher: slotTeacher?.nickname ?? "-" },
+                )}
               </Alert>
             ) : (
               <Select
                 label={t("booking.voucherProgram")}
                 description={t("booking.voucherProgramHint")}
                 placeholder={t("booking.pickProgram")}
-                data={slotSubjectOptions.map((s) => ({ value: s.id, label: s.name }))}
+                data={voucherSubjectOptions.map((s) => ({ value: s.id, label: s.name }))}
                 value={voucherSubjectId}
                 onChange={setVoucherSubjectId}
                 allowDeselect={false}
