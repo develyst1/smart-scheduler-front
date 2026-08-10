@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Group } from "@mantine/core";
+import { Alert, Button, Group, Modal, Stack, Text } from "@mantine/core";
+import { AlertTriangle } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { useSetTeacherWorkDays } from "@/hooks/scheduler";
+import { getWorkDaysImpact } from "@/services/scheduler.service";
 import { useT } from "@/lib/i18n";
 import { useWorkDays } from "@/lib/scheduler/useWorkDays";
 import { ALL_WORK_DAYS, WORK_DAY_PRESETS } from "@/lib/scheduler/work-days";
+import type { WorkDaysImpact } from "@/types/app/scheduler";
 
 interface Props {
   teacherId: string;
@@ -28,6 +31,9 @@ export default function TeacherWorkDaysSelect({ teacherId, nickname, workDays }:
   const [draft, setDraft] = useState<number[]>(saved);
 
   const dirty = !sameDays(draft, saved);
+  // TASK-100 — if the change removes a day the teacher works, warn before applying (not a hard block).
+  const [impact, setImpact] = useState<WorkDaysImpact | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const toggleDay = (day: number) =>
     setDraft((prev) =>
@@ -36,11 +42,8 @@ export default function TeacherWorkDaysSelect({ teacherId, nickname, workDays }:
 
   const reset = () => setDraft(saved);
 
-  const save = () => {
-    if (draft.length === 0) {
-      notify({ title: t("teachers.pickAtLeastOne"), color: "warning" });
-      return;
-    }
+  const applyChange = () => {
+    setImpact(null);
     setWorkDays.mutate(
       { id: teacherId, workDays: draft },
       {
@@ -52,6 +55,27 @@ export default function TeacherWorkDaysSelect({ teacherId, nickname, workDays }:
           }),
       },
     );
+  };
+
+  const save = async () => {
+    if (draft.length === 0) {
+      notify({ title: t("teachers.pickAtLeastOne"), color: "warning" });
+      return;
+    }
+    setChecking(true);
+    try {
+      const imp = await getWorkDaysImpact(teacherId, draft);
+      if (imp.orphanCount > 0) {
+        setImpact(imp); // open the confirm dialog
+        return;
+      }
+      applyChange();
+    } catch {
+      // The impact preview is a courtesy, not a gate (TASK-096 is the backstop) — proceed on failure.
+      applyChange();
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -118,12 +142,40 @@ export default function TeacherWorkDaysSelect({ teacherId, nickname, workDays }:
             >
               {t("common.cancel")}
             </Button>
-            <Button size="sm" px="lg" onClick={save} loading={setWorkDays.isPending}>
+            <Button size="sm" px="lg" onClick={save} loading={setWorkDays.isPending || checking}>
               {t("common.save")}
             </Button>
           </Group>
         </Group>
       )}
+
+      {/* TASK-100 — soft warning: this change orphans future sessions. Proceed or cancel (not a hard block). */}
+      <Modal
+        opened={!!impact}
+        onClose={() => setImpact(null)}
+        title={t("teachers.workDaysOrphanTitle")}
+        centered
+        radius="lg"
+      >
+        <Stack gap="md">
+          <Alert variant="light" color="orange" icon={<AlertTriangle size={16} />}>
+            <Text fz="sm">
+              {t("teachers.workDaysOrphanWarn", {
+                n: impact?.orphanCount ?? 0,
+                days: impact?.removedDaysLabel || format(impact?.removedDays ?? []),
+              })}
+            </Text>
+          </Alert>
+          <Group justify="flex-end">
+            <Button variant="subtle" color="gray" onClick={() => setImpact(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button color="orange" onClick={applyChange} loading={setWorkDays.isPending}>
+              {t("teachers.workDaysOrphanProceed")}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </div>
   );
 }

@@ -18,14 +18,18 @@ import type {
   BookingStatus,
   Booking,
   CoursePackageView,
+  CoursePlanOverride,
+  CoursePreview,
   DailyReport,
   EligibleStudent,
   EntitlementPlan,
   PlanChange,
+  PlanPreview,
   SlotAvailability,
   Teacher,
   TeacherType,
   TeacherView,
+  WorkDaysImpact,
 } from "@/types/app/scheduler";
 import type {
   BookingsResponse,
@@ -148,6 +152,15 @@ export const setTeacherWorkDays = async (id: string, workDays: number[]) => {
     { workDays },
   );
   return dtoToTeacher(data);
+};
+
+/** Preview how many future LIVE course sessions a workDays change would orphan (TASK-100). Read-only. */
+export const getWorkDaysImpact = async (id: string, workDays: number[]): Promise<WorkDaysImpact> => {
+  if (useMock) return mock.getWorkDaysImpact(id, workDays);
+  const { data } = await api.get<WorkDaysImpact>(`/teachers/${id}/work-days/impact`, {
+    params: { workDays: workDays.join(",") },
+  });
+  return data;
 };
 
 export const setTeacherLimitOverride = async (id: string, override: boolean) => {
@@ -334,6 +347,17 @@ export const markSickLeave = async (
   };
 };
 
+/** Cancel a booking (SPEC-028 §11 / TASK-105). A DELIVERED session (ATTENDED/NO_SHOW) requires a non-empty
+ *  `reason` — else the server returns `REASON_REQUIRED`. A course cancel re-owes a makeup server-side. */
+export const cancelBooking = async (id: string, reason?: string): Promise<Booking> => {
+  if (useMock) return mock.cancelBooking(id, reason);
+  const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {
+    action: "cancel",
+    ...(reason ? { reason } : {}),
+  });
+  return dtoToBooking(data.booking);
+};
+
 export const markAttended = async (id: string) => {
   if (useMock) return mock.markAttended(id);
   const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {
@@ -498,6 +522,8 @@ export interface CreateCourseInput {
   startDate: string;
   startTime: string;
   note?: string;
+  /** TASK-098 — per-session overrides from the purchase-time planner (len must === size). */
+  sessions?: CoursePlanOverride[];
 }
 
 export const createCoursePackage = async (
@@ -512,7 +538,21 @@ export const createCoursePackage = async (
     startDate: input.startDate,
     startTime: input.startTime,
     note: input.note,
+    sessions: input.sessions,
   });
+  return data;
+};
+
+/** Generate the editable size-row plan without writing anything (TASK-098 purchase planner). */
+export const previewCoursePackage = async (input: {
+  teacherId: string;
+  subjectId: string;
+  size: PackageSize;
+  startDate: string;
+  startTime: string;
+}): Promise<CoursePreview> => {
+  if (useMock) return mock.previewCoursePackage(input);
+  const { data } = await api.post<CoursePreview>("/courses/preview", input);
   return data;
 };
 
@@ -689,6 +729,30 @@ export const getSlotAvailability = async (
     params: { date, startTime },
   });
   return data;
+};
+
+/** Dry-run a plan change (TASK-114) — same body as /plan; returns the resulting plan (or throws the same
+ *  typed refusal). preview == apply by construction (BE rolls the tx back). */
+export const previewPlanChange = async (
+  courseId: string,
+  change: PlanChange,
+): Promise<PlanPreview> => {
+  if (useMock) return mock.previewPlanChange(courseId, change);
+  const { data } = await api.post<PlanPreview>(`/courses/${courseId}/plan/preview`, change);
+  return data;
+};
+
+export interface ExtraSessionInput {
+  teacherId: string;
+  subjectId: string;
+  date: string;
+  startTime: string;
+}
+
+/** Add a charged SINGLE_SESSION extra to a course (SPEC-033) — does NOT touch size/owed/end. */
+export const addExtraSession = async (courseId: string, input: ExtraSessionInput): Promise<void> => {
+  if (useMock) return mock.addExtraSession(courseId, input);
+  await api.post(`/courses/${courseId}/extra-session`, input);
 };
 
 export { DEFAULT_TEACHER_TYPE_ORDER };

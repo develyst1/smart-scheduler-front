@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n";
 import CoursePackagePanel from "./CoursePackagePanel";
 import VoucherPanel from "./VoucherPanel";
 import BookingsTable from "./BookingsTable";
-import CreateCourseModal from "./CreateCourseModal";
+import CreatePlanFlow from "./CreatePlanFlow";
 import CreateVoucherModal from "./CreateVoucherModal";
 import ImportBalanceModal from "./ImportBalanceModal";
 import PlanModal from "./PlanModal";
@@ -77,7 +77,7 @@ export default function BookingsContent() {
         </Tabs.Panel>
       </Tabs>
 
-      <CreateCourseModal opened={courseOpen} onClose={() => setCourseOpen(false)} />
+      <CreatePlanFlow opened={courseOpen} onClose={() => setCourseOpen(false)} />
       <CreateVoucherModal opened={voucherOpen} onClose={() => setVoucherOpen(false)} />
       <ImportBalanceModal opened={importOpen} onClose={() => setImportOpen(false)} />
       <PlanModal opened={!!planId} onClose={() => setPlanId(null)} entitlementId={planId} />

@@ -28,6 +28,7 @@ import {
   bulkConfirm,
   getEligibleStudents,
   markSickLeave,
+  cancelBooking,
   setTeacherActive,
   setTeacherLimitOverride,
   setTeacherTypeActive,
@@ -42,7 +43,10 @@ import {
   topUpFreelanceBudget,
   getEntitlementPlan,
   applyPlanChange,
+  previewPlanChange,
+  addExtraSession,
   getSlotAvailability,
+  previewCoursePackage,
   type CreateBookingInput,
   type CreateCourseInput,
   type CoursesQuery,
@@ -51,6 +55,7 @@ import {
   type CreateTeacherInput,
   type UpdateTeacherInput,
   type SetFreelanceBudgetInput,
+  type ExtraSessionInput,
 } from "@/services/scheduler.service";
 import type { PlanChange, TeacherType } from "@/types/app/scheduler";
 
@@ -271,6 +276,15 @@ export const useMarkAttended = () => {
   });
 };
 
+/** Cancel a booking (TASK-105) — delivered needs a reason; a course cancel re-owes a makeup server-side. */
+export const useCancelBooking = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => cancelBooking(id, reason),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
 export const useCreateBooking = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -321,6 +335,23 @@ export const useApplyPlanChange = () => {
   });
 };
 
+/** Dry-run a plan change to preview the diff before committing (TASK-115). No invalidation — writes nothing. */
+export const usePreviewPlanChange = () =>
+  useMutation({
+    mutationFn: ({ courseId, change }: { courseId: string; change: PlanChange }) =>
+      previewPlanChange(courseId, change),
+  });
+
+/** Add a charged SINGLE_SESSION extra to a course (TASK-113). */
+export const useAddExtraSession = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, input }: { courseId: string; input: ExtraSessionInput }) =>
+      addExtraSession(courseId, input),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
 /** Availability + clash for a slot. `enabled` gates until a date & time are chosen. */
 export const useSlotAvailability = (date: string | null, startTime: string | null, enabled = true) =>
   useQuery({
@@ -328,6 +359,9 @@ export const useSlotAvailability = (date: string | null, startTime: string | nul
     queryFn: () => getSlotAvailability(date as string, startTime as string),
     enabled: enabled && !!date && !!startTime,
   });
+
+/** Generate the editable course plan without writing (TASK-098 purchase planner). */
+export const usePreviewCourse = () => useMutation({ mutationFn: previewCoursePackage });
 
 // ───────────────────────── Course packages ─────────────────────────
 

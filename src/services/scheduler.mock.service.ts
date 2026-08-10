@@ -148,6 +148,15 @@ export const setTeacherWorkDays = (id: string, workDays: number[]) => {
   return delay(clone(t) as Teacher);
 };
 
+export const getWorkDaysImpact = (_id: string, _workDays: number[]) =>
+  delay({ removedDays: [], removedDaysLabel: "", orphanCount: 0, sessions: [] });
+
+export const cancelBooking = (id: string, _reason?: string): Promise<Booking> => {
+  const b = bookings.find((x) => x.id === id);
+  if (b) b.status = "CANCELLED";
+  return delay(clone(b) as Booking);
+};
+
 export const getBookingsByDate = (date: string) =>
   delay(clone(bookings.filter((b) => b.date === date)));
 
@@ -634,6 +643,55 @@ export const getEntitlementPlan = (id: string): Promise<EntitlementPlan> => {
 
 export const applyPlanChange = (_courseId: string, _change: PlanChange): Promise<void> =>
   delay(undefined);
+
+export const previewPlanChange = (courseId: string, _change: PlanChange) => {
+  const rows = bookings.filter((b) => b.courseId === courseId);
+  return delay({
+    moves: { appended: [] as string[], cancelled: [] as string[] },
+    resultingSessions: rows.map((b) => {
+      const teacher = teachers.find((t) => t.id === b.teacherId);
+      return {
+        id: b.id,
+        date: b.date,
+        startTime: b.startTime,
+        status: b.status as string,
+        bookingType: b.bookingType as string,
+        teacher: teacher ? { id: teacher.id, name: teacher.name, nickname: teacher.nickname } : null,
+        subject: { id: "mock-subj", name: b.subject },
+      };
+    }),
+    liveEndDate: rows.length ? rows[rows.length - 1].date : null,
+  });
+};
+
+export const addExtraSession = (
+  _courseId: string,
+  _input: { teacherId: string; subjectId: string; date: string; startTime: string },
+): Promise<void> => delay(undefined);
+
+export const previewCoursePackage = (input: {
+  teacherId: string;
+  subjectId: string;
+  size: number;
+  startDate: string;
+  startTime: string;
+}) => {
+  const teacher = teachers.find((t) => t.id === input.teacherId);
+  const subj = teacher?.subjectOptions?.find((s) => s.id === input.subjectId) ?? null;
+  const sessions = Array.from({ length: input.size }, (_, i) => ({
+    date: dayjs(input.startDate).add(i, "week").format("YYYY-MM-DD"),
+    startTime: input.startTime,
+    teacher: teacher ? { id: teacher.id, name: teacher.name, nickname: teacher.nickname } : null,
+    subject: subj,
+  }));
+  return delay({
+    size: input.size,
+    startDate: input.startDate,
+    startTime: input.startTime,
+    expiryDate: dayjs(input.startDate).add(input.size + 2, "week").format("YYYY-MM-DD"),
+    sessions,
+  });
+};
 
 export const getSlotAvailability = (date: string, startTime: string): Promise<SlotAvailability> => {
   const out: SlotAvailability = {

@@ -274,6 +274,8 @@ export interface PlanSession {
   startTime: string; // HH:mm
   /** BookingStatus (may include NO_SHOW, which the FE enum omits) — kept as string. */
   status: string;
+  /** SPEC-033 — a soft-linked SINGLE_SESSION "extra" reads distinctly from the COURSE_PACKAGE plan rows. */
+  bookingType?: string;
   teacher: PlanSessionRef | null;
   subject: { id: string; name: string } | null;
 }
@@ -302,7 +304,16 @@ export interface EntitlementPlan {
   student: PlanSessionRef | null;
   sessions: PlanSession[];
   liveEndDate: string | null; // server-derived (max date over LIVE sessions)
+  /** SPEC-028 §12.1 — there is a session to reschedule (course: canInsert; voucher: false). */
+  insertable?: boolean;
   summary: CoursePlanSummary | VoucherPlanSummary;
+}
+
+/** `POST /courses/:id/plan/preview` — the dry-run result (preview == apply, drift-proof). */
+export interface PlanPreview {
+  moves: { appended: string[]; cancelled: string[] };
+  resultingSessions: PlanSession[];
+  liveEndDate: string | null;
 }
 
 export interface SlotTeacher {
@@ -334,6 +345,39 @@ export type PlanChange =
 
 /** ATTENDED / NO_SHOW = delivered → read-only (SPEC-028 attended-immutability). */
 export const isDeliveredStatus = (s: string) => s === "ATTENDED" || s === "NO_SHOW";
+
+// ──────── Purchase-time course preview + per-session overrides (TASK-095/098) ────────
+
+export interface CoursePlanOverride {
+  date: string;
+  startTime?: string;
+  teacherId?: string;
+  subjectId?: string;
+}
+
+export interface CoursePreviewSession {
+  date: string;
+  startTime: string;
+  teacher: PlanSessionRef | null;
+  subject: { id: string; name: string } | null;
+}
+
+/** `GET /teachers/:id/work-days/impact` — future LIVE course sessions orphaned by removing weekdays (TASK-100). */
+export interface WorkDaysImpact {
+  removedDays: number[];
+  removedDaysLabel: string;
+  orphanCount: number;
+  sessions: { id: string; date: string; startTime: string }[];
+}
+
+/** `POST /courses/preview` — the generated size-row plan, written nowhere until confirm. */
+export interface CoursePreview {
+  size: number;
+  startDate: string;
+  startTime: string;
+  expiryDate: string; // the MAX_WEEK ceiling
+  sessions: CoursePreviewSession[];
+}
 
 // ───────────────────────────── Daily report ─────────────────────────────
 
