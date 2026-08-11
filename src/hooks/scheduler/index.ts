@@ -6,3 +6,4 @@ export * from "./useAttention";
 export * from "./useSomReport";
 export * from "./useTeacherLink";
 export * from "./usePricing";
+export * from "./useSettings";

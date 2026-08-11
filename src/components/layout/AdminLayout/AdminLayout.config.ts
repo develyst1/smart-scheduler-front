@@ -1,4 +1,4 @@
-import { CalendarDays, Users, BookOpenCheck, BarChart3, Tag, LayoutDashboard, Contact, BellRing, PieChart, Link2 } from "lucide-react";
+import { CalendarDays, Users, BookOpenCheck, BarChart3, Tag, LayoutDashboard, Contact, BellRing, PieChart, Link2, Settings2 } from "lucide-react";
 
 export interface NavItem {
   key: string;
@@ -18,6 +18,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "som", labelKey: "nav.som", href: "/scheduler/som", icon: PieChart },
   { key: "attention", labelKey: "nav.attention", href: "/scheduler/attention", icon: BellRing },
   { key: "reports", labelKey: "nav.reports", href: "/scheduler/reports", icon: BarChart3 },
+  { key: "settings", labelKey: "nav.settings", href: "/scheduler/settings", icon: Settings2 },
 ];
 
 /**
