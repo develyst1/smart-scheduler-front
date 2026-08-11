@@ -1,0 +1,39 @@
+/* Horizontal scroll area for data tables with AntD-style pinned columns.
+   The shadow on a pinned column only appears while there is scrolled-away content on that side —
+   at rest (nothing hidden) the column reads flat, no stray line. Driven by data-at-start / data-at-end
+   toggled in StickyScrollArea. */
+
+.stickyScroll {
+  overflow-x: auto;
+}
+
+/* the inner table fills at least the min-width so columns stretch instead of leaving a gap */
+.stickyScroll table {
+  width: 100%;
+}
+
+/* pinned columns keep an opaque background so scrolled content passes behind them, in both themes */
+.stickyScroll [data-pin="lead"],
+.stickyScroll [data-pin="action"] {
+  position: sticky;
+  z-index: 10;
+  background: var(--mantine-color-body);
+}
+.stickyScroll thead [data-pin="lead"],
+.stickyScroll thead [data-pin="action"] {
+  z-index: 20;
+}
+.stickyScroll [data-pin="lead"] {
+  left: 0;
+}
+.stickyScroll [data-pin="action"] {
+  right: 0;
+}
+
+/* edge shadow — only while that side has hidden content */
+.stickyScroll:not([data-at-start="true"]) [data-pin="lead"] {
+  box-shadow: 8px 0 12px -4px rgba(0, 0, 0, 0.22);
+}
+.stickyScroll:not([data-at-end="true"]) [data-pin="action"] {
+  box-shadow: -8px 0 12px -4px rgba(0, 0, 0, 0.22);
+}

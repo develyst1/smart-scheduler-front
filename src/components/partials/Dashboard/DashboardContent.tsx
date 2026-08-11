@@ -86,6 +86,7 @@ export default function DashboardContent() {
           {/* Teacher × badge */}
           <Card withBorder radius="lg" p="md">
             <h2 className="mb-3 text-sm font-semibold text-default-600">{t("dashboard.byTeacher")}</h2>
+            <Table.ScrollContainer type="native" minWidth={360}>
             <Table verticalSpacing="xs" highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
@@ -114,6 +115,7 @@ export default function DashboardContent() {
                 ))}
               </Table.Tbody>
             </Table>
+            </Table.ScrollContainer>
           </Card>
         </div>
       )}

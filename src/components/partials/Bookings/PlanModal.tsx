@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
   Center,
   Group,
   Loader,
+  Menu,
   Modal,
   Select,
   Stack,
@@ -15,7 +17,7 @@ import {
   Text,
 } from "@mantine/core";
 import { Textarea, Tooltip } from "@mantine/core";
-import { AlertTriangle, Ban, CalendarPlus, Check, Pencil, Ticket, UserMinus, X } from "lucide-react";
+import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, Pencil, Ticket, UserMinus, X } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
@@ -41,6 +43,7 @@ import {
   type PlanPreview,
   type PlanSession,
 } from "@/types/app/scheduler";
+import StickyScrollArea from "@/components/common/StickyScrollArea";
 
 /** PENDING / CONFIRMED / EXTENDED — a live session that can be plainly cancelled (re-owes, no reason). */
 const isLiveStatus = (s: string) => s === "PENDING" || s === "CONFIRMED" || s === "EXTENDED";
@@ -129,7 +132,7 @@ export default function PlanModal({ opened, onClose, entitlementId, mode = "edit
       title={plan ? t("plan.title", { name: plan.student?.name ?? "—" }) : t("plan.loading")}
       centered
       radius="lg"
-      size="xl"
+      size="1100px"
     >
       {!isCreate && query.isLoading ? (
         <Center h={200}>
@@ -314,8 +317,8 @@ function SessionTable({
   }
 
   return (
-    <Table.ScrollContainer minWidth={560}>
-      <Table verticalSpacing="xs" fz="sm">
+    <StickyScrollArea minWidth={640}>
+      <Table verticalSpacing="xs" fz="sm" className="whitespace-nowrap">
         <Table.Thead>
           <Table.Tr>
             <Table.Th>{t("plan.colDate")}</Table.Th>
@@ -323,7 +326,7 @@ function SessionTable({
             <Table.Th>{t("plan.colTeacher")}</Table.Th>
             <Table.Th>{t("plan.colSubject")}</Table.Th>
             <Table.Th>{t("plan.colStatus")}</Table.Th>
-            <Table.Th />
+            <Table.Th data-pin="action" />
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -332,7 +335,7 @@ function SessionTable({
             const isExtra = s.bookingType === "SINGLE_SESSION"; // SPEC-033 — a charged extra, not a plan row
             return (
               <Table.Tr key={s.id} className={locked ? "opacity-60" : ""}>
-                <Table.Td className="font-num">{dayjs(s.date).format("D MMM")}</Table.Td>
+                <Table.Td className="font-num">{dayjs(s.date).format("DD/MMM/YY")}</Table.Td>
                 <Table.Td className="font-num">{s.startTime.slice(0, 5)}</Table.Td>
                 <Table.Td>{s.teacher?.nickname ?? "—"}</Table.Td>
                 <Table.Td>{s.subject?.name ?? "—"}</Table.Td>
@@ -346,48 +349,89 @@ function SessionTable({
                     )}
                   </Group>
                 </Table.Td>
-                <Table.Td>
-                  <Group gap={4} justify="flex-end" wrap="nowrap">
-                    {locked ? (
-                      // Delivered: edit/move stay blocked; only cancel-with-reason (TASK-105).
-                      <Text fz="xs" c="dimmed">{t("plan.locked")}</Text>
-                    ) : (
-                      <>
-                        <Button size="compact-xs" variant="subtle" color="gray" leftSection={<Pencil size={12} />} onClick={() => onEdit(s)}>
-                          {t("plan.edit")}
-                        </Button>
-                        {onMarkAbsence && !isExtra && (
-                          <Button
-                            size="compact-xs"
-                            variant="subtle"
-                            color="orange"
-                            leftSection={<UserMinus size={12} />}
-                            onClick={() => onMarkAbsence(s)}
-                          >
-                            {t("plan.markAbsence")}
-                          </Button>
-                        )}
-                      </>
-                    )}
-                    {onCancelSession && (locked || isLiveStatus(s.status)) && (
-                      <Button
-                        size="compact-xs"
-                        variant="subtle"
-                        color="red"
-                        leftSection={<Ban size={12} />}
-                        onClick={() => onCancelSession(s)}
-                      >
-                        {t("plan.cancelSession")}
-                      </Button>
-                    )}
-                  </Group>
+                <Table.Td data-pin="action">
+                  <SessionActions
+                    session={s}
+                    locked={locked}
+                    isExtra={isExtra}
+                    onEdit={onEdit}
+                    onMarkAbsence={onMarkAbsence}
+                    onCancelSession={onCancelSession}
+                  />
                 </Table.Td>
               </Table.Tr>
             );
           })}
         </Table.Tbody>
       </Table>
-    </Table.ScrollContainer>
+    </StickyScrollArea>
+  );
+}
+
+/** Per-row actions collapsed into a single dropdown so the row stays uncluttered on narrow screens.
+ *  Delivered rows expose only cancel-with-reason (TASK-105); live rows get edit / mark-absence / cancel. */
+function SessionActions({
+  session,
+  locked,
+  isExtra,
+  onEdit,
+  onMarkAbsence,
+  onCancelSession,
+}: {
+  session: PlanSession;
+  locked: boolean;
+  isExtra: boolean;
+  onEdit: (s: PlanSession) => void;
+  onMarkAbsence?: (s: PlanSession) => void;
+  onCancelSession?: (s: PlanSession) => void;
+}) {
+  const t = useT();
+  const canEdit = !locked;
+  const canMarkAbsence = !locked && !!onMarkAbsence && !isExtra;
+  const canCancel = !!onCancelSession && (locked || isLiveStatus(session.status));
+
+  if (!canEdit && !canMarkAbsence && !canCancel) {
+    // Delivered with no cancel handler (create mode) — nothing actionable.
+    return <Text fz="xs" c="dimmed" ta="right">{t("plan.locked")}</Text>;
+  }
+
+  return (
+    <Group justify="flex-end" wrap="nowrap">
+      <Menu position="bottom-end" withArrow shadow="md" width={180}>
+        <Menu.Target>
+          <ActionIcon variant="subtle" color="gray" aria-label={t("plan.actionsMenu")}>
+            <MoreHorizontal size={16} />
+          </ActionIcon>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {canEdit && (
+            <Menu.Item leftSection={<Pencil size={14} />} onClick={() => onEdit(session)}>
+              {t("plan.edit")}
+            </Menu.Item>
+          )}
+          {canMarkAbsence && (
+            <Menu.Item
+              leftSection={<UserMinus size={14} />}
+              onClick={() => onMarkAbsence?.(session)}
+            >
+              {t("plan.markAbsence")}
+            </Menu.Item>
+          )}
+          {canCancel && (
+            <>
+              {(canEdit || canMarkAbsence) && <Menu.Divider />}
+              <Menu.Item
+                color="red"
+                leftSection={<Ban size={14} />}
+                onClick={() => onCancelSession?.(session)}
+              >
+                {t("plan.cancelSession")}
+              </Menu.Item>
+            </>
+          )}
+        </Menu.Dropdown>
+      </Menu>
+    </Group>
   );
 }
 
@@ -720,7 +764,7 @@ function PlanDiffConfirm({
           <Table.Tbody>
             {preview.resultingSessions.map((s) => (
               <Table.Tr key={s.id}>
-                <Table.Td className="font-num">{dayjs(s.date).format("D MMM")}</Table.Td>
+                <Table.Td className="font-num">{dayjs(s.date).format("DD/MMM/YY")}</Table.Td>
                 <Table.Td className="font-num">{s.startTime.slice(0, 5)}</Table.Td>
                 <Table.Td>{s.teacher?.nickname ?? "—"}</Table.Td>
                 <Table.Td>

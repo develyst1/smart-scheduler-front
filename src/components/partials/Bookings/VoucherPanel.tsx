@@ -8,6 +8,7 @@ import { MANTINE_COLOR } from "@/lib/ui/colors";
 import { useVouchers } from "@/hooks/scheduler";
 import PagerBar from "@/components/common/PagerBar";
 import { useT } from "@/lib/i18n";
+import StickyScrollArea from "@/components/common/StickyScrollArea";
 
 const PAGE_SIZE = 20;
 
@@ -64,8 +65,8 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
         <Card padding={0}>
           {/* TASK-099 DEF-1: the added Manage column pushes past the card at 375 → scroll, don't clip
               (else the only phone-width entry to the plan modal is off-surface). */}
-          <Table.ScrollContainer minWidth={640}>
-          <Table verticalSpacing="sm" horizontalSpacing="md" highlightOnHover>
+          <StickyScrollArea minWidth={640}>
+          <Table verticalSpacing="sm" horizontalSpacing="md" highlightOnHover className="whitespace-nowrap">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t("voucher.colStudent")}</Table.Th>
@@ -73,7 +74,7 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
                 <Table.Th>{t("voucher.colUsage")}</Table.Th>
                 <Table.Th>{t("voucher.colExpiry")}</Table.Th>
                 <Table.Th>{t("voucher.colStatus")}</Table.Th>
-                <Table.Th />
+                <Table.Th data-pin="action" />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -108,12 +109,12 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
                     <Table.Td>
                       <RemainingBadge remaining={v.remaining} />
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td data-pin="action">
                       <Button
-                        size="compact-xs"
-                        variant="light"
+                        size="xs"
+                        variant="filled"
                         color="blue"
-                        leftSection={<GraduationCap size={13} />}
+                        leftSection={<GraduationCap size={14} />}
                         onClick={() => onManage(v.id)}
                       >
                         {t("plan.manage")}
@@ -124,7 +125,7 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
               })}
             </Table.Tbody>
           </Table>
-          </Table.ScrollContainer>
+          </StickyScrollArea>
         </Card>
       )}
 

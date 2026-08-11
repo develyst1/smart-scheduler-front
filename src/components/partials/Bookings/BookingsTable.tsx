@@ -23,6 +23,7 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { Search, CheckCheck, ArrowDownWideNarrow, ArrowUpNarrowWide } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import PagerBar from "@/components/common/PagerBar";
+import StickyScrollArea from "@/components/common/StickyScrollArea";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { useAllBookings, useBulkConfirm, useTeachers } from "@/hooks/scheduler";
 import type { BookingSort } from "@/services/scheduler.service";
@@ -179,7 +180,7 @@ export default function BookingsTable() {
         <Select
           label={t("bookings.status")}
           size="sm"
-          className="min-w-36 max-w-44"
+          className="min-w-40 max-w-64"
           value={statusFilter}
           onChange={(v) => setStatusFilter((v || "ALL") as BookingStatus | "ALL")}
           allowDeselect={false}
@@ -195,7 +196,7 @@ export default function BookingsTable() {
         <Select
           label={t("bookings.teacher")}
           size="sm"
-          className="min-w-36 max-w-40"
+          className="min-w-40 max-w-64"
           value={teacherFilter}
           onChange={(v) => setTeacherFilter(v || "ALL")}
           allowDeselect={false}
@@ -206,7 +207,7 @@ export default function BookingsTable() {
         <Select
           label={t("bookings.type")}
           size="sm"
-          className="min-w-36 max-w-40"
+          className="min-w-40 max-w-64"
           value={typeFilter}
           onChange={(v) => setTypeFilter((v || "ALL") as BookingType | "ALL")}
           allowDeselect={false}
@@ -219,7 +220,7 @@ export default function BookingsTable() {
         <Select
           label={t("bookings.dateRange")}
           size="sm"
-          className="min-w-36 max-w-40"
+          className="min-w-40 max-w-64"
           value={dateRange}
           onChange={(v) => setDateRange((v || "ALL") as DateRange)}
           allowDeselect={false}
@@ -271,10 +272,11 @@ export default function BookingsTable() {
         )}
       </Group>
 
-      <Table highlightOnHover verticalSpacing="sm" withTableBorder aria-label={t("bookings.tableLabel")}>
+      <StickyScrollArea minWidth={760}>
+      <Table highlightOnHover verticalSpacing="sm" withTableBorder aria-label={t("bookings.tableLabel")} className="whitespace-nowrap">
         <Table.Thead className="bg-default-100">
           <Table.Tr className="text-xs uppercase tracking-wide text-default-500">
-            <Table.Th w={40}>
+            <Table.Th w={40} data-pin="lead">
               <Checkbox
                 aria-label={t("bookings.bulkSelectAll")}
                 checked={allPendingSelected}
@@ -313,7 +315,7 @@ export default function BookingsTable() {
           ) : (
             rows.map((b) => (
               <Table.Tr key={b.id}>
-                <Table.Td>
+                <Table.Td data-pin="lead">
                   {b.status === "PENDING" && (
                     <Checkbox
                       aria-label={t("bookings.bulkSelectRow")}
@@ -340,6 +342,7 @@ export default function BookingsTable() {
           )}
         </Table.Tbody>
       </Table>
+      </StickyScrollArea>
 
       <Group justify="space-between" pt="xs">
         <Select

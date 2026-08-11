@@ -171,7 +171,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                 </Button>
                 <Button
                   size="xs"
-                  variant="subtle"
+                  variant="light"
                   color="gray"
                   leftSection={<History size={15} />}
                   onClick={() => setHistoryId(c.id)}
