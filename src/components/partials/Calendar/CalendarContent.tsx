@@ -21,6 +21,7 @@ export default function CalendarContent() {
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedBadgeValueIds, setSelectedBadgeValueIds] = useState<string[]>([]);
+  const [studentQuery, setStudentQuery] = useState("");
 
   // Week starts on Monday. dayjs weeks default to Sunday, so pull Sunday back to the prior Monday.
   const weekStart = dayjs(date).day(dayjs(date).day() === 0 ? -6 : 1);
@@ -39,13 +40,19 @@ export default function CalendarContent() {
           (b.badges ?? []).some((bd) => selectedBadgeValueIds.includes(bd.valueId)),
         );
 
+  // Student search (REQ-038 #3): case-insensitive substring on the booking's student name. Composes with byBadge.
+  const byStudent = (list: Booking[]) => {
+    const q = studentQuery.trim().toLowerCase();
+    return q ? list.filter((b) => b.studentName.toLowerCase().includes(q)) : list;
+  };
+
   const dayBookings = useMemo(
-    () => byBadge(calendar ? calendarDayBookings(calendar, date) : []),
-    [calendar, date, selectedBadgeValueIds],
+    () => byStudent(byBadge(calendar ? calendarDayBookings(calendar, date) : [])),
+    [calendar, date, selectedBadgeValueIds, studentQuery],
   );
   const weekBookings = useMemo(
-    () => byBadge(calendar && view === "week" ? calendarToBookings(calendar) : []),
-    [calendar, view, selectedBadgeValueIds],
+    () => byStudent(byBadge(calendar && view === "week" ? calendarToBookings(calendar) : [])),
+    [calendar, view, selectedBadgeValueIds, studentQuery],
   );
 
   // กรองครูตามประเภท + รายชื่อ — ว่าง = แสดงทั้งหมด
@@ -97,6 +104,8 @@ export default function CalendarContent() {
         badgeTypes={badgeTypes}
         selectedBadgeValueIds={selectedBadgeValueIds}
         onChangeBadgeValueIds={setSelectedBadgeValueIds}
+        studentQuery={studentQuery}
+        onChangeStudentQuery={setStudentQuery}
       />
 
       {loading ? (

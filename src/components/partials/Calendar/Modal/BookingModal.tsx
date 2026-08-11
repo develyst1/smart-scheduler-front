@@ -602,12 +602,18 @@ function CreateForm({
   const selectedEligible = eligible.find((e) => entKey(e) === entitlementId) ?? null;
   // TASK-121 — a student with 2+ active courses would otherwise show identical name-only rows; enrich the
   // COURSE label with subject + used/size so the row is pickable without guessing. Voucher rows stay name-only.
+  // TASK-125 (OBS-5) — when the SAME student has 2+ course entries, also append the expiry so two packages identical
+  // in subject+size+progress are still distinguishable (single-course labels stay clean). expiryDate is already in
+  // context (no BE). A truly fungible pair (same package, same day → same expiry) stays identical — accepted residual;
+  // no courseId fragment (user-hostile).
   const eligibleLabel = (e: EligibleStudent) => {
     const base = e.nickname || e.name;
     if (isCourse && "courseId" in e.context) {
       const c = e.context;
       const subj = c.subject?.name;
-      return `${base}${subj ? ` · ${subj}` : ""} (${c.usedSessions}/${c.size})`;
+      const multiCourse = eligible.filter((x) => x.id === e.id).length > 1;
+      const expiry = multiCourse && c.expiryDate ? ` · exp ${c.expiryDate}` : "";
+      return `${base}${subj ? ` · ${subj}` : ""} (${c.usedSessions}/${c.size})${expiry}`;
     }
     return base;
   };

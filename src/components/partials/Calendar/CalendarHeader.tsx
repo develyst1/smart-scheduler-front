@@ -2,9 +2,9 @@
 
 import dayjs from "dayjs";
 import "dayjs/locale/th";
-import { ActionIcon, Button, MultiSelect, Paper, SegmentedControl, Tooltip } from "@mantine/core";
+import { ActionIcon, Button, CloseButton, MultiSelect, Paper, SegmentedControl, TextInput, Tooltip } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users, Tag } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users, Tag, Search } from "lucide-react";
 import { StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import type { BadgeType, TeacherType, TeacherView } from "@/types/app/scheduler";
@@ -29,6 +29,8 @@ interface Props {
   badgeTypes?: BadgeType[];
   selectedBadgeValueIds?: string[];
   onChangeBadgeValueIds?: (ids: string[]) => void;
+  studentQuery?: string;
+  onChangeStudentQuery?: (q: string) => void;
 }
 
 const THAI_DAYS = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
@@ -47,6 +49,8 @@ export default function CalendarHeader({
   badgeTypes = [],
   selectedBadgeValueIds = [],
   onChangeBadgeValueIds,
+  studentQuery = "",
+  onChangeStudentQuery,
 }: Props) {
   const { lang, t } = useI18n();
   // Grouped select data: one group per badge type, active values only.
@@ -140,9 +144,30 @@ export default function CalendarHeader({
         </div>
       </div>
 
-      {/* แถวล่าง: ตัวกรองครูผู้สอน */}
+      {/* แถวล่าง: ตัวกรองครูผู้สอน + ค้นหานักเรียน */}
       {teachers.length > 0 && (
         <div className="flex flex-wrap items-end gap-3 border-t border-default-100 pt-3">
+          <TextInput
+            label={t("calendar.studentSearch")}
+            placeholder={t("calendar.studentSearchPlaceholder")}
+            value={studentQuery}
+            onChange={(e) => onChangeStudentQuery?.(e.currentTarget.value)}
+            leftSection={<Search size={15} />}
+            rightSection={
+              studentQuery ? (
+                <CloseButton
+                  size="sm"
+                  onClick={() => onChangeStudentQuery?.("")}
+                  aria-label={t("calendar.studentSearch")}
+                />
+              ) : null
+            }
+            size="sm"
+            radius="md"
+            className="min-w-52 basis-0 grow-[3]"
+            aria-label={t("calendar.studentSearch")}
+          />
+
           <MultiSelect
             label={t("calendar.teacher")}
             placeholder={selectedTeacherIds.length > 0 ? undefined : t("calendar.allTeachers")}
