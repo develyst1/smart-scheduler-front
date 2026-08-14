@@ -109,7 +109,7 @@ export default function CalendarContent() {
       />
 
       {loading ? (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-default-500">
+        <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500">
           <Loader size="md" />
           {t("calendar.loading")}
         </div>

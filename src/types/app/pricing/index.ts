@@ -25,6 +25,9 @@ export interface SellablePackagesResponse {
   /** SPEC-030 / TASK-106 — the price groups a voucher may book. The picker filters from here, never a hardcoded
    *  list (the card changes before the code does). Excluded groups (Onewheel / Balance Play) are simply absent. */
   voucherAllowedGroups: string[];
+  /** SPEC-031 / TASK-123 — rental price card (code + VAT-incl `priceMinor`; the FE owns labels via i18n). Derived
+   *  server-side from the one price authority, so the FE never carries a second copy of the rental prices. */
+  rentalItems: { code: string; priceMinor: number }[];
 }
 
 /** Satang → the displayed baht string. Display-only; no arithmetic on the price itself. */

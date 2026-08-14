@@ -24,7 +24,7 @@ function Brand({ collapsed }: { collapsed: boolean }) {
       {!collapsed && (
         <div className="leading-tight">
           <p className="text-sm font-semibold tracking-tight">{APP_NAME}</p>
-          <p className="text-xs text-default-400">{t("brand.tagline")}</p>
+          <p className="text-xs text-muted-400">{t("brand.tagline")}</p>
         </div>
       )}
     </div>
@@ -33,7 +33,7 @@ function Brand({ collapsed }: { collapsed: boolean }) {
 
 function SidebarFooter() {
   const t = useT();
-  return <div className="px-5 py-4 text-xs text-default-400">{t("brand.footer")}</div>;
+  return <div className="px-5 py-4 text-xs text-muted-400">{t("brand.footer")}</div>;
 }
 
 function NavList({
@@ -58,12 +58,12 @@ function NavList({
             href={item.href}
             onClick={onNavigate}
             title={collapsed ? label : undefined}
-            className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
+            className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
               collapsed ? "justify-center" : ""
             } ${
               active
                 ? "bg-primary/10 font-medium text-primary"
-                : "text-default-600 hover:bg-default-100"
+                : "text-muted-600 hover:bg-muted-100"
             }`}
           >
             {active && (
@@ -73,7 +73,7 @@ function NavList({
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
                 active
                   ? "bg-primary/15 text-primary"
-                  : "text-default-500 group-hover:text-default-600"
+                  : "text-muted-500 group-hover:text-muted-600"
               }`}
             >
               <Icon size={18} />
@@ -91,7 +91,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: Props)
     <>
       {/* ── Desktop: sidebar ในเลย์เอาต์ ย่อ/ขยายได้ (ซ่อนบนจอเล็ก) ── */}
       <aside
-        className={`hidden h-full shrink-0 flex-col border-r border-default-200 bg-content1 transition-[width] duration-200 lg:flex ${
+        className={`hidden h-full shrink-0 flex-col border-r border-muted-200 bg-content1 transition-[width] duration-200 lg:flex ${
           collapsed ? "w-16" : "w-64"
         }`}
       >
@@ -110,7 +110,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: Props)
             onClick={onCloseMobile}
             aria-hidden
           />
-          <aside className="absolute left-0 top-0 flex h-full w-64 flex-col border-r border-default-200 bg-content1 shadow-xl">
+          <aside className="absolute left-0 top-0 flex h-full w-64 flex-col border-r border-muted-200 bg-content1 shadow-xl">
             <Brand collapsed={false} />
             <NavList collapsed={false} onNavigate={onCloseMobile} />
             <SidebarFooter />

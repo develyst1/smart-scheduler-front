@@ -6,6 +6,7 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { Ticket, Search, GraduationCap } from "lucide-react";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import { useVouchers } from "@/hooks/scheduler";
+import { formatDateDisplay } from "@/lib/ui/format";
 import PagerBar from "@/components/common/PagerBar";
 import { useT } from "@/lib/i18n";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
@@ -66,7 +67,7 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
           {/* TASK-099 DEF-1: the added Manage column pushes past the card at 375 → scroll, don't clip
               (else the only phone-width entry to the plan modal is off-surface). */}
           <StickyScrollArea minWidth={640}>
-          <Table verticalSpacing="sm" horizontalSpacing="md" highlightOnHover className="whitespace-nowrap">
+          <Table verticalSpacing="sm" horizontalSpacing="md" highlightOnHover className="whitespace-nowrap tabular-nums">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t("voucher.colStudent")}</Table.Th>
@@ -94,7 +95,7 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
                       {v.totalHours} {t("voucher.hoursShort")}
                     </Table.Td>
                     <Table.Td style={{ minWidth: 160 }}>
-                      <div className="mb-1 flex justify-between text-xs text-default-500">
+                      <div className="mb-1 flex justify-between text-xs text-muted-500">
                         <span>{t("voucher.usedN", { n: v.usedHours })}</span>
                         <span>{t("voucher.leftN", { n: v.remaining })}</span>
                       </div>
@@ -105,7 +106,7 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
                         color={v.remaining === 0 ? MANTINE_COLOR.warning : "blue"}
                       />
                     </Table.Td>
-                    <Table.Td>{v.expiryDate}</Table.Td>
+                    <Table.Td>{formatDateDisplay(v.expiryDate)}</Table.Td>
                     <Table.Td>
                       <RemainingBadge remaining={v.remaining} />
                     </Table.Td>
@@ -116,6 +117,8 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
                         color="blue"
                         leftSection={<GraduationCap size={14} />}
                         onClick={() => onManage(v.id)}
+                        // §3.2 — ≥44px hit target on phone; desktop keeps its dense xs height.
+                        className="min-h-[44px] sm:min-h-0"
                       >
                         {t("plan.manage")}
                       </Button>

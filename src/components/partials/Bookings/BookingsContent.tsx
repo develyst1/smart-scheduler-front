@@ -36,7 +36,7 @@ export default function BookingsContent() {
 
         <Tabs.Panel value="courses" pt="md">
           <Group justify="space-between" align="flex-start" mb="md" wrap="wrap" gap="sm">
-            <p className="max-w-2xl text-sm text-default-500">{t("bookings.coursesHint")}</p>
+            <p className="max-w-2xl text-sm text-muted-500">{t("bookings.coursesHint")}</p>
             <Group gap="sm">
               <Button
                 variant="default"
@@ -58,7 +58,7 @@ export default function BookingsContent() {
 
         <Tabs.Panel value="vouchers" pt="md">
           <Group justify="space-between" align="flex-start" mb="md" wrap="wrap" gap="sm">
-            <p className="max-w-2xl text-sm text-default-500">{t("bookings.vouchersHint")}</p>
+            <p className="max-w-2xl text-sm text-muted-500">{t("bookings.vouchersHint")}</p>
             <Group gap="sm">
               <Button
                 variant="default"

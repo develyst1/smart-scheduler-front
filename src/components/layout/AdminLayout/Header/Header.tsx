@@ -24,7 +24,7 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
   const name = session?.user?.username ?? t("header.staff");
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-default-200 bg-content1/80 px-4 backdrop-blur sm:px-6">
+    <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-muted-200 bg-content1/80 px-4 backdrop-blur sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
         {/* mobile: เปิด drawer */}
         <ActionIcon
@@ -55,7 +55,7 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
 
       <div className="flex shrink-0 items-center gap-3 text-sm">
         <LanguageToggle />
-        <span className="hidden text-default-500 sm:inline">{name}</span>
+        <span className="hidden text-muted-500 sm:inline">{name}</span>
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-700 text-xs font-semibold text-primary-foreground ring-2 ring-primary/20">
           TM
         </span>

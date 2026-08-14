@@ -15,21 +15,29 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-noto-sans-thai)", "system-ui", "sans-serif"],
       },
+      // All colours resolve to the CSS variables defined once in globals.css — the
+      // single token source (SPEC-037 / TASK-128). No hard-coded hex scale here.
       colors: {
-        foreground: "#1e293b",
-        content1: "#ffffff",
+        foreground: "var(--color-fg)",
+        content1: "var(--color-surface)",
+        paper: "var(--color-paper)",
         primary: { DEFAULT: "#228be6", foreground: "#ffffff" },
         success: "#2f9e44",
         warning: "#e8a23d",
         secondary: "#845ef7",
         danger: "#e03131",
-        default: {
-          100: "#f1f5f9",
-          200: "#e2e8f0",
-          300: "#cbd5e1",
-          400: "#94a3b8",
-          500: "#64748b",
-          600: "#475569",
+        // `muted` replaces the old `default` scale (same slate values, now via vars).
+        muted: {
+          50: "var(--color-muted-50)",
+          100: "var(--color-muted-100)",
+          200: "var(--color-muted-200)",
+          300: "var(--color-muted-300)",
+          400: "var(--color-muted-400)",
+          500: "var(--color-muted-500)",
+          600: "var(--color-muted-600)",
+          700: "var(--color-muted-700)",
+          800: "var(--color-muted-800)",
+          900: "var(--color-muted-900)",
         },
       },
     },

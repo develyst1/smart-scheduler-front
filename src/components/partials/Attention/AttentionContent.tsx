@@ -33,7 +33,7 @@ export default function AttentionContent() {
 
   if (isLoading) {
     return (
-      <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-default-500">
+      <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-muted-500">
         <Loader size="md" />
         {t("common.loading")}
       </div>
@@ -51,7 +51,7 @@ export default function AttentionContent() {
     <Stack gap="md">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">{t("attention.title")}</h1>
-        <p className="max-w-2xl text-sm text-default-500">{t("attention.subtitle")}</p>
+        <p className="max-w-2xl text-sm text-muted-500">{t("attention.subtitle")}</p>
       </div>
 
       {/* Last-run indicator — a never-run digest is a silent failure, so this is loud, not a footer. */}
@@ -102,7 +102,7 @@ export default function AttentionContent() {
               {c.items.map((it) => (
                 <div key={it.id} className="text-sm">
                   {it.label}
-                  {it.hint && <span className="ml-1.5 text-xs text-default-400">· {it.hint}</span>}
+                  {it.hint && <span className="ml-1.5 text-xs text-muted-400">· {it.hint}</span>}
                 </div>
               ))}
             </Stack>

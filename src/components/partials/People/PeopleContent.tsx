@@ -104,7 +104,7 @@ export default function PeopleContent() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{t("people.title")}</h1>
-          <p className="max-w-2xl text-sm text-default-500">{t("people.subtitle")}</p>
+          <p className="max-w-2xl text-sm text-muted-500">{t("people.subtitle")}</p>
         </div>
         <Button leftSection={<UserPlus size={16} />} onClick={() => setParentModal({ open: true, parent: null })}>
           {t("people.addParent")}
@@ -120,7 +120,7 @@ export default function PeopleContent() {
       />
 
       {isLoading ? (
-        <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-default-500">
+        <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-muted-500">
           <Loader size="md" />
           {t("common.loading")}
         </div>
@@ -132,7 +132,7 @@ export default function PeopleContent() {
         </Card>
       ) : (
         <>
-          <p className="text-xs text-default-400">{t("people.found", { count: total })}</p>
+          <p className="text-xs text-muted-400">{t("people.found", { count: total })}</p>
           <Stack gap="sm">
             {parents.map((p) => {
               const suspended = !!p.suspendedAt;
@@ -148,7 +148,7 @@ export default function PeopleContent() {
                           </Badge>
                         )}
                       </div>
-                      <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-default-500">
+                      <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-500">
                         <span className="inline-flex items-center gap-1">
                           <Phone size={12} /> {p.phone}
                         </span>
@@ -203,7 +203,7 @@ export default function PeopleContent() {
                   </div>
 
                   {/* Students underneath */}
-                  <div className="mt-3 border-t border-default-100 pt-3">
+                  <div className="mt-3 border-t border-muted-100 pt-3">
                     {p.students.length === 0 ? (
                       <Text size="xs" c="dimmed">
                         {t("people.noStudents")}
@@ -217,9 +217,9 @@ export default function PeopleContent() {
                               <div className="min-w-0">
                                 <span className="text-sm font-medium">{s.nickname || s.name}</span>
                                 {s.nickname && s.name !== s.nickname && (
-                                  <span className="ml-1.5 text-xs text-default-400">{s.name}</span>
+                                  <span className="ml-1.5 text-xs text-muted-400">{s.name}</span>
                                 )}
-                                {meta && <span className="ml-2 text-xs text-default-400">· {meta}</span>}
+                                {meta && <span className="ml-2 text-xs text-muted-400">· {meta}</span>}
                               </div>
                               <Tooltip label={t("people.edit")} withinPortal>
                                 <ActionIcon

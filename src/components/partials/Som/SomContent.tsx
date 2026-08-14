@@ -18,7 +18,7 @@ export default function SomContent() {
 
   if (isLoading || !data) {
     return (
-      <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-default-500">
+      <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-muted-500">
         <Loader size="md" />
         {t("common.loading")}
       </div>
@@ -31,8 +31,8 @@ export default function SomContent() {
     <Stack gap="lg">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">{t("som.title")}</h1>
-        <p className="text-sm text-default-500">{t("som.subtitle")}</p>
-        <p className="mt-0.5 text-xs text-default-400">
+        <p className="text-sm text-muted-500">{t("som.subtitle")}</p>
+        <p className="mt-0.5 text-xs text-muted-400">
           {t("som.generatedAt", { time: fmtDateTime(data.generatedAt) })}
         </p>
       </div>
@@ -46,7 +46,7 @@ export default function SomContent() {
           <Stat label={t("som.byRecentTrial")} value={ec.byRecentTrial} />
           <Stat label={t("som.totalCustomers")} value={ec.total} accent />
         </SimpleGrid>
-        <p className="mt-1.5 text-xs text-default-400">
+        <p className="mt-1.5 text-xs text-muted-400">
           {t("som.trialWindow", { date: fmtDate(ec.recentTrialSince) })}
         </p>
       </section>
@@ -110,7 +110,7 @@ export default function SomContent() {
   }
 
   function SectionHeading({ children }: { children: ReactNode }) {
-    return <h2 className="mb-2 text-sm font-semibold text-default-600">{children}</h2>;
+    return <h2 className="mb-2 text-sm font-semibold text-muted-600">{children}</h2>;
   }
 
   function BreakdownCard({
@@ -149,7 +149,7 @@ export default function SomContent() {
                       <Text size="sm" c={isUnknown ? "dimmed" : undefined} truncate>
                         {labelOf(b)}
                       </Text>
-                      <Text size="xs" c="dimmed" className="shrink-0 font-num">
+                      <Text size="xs" c="dimmed" className="shrink-0 tabular-nums">
                         {b.count} · {pct}%
                       </Text>
                     </Group>
@@ -170,7 +170,7 @@ function Stat({ label, value, accent }: { label: string; value: number | string;
       <Text size="xs" c="dimmed">
         {label}
       </Text>
-      <Text fw={700} fz="xl" c={accent ? "blue" : undefined} className="font-num">
+      <Text fw={700} fz="xl" c={accent ? "blue" : undefined} className="tabular-nums">
         {value}
       </Text>
     </Card>

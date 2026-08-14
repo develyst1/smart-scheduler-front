@@ -146,7 +146,7 @@ export default function CalendarHeader({
 
       {/* แถวล่าง: ตัวกรองครูผู้สอน + ค้นหานักเรียน */}
       {teachers.length > 0 && (
-        <div className="flex flex-wrap items-end gap-3 border-t border-default-100 pt-3">
+        <div className="flex flex-wrap items-end gap-3 border-t border-muted-100 pt-3">
           <TextInput
             label={t("calendar.studentSearch")}
             placeholder={t("calendar.studentSearchPlaceholder")}

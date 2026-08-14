@@ -27,18 +27,18 @@ export default function ArchivedTeachers() {
 
   return (
     <Card padding="md">
-      <p className="mb-3 text-sm font-semibold text-default-500">
+      <p className="mb-3 text-sm font-semibold text-muted-500">
         {t("teachers.archivedSection")} ({archived.length})
       </p>
       <div className="flex flex-col gap-2">
         {archived.map((tc) => (
           <div
             key={tc.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-default-100 p-3 opacity-80"
+            className="flex items-center justify-between gap-3 rounded-xl border border-muted-100 p-3 opacity-80"
           >
             <div className="min-w-0">
               <p className="font-medium">
-                {tc.name} <span className="text-xs text-default-400">({tc.nickname})</span>
+                {tc.name} <span className="text-xs text-muted-400">({tc.nickname})</span>
               </p>
               <Badge size="xs" variant="light" color="gray" mt={2}>
                 {TEACHER_TYPE_LABEL[tc.type]}

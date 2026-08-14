@@ -255,7 +255,7 @@ function ViewBooking({
       {booking.note && (
         <>
           <Divider />
-          <p className="text-sm text-default-500">{t("booking.noteLabel")}: {booking.note}</p>
+          <p className="text-sm text-muted-500">{t("booking.noteLabel")}: {booking.note}</p>
         </>
       )}
 
@@ -533,7 +533,7 @@ function MoveBookingForm({
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs text-default-400">{label}</dt>
+      <dt className="text-xs text-muted-400">{label}</dt>
       <dd className="font-medium">{value}</dd>
     </div>
   );
@@ -992,7 +992,7 @@ function CreateForm({
 
 function ContextCard({ text }: { text: string }) {
   return (
-    <div className="rounded-lg border border-default-200 bg-default-50 px-3 py-2">
+    <div className="rounded-lg border border-muted-200 bg-muted-50 px-3 py-2">
       <Text fz="sm">{text}</Text>
     </div>
   );

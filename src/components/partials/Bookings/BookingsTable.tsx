@@ -26,6 +26,7 @@ import PagerBar from "@/components/common/PagerBar";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { useAllBookings, useBulkConfirm, useTeachers } from "@/hooks/scheduler";
+import { formatDateDisplay } from "@/lib/ui/format";
 import type { BookingSort } from "@/services/scheduler.service";
 import type { BookingStatus, BookingType } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR } from "@/types/app/scheduler";
@@ -151,7 +152,7 @@ export default function BookingsTable() {
   if (isLoading) {
     return (
       <Card padding="lg">
-        <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-default-500">
+        <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-muted-500">
           <Loader size="md" />
           {t("common.loading")}
         </div>
@@ -259,7 +260,7 @@ export default function BookingsTable() {
       </div>
 
       <Group justify="space-between" align="center">
-        <p className="text-xs text-default-400">{t("bookings.found", { count: total })}</p>
+        <p className="text-xs text-muted-400">{t("bookings.found", { count: total })}</p>
         {selected.length > 0 && (
           <Button
             size="xs"
@@ -273,9 +274,9 @@ export default function BookingsTable() {
       </Group>
 
       <StickyScrollArea minWidth={760}>
-      <Table highlightOnHover verticalSpacing="sm" withTableBorder aria-label={t("bookings.tableLabel")} className="whitespace-nowrap">
-        <Table.Thead className="bg-default-100">
-          <Table.Tr className="text-xs uppercase tracking-wide text-default-500">
+      <Table highlightOnHover verticalSpacing="sm" withTableBorder aria-label={t("bookings.tableLabel")} className="whitespace-nowrap tabular-nums">
+        <Table.Thead className="bg-muted-100">
+          <Table.Tr className="text-xs uppercase tracking-wide text-muted-500">
             <Table.Th w={40} data-pin="lead">
               <Checkbox
                 aria-label={t("bookings.bulkSelectAll")}
@@ -294,7 +295,7 @@ export default function BookingsTable() {
               <UnstyledButton
                 onClick={() => setSort((s) => (s === "upcoming" ? "date_asc" : "upcoming"))}
                 aria-label={t(sort === "upcoming" ? "bookings.sortToOldest" : "bookings.sortToUpcoming")}
-                className="inline-flex items-center gap-1 text-xs uppercase tracking-wide text-default-500 hover:text-default-900"
+                className="inline-flex items-center gap-1 text-xs uppercase tracking-wide text-muted-500 hover:text-muted-900"
               >
                 {t("bookings.colDate")}
                 {sort === "upcoming" ? <ArrowDownWideNarrow size={13} /> : <ArrowUpNarrowWide size={13} />}
@@ -308,7 +309,7 @@ export default function BookingsTable() {
         <Table.Tbody>
           {rows.length === 0 ? (
             <Table.Tr>
-              <Table.Td colSpan={8} className="text-center text-sm text-default-400">
+              <Table.Td colSpan={8} className="text-center text-sm text-muted-400">
                 {t("bookings.noMatch")}
               </Table.Td>
             </Table.Tr>
@@ -327,7 +328,7 @@ export default function BookingsTable() {
                 <Table.Td className="font-medium">{b.studentName}</Table.Td>
                 <Table.Td>{b.subject}</Table.Td>
                 <Table.Td>{teacherName(b.teacherId)}</Table.Td>
-                <Table.Td>{b.date}</Table.Td>
+                <Table.Td>{formatDateDisplay(b.date)}</Table.Td>
                 <Table.Td>
                   {b.startTime}-{b.endTime}
                 </Table.Td>

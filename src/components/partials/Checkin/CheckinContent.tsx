@@ -68,7 +68,7 @@ export default function CheckinContent() {
   }, [submit]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f5f7fb] p-4">
+    <div className="flex min-h-screen items-center justify-center bg-paper p-4">
       <Paper withBorder shadow="sm" radius="lg" p="xl" className="w-full max-w-sm">
         {phase.kind === "loading" && <LoadingView />}
         {phase.kind === "success" && <SuccessView result={phase.result} />}
@@ -83,7 +83,7 @@ function LoadingView() {
   return (
     <div className="flex flex-col items-center gap-3 py-6 text-center">
       <Loader />
-      <p className="text-sm text-default-500">{t("checkin.loading")}</p>
+      <p className="text-sm text-muted-500">{t("checkin.loading")}</p>
     </div>
   );
 }
@@ -98,7 +98,7 @@ function SuccessView({ result }: { result: CheckinResult }) {
       </span>
       <Title order={3}>{result.already ? t("checkin.alreadyTitle") : t("checkin.successTitle")}</Title>
       {b && (
-        <div className="w-full rounded-lg bg-default-100 p-4 text-left text-sm">
+        <div className="w-full rounded-lg bg-muted-100 p-4 text-left text-sm">
           {b.student?.name && <BookingLine label={t("checkin.student")} value={b.student.name} />}
           {b.subject?.name && <BookingLine label={t("checkin.subject")} value={b.subject.name} />}
           {b.teacher?.nickname && <BookingLine label={t("checkin.teacher")} value={b.teacher.nickname} />}
@@ -115,7 +115,7 @@ function SuccessView({ result }: { result: CheckinResult }) {
       {!result.already && result.crmAwarded ? (
         <p className="text-sm text-success">{t("checkin.pointsAwarded", { n: result.crmAwarded })}</p>
       ) : null}
-      <p className="mt-1 text-xs text-default-400">{t("checkin.closeHint")}</p>
+      <p className="mt-1 text-xs text-muted-400">{t("checkin.closeHint")}</p>
     </div>
   );
 }
@@ -130,7 +130,7 @@ function ErrorView({ message, onRetry }: { message: string; onRetry: () => void 
         {isWindow ? <Clock3 size={32} /> : <XCircle size={32} />}
       </span>
       <Title order={3}>{t("checkin.failTitle")}</Title>
-      <p className="text-sm text-default-600">{message}</p>
+      <p className="text-sm text-muted-600">{message}</p>
       <Button variant="light" onClick={onRetry} mt="xs">
         {t("checkin.retry")}
       </Button>
@@ -141,7 +141,7 @@ function ErrorView({ message, onRetry }: { message: string; onRetry: () => void 
 function BookingLine({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-3 py-1">
-      <span className="text-default-500">{label}</span>
+      <span className="text-muted-500">{label}</span>
       <span className="font-medium text-foreground">{value}</span>
     </div>
   );

@@ -38,6 +38,13 @@ export const getSellablePackages = async (): Promise<SellablePackagesResponse> =
           unpricedSubjects: [{ id: "s6", name: "Surfskate" }],
           // TASK-106 — only bike-skate is voucher-bookable (matches the real card); onewheel/balance-* excluded.
           voucherAllowedGroups: ["bike-skate"],
+          // TASK-123 — rental prices (VAT-incl), matching the BE authority; labels stay FE i18n.
+          rentalItems: [
+            { code: "rental-set", priceMinor: THB(200) },
+            { code: "rental-ride", priceMinor: THB(150) },
+            { code: "rental-helmet", priceMinor: THB(50) },
+            { code: "rental-pads", priceMinor: THB(50) },
+          ],
         }),
       200,
     ),

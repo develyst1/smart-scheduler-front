@@ -105,7 +105,7 @@ export default function TeacherFormModal({ opened, teacher, subjectCatalog, onCl
               allowDeselect={false}
             />
             <div>
-              <p className="mb-1.5 text-xs text-default-500">{t("teachers.workDaysLabel")}</p>
+              <p className="mb-1.5 text-xs text-muted-500">{t("teachers.workDaysLabel")}</p>
               <div className="flex gap-1.5">
                 {dayOptions.map((opt) => {
                   const day = Number(opt.value);
@@ -119,7 +119,7 @@ export default function TeacherFormModal({ opened, teacher, subjectCatalog, onCl
                       className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-colors ${
                         selected
                           ? "bg-primary text-primary-foreground"
-                          : "border border-default-200 text-default-500 hover:bg-default-100"
+                          : "border border-muted-200 text-muted-500 hover:bg-muted-100"
                       }`}
                     >
                       {opt.label}

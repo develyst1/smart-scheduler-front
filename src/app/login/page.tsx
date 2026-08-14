@@ -37,14 +37,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f5f7fb] p-4">
+    <div className="flex min-h-screen items-center justify-center bg-paper p-4">
       <Paper withBorder shadow="sm" radius="lg" p="xl" className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-blue-700 text-primary-foreground">
             <CalendarDays size={24} />
           </span>
           <Title order={3}>Smart Scheduler</Title>
-          <p className="text-sm text-default-500">{t("login.subtitle")}</p>
+          <p className="text-sm text-muted-500">{t("login.subtitle")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

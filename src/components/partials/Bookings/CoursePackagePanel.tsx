@@ -73,7 +73,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
         className="max-w-md"
       />
       {isLoading ? (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-default-500">
+        <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500">
           <Loader size="md" />
           {t("common.loading")}
         </div>
@@ -99,13 +99,13 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-semibold">{c.studentName}</p>
-                  <p className="text-xs text-default-400">
+                  <p className="text-xs text-muted-400">
                     {t("course.summary", { size: c.size, expiry: c.expiryDate })}
                   </p>
                   {c.subject?.name && (
-                    <p className="mt-0.5 text-xs text-default-400">
+                    <p className="mt-0.5 text-xs text-muted-400">
                       {t("course.program")}:{" "}
-                      <span className="font-medium text-default-600">{c.subject.name}</span>
+                      <span className="font-medium text-muted-600">{c.subject.name}</span>
                     </p>
                   )}
                 </div>
@@ -143,7 +143,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                 />
 
                 <div className="flex-1">
-                  <div className="mb-1 flex justify-between text-xs text-default-500">
+                  <div className="mb-1 flex justify-between text-xs text-muted-500">
                     <span>{t("course.leaveQuota")}</span>
                     <span>{t("course.leftN", { n: c.leaveRemaining })}</span>
                   </div>
@@ -153,7 +153,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                     value={(c.leaveUsed / c.leaveQuota) * 100}
                     color={leaveColor}
                   />
-                  <p className="mt-1.5 text-[11px] text-default-400">
+                  <p className="mt-1.5 text-[11px] text-muted-400">
                     {t("course.usage", { used: c.leaveUsed, quota: c.leaveQuota, week: c.maxWeek })}
                   </p>
                 </div>

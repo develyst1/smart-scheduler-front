@@ -88,10 +88,10 @@ function SetBudgetModal({
     <Modal opened onClose={onClose} title={t("teachers.budgetModalTitle")} centered radius="lg" size="lg">
       <Stack gap="md">
         <Group grow>
-          <NumberInput label={t("teachers.fieldMonthlyBudget")} value={budget} onChange={setBudget} min={0} thousandSeparator="," leftSection={<span className="text-xs text-default-400">฿</span>} />
-          <NumberInput label={t("teachers.fieldRate")} value={rate} onChange={setRate} min={0} thousandSeparator="," leftSection={<span className="text-xs text-default-400">฿</span>} />
+          <NumberInput label={t("teachers.fieldMonthlyBudget")} value={budget} onChange={setBudget} min={0} thousandSeparator="," leftSection={<span className="text-xs text-muted-400">฿</span>} />
+          <NumberInput label={t("teachers.fieldRate")} value={rate} onChange={setRate} min={0} thousandSeparator="," leftSection={<span className="text-xs text-muted-400">฿</span>} />
         </Group>
-        <NumberInput label={t("teachers.fieldNearCap")} value={warn} onChange={setWarn} min={0} thousandSeparator="," leftSection={<span className="text-xs text-default-400">฿</span>} />
+        <NumberInput label={t("teachers.fieldNearCap")} value={warn} onChange={setWarn} min={0} thousandSeparator="," leftSection={<span className="text-xs text-muted-400">฿</span>} />
         <Alert variant="light" color="blue">
           <Text fz="sm">{t("teachers.budgetEditNote")}</Text>
         </Alert>
@@ -140,9 +140,9 @@ function TopUpModal({
   return (
     <Modal opened onClose={onClose} title={t("teachers.topUpTitle")} centered radius="lg">
       <Stack gap="md">
-        <NumberInput label={t("teachers.topUpAmount")} value={amount} onChange={setAmount} min={0} thousandSeparator="," leftSection={<span className="text-xs text-default-400">฿</span>} />
+        <NumberInput label={t("teachers.topUpAmount")} value={amount} onChange={setAmount} min={0} thousandSeparator="," leftSection={<span className="text-xs text-muted-400">฿</span>} />
         <Text fz="sm" c="dimmed">
-          {t("teachers.budgetRemaining")}: <span className="font-num">฿{baht(nextRemaining)}</span>
+          {t("teachers.budgetRemaining")}: <span className="tabular-nums">฿{baht(nextRemaining)}</span>
         </Text>
         <Group justify="flex-end">
           <Button variant="subtle" color="gray" onClick={onClose}>{t("common.cancel")}</Button>

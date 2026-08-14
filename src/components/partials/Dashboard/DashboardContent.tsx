@@ -23,7 +23,7 @@ export default function DashboardContent() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{t("dashboard.title")}</h1>
-          <p className="text-sm text-default-500">{t("dashboard.subtitle")}</p>
+          <p className="text-sm text-muted-500">{t("dashboard.subtitle")}</p>
         </div>
         <Group gap="sm">
           <DatePickerInput
@@ -46,22 +46,22 @@ export default function DashboardContent() {
       </div>
 
       {isLoading ? (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-default-500">
+        <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500">
           <Loader size="md" />
           {t("common.loading")}
         </div>
       ) : byValue.length === 0 ? (
-        <p className="py-10 text-center text-sm text-default-400">{t("dashboard.noData")}</p>
+        <p className="py-10 text-center text-sm text-muted-400">{t("dashboard.noData")}</p>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
           {/* Bookings per badge value */}
           <Card withBorder radius="lg" p="md">
-            <h2 className="mb-3 text-sm font-semibold text-default-600">{t("dashboard.byBadge")}</h2>
+            <h2 className="mb-3 text-sm font-semibold text-muted-600">{t("dashboard.byBadge")}</h2>
             <div className="space-y-2.5">
               {byValue.map((v) => (
                 <div key={v.valueId} className="flex items-center gap-3">
                   <span
-                    className="w-28 shrink-0 truncate text-xs font-semibold text-default-800"
+                    className="w-28 shrink-0 truncate text-xs font-semibold text-muted-800"
                     title={v.label}
                   >
                     {v.label}
@@ -85,7 +85,7 @@ export default function DashboardContent() {
 
           {/* Teacher × badge */}
           <Card withBorder radius="lg" p="md">
-            <h2 className="mb-3 text-sm font-semibold text-default-600">{t("dashboard.byTeacher")}</h2>
+            <h2 className="mb-3 text-sm font-semibold text-muted-600">{t("dashboard.byTeacher")}</h2>
             <Table.ScrollContainer type="native" minWidth={360}>
             <Table verticalSpacing="xs" highlightOnHover>
               <Table.Thead>

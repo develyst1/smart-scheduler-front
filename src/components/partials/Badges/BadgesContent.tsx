@@ -65,7 +65,7 @@ export default function BadgesContent() {
 
   if (isLoading) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-default-500">
+      <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500">
         <Loader size="md" />
         {t("common.loading")}
       </div>
@@ -76,7 +76,7 @@ export default function BadgesContent() {
     <div className="space-y-5">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">{t("badges.title")}</h1>
-        <p className="text-sm text-default-500">{t("badges.subtitle")}</p>
+        <p className="text-sm text-muted-500">{t("badges.subtitle")}</p>
       </div>
 
       <Card withBorder radius="lg" p="md">
@@ -119,7 +119,7 @@ export default function BadgesContent() {
       </Modal>
 
       {types.length === 0 ? (
-        <p className="py-10 text-center text-sm text-default-400">{t("badges.noTypes")}</p>
+        <p className="py-10 text-center text-sm text-muted-400">{t("badges.noTypes")}</p>
       ) : (
         <Stack gap="md">
           {types.map((type) => (
@@ -181,7 +181,7 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
       </Group>
 
       {type.values.length === 0 ? (
-        <p className="text-sm text-default-400">{t("badges.noValues")}</p>
+        <p className="text-sm text-muted-400">{t("badges.noValues")}</p>
       ) : (
         <Group gap="xs" mb="sm">
           {type.values.map((v) => (
@@ -212,7 +212,7 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
         </Group>
       )}
 
-      <Group align="end" gap="sm" className="border-t border-default-100 pt-3">
+      <Group align="end" gap="sm" className="border-t border-muted-100 pt-3">
         <TextInput
           label={t("badges.valueLabel")}
           placeholder={t("badges.valuePlaceholder")}
@@ -223,7 +223,7 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
           size="sm"
         />
         <div>
-          <p className="mb-1 text-xs font-medium text-default-500">{t("badges.color")}</p>
+          <p className="mb-1 text-xs font-medium text-muted-500">{t("badges.color")}</p>
           <Group gap={6}>
             {BADGE_COLORS.map((c) => (
               <ColorSwatch

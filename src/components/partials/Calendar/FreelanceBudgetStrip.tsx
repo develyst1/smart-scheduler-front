@@ -38,7 +38,7 @@ export default function FreelanceBudgetStrip({ teacher }: { teacher: TeacherView
         className={`inline-flex max-w-full items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none ${TONE_CLASS[tone]}`}
       >
         <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_CLASS[tone]}`} />
-        <span className="truncate font-num">
+        <span className="truncate tabular-nums">
           ฿{baht(remaining)}
           {budget != null && <span className="opacity-60"> / ฿{baht(budget)}</span>}
         </span>

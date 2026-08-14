@@ -166,11 +166,11 @@ export default function LinkRequestsContent() {
     <Stack gap="md">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">{t("linkRequests.title")}</h1>
-        <p className="max-w-2xl text-sm text-default-500">{t("linkRequests.subtitle")}</p>
+        <p className="max-w-2xl text-sm text-muted-500">{t("linkRequests.subtitle")}</p>
       </div>
 
       {isLoading ? (
-        <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-default-500">
+        <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-muted-500">
           <Loader size="md" />
           {t("common.loading")}
         </div>
@@ -207,7 +207,7 @@ export default function LinkRequestsContent() {
           removing it — is then in one place staff can find, and neither action is buried in a row menu. */}
       <div>
         <h2 className="text-base font-semibold">{t("linkRequests.linkedTitle")}</h2>
-        <p className="max-w-2xl text-sm text-default-500">{t("linkRequests.linkedSubtitle")}</p>
+        <p className="max-w-2xl text-sm text-muted-500">{t("linkRequests.linkedSubtitle")}</p>
       </div>
 
       {linked.length === 0 ? (
@@ -226,7 +226,7 @@ export default function LinkRequestsContent() {
                 justify="space-between"
                 wrap="nowrap"
                 p="sm"
-                className={i > 0 ? "border-t border-default-200" : undefined}
+                className={i > 0 ? "border-t border-muted-200" : undefined}
               >
                 <div className="min-w-0">
                   <Text fw={500}>{tc.nickname}</Text>

@@ -70,7 +70,7 @@ export default function TeachersContent() {
 
   if (loadingTeachers || loadingOrder) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-default-500">
+      <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500">
         <Loader size="md" />
         {t("common.loading")}
       </div>
@@ -101,7 +101,7 @@ export default function TeachersContent() {
       {/* ── ลำดับความสำคัญการจัดครู ── */}
       <Paper withBorder p="md" className="bg-content1">
         <p className="mb-1 text-sm font-semibold">{t("teachers.priorityTitle")}</p>
-        <p className="mb-3 text-xs text-default-400">{t("teachers.priorityHint")}</p>
+        <p className="mb-3 text-xs text-muted-400">{t("teachers.priorityHint")}</p>
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="teacher-type-order">
             {(dropProvided) => (
@@ -119,13 +119,13 @@ export default function TeachersContent() {
                         className={`flex items-center justify-between rounded-xl border bg-content1 p-2.5 transition-colors ${
                           snapshot.isDragging
                             ? "border-primary/50 shadow-md"
-                            : "border-default-100"
+                            : "border-muted-100"
                         }`}
                       >
                         <div className="flex items-center gap-2">
                           <span
                             {...dragProvided.dragHandleProps}
-                            className="cursor-grab text-default-300 active:cursor-grabbing"
+                            className="cursor-grab text-muted-300 active:cursor-grabbing"
                             aria-label={t("teachers.dragReorder")}
                           >
                             <GripVertical size={18} />
@@ -147,7 +147,7 @@ export default function TeachersContent() {
       </Paper>
 
       <Group justify="space-between" align="center">
-        <p className="text-sm text-default-500">{t("teachers.pageHint")}</p>
+        <p className="text-sm text-muted-500">{t("teachers.pageHint")}</p>
         <Button leftSection={<UserPlus size={16} />} onClick={openAdd}>
           {t("teachers.addTeacher")}
         </Button>
@@ -163,7 +163,7 @@ export default function TeachersContent() {
             <Group justify="space-between" mb="sm">
               <div className="flex items-center gap-2">
                 <TeacherTypeChip type={type} size="md" />
-                <span className="text-sm text-default-400">{t("teachers.count", { n: group.length })}</span>
+                <span className="text-sm text-muted-400">{t("teachers.count", { n: group.length })}</span>
               </div>
               <Button
                 size="xs"
@@ -252,14 +252,14 @@ function TeacherRow({
   const { format } = useWorkDays();
   return (
     <div
-      className={`rounded-xl border border-default-100 p-3 transition-colors hover:bg-default-100/60 ${
+      className={`rounded-xl border border-muted-100 p-3 transition-colors hover:bg-muted-100/60 ${
         teacher.active ? "" : "opacity-60"
       }`}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="font-medium">{teacher.name}</p>
-          <p className="text-xs text-default-400">
+          <p className="text-xs text-muted-400">
             ({teacher.nickname}) · {format(teacher.workDays)}
           </p>
           <SubjectChips subjects={teacher.subjects} />
@@ -270,7 +270,7 @@ function TeacherRow({
               {t("teachers.setupIncomplete")}
             </Badge>
           ) : (
-            <span className={`text-xs ${teacher.active ? "text-success" : "text-default-400"}`}>
+            <span className={`text-xs ${teacher.active ? "text-success" : "text-muted-400"}`}>
               {teacher.active ? t("teachers.active") : t("teachers.inactive")}
             </span>
           )}
@@ -339,13 +339,13 @@ function FreelanceRow({
   return (
     <div
       className={`rounded-xl border p-3 transition-colors ${
-        teacher.overLimit ? "border-danger/30 bg-danger/5" : "border-default-100 hover:bg-default-100/60"
+        teacher.overLimit ? "border-danger/30 bg-danger/5" : "border-muted-100 hover:bg-muted-100/60"
       } ${!teacher.active && !teacher.overLimit ? "opacity-60" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="font-medium">{teacher.name}</p>
-          <p className="text-xs text-default-400">
+          <p className="text-xs text-muted-400">
             ({teacher.nickname}) · {format(teacher.workDays)} · ฿{thb(teacher.hourlyRate ?? 0)}{t("teachers.perHour")}
           </p>
           <SubjectChips subjects={teacher.subjects} />
@@ -360,7 +360,7 @@ function FreelanceRow({
               {t("teachers.overCap")}
             </Badge>
           ) : (
-            <span className={`text-xs ${teacher.active ? "text-success" : "text-default-400"}`}>
+            <span className={`text-xs ${teacher.active ? "text-success" : "text-muted-400"}`}>
               {teacher.active ? t("teachers.active") : t("teachers.inactive")}
             </span>
           )}
@@ -376,7 +376,7 @@ function FreelanceRow({
 
       {/* รายได้เดือนนี้ + งบฟรีแลนซ์คงเหลือ (บาท, จาก back-office) */}
       <div className="mt-3">
-        <div className="mb-1 flex items-center justify-between text-xs text-default-500">
+        <div className="mb-1 flex items-center justify-between text-xs text-muted-500">
           <span className="flex items-center gap-1">
             <Wallet size={13} /> {t("teachers.monthIncome")}
           </span>
@@ -387,15 +387,15 @@ function FreelanceRow({
         {hasBudget && (
           <>
             <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="text-default-500">{t("teachers.budgetRemaining")}</span>
+              <span className="text-muted-500">{t("teachers.budgetRemaining")}</span>
               <span
                 className={`font-medium ${
-                  rawOver ? "text-danger" : nearCap ? "text-warning" : "text-default-600"
+                  rawOver ? "text-danger" : nearCap ? "text-warning" : "text-muted-600"
                 }`}
               >
                 ฿{bahtOfSatang(remainingMinor ?? 0)}
                 {budgetMinor != null && (
-                  <span className="text-default-400"> / ฿{bahtOfSatang(budgetMinor)}</span>
+                  <span className="text-muted-400"> / ฿{bahtOfSatang(budgetMinor)}</span>
                 )}
               </span>
             </div>
@@ -406,7 +406,7 @@ function FreelanceRow({
 
       {reached && (
         <div className="mt-3 flex items-center justify-end gap-2">
-          <span className="text-xs text-default-500">{t("teachers.overrideLabel")}</span>
+          <span className="text-xs text-muted-500">{t("teachers.overrideLabel")}</span>
           <Switch
             checked={!!teacher.limitOverride}
             onChange={(e) => handleOverride(e.currentTarget.checked)}

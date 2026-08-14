@@ -8,7 +8,7 @@ export default function CheckinPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#f5f7fb]">
+        <div className="flex min-h-screen items-center justify-center bg-paper">
           <Loader />
         </div>
       }

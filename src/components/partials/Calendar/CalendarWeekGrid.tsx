@@ -25,7 +25,7 @@ const DOT_STYLE: Record<string, string> = {
   warning: "bg-warning",
   secondary: "bg-secondary",
   danger: "bg-danger",
-  default: "bg-default-400",
+  default: "bg-muted-400",
 };
 
 const CHIP_STYLE: Record<string, string> = {
@@ -34,7 +34,7 @@ const CHIP_STYLE: Record<string, string> = {
   warning: "bg-warning/10 hover:bg-warning/15",
   secondary: "bg-secondary/10 hover:bg-secondary/15",
   danger: "bg-danger/10 hover:bg-danger/15",
-  default: "bg-default-100 hover:bg-default-200",
+  default: "bg-muted-100 hover:bg-muted-200",
 };
 
 export default function CalendarWeekGrid({
@@ -60,13 +60,13 @@ export default function CalendarWeekGrid({
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   return (
-    <div className="overflow-auto rounded-2xl border border-default-200 bg-content1 shadow-sm">
+    <div className="overflow-auto rounded-2xl border border-muted-200 bg-content1 shadow-sm">
       <div
         className="grid min-w-max"
         style={{ gridTemplateColumns: `160px repeat(7, minmax(150px, 1fr))` }}
       >
         {/* Header row */}
-        <div className="sticky left-0 top-0 z-20 border-b border-r border-default-200 bg-content1 p-3 text-xs font-medium text-default-400">
+        <div className="sticky left-0 top-0 z-20 border-b border-r border-muted-200 bg-content1 p-3 text-xs font-medium text-muted-400">
           {t("calendar.teacherDay")}
         </div>
         {weekDays.map((day) => {
@@ -75,14 +75,14 @@ export default function CalendarWeekGrid({
           return (
             <div
               key={day}
-              className={`sticky top-0 z-10 border-b border-l border-default-100 p-2 text-center ${
+              className={`sticky top-0 z-10 border-b border-l border-muted-100 p-2 text-center ${
                 isToday ? "bg-primary/10" : "bg-content1"
               }`}
             >
               <p className={`text-sm font-semibold leading-none ${isToday ? "text-primary" : ""}`}>
                 {d.format("dd")}
               </p>
-              <p className="mt-1 text-xs text-default-400">{d.format("D MMM")}</p>
+              <p className="mt-1 text-xs text-muted-400">{d.format("D MMM")}</p>
             </div>
           );
         })}
@@ -90,7 +90,7 @@ export default function CalendarWeekGrid({
         {/* Teacher rows */}
         {activeTeachers.map((tc) => (
           <div key={tc.id} className="contents">
-            <div className="sticky left-0 z-10 flex flex-col gap-1.5 border-r border-t border-default-100 bg-content1 p-3">
+            <div className="sticky left-0 z-10 flex flex-col gap-1.5 border-r border-t border-muted-100 bg-content1 p-3">
               <p className="truncate text-sm font-semibold leading-none">{tc.nickname}</p>
               <TeacherTypeChip type={tc.type} />
               <FreelanceBudgetStrip teacher={tc} />
@@ -102,8 +102,8 @@ export default function CalendarWeekGrid({
               return (
                 <div
                   key={day}
-                  className={`min-h-24 space-y-1 border-l border-t border-default-100 p-1.5 ${
-                    canBook ? "" : "bg-default-50/80"
+                  className={`min-h-24 space-y-1 border-l border-t border-muted-100 p-1.5 ${
+                    canBook ? "" : "bg-muted-50/80"
                   }`}
                 >
                   {items.map((b) => {
@@ -116,7 +116,7 @@ export default function CalendarWeekGrid({
                         className={`flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left transition-colors ${CHIP_STYLE[accent]}`}
                       >
                         <span className={`h-2 w-2 shrink-0 rounded-full ${DOT_STYLE[accent]}`} />
-                        <span className="shrink-0 text-[11px] font-medium text-default-500">
+                        <span className="shrink-0 text-[11px] font-medium text-muted-500">
                           {b.startTime}
                         </span>
                         <span className="truncate text-xs font-medium">{b.studentName}</span>
@@ -128,7 +128,7 @@ export default function CalendarWeekGrid({
                     <button
                       type="button"
                       onClick={() => onCreate(tc.id, TIME_SLOTS[0], day)}
-                      className="flex w-full items-center justify-center rounded-lg border border-dashed border-default-200 py-1 text-default-300 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                      className="flex w-full items-center justify-center rounded-lg border border-dashed border-muted-200 py-1 text-muted-300 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
                       aria-label={t("calendar.addBooking")}
                     >
                       <Plus size={14} />

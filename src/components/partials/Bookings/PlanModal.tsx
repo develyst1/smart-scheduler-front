@@ -20,6 +20,7 @@ import { Textarea, Tooltip } from "@mantine/core";
 import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, Pencil, Ticket, UserMinus, X } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
+import { formatDateDisplay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
 import { ApiClientError } from "@/lib/api/client";
 import { StatusChip } from "@/components/common/BookingBadges";
@@ -265,7 +266,7 @@ function SummaryBar({ plan }: { plan: EntitlementPlan }) {
   const t = useT();
   const end = plan.liveEndDate ? dayjs(plan.liveEndDate).format("D MMM YY") : t("plan.noLiveEnd");
   return (
-    <div className="rounded-xl border border-default-200 bg-default-50/40 p-3">
+    <div className="rounded-xl border border-muted-200 bg-muted-50/40 p-3">
       <Group justify="space-between" gap="xs">
         <Group gap="xs">
           <Badge variant="light" color={plan.kind === "course" ? "blue" : "grape"}>
@@ -335,8 +336,8 @@ function SessionTable({
             const isExtra = s.bookingType === "SINGLE_SESSION"; // SPEC-033 — a charged extra, not a plan row
             return (
               <Table.Tr key={s.id} className={locked ? "opacity-60" : ""}>
-                <Table.Td className="font-num">{dayjs(s.date).format("DD/MMM/YY")}</Table.Td>
-                <Table.Td className="font-num">{s.startTime.slice(0, 5)}</Table.Td>
+                <Table.Td className="tabular-nums">{formatDateDisplay(s.date)}</Table.Td>
+                <Table.Td className="tabular-nums">{s.startTime.slice(0, 5)}</Table.Td>
                 <Table.Td>{s.teacher?.nickname ?? "—"}</Table.Td>
                 <Table.Td>{s.subject?.name ?? "—"}</Table.Td>
                 <Table.Td>
@@ -759,13 +760,13 @@ function PlanDiffConfirm({
           end,
         })}
       </Text>
-      <div className="max-h-[200px] overflow-auto rounded-md border border-default-100">
+      <div className="max-h-[200px] overflow-auto rounded-md border border-muted-100">
         <Table fz="xs" verticalSpacing={4}>
           <Table.Tbody>
             {preview.resultingSessions.map((s) => (
               <Table.Tr key={s.id}>
-                <Table.Td className="font-num">{dayjs(s.date).format("DD/MMM/YY")}</Table.Td>
-                <Table.Td className="font-num">{s.startTime.slice(0, 5)}</Table.Td>
+                <Table.Td className="tabular-nums">{formatDateDisplay(s.date)}</Table.Td>
+                <Table.Td className="tabular-nums">{s.startTime.slice(0, 5)}</Table.Td>
                 <Table.Td>{s.teacher?.nickname ?? "—"}</Table.Td>
                 <Table.Td>
                   <StatusChip status={s.status as BookingStatus} />

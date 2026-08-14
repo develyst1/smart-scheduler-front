@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           onToggleCollapse={() => setCollapsed((c) => !c)}
           onOpenMobile={() => setMobileOpen(true)}
         />
-        <main className="flex-1 overflow-auto bg-[#f5f7fb] p-4 sm:p-6">{children}</main>
+        <main className="flex-1 overflow-auto bg-paper p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

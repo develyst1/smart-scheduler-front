@@ -89,7 +89,7 @@ export default function ReportsContent() {
       </div>
 
       {isLoading || !report ? (
-        <div className="flex h-48 flex-col items-center justify-center gap-3 text-sm text-default-500">
+        <div className="flex h-48 flex-col items-center justify-center gap-3 text-sm text-muted-500">
           <Loader size="md" />
           {t("reports.summarizing")}
         </div>
@@ -132,7 +132,7 @@ export default function ReportsContent() {
                         <p className="text-2xl font-bold leading-none tracking-tight">
                           {report[s.key]}
                         </p>
-                        <p className="mt-1 text-xs text-default-400">{t(s.labelKey)}</p>
+                        <p className="mt-1 text-xs text-muted-400">{t(s.labelKey)}</p>
                       </div>
                     </div>
                   </Card>
@@ -152,7 +152,7 @@ export default function ReportsContent() {
                   key={item.type}
                   withBorder
                   p="md"
-                  className="flex items-center gap-3 bg-default-100/50"
+                  className="flex items-center gap-3 bg-muted-100/50"
                 >
                   <BookingTypeChip type={item.type} size="md" />
                   <span className="text-xl font-bold">{item.count}</span>
@@ -168,7 +168,7 @@ export default function ReportsContent() {
                 {t("reports.workload")}
               </Text>
               {report.byTeacher.length === 0 ? (
-                <p className="text-sm text-default-400">{t("reports.noSessions")}</p>
+                <p className="text-sm text-muted-400">{t("reports.noSessions")}</p>
               ) : (
                 <div className="space-y-3">
                   {report.byTeacher.map((tc) => {
@@ -188,7 +188,7 @@ export default function ReportsContent() {
                           value={maxTeacherCount > 0 ? (tc.count / maxTeacherCount) * 100 : 0}
                           color="blue"
                         />
-                        <span className="w-24 shrink-0 text-right text-xs text-default-500">
+                        <span className="w-24 shrink-0 text-right text-xs text-muted-500">
                           {t("reports.sessionsAttended", { count: tc.count, attended: tc.attended })}
                         </span>
                       </div>

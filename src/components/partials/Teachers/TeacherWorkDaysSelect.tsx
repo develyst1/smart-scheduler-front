@@ -80,7 +80,7 @@ export default function TeacherWorkDaysSelect({ teacherId, nickname, workDays }:
 
   return (
     <div className="mt-2 space-y-2">
-      <p className="text-xs text-default-500">{t("teachers.workDaysLabel")}</p>
+      <p className="text-xs text-muted-500">{t("teachers.workDaysLabel")}</p>
 
       {/* ปุ่มวัน 7 ปุ่ม — กด toggle ได้หลายวัน */}
       <div className="flex gap-1.5">
@@ -98,7 +98,7 @@ export default function TeacherWorkDaysSelect({ teacherId, nickname, workDays }:
               className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
                 selected
                   ? "bg-primary text-primary-foreground"
-                  : "border border-default-200 text-default-500 hover:bg-default-100"
+                  : "border border-muted-200 text-muted-500 hover:bg-muted-100"
               }`}
             >
               {opt.label}

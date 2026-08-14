@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { Modal, Stack, Select, NumberInput, Button, Group, Alert, Text } from "@mantine/core";
 import { PackageOpen, CheckCircle2, Info, AlertTriangle } from "lucide-react";
-import { useRecordRental } from "@/hooks/scheduler";
+import { useRecordRental, useSellablePackages } from "@/hooks/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { RENTAL_CODES, type RentalCode, type RentalResult } from "@/types/app/scheduler";
+import { formatPriceMinor } from "@/types/app/pricing";
 
 /**
  * Record an equipment rental (SPEC-031 / TASK-109). One modal, both surfaces:
@@ -26,6 +27,9 @@ export default function RentalModal({
 }) {
   const t = useT();
   const record = useRecordRental();
+  // TASK-123 — rental prices come from the server's `rentalItems` (never a second FE copy); labels stay FE i18n.
+  const { data: card } = useSellablePackages();
+  const priceOf = (c: string) => card?.rentalItems.find((r) => r.code === c)?.priceMinor;
 
   const [code, setCode] = useState<RentalCode | null>(null);
   const [hours, setHours] = useState<number>(1);
@@ -115,7 +119,11 @@ export default function RentalModal({
             <Select
               label={t("rental.item")}
               placeholder={t("rental.pickItem")}
-              data={RENTAL_CODES.map((c) => ({ value: c, label: t(`rental.item${c.charAt(0).toUpperCase()}${c.slice(1)}`) }))}
+              data={RENTAL_CODES.map((c) => {
+                const label = t(`rental.item${c.charAt(0).toUpperCase()}${c.slice(1)}`);
+                const p = priceOf(c);
+                return { value: c, label: p != null ? `${label} · ฿${formatPriceMinor(p)}` : label };
+              })}
               value={code}
               onChange={(v) => setCode(v as RentalCode | null)}
               allowDeselect={false}
@@ -131,6 +139,14 @@ export default function RentalModal({
               suffix={t("rental.hoursSuffix")}
               required
             />
+            {code && priceOf(code) != null && hours >= 1 && (
+              <Text size="sm" ta="right" c="dimmed">
+                {t("rental.total")}:{" "}
+                <strong className="text-muted-700">
+                  ฿{formatPriceMinor((priceOf(code) as number) * hours)}
+                </strong>
+              </Text>
+            )}
             <Group justify="flex-end" gap="sm">
               <Button variant="subtle" color="gray" onClick={onClose}>
                 {t("common.cancel")}
