@@ -15,12 +15,13 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-noto-sans-thai)", "system-ui", "sans-serif"],
       },
-      // All colours resolve to the CSS variables defined once in globals.css — the
-      // single token source (SPEC-037 / TASK-128). No hard-coded hex scale here.
+      // All colours resolve to the CSS channel-triplet vars in globals.css — the single
+      // token source (SPEC-037 / TASK-128). `rgb(var(…) / <alpha-value>)` so Tailwind
+      // opacity modifiers (`bg-x/40`) compose (DEF-3 fix). No hard-coded hex scale here.
       colors: {
-        foreground: "var(--color-fg)",
-        content1: "var(--color-surface)",
-        paper: "var(--color-paper)",
+        foreground: "rgb(var(--color-fg) / <alpha-value>)",
+        content1: "rgb(var(--color-surface) / <alpha-value>)",
+        paper: "rgb(var(--color-paper) / <alpha-value>)",
         primary: { DEFAULT: "#228be6", foreground: "#ffffff" },
         success: "#2f9e44",
         warning: "#e8a23d",
@@ -28,16 +29,16 @@ const config: Config = {
         danger: "#e03131",
         // `muted` replaces the old `default` scale (same slate values, now via vars).
         muted: {
-          50: "var(--color-muted-50)",
-          100: "var(--color-muted-100)",
-          200: "var(--color-muted-200)",
-          300: "var(--color-muted-300)",
-          400: "var(--color-muted-400)",
-          500: "var(--color-muted-500)",
-          600: "var(--color-muted-600)",
-          700: "var(--color-muted-700)",
-          800: "var(--color-muted-800)",
-          900: "var(--color-muted-900)",
+          50: "rgb(var(--color-muted-50) / <alpha-value>)",
+          100: "rgb(var(--color-muted-100) / <alpha-value>)",
+          200: "rgb(var(--color-muted-200) / <alpha-value>)",
+          300: "rgb(var(--color-muted-300) / <alpha-value>)",
+          400: "rgb(var(--color-muted-400) / <alpha-value>)",
+          500: "rgb(var(--color-muted-500) / <alpha-value>)",
+          600: "rgb(var(--color-muted-600) / <alpha-value>)",
+          700: "rgb(var(--color-muted-700) / <alpha-value>)",
+          800: "rgb(var(--color-muted-800) / <alpha-value>)",
+          900: "rgb(var(--color-muted-900) / <alpha-value>)",
         },
       },
     },

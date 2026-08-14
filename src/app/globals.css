@@ -4,23 +4,24 @@
 
 /* ── The single colour source (SPEC-037 / TASK-128) ──────────────────────────
    Every app colour token lives here once; the Tailwind theme (tailwind.config.ts)
-   references these vars, so there is no parallel hard-coded scale. `muted-*` mirrors
-   the exact slate values the old `default-*` scale used (like-for-like, no redesign).
-   Mantine components keep their own palette via src/lib/ui/colors.ts. */
+   wraps each as `rgb(var(--color-…) / <alpha-value>)`, so Tailwind opacity modifiers
+   (`bg-x/40`) compose. Values are **space-separated RGB channels** (DEF-3 fix — a bare
+   `var()` colour can't carry an alpha modifier in Tailwind v3). `muted-*` mirrors the
+   exact slate values the old `default-*` scale used. Mantine keeps its own palette. */
 :root {
-  --color-fg: #1e293b;
-  --color-surface: #ffffff;
-  --color-paper: #f5f7fb;
-  --color-muted-50: #f8fafc;
-  --color-muted-100: #f1f5f9;
-  --color-muted-200: #e2e8f0;
-  --color-muted-300: #cbd5e1;
-  --color-muted-400: #94a3b8;
-  --color-muted-500: #64748b;
-  --color-muted-600: #475569;
-  --color-muted-700: #334155;
-  --color-muted-800: #1e293b;
-  --color-muted-900: #0f172a;
+  --color-fg: 30 41 59; /* #1e293b */
+  --color-surface: 255 255 255; /* #ffffff */
+  --color-paper: 245 247 251; /* #f5f7fb */
+  --color-muted-50: 248 250 252; /* #f8fafc */
+  --color-muted-100: 241 245 249; /* #f1f5f9 */
+  --color-muted-200: 226 232 240; /* #e2e8f0 */
+  --color-muted-300: 203 213 225; /* #cbd5e1 */
+  --color-muted-400: 148 163 184; /* #94a3b8 */
+  --color-muted-500: 100 116 139; /* #64748b */
+  --color-muted-600: 71 85 105; /* #475569 */
+  --color-muted-700: 51 65 85; /* #334155 */
+  --color-muted-800: 30 41 59; /* #1e293b */
+  --color-muted-900: 15 23 42; /* #0f172a */
 }
 
 /* Minimal reset (Tailwind preflight is disabled so it doesn't fight Mantine).
@@ -31,7 +32,7 @@
   box-sizing: border-box;
   border-width: 0;
   border-style: solid;
-  border-color: var(--color-muted-200);
+  border-color: rgb(var(--color-muted-200));
 }
 
 /* preflight is disabled — restore anchor + heading resets ourselves */
@@ -53,22 +54,22 @@ figure {
 html,
 body {
   margin: 0;
-  background-color: var(--color-paper);
+  background-color: rgb(var(--color-paper));
 }
 
 /* Thin, modern scrollbars for the horizontal calendar + tables */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-muted-300) transparent;
+  scrollbar-color: rgb(var(--color-muted-300)) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: var(--color-muted-300);
+  background-color: rgb(var(--color-muted-300));
   border-radius: 9999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-muted-400);
+  background-color: rgb(var(--color-muted-400));
 }
