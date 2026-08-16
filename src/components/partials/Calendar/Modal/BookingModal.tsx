@@ -13,14 +13,13 @@ import {
   ActionIcon,
   Tabs,
   Text,
-  TextInput,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { useDebouncedValue } from "@mantine/hooks";
-import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, Search, PackageOpen } from "lucide-react";
+import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PackageOpen } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
+import EligibleStudentSelect from "@/components/common/EligibleStudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { ApiClientError } from "@/lib/api/client";
@@ -38,6 +37,7 @@ import {
   useSetBookingBadges,
 } from "@/hooks/scheduler";
 import { voucherAllowsSubject } from "@/lib/scheduler/sellable";
+import { entKey, type EligibleType } from "@/lib/scheduler/eligible";
 import RentalModal from "@/components/partials/Rental/RentalModal";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
 import type {
@@ -566,9 +566,6 @@ function CreateForm({
   const [subjectId, setSubjectId] = useState("");
   /** SPEC-026 — the voucher's program, chosen not guessed. Empty until staff pick one. */
   const [voucherSubjectId, setVoucherSubjectId] = useState<string | null>(null);
-  /** Server-side search for the eligible pickers (TASK-088) — a local filter can't match a parent phone. */
-  const [eligibleSearch, setEligibleSearch] = useState("");
-  const [debouncedEligible] = useDebouncedValue(eligibleSearch, 300);
   const [startTime, setStartTime] = useState(createSlot.time);
   // Course / Voucher — the selected entitlement (keyed by courseId/voucherId; one row per entitlement).
   const [entitlementId, setEntitlementId] = useState<string | null>(null);
@@ -584,39 +581,15 @@ function CreateForm({
   const isVoucher = bookingType === "VOUCHER";
   const usesEligible = isCourse || isVoucher;
 
-  const eligibleQ = debouncedEligible.trim() || undefined;
-  const { data: courseStudents = [], isLoading: courseLoading } = useEligibleStudents(
-    "COURSE_PACKAGE",
-    isCourse,
-    eligibleQ,
-  );
-  const { data: voucherStudents = [], isLoading: voucherLoading } = useEligibleStudents(
-    "VOUCHER",
-    isVoucher,
-    eligibleQ,
-  );
+  const eligibleType: EligibleType = isVoucher ? "VOUCHER" : "COURSE_PACKAGE";
+  // SPEC-039 — `EligibleStudentSelect` owns the **searched** query (it is the one control staff type into).
+  // This unsearched query is only the superset the form resolves the *selected* entitlement from, for the
+  // ContextCard and the payload. Safe because `GET /students/eligible` is unpaged by design (a row found by
+  // search is always present here too) — see the BE's "paging this would silently truncate" note.
+  const { data: courseStudents = [] } = useEligibleStudents("COURSE_PACKAGE", isCourse);
+  const { data: voucherStudents = [] } = useEligibleStudents("VOUCHER", isVoucher);
   const eligible: EligibleStudent[] = isCourse ? courseStudents : isVoucher ? voucherStudents : [];
-  const eligibleLoading = isCourse ? courseLoading : voucherLoading;
-  const entKey = (e: EligibleStudent) =>
-    isCourse ? (e.context as CourseContext).courseId : (e.context as VoucherContext).voucherId;
-  const selectedEligible = eligible.find((e) => entKey(e) === entitlementId) ?? null;
-  // TASK-121 — a student with 2+ active courses would otherwise show identical name-only rows; enrich the
-  // COURSE label with subject + used/size so the row is pickable without guessing. Voucher rows stay name-only.
-  // TASK-125 (OBS-5) — when the SAME student has 2+ course entries, also append the expiry so two packages identical
-  // in subject+size+progress are still distinguishable (single-course labels stay clean). expiryDate is already in
-  // context (no BE). A truly fungible pair (same package, same day → same expiry) stays identical — accepted residual;
-  // no courseId fragment (user-hostile).
-  const eligibleLabel = (e: EligibleStudent) => {
-    const base = e.nickname || e.name;
-    if (isCourse && "courseId" in e.context) {
-      const c = e.context;
-      const subj = c.subject?.name;
-      const multiCourse = eligible.filter((x) => x.id === e.id).length > 1;
-      const expiry = multiCourse && c.expiryDate ? ` · exp ${c.expiryDate}` : "";
-      return `${base}${subj ? ` · ${subj}` : ""} (${c.usedSessions}/${c.size})${expiry}`;
-    }
-    return base;
-  };
+  const selectedEligible = eligible.find((e) => entKey(e, eligibleType) === entitlementId) ?? null;
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
@@ -646,7 +619,6 @@ function CreateForm({
     setStartTime(createSlot.time);
     setSubjectId("");
     setVoucherSubjectId(null);
-    setEligibleSearch("");
   };
 
   // Preselect ONLY when there is exactly one thing to pick — and it still lands in state as a choice, so the
@@ -674,7 +646,7 @@ function CreateForm({
     const ctx = selectedEligible?.context as VoucherContext | undefined;
     // Blocked until a program is chosen — same shape as TASK-076's collision picker: never offer a submit
     // that can only guess.
-    valid = !!selectedEligible && !!ctx && !!createSlot.teacherId && !!voucherSubject && !!createSlot.time;
+    valid = !!selectedEligible && !!ctx && !!createSlot.teacherId && !!voucherSubject && !!startTime;
     if (selectedEligible && ctx && voucherSubject) {
       input = {
         studentName: selectedEligible.name,
@@ -683,7 +655,10 @@ function CreateForm({
         subject: voucherSubject.name,
         subjectId: voucherSubject.id,
         date: createSlot.date,
-        startTime: createSlot.time,
+        // SPEC-040 — the voucher session's time is now a CHOICE, not the row that was clicked. The
+        // teacher stays `createSlot.teacherId`: the domain rule is "a voucher can't pick a **teacher**",
+        // which never said anything about the time.
+        startTime,
         bookingType: "VOUCHER",
         voucherId: ctx.voucherId,
         badgeValueIds,
@@ -775,12 +750,6 @@ function CreateForm({
     );
   }
 
-  const eligiblePlaceholder = eligibleLoading
-    ? t("common.loading")
-    : eligible.length
-      ? t(isCourse ? "booking.pickCourseStudent" : "booking.pickVoucherStudent")
-      : t(isCourse ? "booking.noCourseStudents" : "booking.noVoucherStudents");
-
   return (
     <Stack gap="md">
       <Tabs value={bookingType} onChange={(v) => v && changeTab(v as BookingType)}>
@@ -801,23 +770,14 @@ function CreateForm({
 
       {usesEligible ? (
         <>
-          {/* Server-side search (TASK-088): name · nickname · **parent phone**. It cannot be Mantine's local
+          {/* SPEC-039 — ONE field, the same control the Trial/Single tabs use. The server-side search
+              (TASK-088: name · nickname · **parent phone**) lives inside it; it cannot be Mantine's local
               `searchable`, because the payload carries no phone — a local filter would silently never match
-              one, which is the complaint this exists to fix. */}
-          <TextInput
-            label={t("booking.student")}
-            placeholder={t("booking.eligibleSearchPlaceholder")}
-            value={eligibleSearch}
-            onChange={(e) => setEligibleSearch(e.currentTarget.value)}
-            leftSection={<Search size={16} />}
-          />
-          <Select
-            placeholder={eligiblePlaceholder}
-            data={eligible.map((e) => ({ value: entKey(e), label: eligibleLabel(e) }))}
+              one, which is the complaint that search exists to fix. */}
+          <EligibleStudentSelect
+            type={eligibleType}
             value={entitlementId}
             onChange={setEntitlementId}
-            disabled={!eligible.length}
-            nothingFoundMessage={eligiblePlaceholder}
             required
           />
 
@@ -868,14 +828,26 @@ function CreateForm({
           )}
 
           {isVoucher ? (
-            <Alert variant="light" color="blue">
-              <Text fz="sm">
-                {t("booking.voucherNoSlot", {
-                  teacher: slotTeacher?.nickname ?? "-",
-                  time: createSlot.time,
-                })}
-              </Text>
-            </Alert>
+            // SPEC-040 — the time is a field now, not a fact stated back at staff. What stays informational is the
+            // one thing that really is fixed: a voucher doesn't pick a teacher, so the session is with the clicked
+            // column's teacher.
+            <>
+              <Alert variant="light" color="blue">
+                <Text fz="sm">
+                  {t("booking.voucherNoTeacherPick", { teacher: slotTeacher?.nickname ?? "-" })}
+                </Text>
+              </Alert>
+              <Select
+                label={t("booking.time")}
+                placeholder={t("booking.pickTime")}
+                value={startTime}
+                onChange={(v) => setStartTime(v ?? "")}
+                data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
+                allowDeselect={false}
+                searchable
+                required
+              />
+            </>
           ) : (
             // Course: teacher + time (subject comes from the course). Teacher defaults to the clicked column.
             <div className="grid grid-cols-2 gap-3">

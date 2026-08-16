@@ -171,7 +171,7 @@ const en = {
 
   student: {
     label: "Student",
-    searchPlaceholder: "Type a name or phone to search / add new",
+    searchPlaceholder: "Search by name, nickname or parent phone / add new",
     addNew: "Add new student “{name}”",
     searchHint: "Type to search for a student",
     parentPhone: "Parent phone (optional)",
@@ -237,10 +237,9 @@ const en = {
     statusPending: "Status: pending",
     // type-driven tabs (SPEC-017)
     student: "Student",
-    pickCourseStudent: "Select a student with a course",
-    pickVoucherStudent: "Select a student with a voucher",
-    noCourseStudents: "No students with an active course",
-    noVoucherStudents: "No students with an active voucher",
+    noCourseStudents: "No student has a course yet",
+    noVoucherStudents: "No student has a voucher yet",
+    noMatchStudent: "No matching student",
     eligibleSearchPlaceholder: "Search by name, nickname or parent phone",
     voucherProgram: "Program",
     voucherProgramHint: "Which sport this session is for — it is not assumed from the teacher",
@@ -251,7 +250,8 @@ const en = {
       "None of {teacher}'s programs can be booked with a voucher (Onewheel and Balance Play are excluded). Use a course booking instead.",
     courseContext: "Program {subject} · {used}/{size} used · leave {leaveUsed}/{leaveQuota} · expires {expiry}",
     voucherContext: "{remaining}h remaining · expires {expiry}",
-    voucherNoSlot: "A voucher booking doesn't pick a teacher or fixed time — it uses this slot: {teacher} · {time}.",
+    voucherNoTeacherPick: "A voucher booking doesn't pick a teacher — this session is with {teacher}.",
+    pickTime: "Select a time",
     dateRejectedTitle: "Can't book this date",
   },
 
@@ -955,7 +955,7 @@ const th: typeof en = {
 
   student: {
     label: "นักเรียน",
-    searchPlaceholder: "พิมพ์ชื่อหรือเบอร์เพื่อค้นหา / เพิ่มใหม่",
+    searchPlaceholder: "พิมพ์ชื่อ ชื่อเล่น หรือเบอร์ผู้ปกครอง / เพิ่มนักเรียนใหม่",
     addNew: "เพิ่มนักเรียนใหม่ “{name}”",
     searchHint: "พิมพ์เพื่อค้นหานักเรียน",
     parentPhone: "เบอร์ผู้ปกครอง (ถ้ามี)",
@@ -1017,11 +1017,10 @@ const th: typeof en = {
     statusPending: "สถานะ: รอยืนยัน",
     // แท็บตามประเภทการจอง (SPEC-017)
     student: "นักเรียน",
-    pickCourseStudent: "เลือกนักเรียนที่มีคอร์ส",
-    pickVoucherStudent: "เลือกนักเรียนที่มีวอยเชอร์",
-    noCourseStudents: "ไม่มีนักเรียนที่มีคอร์สที่ใช้งานอยู่",
-    noVoucherStudents: "ไม่มีนักเรียนที่มีวอยเชอร์ที่ใช้งานอยู่",
-    eligibleSearchPlaceholder: "ค้นหาจากชื่อ ชื่อเล่น หรือเบอร์ผู้ปกครอง",
+    noCourseStudents: "ยังไม่มีนักเรียนที่มีคอร์ส",
+    noVoucherStudents: "ยังไม่มีนักเรียนที่มีบัตร",
+    noMatchStudent: "ไม่พบนักเรียนที่ตรงกัน",
+    eligibleSearchPlaceholder: "พิมพ์ชื่อ ชื่อเล่น หรือเบอร์ผู้ปกครอง",
     voucherProgram: "โปรแกรม",
     voucherProgramHint: "คาบนี้เรียนกีฬาอะไร — ระบบไม่เดาจากครูให้",
     pickProgram: "เลือกโปรแกรม",
@@ -1031,7 +1030,8 @@ const th: typeof en = {
       "โปรแกรมของ {teacher} ใช้วอยเชอร์จองไม่ได้ (Onewheel และ Balance Play ไม่รวมในวอยเชอร์) กรุณาใช้การจองแบบคอร์สแทน",
     courseContext: "โปรแกรม {subject} · ใช้ไป {used}/{size} · ลา {leaveUsed}/{leaveQuota} · หมดอายุ {expiry}",
     voucherContext: "เหลือ {remaining} ชม. · หมดอายุ {expiry}",
-    voucherNoSlot: "การจองด้วยวอยเชอร์ไม่เลือกครูหรือเวลาตายตัว — จะใช้ช่องนี้: ครู {teacher} · {time}",
+    voucherNoTeacherPick: "การจองด้วยวอยเชอร์ไม่เลือกครู — คาบนี้จะเรียนกับครู {teacher}",
+    pickTime: "เลือกเวลา",
     dateRejectedTitle: "จองวันที่นี้ไม่ได้",
   },
 
