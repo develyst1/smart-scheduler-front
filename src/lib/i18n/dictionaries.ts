@@ -384,6 +384,8 @@ const en = {
     insertSession: "Insert make-up session",
     pickTeacher: "Choose teacher",
     pickSubject: "Choose subject",
+    courseSubjectLocked:
+      "A course's subject is fixed when the course is created and can't be changed per session — for a different activity use a single session / voucher, or start a new course.",
     pickTeacherSubject: "Choose a teacher and subject first",
     availabilityTitle: "Who's free at this slot",
     booked: "booked · {who}",
@@ -1163,6 +1165,8 @@ const th: typeof en = {
     insertSession: "แทรกคาบชดเชย",
     pickTeacher: "เลือกครู",
     pickSubject: "เลือกวิชา",
+    courseSubjectLocked:
+      "วิชาของคอร์สกำหนดตอนสร้างคอร์ส เปลี่ยนรายคาบไม่ได้ — หากต้องการวิชาอื่น ใช้คาบเดี่ยว/บัตร หรือเปิดคอร์สใหม่",
     pickTeacherSubject: "เลือกครูและวิชาก่อน",
     availabilityTitle: "ครูที่ว่างช่วงนี้",
     booked: "ติดคาบ · {who}",

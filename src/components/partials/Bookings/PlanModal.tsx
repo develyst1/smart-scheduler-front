@@ -8,6 +8,7 @@ import {
   Button,
   Center,
   Group,
+  Input,
   Loader,
   Menu,
   Modal,
@@ -469,6 +470,13 @@ function SessionEditor({
   const [teacherId, setTeacherId] = useState<string | null>(seed?.teacher?.id ?? null);
   const [subjectId, setSubjectId] = useState<string | null>(seed?.subject?.id ?? null);
 
+  // SPEC-042 (REQ-053) — a course IS one program: the subject is fixed when the course is created, and the
+  // course's program is *derived* from its sessions, so a per-session subject edit silently re-writes what the
+  // family bought and what REQ-013/014 report. Locked for an edit of an EXISTING course session only; insert /
+  // extra / voucher / single / trial legitimately pick a program, and so does the create-mode draft (`onLocalSave`),
+  // where the course's program is still being chosen. The BE refuses it too (TASK-134) — this is the UI half.
+  const courseSubjectLocked = plan.kind === "course" && target.kind === "move" && !onLocalSave;
+
   const avail = useSlotAvailability(date, startTime, !!date && !!startTime);
 
   const dayTeachers = teachers.filter((tc) => bookableOnDate(tc, date));
@@ -517,7 +525,8 @@ function SessionEditor({
           kind: "move",
           bookingId: target.session.id,
           teacherId: teacherId ?? undefined,
-          subjectId: subjectId ?? undefined,
+          // SPEC-042 — a course session's subject is not ours to send; omitted, not merely disabled in the UI.
+          subjectId: courseSubjectLocked ? undefined : (subjectId ?? undefined),
           date,
           startTime,
         });
@@ -581,14 +590,25 @@ function SessionEditor({
           data={dayTeachers.map((tc) => ({ value: tc.id, label: tc.nickname }))}
           searchable
         />
-        <Select
-          label={t("plan.colSubject")}
-          placeholder={t("plan.pickSubject")}
-          value={subjectId}
-          onChange={setSubjectId}
-          data={subjectOptions.map((s) => ({ value: s.id, label: s.name }))}
-          disabled={!teacherId}
-        />
+        {courseSubjectLocked ? (
+          <Input.Wrapper
+            label={t("plan.colSubject")}
+            description={t("plan.courseSubjectLocked")}
+          >
+            <Text fz="sm" fw={500} mt={4}>
+              {seed?.subject?.name ?? "—"}
+            </Text>
+          </Input.Wrapper>
+        ) : (
+          <Select
+            label={t("plan.colSubject")}
+            placeholder={t("plan.pickSubject")}
+            value={subjectId}
+            onChange={setSubjectId}
+            data={subjectOptions.map((s) => ({ value: s.id, label: s.name }))}
+            disabled={!teacherId}
+          />
+        )}
       </Group>
 
       {/* availability + clash view */}
