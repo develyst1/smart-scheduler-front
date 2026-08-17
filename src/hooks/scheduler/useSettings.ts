@@ -13,7 +13,7 @@ export const useSettings = () =>
 export const useUpdateSetting = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ key, value }: { key: string; value: number }) => updateSetting(key, value),
+    mutationFn: ({ key, value }: { key: string; value: number | string }) => updateSetting(key, value),
     onSuccess: () => qc.invalidateQueries({ queryKey: SETTINGS_KEY }),
   });
 };

@@ -11,7 +11,7 @@ export const getSettings = async (): Promise<SettingRow[]> => {
 };
 
 /** Set an override. The server validates via its registry `parse`; a bad value → 400 with a Thai reason. */
-export const updateSetting = async (key: string, value: number): Promise<SettingRow> => {
+export const updateSetting = async (key: string, value: number | string): Promise<SettingRow> => {
   if (useMockData) return mock.updateSetting(key, value);
   const { data } = await api.put<SettingRow>(`/settings/${key}`, { value });
   return data;

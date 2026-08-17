@@ -9,6 +9,8 @@ import {
   Badge,
   Button,
   NumberInput,
+  Input,
+  SegmentedControl,
   Loader,
   Modal,
   Alert,
@@ -27,7 +29,7 @@ export default function SettingsContent() {
   const reset = useResetSetting();
 
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [draft, setDraft] = useState<number>(0);
+  const [draft, setDraft] = useState<number | string>(0);
   const [editError, setEditError] = useState<string | null>(null);
   const [resetTarget, setResetTarget] = useState<SettingRow | null>(null);
 
@@ -37,6 +39,18 @@ export default function SettingsContent() {
     setEditError(null);
   };
 
+  /** SPEC-044 — an enum value travels as its raw key (`admin_only`); staff must never see that key. Its words live in
+   *  `dictionaries.ts` under `settings.opt.<key>`, so both languages come from one place. A key with no dictionary
+   *  entry falls back to itself rather than rendering blank — visible, not silently empty. */
+  const optionLabel = (row: SettingRow, value: string) => {
+    const label = t(`settings.opt.${row.key}.${value}`);
+    return label === `settings.opt.${row.key}.${value}` ? value : label;
+  };
+
+  /** What the row currently reads as: an enum's words, or the number itself. */
+  const displayValue = (row: SettingRow, value: number | string) =>
+    row.type === "enum" ? optionLabel(row, String(value)) : String(value);
+
   const save = async (row: SettingRow) => {
     setEditError(null);
     try {
@@ -44,7 +58,12 @@ export default function SettingsContent() {
       setEditingKey(null);
       notify({
         title: t("settings.saved"),
-        description: t("settings.savedDesc", { label: res.label, value: res.value, unit: res.unit }),
+        // An enum must read as its words here too — a toast saying "admin_only" leaks the storage key.
+        description: t("settings.savedDesc", {
+          label: res.label,
+          value: displayValue(res, res.value),
+          unit: res.type === "enum" ? "" : res.unit,
+        }),
         color: "success",
       });
     } catch (e) {
@@ -62,7 +81,11 @@ export default function SettingsContent() {
       if (editingKey === row.key) setEditingKey(null);
       notify({
         title: t("settings.resetDone"),
-        description: t("settings.resetDoneDesc", { label: res.label, value: res.value, unit: res.unit }),
+        description: t("settings.resetDoneDesc", {
+          label: res.label,
+          value: displayValue(res, res.value),
+          unit: res.type === "enum" ? "" : res.unit,
+        }),
         color: "default",
       });
     } catch (e) {
@@ -109,10 +132,18 @@ export default function SettingsContent() {
                     <div>
                       <Text fw={600}>{row.label}</Text>
                       <Text size="sm" c="dimmed" mt={2}>
-                        {t("settings.current")}: <strong>{row.value}</strong> {row.unit}
+                        {t("settings.current")}: <strong>{displayValue(row, row.value)}</strong>
+                        {/* An enum's words already say what it is — "Admin only option" would just be noise. */}
+                        {row.type === "enum" ? "" : ` ${row.unit}`}
                         {" · "}
-                        {t("settings.default")}: {row.default} {row.unit}
+                        {t("settings.default")}: {displayValue(row, row.default)}
+                        {row.type === "enum" ? "" : ` ${row.unit}`}
                       </Text>
+                      {row.type === "enum" && t(`settings.help.${row.key}`) !== `settings.help.${row.key}` && (
+                        <Text size="xs" c="dimmed" mt={4}>
+                          {t(`settings.help.${row.key}`)}
+                        </Text>
+                      )}
                     </div>
                     <Badge
                       variant="light"
@@ -129,15 +160,32 @@ export default function SettingsContent() {
                           {editError}
                         </Alert>
                       )}
-                      <NumberInput
-                        label={t("settings.valueLabel", { unit: row.unit })}
-                        value={draft}
-                        onChange={(v) => setDraft(typeof v === "number" ? v : 0)}
-                        min={0}
-                        step={1}
-                        allowDecimal={false}
-                        className="max-w-xs"
-                      />
+                      {row.type === "enum" ? (
+                        // A named choice, never a 0|1 standing in for a decision (SPEC-044). Two options → segmented,
+                        // so both are visible at once and picking one is a single tap.
+                        <Input.Wrapper label={t("settings.choiceLabel")}>
+                          <SegmentedControl
+                            fullWidth
+                            value={String(draft)}
+                            onChange={setDraft}
+                            data={(row.options ?? []).map((o) => ({
+                              value: o,
+                              label: optionLabel(row, o),
+                            }))}
+                            mt={4}
+                          />
+                        </Input.Wrapper>
+                      ) : (
+                        <NumberInput
+                          label={t("settings.valueLabel", { unit: row.unit })}
+                          value={typeof draft === "number" ? draft : 0}
+                          onChange={(v) => setDraft(typeof v === "number" ? v : 0)}
+                          min={0}
+                          step={1}
+                          allowDecimal={false}
+                          className="max-w-xs"
+                        />
+                      )}
                       <Group gap="sm">
                         <Button
                           size="xs"
@@ -198,8 +246,8 @@ export default function SettingsContent() {
             {resetTarget
               ? t("settings.resetConfirmMsg", {
                   label: resetTarget.label,
-                  value: resetTarget.default,
-                  unit: resetTarget.unit,
+                  value: displayValue(resetTarget, resetTarget.default),
+                  unit: resetTarget.type === "enum" ? "" : resetTarget.unit,
                 })
               : null}
           </Text>

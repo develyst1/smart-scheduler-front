@@ -145,11 +145,14 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
       startDate,
       startTime,
       note: note.trim() || undefined,
+      // SPEC-045 (REQ-054) — the program is a COURSE-level fact, sent once as `subjectId` above. Per-row
+      // `subjectId` is deliberately NOT sent: it was the door through which a brand-new course could be born
+      // mixed-program (and its derived program then became whatever `bookings[0]` happened to be). The BE falls
+      // back to the course-level subject for every row, so the client cannot emit a mixed course at all.
       sessions: sessions.map((s) => ({
         date: s.date,
         startTime: s.startTime,
         teacherId: s.teacher?.id,
-        subjectId: s.subject?.id,
       })),
     });
     notify({

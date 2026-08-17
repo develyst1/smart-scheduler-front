@@ -47,6 +47,19 @@ const en = {
     overrideBadge: "Override",
     defaultBadge: "Default",
     current: "Current",
+    // SPEC-044 (REQ-049) — an enum row's words. Keyed by setting key → option key, so the raw storage value
+    // (`admin_only`) never reaches the screen and both languages come from one place.
+    choiceLabel: "Choose an option",
+    opt: {
+      notify_on_leave: {
+        admin_only: "Admin only",
+        admin_and_teacher: "Admin and teacher",
+      },
+    },
+    help: {
+      notify_on_leave:
+        "Who gets told when a session is cancelled as leave. The teacher notified is the one on that session.",
+    },
     edit: "Edit",
     save: "Save",
     cancel: "Cancel",
@@ -833,6 +846,16 @@ const th: typeof en = {
     overrideBadge: "แก้ไขแล้ว",
     defaultBadge: "ค่าเริ่มต้น",
     current: "ค่าปัจจุบัน",
+    choiceLabel: "เลือกตัวเลือก",
+    opt: {
+      notify_on_leave: {
+        admin_only: "แจ้งแอดมินอย่างเดียว",
+        admin_and_teacher: "แจ้งทั้งแอดมินและครู",
+      },
+    },
+    help: {
+      notify_on_leave: "ใครได้รับแจ้งเมื่อมีการลา ครูที่ได้รับแจ้งคือครูของคาบนั้น",
+    },
     edit: "แก้ไข",
     save: "บันทึก",
     cancel: "ยกเลิก",

@@ -470,12 +470,13 @@ function SessionEditor({
   const [teacherId, setTeacherId] = useState<string | null>(seed?.teacher?.id ?? null);
   const [subjectId, setSubjectId] = useState<string | null>(seed?.subject?.id ?? null);
 
-  // SPEC-042 (REQ-053) — a course IS one program: the subject is fixed when the course is created, and the
-  // course's program is *derived* from its sessions, so a per-session subject edit silently re-writes what the
-  // family bought and what REQ-013/014 report. Locked for an edit of an EXISTING course session only; insert /
-  // extra / voucher / single / trial legitimately pick a program, and so does the create-mode draft (`onLocalSave`),
-  // where the course's program is still being chosen. The BE refuses it too (TASK-134) — this is the UI half.
-  const courseSubjectLocked = plan.kind === "course" && target.kind === "move" && !onLocalSave;
+  // SPEC-042 (REQ-053) + SPEC-045 (REQ-054) — a course IS one program: the subject is fixed when the course is
+  // created, and the course's program is *derived* from its sessions, so a per-session subject edit silently
+  // re-writes what the family bought and what REQ-013/014 report. Locked on **any** course session row — an edit of
+  // an existing one (REQ-053, BE refuses too via TASK-134) **and** a create-mode draft row (REQ-054: the program is
+  // chosen once, at course level, in `CreatePlanFlow`; the draft row inherits it and must not diverge).
+  // Insert / extra / voucher / single / trial legitimately pick a program and stay editable.
+  const courseSubjectLocked = plan.kind === "course" && target.kind === "move";
 
   const avail = useSlotAvailability(date, startTime, !!date && !!startTime);
 
@@ -585,7 +586,10 @@ function SessionEditor({
           value={teacherId}
           onChange={(v) => {
             setTeacherId(v);
-            setSubjectId(null);
+            // Changing teacher normally invalidates the subject (it comes from that teacher's programs) — but on a
+            // locked course row the subject is the COURSE's, not the teacher's, so clearing it here would blank the
+            // read-only value and (in create mode) fail `onLocalSave`'s "pick a teacher and subject" guard.
+            if (!courseSubjectLocked) setSubjectId(null);
           }}
           data={dayTeachers.map((tc) => ({ value: tc.id, label: tc.nickname }))}
           searchable

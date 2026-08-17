@@ -1,22 +1,35 @@
-// In-memory mock for the settings screen — used when NEXT_PUBLIC_USE_MOCK=true. Mirrors the BE registry (the two
-// go-live rules, their defaults + bounds) so list / edit-with-validation / reset are all exercisable offline.
-import type { SettingRow } from "@/types/app/settings";
+// In-memory mock for the settings screen — used when NEXT_PUBLIC_USE_MOCK=true. Mirrors the BE registry (its rules,
+// defaults + bounds) so list / edit-with-validation / reset are all exercisable offline. SPEC-044 added an `enum`
+// rule, so the mock carries one too — otherwise the new choice editor would be unreachable without a backend.
+import type { SettingRow, SettingType } from "@/types/app/settings";
 
 interface MockSpec {
   key: string;
   label: string;
+  type: SettingType;
   unit: string;
-  default: number;
-  min: number;
-  max: number;
+  default: number | string;
+  /** number rules only */
+  min?: number;
+  max?: number;
+  /** enum rules only */
+  options?: string[];
 }
 
 const SPECS: MockSpec[] = [
-  { key: "teacher_change_notice_days", label: "Teacher-change notice", unit: "days", default: 3, min: 0, max: 30 },
-  { key: "checkin_early_minutes", label: "Check-in early window", unit: "minutes", default: 30, min: 0, max: 240 },
+  { key: "teacher_change_notice_days", label: "Teacher-change notice", type: "number", unit: "days", default: 3, min: 0, max: 30 },
+  { key: "checkin_early_minutes", label: "Check-in early window", type: "number", unit: "minutes", default: 30, min: 0, max: 240 },
+  {
+    key: "notify_on_leave",
+    label: "แจ้งเตือนเมื่อมีการลา",
+    type: "enum",
+    unit: "option",
+    default: "admin_only",
+    options: ["admin_only", "admin_and_teacher"],
+  },
 ];
 
-const overrides = new Map<string, number>();
+const overrides = new Map<string, number | string>();
 
 const delay = <T>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 150));
 
@@ -25,8 +38,10 @@ const rowFor = (spec: MockSpec): SettingRow => {
   return {
     key: spec.key,
     label: spec.label,
+    type: spec.type,
+    options: spec.options ?? null,
     unit: spec.unit,
-    value: has ? (overrides.get(spec.key) as number) : spec.default,
+    value: has ? (overrides.get(spec.key) as number | string) : spec.default,
     default: spec.default,
     isOverridden: has,
   };
@@ -34,10 +49,20 @@ const rowFor = (spec: MockSpec): SettingRow => {
 
 export const getSettings = () => delay(SPECS.map(rowFor));
 
-export const updateSetting = (key: string, value: number) => {
+export const updateSetting = (key: string, value: number | string) => {
   const spec = SPECS.find((s) => s.key === key);
   if (!spec) return Promise.reject(new Error(`Unknown setting "${key}"`));
-  if (!Number.isInteger(value) || value < spec.min || value > spec.max) {
+  if (spec.type === "enum") {
+    // The BE names the allowed options in its refusal rather than saying "invalid" — mirror that.
+    if (typeof value !== "string" || !spec.options?.includes(value)) {
+      return Promise.reject(new Error(`Value must be one of: ${(spec.options ?? []).join(", ")}`));
+    }
+  } else if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < (spec.min ?? 0) ||
+    value > (spec.max ?? 0)
+  ) {
     return Promise.reject(
       new Error(`Value must be a whole number (${spec.unit}) between ${spec.min} and ${spec.max}`),
     );
