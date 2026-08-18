@@ -43,7 +43,6 @@ import { badgeColorVar } from "@/lib/ui/badge-colors";
 import type {
   Booking,
   BookingType,
-  CourseContext,
   EligibleStudent,
   TeacherView,
   VoucherContext,
@@ -542,7 +541,10 @@ function Field({ label, value }: { label: string; value: string }) {
 // ───────────────────────── Create form (+ จองทับคนลา) ─────────────────────────
 
 // SPEC-017: booking type is the FIRST choice (tabs), then only the fields that type can use.
-const BOOKING_TABS: BookingType[] = ["FIRST_TRIAL", "SINGLE_SESSION", "COURSE_PACKAGE", "VOUCHER"];
+// SPEC-047 (REQ-044, option C) — the COURSE tab is gone. It did a plain `createBooking` (+1 session, no owed
+// check → could over-fill a course to size+1); its real job, the make-up insert, lives on the plan modal
+// (`แทรกคาบชดเชย`, owed-gated) and paid-extra on Single / `เพิ่มคาบ(คิดเงิน)`. Removing it loses no capability.
+const BOOKING_TABS: BookingType[] = ["FIRST_TRIAL", "SINGLE_SESSION", "VOUCHER"];
 
 function CreateForm({
   createSlot,
@@ -577,18 +579,17 @@ function CreateForm({
   // before then). Surface that submit-time backend rejection clearly instead of a form that silently won't save.
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const isCourse = bookingType === "COURSE_PACKAGE";
   const isVoucher = bookingType === "VOUCHER";
-  const usesEligible = isCourse || isVoucher;
+  // SPEC-047 — voucher is now the ONLY entitlement-backed tab; the alias stays so the branch below reads by intent.
+  const usesEligible = isVoucher;
 
-  const eligibleType: EligibleType = isVoucher ? "VOUCHER" : "COURSE_PACKAGE";
+  const eligibleType: EligibleType = "VOUCHER";
   // SPEC-039 — `EligibleStudentSelect` owns the **searched** query (it is the one control staff type into).
   // This unsearched query is only the superset the form resolves the *selected* entitlement from, for the
   // ContextCard and the payload. Safe because `GET /students/eligible` is unpaged by design (a row found by
   // search is always present here too) — see the BE's "paging this would silently truncate" note.
-  const { data: courseStudents = [] } = useEligibleStudents("COURSE_PACKAGE", isCourse);
   const { data: voucherStudents = [] } = useEligibleStudents("VOUCHER", isVoucher);
-  const eligible: EligibleStudent[] = isCourse ? courseStudents : isVoucher ? voucherStudents : [];
+  const eligible: EligibleStudent[] = isVoucher ? voucherStudents : [];
   const selectedEligible = eligible.find((e) => entKey(e, eligibleType) === entitlementId) ?? null;
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
@@ -661,27 +662,6 @@ function CreateForm({
         startTime,
         bookingType: "VOUCHER",
         voucherId: ctx.voucherId,
-        badgeValueIds,
-      };
-    }
-  } else if (isCourse) {
-    const ctx = selectedEligible?.context as CourseContext | undefined;
-    // Course keeps its own source — the course's subject is a fact. No positional fallback (SPEC-026);
-    // if the course carries no subject, `valid` below refuses rather than inventing one.
-    const subjId = ctx?.subject?.id ?? subjectId;
-    const subjName = ctx?.subject?.name ?? trialSubjectName;
-    valid = !!selectedEligible && !!teacherId && !!subjId && !!startTime;
-    if (selectedEligible) {
-      input = {
-        studentName: selectedEligible.name,
-        studentId: selectedEligible.id,
-        teacherId,
-        subject: subjName,
-        subjectId: subjId,
-        date: createSlot.date,
-        startTime,
-        bookingType: "COURSE_PACKAGE",
-        courseId: ctx?.courseId,
         badgeValueIds,
       };
     }
@@ -806,19 +786,7 @@ function CreateForm({
               />
             ))}
 
-          {selectedEligible && isCourse && (
-            <ContextCard
-              text={t("booking.courseContext", {
-                subject: (selectedEligible.context as CourseContext).subject?.name ?? "-",
-                used: (selectedEligible.context as CourseContext).usedSessions,
-                size: (selectedEligible.context as CourseContext).size,
-                leaveUsed: (selectedEligible.context as CourseContext).leaveUsed,
-                leaveQuota: (selectedEligible.context as CourseContext).leaveQuota,
-                expiry: (selectedEligible.context as CourseContext).expiryDate,
-              })}
-            />
-          )}
-          {selectedEligible && isVoucher && (
+          {selectedEligible && (
             <ContextCard
               text={t("booking.voucherContext", {
                 remaining: (selectedEligible.context as VoucherContext).remainingHours,
@@ -827,49 +795,25 @@ function CreateForm({
             />
           )}
 
-          {isVoucher ? (
-            // SPEC-040 — the time is a field now, not a fact stated back at staff. What stays informational is the
-            // one thing that really is fixed: a voucher doesn't pick a teacher, so the session is with the clicked
-            // column's teacher.
-            <>
-              <Alert variant="light" color="blue">
-                <Text fz="sm">
-                  {t("booking.voucherNoTeacherPick", { teacher: slotTeacher?.nickname ?? "-" })}
-                </Text>
-              </Alert>
-              <Select
-                label={t("booking.time")}
-                placeholder={t("booking.pickTime")}
-                value={startTime}
-                onChange={(v) => setStartTime(v ?? "")}
-                data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
-                allowDeselect={false}
-                searchable
-                required
-              />
-            </>
-          ) : (
-            // Course: teacher + time (subject comes from the course). Teacher defaults to the clicked column.
-            <div className="grid grid-cols-2 gap-3">
-              <Select
-                label={t("booking.teacher")}
-                value={teacherId}
-                onChange={(v) => setTeacherId(v ?? "")}
-                data={teacherSelectData(teachers.filter((tc) => bookableOnDate(tc, createSlot.date)))}
-                allowDeselect={false}
-                searchable
-                renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
-              />
-              <Select
-                label={t("booking.time")}
-                value={startTime}
-                onChange={(v) => setStartTime(v ?? "")}
-                data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
-                allowDeselect={false}
-                searchable
-              />
-            </div>
-          )}
+          {/* SPEC-040 — the time is a field, not a fact stated back at staff. What stays informational is the one
+              thing that really is fixed: a voucher doesn't pick a teacher, so the session is with the clicked
+              column's teacher. (The course teacher/time row that used to be the other half of this fork went with
+              the COURSE tab — SPEC-047.) */}
+          <Alert variant="light" color="blue">
+            <Text fz="sm">
+              {t("booking.voucherNoTeacherPick", { teacher: slotTeacher?.nickname ?? "-" })}
+            </Text>
+          </Alert>
+          <Select
+            label={t("booking.time")}
+            placeholder={t("booking.pickTime")}
+            value={startTime}
+            onChange={(v) => setStartTime(v ?? "")}
+            data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
+            allowDeselect={false}
+            searchable
+            required
+          />
         </>
       ) : (
         <>

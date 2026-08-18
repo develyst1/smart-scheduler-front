@@ -261,7 +261,6 @@ const en = {
       "{teacher} has no programs set up, so a voucher session cannot be recorded against them. Add a program to the teacher first.",
     voucherNoAllowedProgram:
       "None of {teacher}'s programs can be booked with a voucher (Onewheel and Balance Play are excluded). Use a course booking instead.",
-    courseContext: "Program {subject} · {used}/{size} used · leave {leaveUsed}/{leaveQuota} · expires {expiry}",
     voucherContext: "{remaining}h remaining · expires {expiry}",
     voucherNoTeacherPick: "A voucher booking doesn't pick a teacher — this session is with {teacher}.",
     pickTime: "Select a time",
@@ -1053,7 +1052,6 @@ const th: typeof en = {
       "{teacher} ยังไม่ได้ตั้งโปรแกรมที่สอน จึงบันทึกคาบวอยเชอร์กับครูท่านนี้ไม่ได้ กรุณาตั้งโปรแกรมให้ครูก่อน",
     voucherNoAllowedProgram:
       "โปรแกรมของ {teacher} ใช้วอยเชอร์จองไม่ได้ (Onewheel และ Balance Play ไม่รวมในวอยเชอร์) กรุณาใช้การจองแบบคอร์สแทน",
-    courseContext: "โปรแกรม {subject} · ใช้ไป {used}/{size} · ลา {leaveUsed}/{leaveQuota} · หมดอายุ {expiry}",
     voucherContext: "เหลือ {remaining} ชม. · หมดอายุ {expiry}",
     voucherNoTeacherPick: "การจองด้วยวอยเชอร์ไม่เลือกครู — คาบนี้จะเรียนกับครู {teacher}",
     pickTime: "เลือกเวลา",
