@@ -15,6 +15,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "linkRequests", labelKey: "nav.linkRequests", href: "/scheduler/link-requests", icon: Link2 },
   { key: "bookings", labelKey: "nav.bookings", href: "/scheduler/bookings", icon: BookOpenCheck },
   { key: "badges", labelKey: "nav.badges", href: "/scheduler/badges", icon: Tag },
+  { key: "overview", labelKey: "nav.overview", href: "/scheduler/overview", icon: LayoutDashboard },
   { key: "som", labelKey: "nav.som", href: "/scheduler/som", icon: PieChart },
   { key: "attention", labelKey: "nav.attention", href: "/scheduler/attention", icon: BellRing },
   { key: "reports", labelKey: "nav.reports", href: "/scheduler/reports", icon: BarChart3 },

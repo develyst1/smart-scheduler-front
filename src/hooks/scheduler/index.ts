@@ -4,6 +4,7 @@ export * from "./useBadges";
 export * from "./usePeople";
 export * from "./useAttention";
 export * from "./useSomReport";
+export * from "./useOverview";
 export * from "./useTeacherLink";
 export * from "./usePricing";
 export * from "./useSettings";
