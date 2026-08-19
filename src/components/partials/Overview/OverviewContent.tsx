@@ -5,9 +5,9 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 import {
   Card,
+  Divider,
   Group,
   Pagination,
-  Progress,
   RingProgress,
   SegmentedControl,
   SimpleGrid,
@@ -27,17 +27,15 @@ import {
   Ban,
   TrendingUp,
   Coins,
-  UserPlus,
-  ArrowRight,
   type LucideIcon,
 } from "lucide-react";
-import { TeacherTypeChip } from "@/components/common/BookingBadges";
+import { BookingTypeChip, TeacherTypeChip } from "@/components/common/BookingBadges";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import { useI18n } from "@/lib/i18n";
 import { useOverview } from "@/hooks/scheduler";
 import { SOM_UNKNOWN_KEY, type Breakdown, type BreakdownBucket } from "@/types/app/som";
-import type { OverviewScope, ScopePreset, TrendPoint, NewCustomerFunnel, CustomerSpend } from "@/types/app/overview";
+import type { OverviewScope, ScopePreset, TrendPoint, NewCustomers, CustomerSpend, TypeActivityCount } from "@/types/app/overview";
 import type { BookingType } from "@/types/app/scheduler";
 
 // Resolve a preset (or custom range) into concrete inclusive from/to dates.
@@ -108,11 +106,12 @@ export default function OverviewContent() {
     .map((b, i) => ({ name: b.label ?? b.key, value: b.count, color: `${ACTIVITY_PALETTE[i % ACTIVITY_PALETTE.length]}.6` }));
 
   const COURSE_SIZE_COLOR = ["blue", "teal", "grape", "orange"];
-  const courseSizeDonut = biz.courseSizeSplit
+  const courseSizeDonut = biz.existingCustomers.courseSizeSplit
     .filter((c) => c.count > 0)
     .map((c, i) => ({ name: `${c.size} ${t("overview.hoursUnit")}`, value: c.count, color: `${COURSE_SIZE_COLOR[i % COURSE_SIZE_COLOR.length]}.6` }));
 
-  const funnel = biz.newCustomers;
+  const existing = biz.existingCustomers;
+  const newCust = biz.newCustomers;
 
   const genderDonut = biz.demographics.gender.buckets
     .filter((b) => b.count > 0)
@@ -138,7 +137,7 @@ export default function OverviewContent() {
       {/* ── Header + time scope ─────────────────────────────── */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">{t("overview.title")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("overview.title")}</h1>
           <p className="text-sm text-default-500">{t("overview.subtitle")}</p>
           <p className="mt-0.5 text-xs text-default-400">
             {t("overview.scopeRange", {
@@ -185,7 +184,7 @@ export default function OverviewContent() {
 
       {/* ══ Zone 1 · Pulse ═══════════════════════════════════ */}
       <section className="space-y-4">
-        <ZoneHeading icon={TrendingUp} title={t("overview.zonePulse")} hint={t("overview.zonePulseHint")} />
+        <ZoneHeading n={1} icon={TrendingUp} title={t("overview.zonePulse")} hint={t("overview.zonePulseHint")} />
 
         <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
           <Card withBorder radius="lg" padding="lg" className="flex items-center justify-center">
@@ -276,9 +275,11 @@ export default function OverviewContent() {
         </div>
       </section>
 
+      <Divider />
+
       {/* ══ Zone 2 · Operations ══════════════════════════════ */}
       <section className="space-y-4">
-        <ZoneHeading icon={Users} title={t("overview.zoneOps")} hint={t("overview.zoneOpsHint")} />
+        <ZoneHeading n={2} icon={Users} title={t("overview.zoneOps")} hint={t("overview.zoneOpsHint")} />
 
         <div className="grid gap-4 lg:grid-cols-2">
           {/* Teacher workload */}
@@ -337,41 +338,68 @@ export default function OverviewContent() {
         )}
       </section>
 
-      {/* ══ Zone 3 · Business & Market ═══════════════════════ */}
-      <section className="space-y-4">
-        <ZoneHeading icon={TrendingUp} title={t("overview.zoneBiz")} hint={t("overview.zoneBizHint")} />
+      <Divider />
 
-        {/* Existing customers */}
-        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
-          <Stat label={t("som.byCourse")} value={biz.existingCustomers.byCourse} />
-          <Stat label={t("som.byVoucher")} value={biz.existingCustomers.byVoucher} />
-          <Stat label={t("som.byRecentTrial")} value={biz.existingCustomers.byRecentTrial} />
-          <Stat label={t("som.totalCustomers")} value={biz.existingCustomers.total} accent />
-        </SimpleGrid>
+      {/* ══ Zone 3 · Business & Market ═══════════════════════ */}
+      <section className="space-y-5">
+        <ZoneHeading n={3} icon={TrendingUp} title={t("overview.zoneBiz")} hint={t("overview.zoneBizHint")} />
+
+        {/* Existing customers — total + by registration type (course/voucher/trial/single) */}
+        <div>
+          <SubHeading>{t("som.existingTitle")}</SubHeading>
+          <SimpleGrid cols={{ base: 2, sm: 3, lg: 5 }} spacing="sm">
+            <Stat label={t("som.totalCustomers")} value={existing.total} unit={t("overview.unitPeople")} accent />
+            {existing.byType.map((x) => (
+              <Stat key={x.type} label={t(`bookingType.${x.type}`)} value={x.count} unit={t("overview.unitPeople")} />
+            ))}
+          </SimpleGrid>
+        </div>
 
         {/* Structure of the existing base */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <DonutCard title={t("overview.courseSizeTitle")} data={courseSizeDonut} t={t} />
-          <DonutCard title={t("overview.activityShareTitle")} data={activityDonut} t={t} />
-          <DonutCard title={t("som.genderTitle")} data={genderDonut} t={t} />
+        <div>
+          <SubHeading>{t("overview.subBaseStructure")}</SubHeading>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <DonutCard title={t("overview.courseSizeTitle")} data={courseSizeDonut} unit={t("overview.unitPeople")} t={t} />
+            <DonutCard title={t("overview.activityShareTitle")} data={activityDonut} unit={t("overview.unitPeople")} t={t} />
+            <DonutCard title={t("som.genderTitle")} data={genderDonut} unit={t("overview.unitPeople")} t={t} />
+          </div>
         </div>
 
-        {/* New-customer funnel this month → conversion → activity of the course bought */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          <NewCustomerFunnelCard funnel={funnel} t={t} />
-          <BreakdownCard title={t("overview.newCourseByActivityTitle")} data={biz.newCourseByActivity} t={t} labelOf={(b) => b.label ?? b.key} unknown={t("som.unknown")} />
+        {/* New customers this month — by registration type + by activity */}
+        <div>
+          <SubHeading>{t("overview.newCustomerTitle")}</SubHeading>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <NewCustomersCard data={newCust} t={t} />
+            <BreakdownCard title={t("overview.newByActivityTitle")} data={newCust.byActivity} t={t} labelOf={(b) => b.label ?? b.key} unknown={t("som.unknown")} />
+          </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <BreakdownCard title={t("som.ageBandTitle")} data={biz.demographics.ageBand} t={t} labelOf={(b) => b.label ?? b.key} unknown={t("som.unknown")} />
-          <BreakdownCard title={t("som.provinceTitle")} data={biz.demographics.province} t={t} labelOf={(b) => b.label ?? b.key} unknown={t("som.unknown")} />
-          <BreakdownCard title={t("som.nationalityTitle")} data={biz.demographics.nationality} t={t} labelOf={(b) => b.label ?? b.key} unknown={t("som.unknown")} />
+        {/* req 4: activity counts per registration type — one card per type (scales with more activities) */}
+        <div>
+          <SubHeading>{t("overview.typeActivityTitle")}</SubHeading>
+          <div className="grid gap-4 md:grid-cols-2">
+            {biz.typeActivityMatrix.map((row) => (
+              <TypeActivityCard key={row.type} row={row} t={t} />
+            ))}
+          </div>
+        </div>
+
+        {/* Demographics */}
+        <div>
+          <SubHeading>{t("som.demographicsTitle")}</SubHeading>
+          <div className="grid gap-4 md:grid-cols-3">
+            <BreakdownCard title={t("som.ageBandTitle")} data={biz.demographics.ageBand} t={t} labelOf={(b) => b.label ?? b.key} unknown={t("som.unknown")} />
+            <BreakdownCard title={t("som.provinceTitle")} data={biz.demographics.province} t={t} labelOf={(b) => b.label ?? b.key} unknown={t("som.unknown")} />
+            <BreakdownCard title={t("som.nationalityTitle")} data={biz.demographics.nationality} t={t} labelOf={(b) => b.label ?? b.key} unknown={t("som.unknown")} />
+          </div>
         </div>
       </section>
 
+      <Divider />
+
       {/* ══ Zone 4 · Revenue & value ═════════════════════════ */}
       <section className="space-y-4">
-        <ZoneHeading icon={Coins} title={t("overview.zoneRevenue")} hint={t("overview.zoneRevenueHint")} />
+        <ZoneHeading n={4} icon={Coins} title={t("overview.zoneRevenue")} hint={t("overview.zoneRevenueHint")} />
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,220px)_1fr]">
           <Card withBorder radius="lg" padding="lg" className="flex flex-col justify-center">
@@ -409,19 +437,35 @@ export default function OverviewContent() {
 
 // ───────────────────────────── sub-components ─────────────────────────────
 
-function ZoneHeading({ icon: Icon, title, hint }: { icon: LucideIcon; title: string; hint: string }) {
+// Zone = top-level section. Big, numbered, with a heavy underline so the four zones read as peers.
+function ZoneHeading({ n, icon: Icon, title, hint }: { n: number; icon: LucideIcon; title: string; hint: string }) {
   return (
-    <div className="flex items-center gap-2.5 border-b border-default-200 pb-2">
-      <ThemeIcon variant="transparent" color="gray" size={22} className="shrink-0">
-        <Icon size={18} />
-      </ThemeIcon>
-      <h2 className="text-sm font-semibold text-default-700">{title}</h2>
-      <span className="text-xs text-default-400">{hint}</span>
+    <div className="flex items-center gap-3 border-b-2 border-default-200 pb-2.5">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-default-100 text-sm font-bold text-default-500">
+        {n}
+      </span>
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <Icon size={18} className="shrink-0 text-default-500" />
+          <h2 className="text-lg font-bold leading-none tracking-tight text-default-800">{title}</h2>
+        </div>
+        <p className="mt-1 text-xs text-default-400">{hint}</p>
+      </div>
     </div>
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {
+// Sub-section within a zone — smaller than a zone heading, marked by an accent tick.
+function SubHeading({ children }: { children: ReactNode }) {
+  return (
+    <h3 className="mb-2 mt-1 flex items-center gap-2 text-sm font-semibold text-default-700">
+      <span className="h-3.5 w-1 shrink-0 rounded-full bg-default-300" />
+      {children}
+    </h3>
+  );
+}
+
+function Stat({ label, value, unit, accent }: { label: string; value: number | string; unit?: string; accent?: boolean }) {
   return (
     <Card withBorder radius="lg" padding="sm">
       <Text size="xs" c="dimmed" className="truncate">
@@ -429,6 +473,7 @@ function Stat({ label, value, accent }: { label: string; value: number | string;
       </Text>
       <Text fw={700} fz="xl" c={accent ? "blue" : undefined} className="font-num">
         {value}
+        {unit ? <span className="ml-1 text-xs font-normal text-default-400">{unit}</span> : null}
       </Text>
     </Card>
   );
@@ -600,60 +645,96 @@ function MoneyBars({
   );
 }
 
-// New-customer funnel: acquisition split → conversion to a paid course.
-function NewCustomerFunnelCard({ funnel, t }: { funnel: NewCustomerFunnel; t: TFn }) {
-  const convertRate = funnel.total > 0 ? Math.round((funnel.convertedToCourse / funnel.total) * 100) : 0;
+// New customers this month: total + "new members not yet purchased" + enrolment by registration type.
+function NewCustomersCard({ data, t }: { data: NewCustomers; t: TFn }) {
+  const enrolled = data.byType.reduce((s, x) => s + x.count, 0);
+  const maxType = data.byType.reduce((m, x) => Math.max(m, x.count), 0) || 1;
   return (
     <Card withBorder radius="lg" padding="lg">
-      <Group gap={8} mb="md">
-        <ThemeIcon variant="light" color="teal" size={28} radius="md">
-          <UserPlus size={16} />
-        </ThemeIcon>
-        <Text size="sm" fw={600}>
-          {t("overview.newCustomerTitle")}
-        </Text>
-      </Group>
-
-      <Group align="flex-end" gap="xs" mb="md">
-        <Text fw={700} fz={30} lh={1} className="font-num">
-          {funnel.total}
-        </Text>
-        <Text size="xs" c="dimmed" mb={4}>
-          {t("overview.newThisMonth")}
-        </Text>
-      </Group>
-
-      {/* Acquisition split */}
-      <SimpleGrid cols={2} spacing="xs" mb="md">
-        <div className="rounded-lg bg-default-100/60 p-2.5">
-          <Text size="xs" c="dimmed">
-            {t("overview.viaRegister")}
+      <SimpleGrid cols={3} spacing="xs" mb="md">
+        <div>
+          <Text fw={700} fz={28} lh={1} className="font-num">
+            {data.total}
+            <span className="ml-1 text-xs font-normal text-default-400">{t("overview.unitPeople")}</span>
           </Text>
-          <Text fw={700} className="font-num">
-            {funnel.viaRegister}
+          <Text size="xs" c="dimmed" className="mt-1">
+            {t("overview.newThisMonth")}
           </Text>
         </div>
         <div className="rounded-lg bg-default-100/60 p-2.5">
-          <Text size="xs" c="dimmed">
-            {t("overview.viaDirectSignup")}
-          </Text>
           <Text fw={700} className="font-num">
-            {funnel.viaDirectSignup}
+            {enrolled}
+          </Text>
+          <Text size="xs" c="dimmed">
+            {t("overview.enrolled")}
+          </Text>
+        </div>
+        <div className="rounded-lg bg-default-100/60 p-2.5">
+          <Text fw={700} className="font-num">
+            {data.registeredNotPurchased}
+          </Text>
+          <Text size="xs" c="dimmed">
+            {t("overview.registeredNotPurchased")}
           </Text>
         </div>
       </SimpleGrid>
 
-      {/* Conversion */}
-      <Group justify="space-between" gap="xs" mb={4} wrap="nowrap">
-        <Group gap={6} wrap="nowrap">
-          <ArrowRight size={14} className="text-default-400" />
-          <Text size="sm">{t("overview.convertedToCourse")}</Text>
+      {/* Enrolment by registration type */}
+      <Text size="xs" c="dimmed" mb="xs">
+        {t("overview.newByTypeTitle")}
+      </Text>
+      <Stack gap="sm">
+        {data.byType.map((x) => (
+          <div key={x.type} className="flex items-center gap-3">
+            <span className="w-28 shrink-0 truncate text-xs font-semibold text-default-800">
+              {t(`bookingType.${x.type}`)}
+            </span>
+            <div className="min-w-0 grow">
+              <div className="h-4 rounded" style={{ width: `${Math.max(4, (x.count / maxType) * 100)}%`, backgroundColor: badgeColorVar("teal") }} />
+            </div>
+            <span className="w-8 shrink-0 text-right text-sm font-semibold tabular-nums">{x.count}</span>
+          </div>
+        ))}
+      </Stack>
+    </Card>
+  );
+}
+
+// req 4: activity counts for ONE registration type — bars scale down the card, so adding activities
+// grows the list vertically instead of widening a table.
+function TypeActivityCard({ row, t }: { row: TypeActivityCount; t: TFn }) {
+  const total = row.byActivity.reduce((s, a) => s + a.count, 0);
+  const max = row.byActivity.reduce((m, a) => Math.max(m, a.count), 0) || 1;
+  const activities = [...row.byActivity].sort((a, b) => b.count - a.count);
+  return (
+    <Card withBorder radius="lg" padding="lg">
+      <Group justify="space-between" align="baseline" mb="md" wrap="nowrap">
+        <Group gap={8} wrap="nowrap">
+          <BookingTypeChip type={row.type} size="md" />
         </Group>
-        <Text size="sm" fw={600} className="font-num">
-          {funnel.convertedToCourse} · {convertRate}%
+        <Text size="xs" c="dimmed" className="shrink-0 font-num">
+          {t("overview.colTotal")} {total} {t("overview.unitPeople")}
         </Text>
       </Group>
-      <Progress value={convertRate} size="lg" radius="xl" color="teal" />
+      {total === 0 ? (
+        <Text size="sm" c="dimmed">
+          {t("dashboard.noData")}
+        </Text>
+      ) : (
+        <Stack gap="sm">
+          {activities.map((a) => (
+            <div key={a.key} className="flex items-center gap-3">
+              <span className="w-28 shrink-0 truncate text-xs font-semibold text-default-800" title={a.label ?? a.key}>
+                {a.label ?? a.key}
+              </span>
+              <div className="min-w-0 grow">
+                <div className="h-4 rounded" style={{ width: `${Math.max(4, (a.count / max) * 100)}%`, backgroundColor: badgeColorVar("indigo") }} />
+              </div>
+              <span className="w-8 shrink-0 text-right text-sm font-semibold tabular-nums">{a.count}</span>
+            </div>
+          ))}
+        </Stack>
+      )}
     </Card>
   );
 }

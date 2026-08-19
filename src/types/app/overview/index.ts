@@ -4,7 +4,7 @@
 // for the placeholder generator that lets the UI render before the endpoint exists.
 
 import type { BookingType, TeacherType } from "@/types/app/scheduler";
-import type { Breakdown } from "@/types/app/som";
+import type { Breakdown, BreakdownBucket } from "@/types/app/som";
 
 export type ScopePreset = "today" | "week" | "month" | "custom";
 
@@ -55,29 +55,42 @@ export interface OperationsSection {
   byBadge: BadgeSlice[];
 }
 
-export interface ExistingCustomers {
-  byCourse: number;
-  byVoucher: number;
-  byRecentTrial: number;
-  total: number;
-}
-
 /**
- * New-customer funnel for the month (SOM req: "เดือนนี้มีลูกค้าใหม่กี่คน > register และ สมัครใหม่เลย
- * > ต่อ course กี่คน > เป็นกิจกรรมอะไร"). Acquisition split → conversion to a paid course.
- * NOTE: "ต่อ course" here = convert / buy a course (confirmed), NOT renewing an existing one.
+ * Registration type = how a customer is enrolled. These ARE the four BookingTypes:
+ *   COURSE_PACKAGE = คอร์ส (comes in 4/6/10 sizes — see CourseSizeSlice)
+ *   VOUCHER        = voucher (count only the not-yet-expired ones)
+ *   FIRST_TRIAL    = trial (count only those within the last 3 months)
+ *   SINGLE_SESSION = จองรายครั้ง
+ * 4/6/10 is NOT a separate axis — it is a sub-split of the course type.
  */
-export interface NewCustomerFunnel {
-  total: number; // new customers this month
-  viaRegister: number; // acquired via registration (e.g. after a trial)
-  viaDirectSignup: number; // "สมัครใหม่เลย" — signed up directly
-  convertedToCourse: number; // of the new customers, how many bought a course
+export interface RegistrationTypeCount {
+  type: BookingType;
+  count: number;
 }
 
-/** Active course customers split by package size (SOM req: "course กี่ชม 4/6/10"). */
+/** Course package customers split by size (sub-detail of the COURSE_PACKAGE type). */
 export interface CourseSizeSlice {
   size: number; // 4 | 6 | 10
   count: number;
+}
+
+/** Existing customers, broken down by registration type (SOM req point 1). */
+export interface ExistingCustomers {
+  total: number;
+  byType: RegistrationTypeCount[]; // course / voucher / trial / single-session
+  courseSizeSplit: CourseSizeSlice[]; // sub-detail of the course type (4/6/10)
+}
+
+/**
+ * New customers for the month (SOM req point 2). Split by the registration type they enrolled in,
+ * plus the count of brand-new members who signed up but have NOT purchased anything yet.
+ */
+export interface NewCustomers {
+  total: number; // all new customers this month
+  registeredNotPurchased: number; // "สมัครเข้ามาใหม่" — new members, no purchase yet
+  byType: RegistrationTypeCount[]; // enrolled by registration type (course/voucher/trial/single)
+  courseSizeSplit: CourseSizeSlice[]; // course sub-detail among the new (4/6/10)
+  byActivity: Breakdown; // new customers split by activity
 }
 
 /** One activity's money figures (SOM req: sales & avg-per-course "แต่ละกิจกรรม"). */
@@ -113,13 +126,21 @@ export interface RevenueSection {
   topCustomers: CustomerSpend[]; // sorted desc by spend
 }
 
+/**
+ * SOM req point 4: count of each activity within each registration type — a type × activity matrix.
+ * (Owner's wording "จำนวนเฉลี่ย" read as the per-(type,activity) count, NOT a money figure.)
+ */
+export interface TypeActivityCount {
+  type: BookingType; // course / voucher / trial / single-session
+  byActivity: BreakdownBucket[]; // one bucket per activity, with its count
+}
+
 /** Zone 3 · Business — customer base, acquisition, market share & demographics. */
 export interface BusinessSection {
   existingCustomers: ExistingCustomers;
-  courseSizeSplit: CourseSizeSlice[];
-  newCustomers: NewCustomerFunnel;
-  newCourseByActivity: Breakdown; // activity of the courses new customers converted to
+  newCustomers: NewCustomers;
   activityShare: Breakdown; // existing base split by activity (bike / scooter / surfskate / skate)
+  typeActivityMatrix: TypeActivityCount[]; // req 4: activity counts per registration type
   demographics: {
     gender: Breakdown;
     ageBand: Breakdown;

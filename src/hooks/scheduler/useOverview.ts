@@ -14,6 +14,7 @@ import type {
   TrendPoint,
   BadgeSlice,
   TeacherWorkload,
+  RegistrationTypeCount,
 } from "@/types/app/overview";
 
 // Tiny deterministic PRNG (mulberry32) so mock numbers don't jump every render.
@@ -146,11 +147,35 @@ function buildOverview(scope: OverviewScope): OverviewData {
     };
   }).sort((a, b) => b.spend - a.spend);
 
-  // Active-course customers split by package size (4/6/10).
-  const courseSizeSplit = [4, 6, 10].map((size) => ({ size, count: intn(8, 40) }));
-
   const activityCounts = (min: number, max: number) =>
     ACTIVITIES.map((a) => ({ key: a.key, label: a.label, count: intn(min, max) }));
+
+  // ── Customers by registration type (course/voucher/trial/single) ──
+  const existingByType: RegistrationTypeCount[] = [
+    { type: "COURSE_PACKAGE", count: intn(40, 90) },
+    { type: "VOUCHER", count: intn(15, 45) },
+    { type: "FIRST_TRIAL", count: intn(5, 25) },
+    { type: "SINGLE_SESSION", count: intn(8, 30) },
+  ];
+  const existingTotal = existingByType.reduce((s, x) => s + x.count, 0);
+  const existingCourseSize = [4, 6, 10].map((size) => ({ size, count: intn(8, 40) }));
+
+  const newByType: RegistrationTypeCount[] = [
+    { type: "COURSE_PACKAGE", count: intn(3, 12) },
+    { type: "VOUCHER", count: intn(1, 8) },
+    { type: "FIRST_TRIAL", count: intn(2, 10) },
+    { type: "SINGLE_SESSION", count: intn(1, 7) },
+  ];
+  const newEnrolled = newByType.reduce((s, x) => s + x.count, 0);
+  const registeredNotPurchased = intn(2, 12);
+  const newCourseSize = [4, 6, 10].map((size) => ({ size, count: intn(1, 8) }));
+
+  // req 4: activity counts per registration type (type × activity matrix).
+  const REG_TYPES: RegistrationTypeCount["type"][] = ["COURSE_PACKAGE", "VOUCHER", "FIRST_TRIAL", "SINGLE_SESSION"];
+  const typeActivityMatrix = REG_TYPES.map((type) => ({
+    type,
+    byActivity: ACTIVITIES.map((a) => ({ key: a.key, label: a.label, count: intn(0, 22) })),
+  }));
 
   return {
     scope,
@@ -159,19 +184,18 @@ function buildOverview(scope: OverviewScope): OverviewData {
     operations: { byTeacher, byBookingType, byBadge },
     business: {
       existingCustomers: {
-        byCourse: intn(40, 90),
-        byVoucher: intn(15, 45),
-        byRecentTrial: intn(5, 25),
-        total: 0, // filled below
+        total: existingTotal,
+        byType: existingByType,
+        courseSizeSplit: existingCourseSize,
       },
-      courseSizeSplit,
-      newCustomers: (() => {
-        const viaRegister = intn(4, 16);
-        const viaDirectSignup = intn(2, 10);
-        const total = viaRegister + viaDirectSignup;
-        return { total, viaRegister, viaDirectSignup, convertedToCourse: Math.round(total * (0.4 + rand() * 0.4)) };
-      })(),
-      newCourseByActivity: breakdown(activityCounts(1, 8), intn(0, 2)),
+      newCustomers: {
+        total: newEnrolled + registeredNotPurchased,
+        registeredNotPurchased,
+        byType: newByType,
+        courseSizeSplit: newCourseSize,
+        byActivity: breakdown(activityCounts(1, 8), intn(0, 2)),
+      },
+      typeActivityMatrix,
       activityShare: breakdown(
         [
           { key: "balance_bike", label: "Balance Bike", count: intn(20, 50) },
@@ -226,14 +250,6 @@ function buildOverview(scope: OverviewScope): OverviewData {
 }
 
 export function useOverview(scope: OverviewScope) {
-  const data = useMemo(() => {
-    const d = buildOverview(scope);
-    d.business.existingCustomers.total =
-      d.business.existingCustomers.byCourse +
-      d.business.existingCustomers.byVoucher +
-      d.business.existingCustomers.byRecentTrial;
-    return d;
-  }, [scope.from, scope.to, scope.preset]);
-
+  const data = useMemo(() => buildOverview(scope), [scope.from, scope.to, scope.preset]);
   return { data, isLoading: false as const };
 }
