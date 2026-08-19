@@ -527,6 +527,8 @@ export interface CreateCourseInput {
   note?: string;
   /** TASK-098 — per-session overrides from the purchase-time planner (len must === size). */
   sessions?: CoursePlanOverride[];
+  /** SPEC-049 — 1-based weeks declared absent at creation (free of quota; each appends a make-up). */
+  absentWeeks?: number[];
 }
 
 export const createCoursePackage = async (
@@ -542,6 +544,9 @@ export const createCoursePackage = async (
     startTime: input.startTime,
     note: input.note,
     sessions: input.sessions,
+    // SPEC-049 — the BE is the source of truth for what a declared absence does (free quota + appended
+    // make-up + ceiling check); the FE only says WHICH weeks.
+    absentWeeks: input.absentWeeks,
   });
   return data;
 };
@@ -553,6 +558,8 @@ export const previewCoursePackage = async (input: {
   size: PackageSize;
   startDate: string;
   startTime: string;
+  /** SPEC-049 — preview the plan WITH the declared absences, so what is shown is what gets saved (AC-2). */
+  absentWeeks?: number[];
 }): Promise<CoursePreview> => {
   if (useMock) return mock.previewCoursePackage(input);
   const { data } = await api.post<CoursePreview>("/courses/preview", input);

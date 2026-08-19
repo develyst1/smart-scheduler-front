@@ -52,6 +52,11 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
   const [note, setNote] = useState("");
   const [plan, setPlan] = useState<EntitlementPlan | null>(null); // phase 2 when set
   const [error, setError] = useState<string | null>(null);
+  // SPEC-049 — the 1-based weeks the family already knows they'll miss. Declared HERE (at creation) they are
+  // free of quota; the same action later in the plan editor still consumes it (REQ-030 unchanged). The BE owns
+  // both that rule and the make-up placement — this state only says WHICH weeks.
+  const [absentWeeks, setAbsentWeeks] = useState<number[]>([]);
+  const [ceiling, setCeiling] = useState(false);
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
@@ -84,6 +89,8 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
       setNote("");
       setPlan(null);
       setError(null);
+      setAbsentWeeks([]);
+      setCeiling(false);
     }
   }, [opened]);
 
@@ -95,11 +102,21 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
   const valid =
     student?.name.trim() && teacherId && subjectId && !!chosen && startDate && startTime && !preview.isPending;
 
-  const generate = async () => {
-    if (!valid) return;
+  /** One preview path for both the first generate and every absence toggle — so the rows on screen are always
+   *  the server's answer for the CURRENT set of absences, never FE math (AC-2: saving creates what was previewed). */
+  const runPreview = async (weeks: number[]) => {
     setError(null);
     try {
-      const p = await preview.mutateAsync({ teacherId, subjectId, size, startDate, startTime });
+      const p = await preview.mutateAsync({
+        teacherId,
+        subjectId,
+        size,
+        startDate,
+        startTime,
+        absentWeeks: weeks.length ? weeks : undefined,
+      });
+      setCeiling(!!p.exceedsCeiling);
+      setAbsentWeeks(p.absentWeeks ?? weeks);
       setPlan({
         kind: "course",
         id: "",
@@ -108,18 +125,24 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
           name: student?.name ?? "",
           nickname: student?.name ?? "",
         },
+        // A declared absence renders as the status it will actually be saved as (SICK_LEAVE), and its appended
+        // make-up as EXTENDED — so the draft reads like the real plan and every existing chip/label works
+        // unchanged. Order is load-bearing: the first `size` rows are the weekly chain, the rest are make-ups
+        // (exactly how the BE builds and previews it) — `confirmCreate` relies on that.
         sessions: p.sessions.map((s, i) => ({
           id: `new-${i}`,
           date: s.date,
           startTime: s.startTime,
-          status: "PENDING",
+          status: s.absent ? "SICK_LEAVE" : s.makeup ? "EXTENDED" : "PENDING",
           teacher: s.teacher,
           subject: s.subject,
         })),
-        liveEndDate: p.sessions.at(-1)?.date ?? null,
+        liveEndDate: p.endDate ?? p.sessions.at(-1)?.date ?? null,
         summary: {
           kind: "course",
           size: p.size,
+          // Creation-time absences are FREE (SPEC-049 owner decision B) — showing them as used quota here would
+          // be the opposite of the rule being implemented.
           leaveUsed: 0,
           leaveQuota: LEAVE_QUOTA_BY_SIZE[size],
           maxWeek: MAX_WEEK_BY_SIZE[size],
@@ -130,6 +153,21 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : t("plan.genericError"));
     }
+  };
+
+  const generate = async () => {
+    if (!valid) return;
+    setAbsentWeeks([]);
+    setCeiling(false);
+    await runPreview([]);
+  };
+
+  /** Toggle one weekly row's planned-absence mark, then re-preview so the end date and make-ups come from the BE. */
+  const toggleAbsent = async (weekIndex: number) => {
+    const next = absentWeeks.includes(weekIndex)
+      ? absentWeeks.filter((w) => w !== weekIndex)
+      : [...absentWeeks, weekIndex].sort((a, b) => a - b);
+    await runPreview(next);
   };
 
   // Confirm (from PlanModal create mode) → atomic create with the edited per-session plan. A refusal throws
@@ -145,11 +183,15 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
       startDate,
       startTime,
       note: note.trim() || undefined,
+      absentWeeks: absentWeeks.length ? absentWeeks : undefined,
       // SPEC-045 (REQ-054) — the program is a COURSE-level fact, sent once as `subjectId` above. Per-row
       // `subjectId` is deliberately NOT sent: it was the door through which a brand-new course could be born
       // mixed-program (and its derived program then became whatever `bookings[0]` happened to be). The BE falls
       // back to the course-level subject for every row, so the client cannot emit a mixed course at all.
-      sessions: sessions.map((s) => ({
+      // `sessions` describes ONLY the weekly chain — the BE requires exactly `size` of them and appends the
+      // make-ups itself from `absentWeeks` (sending the make-up rows too would fail its length check and would
+      // also mean the FE deciding placement, which is the BE's job). The first `size` draft rows ARE that chain.
+      sessions: sessions.slice(0, size).map((s) => ({
         date: s.date,
         startTime: s.startTime,
         teacherId: s.teacher?.id,
@@ -173,6 +215,12 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
         mode="create"
         initialPlan={plan}
         onConfirm={confirmCreate}
+        // SPEC-049 — create-mode planned absences. The modal only reports WHICH week was toggled; every number
+        // it displays (live count, end date, ceiling) comes back from the BE preview above.
+        absentWeeks={absentWeeks}
+        onToggleAbsent={toggleAbsent}
+        previewPending={preview.isPending}
+        exceedsCeiling={ceiling}
       />
     );
   }

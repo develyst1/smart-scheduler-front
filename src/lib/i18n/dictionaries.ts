@@ -391,6 +391,12 @@ const en = {
     actionsMenu: "Actions",
     edit: "Edit",
     markAbsence: "Mark absence",
+    // SPEC-049 / REQ-045 — declared at CREATION, so it is free of quota; wording is the REQ's, not ours.
+    plannedAbsence: "Planned absence",
+    plannedAbsenceUndo: "Remove planned absence",
+    createPreview: "New plan: {n} sessions · absent {d} · ends {date}",
+    ceilingRefusal:
+      "This course can only extend to week {max} — reduce the planned absences or pick a different start date.",
     insert: "Insert make-up",
     editSession: "Edit session",
     insertSession: "Insert make-up session",
@@ -1181,6 +1187,10 @@ const th: typeof en = {
     actionsMenu: "จัดการ",
     edit: "แก้ไข",
     markAbsence: "บันทึกลา",
+    plannedAbsence: "ไม่มาแน่นอน (ลาล่วงหน้า)",
+    plannedAbsenceUndo: "ยกเลิกการลาล่วงหน้า",
+    createPreview: "แผนใหม่: {n} คาบ · ไม่มา {d} · สิ้นสุด {date}",
+    ceilingRefusal: "เลื่อนได้ถึงสัปดาห์ที่ {max} เท่านั้น — ลดจำนวนวันที่ลาล่วงหน้า หรือเลือกวันเริ่มใหม่",
     insert: "แทรกคาบชดเชย",
     editSession: "แก้ไขคาบ",
     insertSession: "แทรกคาบชดเชย",

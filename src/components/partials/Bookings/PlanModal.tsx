@@ -60,6 +60,14 @@ interface Props {
   initialPlan?: EntitlementPlan;
   /** Create mode: overrides the confirm action; receives the (possibly edited) sessions. */
   onConfirm?: (sessions: PlanSession[]) => Promise<void>;
+  /** SPEC-049 create mode — the 1-based weeks currently declared absent (owner's state, BE-echoed). */
+  absentWeeks?: number[];
+  /** SPEC-049 create mode — toggle one weekly row's planned-absence mark; the owner re-runs the BE preview. */
+  onToggleAbsent?: (weekIndex: number) => void | Promise<void>;
+  /** True while that preview is in flight — the plan on screen is stale until it lands. */
+  previewPending?: boolean;
+  /** AC-3 — the BE says this plan runs past MAX_WEEK; refuse before the user commits. */
+  exceedsCeiling?: boolean;
 }
 
 type EditTarget =
@@ -68,7 +76,18 @@ type EditTarget =
   | { kind: "extra" } // SPEC-033 — a charged single-session, out of quota
   | null;
 
-export default function PlanModal({ opened, onClose, entitlementId, mode = "edit", initialPlan, onConfirm }: Props) {
+export default function PlanModal({
+  opened,
+  onClose,
+  entitlementId,
+  mode = "edit",
+  initialPlan,
+  onConfirm,
+  absentWeeks = [],
+  onToggleAbsent,
+  previewPending = false,
+  exceedsCeiling = false,
+}: Props) {
   const t = useT();
   const isCreate = mode === "create";
   const query = useEntitlementPlan(entitlementId, opened && !isCreate);
@@ -99,6 +118,22 @@ export default function PlanModal({ opened, onClose, entitlementId, mode = "edit
 
   const isCourse = plan?.kind === "course";
   const sessions = isCreate ? draft : (plan?.sessions ?? []);
+  // SPEC-049 — which weekly row is this? The BE builds (and previews) a course as the `size` weekly rows in
+  // order, then the appended make-ups, and `CreatePlanFlow` maps that order straight into the draft. So a row's
+  // 1-based week is its position, and anything past `size` is a make-up (→ 0 = "not a declarable week").
+  const courseSize = plan?.summary.kind === "course" ? plan.summary.size : 0;
+  const weekIndexOf = (s: PlanSession) => {
+    const i = sessions.findIndex((x) => x.id === s.id);
+    return i >= 0 && i < courseSize ? i + 1 : 0;
+  };
+  // What the BE says this plan now is — the preview headline (AC-1). Live = everything that isn't a declared
+  // absence; the end date is the plan's own last live row, never FE-computed from the absence count.
+  const liveSessions = sessions.filter((x) => x.status !== "SICK_LEAVE");
+  const createPreviewLine = t("plan.createPreview", {
+    n: liveSessions.length,
+    d: absentWeeks.length,
+    date: formatDateDisplay(plan?.liveEndDate ?? liveSessions[liveSessions.length - 1]?.date ?? ""),
+  });
   const applyLocalEdit = (s: PlanSession) =>
     setDraft((prev) => prev.map((x) => (x.id === s.id ? s : x)));
 
@@ -161,8 +196,26 @@ export default function PlanModal({ opened, onClose, entitlementId, mode = "edit
               setEdit({ kind: "move", session });
             }}
             onMarkAbsence={
-              isCourse && !isCreate
-                ? (s) => requestChange({ kind: "mark-absence", bookingId: s.id, planned: true })
+              !isCourse
+                ? undefined
+                : isCreate
+                  ? // SPEC-049 — create mode has no bookings yet: the "absence" is a declared week, so this
+                    // toggles the week and the owner re-runs the BE preview. Free of quota by decision (B).
+                    onToggleAbsent
+                    ? (s) => onToggleAbsent(weekIndexOf(s))
+                    : undefined
+                  : (s) => requestChange({ kind: "mark-absence", bookingId: s.id, planned: true })
+            }
+            absenceLabelFor={
+              isCourse && isCreate
+                ? (s) =>
+                    // Only the weekly chain can be declared absent — an appended make-up is the CONSEQUENCE of
+                    // one, and offering it there would let staff chase their own tail.
+                    weekIndexOf(s) === 0
+                      ? null
+                      : absentWeeks.includes(weekIndexOf(s))
+                        ? t("plan.plannedAbsenceUndo")
+                        : t("plan.plannedAbsence")
                 : undefined
             }
             onCancelSession={
@@ -174,6 +227,26 @@ export default function PlanModal({ opened, onClose, entitlementId, mode = "edit
                 : undefined
             }
           />
+
+          {isCourse && isCreate && (
+            <Stack gap="xs">
+              {/* AC-1 — n sessions · absent d · ends {date}, BEFORE saving. */}
+              <Group gap="xs" wrap="wrap">
+                <Text fz="sm" fw={500} className="tabular-nums">
+                  {createPreviewLine}
+                </Text>
+                {previewPending && <Loader size="xs" />}
+              </Group>
+              {/* AC-3 — the ceiling is a refusal with its reason, never a silent trim. */}
+              {exceedsCeiling && (
+                <Alert color="orange" icon={<AlertTriangle size={16} />} variant="light">
+                  {t("plan.ceilingRefusal", {
+                    max: plan.summary.kind === "course" ? plan.summary.maxWeek : 0,
+                  })}
+                </Alert>
+              )}
+            </Stack>
+          )}
 
           {isCourse && !isCreate && (
             <Group justify="space-between" wrap="wrap" gap="xs">
@@ -254,7 +327,20 @@ export default function PlanModal({ opened, onClose, entitlementId, mode = "edit
               <Button variant="subtle" color="gray" onClick={onClose}>
                 {t("common.cancel")}
               </Button>
-              <ConfirmCreateButton sessions={draft} onConfirm={onConfirm} onError={setError} onDone={onClose} />
+              <ConfirmCreateButton
+                sessions={draft}
+                onConfirm={onConfirm}
+                onError={setError}
+                onDone={onClose}
+                disabled={exceedsCeiling || previewPending}
+                disabledHint={
+                  exceedsCeiling
+                    ? t("plan.ceilingRefusal", {
+                        max: plan.summary.kind === "course" ? plan.summary.maxWeek : 0,
+                      })
+                    : undefined
+                }
+              />
             </Group>
           )}
         </Stack>
@@ -303,12 +389,16 @@ function SessionTable({
   sessions,
   onEdit,
   onMarkAbsence,
+  absenceLabelFor,
   onCancelSession,
 }: {
   sessions: PlanSession[];
   onEdit: (s: PlanSession) => void;
   /** Edit mode, course only: mark a planned absence (goes through the preview-confirm). */
   onMarkAbsence?: (s: PlanSession) => void;
+  /** Per-row label for that action — `null` hides it on this row (SPEC-049: create mode offers it only on the
+   *  weekly-chain rows, never on an appended make-up, and its wording differs from the edit-mode one). */
+  absenceLabelFor?: (s: PlanSession) => string | null;
   /** Edit mode: cancel a session (delivered → reason-prompt; live → plain). Absent in create mode. */
   onCancelSession?: (s: PlanSession) => void;
 }) {
@@ -358,6 +448,7 @@ function SessionTable({
                     isExtra={isExtra}
                     onEdit={onEdit}
                     onMarkAbsence={onMarkAbsence}
+                    absenceLabel={absenceLabelFor ? absenceLabelFor(s) : undefined}
                     onCancelSession={onCancelSession}
                   />
                 </Table.Td>
@@ -378,6 +469,7 @@ function SessionActions({
   isExtra,
   onEdit,
   onMarkAbsence,
+  absenceLabel,
   onCancelSession,
 }: {
   session: PlanSession;
@@ -385,11 +477,13 @@ function SessionActions({
   isExtra: boolean;
   onEdit: (s: PlanSession) => void;
   onMarkAbsence?: (s: PlanSession) => void;
+  /** `undefined` = use the default wording; `null` = this row doesn't offer the action at all. */
+  absenceLabel?: string | null;
   onCancelSession?: (s: PlanSession) => void;
 }) {
   const t = useT();
   const canEdit = !locked;
-  const canMarkAbsence = !locked && !!onMarkAbsence && !isExtra;
+  const canMarkAbsence = !locked && !!onMarkAbsence && !isExtra && absenceLabel !== null;
   const canCancel = !!onCancelSession && (locked || isLiveStatus(session.status));
 
   if (!canEdit && !canMarkAbsence && !canCancel) {
@@ -416,7 +510,7 @@ function SessionActions({
               leftSection={<UserMinus size={14} />}
               onClick={() => onMarkAbsence?.(session)}
             >
-              {t("plan.markAbsence")}
+              {absenceLabel ?? t("plan.markAbsence")}
             </Menu.Item>
           )}
           {canCancel && (
@@ -656,11 +750,16 @@ function ConfirmCreateButton({
   onConfirm,
   onError,
   onDone,
+  disabled = false,
+  disabledHint,
 }: {
   sessions: PlanSession[];
   onConfirm?: (sessions: PlanSession[]) => Promise<void>;
   onError: (msg: string | null) => void;
   onDone: () => void;
+  /** AC-3 — a plan past MAX_WEEK can't be saved; the reason is already on screen above the button. */
+  disabled?: boolean;
+  disabledHint?: string;
 }) {
   const t = useT();
   const [busy, setBusy] = useState(false);
@@ -677,10 +776,19 @@ function ConfirmCreateButton({
       setBusy(false);
     }
   };
-  return (
-    <Button color="green" loading={busy} onClick={submit}>
+  const button = (
+    <Button color="green" loading={busy} disabled={disabled} onClick={submit}>
       {t("plan.confirmCreate")}
     </Button>
+  );
+  // A disabled button with no stated reason is the anti-pattern; the ceiling Alert says why, and the tooltip
+  // repeats it where the pointer actually is.
+  return disabled && disabledHint ? (
+    <Tooltip label={disabledHint} withArrow multiline w={260}>
+      <span>{button}</span>
+    </Tooltip>
+  ) : (
+    button
   );
 }
 

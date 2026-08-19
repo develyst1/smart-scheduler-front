@@ -724,20 +724,44 @@ export const previewCoursePackage = (input: {
   size: number;
   startDate: string;
   startTime: string;
+  absentWeeks?: number[];
 }) => {
   const teacher = teachers.find((t) => t.id === input.teacherId);
   const subj = teacher?.subjectOptions?.find((s) => s.id === input.subjectId) ?? null;
-  const sessions = Array.from({ length: input.size }, (_, i) => ({
-    date: dayjs(input.startDate).add(i, "week").format("YYYY-MM-DD"),
+  const ref = {
     startTime: input.startTime,
     teacher: teacher ? { id: teacher.id, name: teacher.name, nickname: teacher.nickname } : null,
     subject: subj,
+  };
+  // SPEC-049 (TASK-148) — mirrors the BE shape: the `size` weekly rows, absences flagged in place, and one
+  // appended make-up per absence so the LIVE count still equals `size`. The real placement is availability-aware
+  // server-side; the mock appends naive weekly slots (no teacher calendar offline) — enough to exercise the UI.
+  const absent = new Set(input.absentWeeks ?? []);
+  const sessions = Array.from({ length: input.size }, (_, i) => ({
+    date: dayjs(input.startDate).add(i, "week").format("YYYY-MM-DD"),
+    ...ref,
+    absent: absent.has(i + 1),
+    makeup: false,
   }));
+  for (let k = 0; k < absent.size; k++) {
+    sessions.push({
+      date: dayjs(input.startDate).add(input.size + k, "week").format("YYYY-MM-DD"),
+      ...ref,
+      absent: false,
+      makeup: true,
+    });
+  }
+  const live = sessions.filter((s) => !s.absent);
+  const expiryDate = dayjs(input.startDate).add(input.size + 2, "week").format("YYYY-MM-DD");
   return delay({
     size: input.size,
     startDate: input.startDate,
     startTime: input.startTime,
-    expiryDate: dayjs(input.startDate).add(input.size + 2, "week").format("YYYY-MM-DD"),
+    expiryDate,
+    absentWeeks: [...absent].sort((a, b) => a - b),
+    liveCount: live.length,
+    endDate: live[live.length - 1]?.date ?? input.startDate,
+    exceedsCeiling: sessions.some((s) => dayjs(s.date).isAfter(dayjs(expiryDate))),
     sessions,
   });
 };

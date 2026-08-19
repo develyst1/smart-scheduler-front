@@ -414,6 +414,10 @@ export interface CoursePreviewSession {
   startTime: string;
   teacher: PlanSessionRef | null;
   subject: { id: string; name: string } | null;
+  /** SPEC-049 — this week is a declared planned absence (saved as SICK_LEAVE + `planned_at_creation`). */
+  absent?: boolean;
+  /** SPEC-049 — an appended make-up for one of those absences (saved EXTENDED). */
+  makeup?: boolean;
 }
 
 /** `GET /teachers/:id/work-days/impact` — future LIVE course sessions orphaned by removing weekdays (TASK-100). */
@@ -430,6 +434,14 @@ export interface CoursePreview {
   startDate: string;
   startTime: string;
   expiryDate: string; // the MAX_WEEK ceiling
+  /** SPEC-049 (TASK-148) — the 1-based weeks declared absent, echoed back. */
+  absentWeeks?: number[];
+  /** Sessions that will actually be taught (`size` by construction — absences are replaced by make-ups). */
+  liveCount?: number;
+  /** The last LIVE session's date — the preview's headline "ends {date}". */
+  endDate?: string;
+  /** AC-3 — the same MAX_WEEK ceiling the save enforces, so the FE can refuse before the user commits. */
+  exceedsCeiling?: boolean;
   sessions: CoursePreviewSession[];
 }
 
