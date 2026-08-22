@@ -6,7 +6,16 @@
  * The rounding is copied deliberately, not approximated: `Math.round((full * pct) / 100)` is the BE's
  * `percentOf`, so 10% of ฿79.05 reads 791 minor units on screen and 791 in the ledger. A near-enough mirror
  * would show one satang of drift on the summary and make staff distrust the number.
+ *
+ * 🔴 **The unit contract (TASK-169 / TASK-168, after Tanya caught it):** `discount.value` is the number a HUMAN
+ * typed — a percentage for PERCENT, **whole BAHT** for BAHT. It is NOT satang. This file previously read a BAHT
+ * value as satang, so `391` took ฿3.91 off instead of ฿391 — a 100× under-discount that looked plausible on
+ * screen. Baht→satang conversion happens in exactly one place per side: `bahtToMinor` here and on the BE.
  */
+
+/** The one place the human unit meets the money unit on this side. Named so it is greppable — its absence is
+ *  what let every layer agree with the same 100× mistake. */
+export const bahtToMinor = (baht: number) => baht * 100;
 export type DiscountKind = "PERCENT" | "BAHT";
 
 export interface DiscountDraft {
@@ -55,8 +64,9 @@ export function evaluateDiscount(draft: DiscountDraft, fullMinor: number): Disco
     if (!(value > 0 && value <= 100)) problemKeys.push("discount.errPercentRange");
     else discountMinor = percentOf(fullMinor, value);
   } else {
+    // Whole BAHT, positive — the human unit. Converted here, once, to compare against a satang price.
     if (!Number.isInteger(value) || value <= 0) problemKeys.push("discount.errBahtPositive");
-    else discountMinor = value;
+    else discountMinor = bahtToMinor(value);
   }
 
   if (Number.isFinite(fullMinor) && fullMinor > 0 && discountMinor > 0) {
@@ -73,7 +83,8 @@ export function evaluateDiscount(draft: DiscountDraft, fullMinor: number): Disco
   };
 }
 
-/** The payload field — `undefined` when untouched, so a no-discount create is byte-identical to today (AC-7). */
+/** The payload field — `undefined` when untouched, so a no-discount create is byte-identical to today (AC-7).
+ *  Sends the number the staff TYPED (percent, or whole baht) — the BE converts. Never pre-multiply on the wire. */
 export const discountPayload = (draft: DiscountDraft, fullMinor: number) => {
   const { touched, problemKeys } = evaluateDiscount(draft, fullMinor);
   if (!touched || problemKeys.length) return undefined;

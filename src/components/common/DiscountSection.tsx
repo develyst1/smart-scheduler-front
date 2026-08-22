@@ -50,11 +50,14 @@ export default function DiscountSection({ fullMinor, value, onChange, serverProb
         />
         <NumberInput
           aria-label={t("discount.section")}
-          placeholder={value.kind === "PERCENT" ? "10" : "100"}
+          // The unit is spelled out in the field itself — a bare number box is what let "391" be read as satang.
+          placeholder={value.kind === "PERCENT" ? "10" : "500"}
+          suffix={value.kind === "PERCENT" ? undefined : ` ${t("discount.baht")}`}
           value={value.value}
           onChange={(v) => onChange({ ...value, value: typeof v === "number" ? v : "" })}
           min={0}
           allowNegative={false}
+          // Whole baht only (and the BE refuses a fractional one) — percentages may be fractional.
           allowDecimal={value.kind === "PERCENT"}
           className="tabular-nums"
         />

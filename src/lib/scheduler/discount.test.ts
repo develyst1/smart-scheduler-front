@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { discountPayload, emptyDiscount, evaluateDiscount, percentOf } from "./discount";
+import { bahtToMinor, discountPayload, emptyDiscount, evaluateDiscount, percentOf } from "./discount";
 
 /** These pin the FE mirror against the BE's own rules (`discount-plan.ts`) — the numbers staff see before
  *  committing must be the numbers the ledger records, and "refuse, never clamp" must survive refactors. */
@@ -21,9 +21,9 @@ describe("untouched = no discount, not an error (AC-7)", () => {
 
 describe("a reason is mandatory once a value is typed (AC-3)", () => {
   it("flags the missing reason", () => {
-    const r = evaluateDiscount({ kind: "BAHT", value: 5000, reason: "  " }, 50000);
+    const r = evaluateDiscount({ kind: "BAHT", value: 50, reason: "  " }, 50000);
     expect(r.problemKeys).toContain("discount.errNoReason");
-    expect(discountPayload({ kind: "BAHT", value: 5000, reason: "  " }, 50000)).toBeUndefined();
+    expect(discountPayload({ kind: "BAHT", value: 50, reason: "  " }, 50000)).toBeUndefined();
   });
   it("a reason alone still counts as touched, so the empty value is caught", () => {
     const r = evaluateDiscount({ kind: "BAHT", value: "", reason: "โปรวันแม่" }, 50000);
@@ -34,7 +34,8 @@ describe("a reason is mandatory once a value is typed (AC-3)", () => {
 
 describe("refuse, never clamp", () => {
   it("refuses a baht discount larger than the price and takes NOTHING off", () => {
-    const r = evaluateDiscount({ kind: "BAHT", value: 60000, reason: "x" }, 50000);
+    // ฿600 against a ฿500 line — over by a hundred baht, not by satang.
+    const r = evaluateDiscount({ kind: "BAHT", value: 600, reason: "x" }, 50000);
     expect(r.problemKeys).toContain("discount.errTooLarge");
     expect(r.discountMinor).toBe(0);
     expect(r.netMinor).toBe(50000); // not 0 — the price is never silently capped
@@ -53,10 +54,38 @@ describe("refuse, never clamp", () => {
 
 describe("reports EVERY problem at once, not one at a time", () => {
   it("names both the missing reason and the too-large amount", () => {
-    const r = evaluateDiscount({ kind: "BAHT", value: 99999, reason: "" }, 50000);
+    const r = evaluateDiscount({ kind: "BAHT", value: 999, reason: "" }, 50000);
     expect(r.problemKeys).toEqual(
       expect.arrayContaining(["discount.errNoReason", "discount.errTooLarge"]),
     );
+  });
+});
+
+describe("🔴 the BAHT value is whole BAHT, not satang (TASK-169 — the defect Tanya caught)", () => {
+  it("bahtToMinor is the single conversion point", () => expect(bahtToMinor(500)).toBe(50000));
+
+  it("typing 500 baht takes ฿500 off, not ฿5", () => {
+    const r = evaluateDiscount({ kind: "BAHT", value: 500, reason: "โปร" }, 100000);
+    expect(r.discountMinor).toBe(50000); // ฿500
+    expect(r.netMinor).toBe(50000); // ฿1,000 − ฿500
+  });
+
+  it("the promo case: 391 off a ฿1,390 trial nets ฿999 (not ฿1,386.09)", () => {
+    const r = evaluateDiscount({ kind: "BAHT", value: 391, reason: "โปรวันแม่" }, 139000);
+    expect(r.discountMinor).toBe(39100);
+    expect(r.netMinor).toBe(99900);
+  });
+
+  it("sends the number the staff typed — the BE converts, so never pre-multiplied", () => {
+    expect(discountPayload({ kind: "BAHT", value: 391, reason: "โปรวันแม่" }, 139000))
+      .toEqual({ kind: "BAHT", value: 391, reason: "โปรวันแม่" });
+  });
+
+  it("refuses when value×100 exceeds the line total, still without clamping", () => {
+    const r = evaluateDiscount({ kind: "BAHT", value: 1400, reason: "x" }, 139000);
+    expect(r.problemKeys).toContain("discount.errTooLarge");
+    expect(r.discountMinor).toBe(0);
+    expect(r.netMinor).toBe(139000);
   });
 });
 
