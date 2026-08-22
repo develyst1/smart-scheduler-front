@@ -28,6 +28,11 @@ export interface SellablePackagesResponse {
   /** SPEC-031 / TASK-123 — rental price card (code + VAT-incl `priceMinor`; the FE owns labels via i18n). Derived
    *  server-side from the one price authority, so the FE never carries a second copy of the rental prices. */
   rentalItems: { code: string; priceMinor: number }[];
+  /** TASK-164 (REQ-063) — voucher hour-bucket prices, derived server-side from the one `VOUCHER_PRICE`
+   *  authority (same shape as `rentalItems`), so the FE never carries a second copy of the price card. */
+  voucherItems: { hours: number; priceMinor: number }[];
+  /** TASK-164 — the `first-trial` sale item's price; what a trial's discount is validated against. */
+  firstTrialPriceMinor: number;
 }
 
 /** Satang → the displayed baht string. Display-only; no arithmetic on the price itself. */

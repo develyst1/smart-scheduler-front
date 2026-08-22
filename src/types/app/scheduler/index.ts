@@ -360,6 +360,8 @@ export interface RecordRentalInput {
   refId?: string;
   /** a standalone rental has no natural key → the client mints one per action so a double-submit posts once (AC #4). */
   idempotencyKey?: string;
+  /** REQ-063 — optional admin discount, validated server-side against hours × rate (AC-14). */
+  discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string };
 }
 
 export interface RentalResult {

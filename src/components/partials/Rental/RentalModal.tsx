@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { Modal, Stack, Select, NumberInput, Button, Group, Alert, Text } from "@mantine/core";
 import { PackageOpen, CheckCircle2, Info, AlertTriangle } from "lucide-react";
 import { useRecordRental, useSellablePackages } from "@/hooks/scheduler";
-import { ApiClientError } from "@/lib/api/client";
+import { ApiClientError, errorProblems } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { RENTAL_CODES, type RentalCode, type RentalResult } from "@/types/app/scheduler";
 import { formatPriceMinor } from "@/types/app/pricing";
+import DiscountSection from "@/components/common/DiscountSection";
+import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
 
 /**
  * Record an equipment rental (SPEC-031 / TASK-109). One modal, both surfaces:
@@ -37,6 +39,9 @@ export default function RentalModal({
   const [error, setError] = useState<string | null>(null);
   // A standalone rental has no natural key → one key per action (AC #4). Regenerated each time the modal opens.
   const [idempotencyKey, setIdempotencyKey] = useState<string>("");
+  // REQ-063 / AC-14 — a rental's full price is hours × rate, so it re-computes whenever either changes.
+  const [discount, setDiscount] = useState<DiscountDraft>(emptyDiscount());
+  const [discountProblems, setDiscountProblems] = useState<string[]>([]);
 
   useEffect(() => {
     if (opened) {
@@ -44,13 +49,19 @@ export default function RentalModal({
       setHours(1);
       setResult(null);
       setError(null);
+      setDiscount(emptyDiscount());
+      setDiscountProblems([]);
       setIdempotencyKey(crypto.randomUUID());
     }
   }, [opened]);
 
+  const fullMinor = code && priceOf(code) != null ? (priceOf(code) as number) * hours : 0;
+  const discountEval = evaluateDiscount(discount, fullMinor);
+
   const submit = async () => {
-    if (!code || hours < 1) return;
+    if (!code || hours < 1 || discountEval.problemKeys.length) return;
     setError(null);
+    setDiscountProblems([]);
     try {
       const res = await record.mutateAsync({
         code,
@@ -58,10 +69,14 @@ export default function RentalModal({
         refId,
         // only the standalone path needs the client key; the add-on is already idempotent on refId+code
         idempotencyKey: refId ? undefined : idempotencyKey,
+        discount: discountPayload(discount, fullMinor),
       });
       setResult(res);
     } catch (e) {
       // RENTAL_NOT_POSTED (502) or any API error — surfaced, never a silent dead button.
+      // REQ-063: a DISCOUNT_REFUSED carries an ARRAY of reasons — show every one, or staff fix the first and
+      // resubmit straight into the second.
+      setDiscountProblems(errorProblems(e));
       setError(e instanceof ApiClientError ? e.message : t("rental.errorGeneric"));
     }
   };
@@ -147,11 +162,23 @@ export default function RentalModal({
                 </strong>
               </Text>
             )}
+            {code && priceOf(code) != null && (
+              <DiscountSection
+                fullMinor={fullMinor}
+                value={discount}
+                onChange={setDiscount}
+                serverProblems={discountProblems}
+              />
+            )}
             <Group justify="flex-end" gap="sm">
               <Button variant="subtle" color="gray" onClick={onClose}>
                 {t("common.cancel")}
               </Button>
-              <Button loading={record.isPending} disabled={!code || hours < 1} onClick={submit}>
+              <Button
+                loading={record.isPending}
+                disabled={!code || hours < 1 || discountEval.problemKeys.length > 0}
+                onClick={submit}
+              >
                 {t("rental.record")}
               </Button>
             </Group>

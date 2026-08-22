@@ -14,8 +14,10 @@ import {
 import { Ticket, Info, AlertTriangle } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
-import { useCreateVoucher } from "@/hooks/scheduler";
-import { ApiClientError } from "@/lib/api/client";
+import { useCreateVoucher, useSellablePackages } from "@/hooks/scheduler";
+import { ApiClientError, errorProblems } from "@/lib/api/client";
+import DiscountSection from "@/components/common/DiscountSection";
+import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
 import { useT } from "@/lib/i18n";
 import type { CreateVoucherResponse } from "@/types/api/contract";
 
@@ -35,6 +37,12 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
   const [expiryMonths, setExpiryMonths] = useState<number>(6);
   const [result, setResult] = useState<CreateVoucherResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // REQ-063 — the voucher's list price now comes from the server (TASK-164), never a second FE copy.
+  const { data: card } = useSellablePackages();
+  const [discount, setDiscount] = useState<DiscountDraft>(emptyDiscount());
+  const [discountProblems, setDiscountProblems] = useState<string[]>([]);
+  const fullMinor = card?.voucherItems.find((v) => v.hours === totalHours)?.priceMinor ?? 0;
+  const discountEval = evaluateDiscount(discount, fullMinor);
 
   useEffect(() => {
     if (!opened) {
@@ -43,20 +51,29 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
       setExpiryMonths(6);
       setResult(null);
       setError(null);
+      setDiscount(emptyDiscount());
+      setDiscountProblems([]);
     }
   }, [opened]);
 
-  const valid = student?.name.trim() && totalHours > 0 && expiryMonths > 0 && !create.isPending;
+  const valid =
+    student?.name.trim() &&
+    totalHours > 0 &&
+    expiryMonths > 0 &&
+    !create.isPending &&
+    discountEval.problemKeys.length === 0;
 
   const handleSubmit = async () => {
     if (!valid) return;
     setError(null);
+    setDiscountProblems([]);
     try {
       const res = await create.mutateAsync({
         studentName: student?.name.trim() ?? "",
         studentId: student?.id,
         studentPhone: student?.phone,
         totalHours: totalHours as 5 | 10 | 15,
+        discount: discountPayload(discount, fullMinor),
       });
       setResult(res);
       notify({
@@ -69,6 +86,8 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
       });
     } catch (e) {
       // e.g. a suspended household can't be sold to (TASK-058) → show the backend message, not a dead button.
+      // REQ-063: DISCOUNT_REFUSED carries an ARRAY — render every entry, not just the headline.
+      setDiscountProblems(errorProblems(e));
       if (e instanceof ApiClientError) setError(e.message);
       else throw e;
     }
@@ -143,6 +162,16 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
               required
             />
           </Group>
+
+          {/* REQ-063 — the full price follows the hour bucket, so it re-reads whenever the hours change. */}
+          {fullMinor > 0 && (
+            <DiscountSection
+              fullMinor={fullMinor}
+              value={discount}
+              onChange={setDiscount}
+              serverProblems={discountProblems}
+            />
+          )}
 
           <Group justify="flex-end" mt="auto">
             <Button variant="subtle" color="gray" onClick={onClose}>

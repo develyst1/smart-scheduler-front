@@ -22,7 +22,9 @@ import StudentSelect, { type StudentSelectValue } from "@/components/common/Stud
 import EligibleStudentSelect from "@/components/common/EligibleStudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
-import { ApiClientError } from "@/lib/api/client";
+import { ApiClientError, errorProblems } from "@/lib/api/client";
+import DiscountSection from "@/components/common/DiscountSection";
+import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
 import { useT } from "@/lib/i18n";
 import {
   useBadges,
@@ -36,7 +38,7 @@ import {
   useSellablePackages,
   useSetBookingBadges,
 } from "@/hooks/scheduler";
-import { voucherAllowsSubject } from "@/lib/scheduler/sellable";
+import { packageFor, voucherAllowsSubject } from "@/lib/scheduler/sellable";
 import { entKey, type EligibleType } from "@/lib/scheduler/eligible";
 import RentalModal from "@/components/partials/Rental/RentalModal";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
@@ -578,6 +580,9 @@ function CreateForm({
   // SPEC-017 #7: a student eligible TODAY can still be refused for a far-future date (e.g. voucher expires
   // before then). Surface that submit-time backend rejection clearly instead of a form that silently won't save.
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // REQ-063 — a discount on the two booking types that actually post revenue.
+  const [discount, setDiscount] = useState<DiscountDraft>(emptyDiscount());
+  const [discountProblems, setDiscountProblems] = useState<string[]>([]);
 
   const isVoucher = bookingType === "VOUCHER";
   // SPEC-047 — voucher is now the ONLY entitlement-backed tab; the alias stays so the branch below reads by intent.
@@ -608,6 +613,17 @@ function CreateForm({
   // SPEC-030/TASK-106 (b, FE): a voucher can't book Onewheel / Balance Play — omit the excluded programs from the
   // picker, driven by the exposed `voucherAllowedGroups` (never a hardcoded list). Course bookings are unaffected.
   const { data: sellable } = useSellablePackages();
+  // REQ-063 — the full price a discount applies to, mirroring exactly what the BE prices each type from
+  // (`revenueItemRef`): a SINGLE session from the card's `size: 1` package for the chosen program, a FIRST_TRIAL
+  // from the `first-trial` sale item — now on the wire as `firstTrialPriceMinor` (TASK-164, cut after I raised the
+  // gap). Both come from the server's one price authority; the FE still holds no copy of the price card.
+  const singleFullMinor =
+    bookingType === "SINGLE_SESSION"
+      ? (packageFor(sellable, subjectId, 1)?.priceMinor ?? 0)
+      : bookingType === "FIRST_TRIAL"
+        ? (sellable?.firstTrialPriceMinor ?? 0)
+        : 0;
+  const singleDiscountEval = evaluateDiscount(discount, singleFullMinor);
   const voucherSubjectOptions = slotSubjectOptions.filter((s) => voucherAllowsSubject(sellable, s.id));
   const voucherSubject = voucherSubjectOptions.find((s) => s.id === voucherSubjectId) ?? null;
 
@@ -620,6 +636,8 @@ function CreateForm({
     setStartTime(createSlot.time);
     setSubjectId("");
     setVoucherSubjectId(null);
+    setDiscount(emptyDiscount());
+    setDiscountProblems([]);
   };
 
   // Preselect ONLY when there is exactly one thing to pick — and it still lands in state as a choice, so the
@@ -666,7 +684,9 @@ function CreateForm({
       };
     }
   } else {
-    valid = !!(student?.name.trim() && subjectId && teacherId && startTime);
+    valid =
+      !!(student?.name.trim() && subjectId && teacherId && startTime) &&
+      singleDiscountEval.problemKeys.length === 0;
     input = {
       studentName: student?.name.trim() ?? "",
       studentId: student?.id,
@@ -678,6 +698,7 @@ function CreateForm({
       startTime,
       bookingType,
       badgeValueIds,
+      discount: discountPayload(discount, singleFullMinor),
     };
   }
 
@@ -703,6 +724,8 @@ function CreateForm({
       onClose();
     } catch (e) {
       // SPEC-017 #7: show the backend's specific rejection (e.g. "voucher expires before that date").
+      // REQ-063 — DISCOUNT_REFUSED returns an ARRAY; render every entry, not just the headline message.
+      setDiscountProblems(errorProblems(e));
       if (e instanceof ApiClientError) setSubmitError(e.message);
       else throw e;
     }
@@ -851,6 +874,15 @@ function CreateForm({
               searchable
             />
           </div>
+          {/* Trial + single session — the two booking types that post revenue, so the two that can be discounted. */}
+          {singleFullMinor > 0 && (
+            <DiscountSection
+              fullMinor={singleFullMinor}
+              value={discount}
+              onChange={setDiscount}
+              serverProblems={discountProblems}
+            />
+          )}
         </>
       )}
 

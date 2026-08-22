@@ -7,11 +7,22 @@ export class ApiClientError extends Error {
     public code: string,
     message: string,
     public status: number,
+    /** The server's structured payload. Carried because some refusals are a LIST, not one sentence —
+     *  e.g. `DISCOUNT_REFUSED` returns `{ problems: string[] }` and REQ-063 requires every entry to be
+     *  shown, or staff fix one and resubmit straight into the next. Dropping it here made that impossible. */
+    public details?: unknown,
   ) {
     super(message);
     this.name = "ApiClientError";
   }
 }
+
+/** The `problems` array from a refusal that has one (`DISCOUNT_REFUSED`), or `[]`. Never throws on shape. */
+export const errorProblems = (e: unknown): string[] => {
+  if (!(e instanceof ApiClientError)) return [];
+  const problems = (e.details as { problems?: unknown } | undefined)?.problems;
+  return Array.isArray(problems) ? problems.filter((p): p is string => typeof p === "string") : [];
+};
 
 const baseURL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "/api";
@@ -51,7 +62,12 @@ api.interceptors.response.use(
     }
     const body = error.response?.data as ApiError | undefined;
     if (body?.error) {
-      throw new ApiClientError(body.error.code, body.error.message, error.response.status);
+      throw new ApiClientError(
+        body.error.code,
+        body.error.message,
+        error.response.status,
+        body.error.details,
+      );
     }
     throw error;
   },

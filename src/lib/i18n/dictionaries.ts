@@ -39,6 +39,24 @@ const en = {
     settings: "Settings",
   },
 
+  // REQ-063 / TASK-161 — the discount block shared by all five sale/booking forms. Wording is REQ-063's
+  // verbatim so the screen says what the server says; the three marked DRAFT have no REQ line yet (Q1).
+  discount: {
+    section: "Discount",
+    percent: "Percent",
+    baht: "Baht",
+    reason: "Reason",
+    reasonPlaceholder: "Reason (e.g. Mother's Day promo)",
+    summaryFull: "Full price {full}",
+    summaryOff: "Discount −{disc}",
+    summaryNet: "Amount payable {net}",
+    errTooLarge: "A discount cannot exceed the full price.",
+    errNoReason: "Please give a reason for this discount.",
+    errNotAdmin: "Only an admin can apply a discount.",
+    errPercentRange: "A percentage discount must be between 0 and 100.", // DRAFT — no REQ line
+    errBahtPositive: "A baht discount must be a whole number above zero.", // DRAFT — no REQ line
+    errValue: "That discount value isn't valid.", // DRAFT — no REQ line
+  },
   settings: {
     title: "Settings",
     subtitle: "Business rules you can change without a deploy. New rules appear here automatically.",
@@ -894,6 +912,24 @@ const th: typeof en = {
     settings: "ตั้งค่า",
   },
 
+  discount: {
+    section: "ส่วนลด",
+    percent: "เปอร์เซ็นต์",
+    baht: "บาท",
+    reason: "เหตุผล",
+    reasonPlaceholder: "เหตุผล (เช่น โปรวันแม่)",
+    summaryFull: "ราคาเต็ม {full}",
+    summaryOff: "ส่วนลด −{disc}",
+    summaryNet: "ยอดที่ต้องชำระ {net}",
+    errTooLarge: "ส่วนลดมากกว่าราคาเต็มไม่ได้",
+    errNoReason: "กรุณาระบุเหตุผลของส่วนลด",
+    errNotAdmin: "เฉพาะแอดมินเท่านั้นที่ให้ส่วนลดได้",
+    // DRAFT — no REQ line; Thai borrowed VERBATIM from the BE's own refusals (discount-plan.ts) so the
+    // pre-check and the server refusal read identically in Thai.
+    errPercentRange: "ส่วนลดเป็นเปอร์เซ็นต์ต้องอยู่ระหว่าง 0–100",
+    errBahtPositive: "ส่วนลดเป็นบาทต้องเป็นจำนวนเต็มบวก",
+    errValue: "ค่าส่วนลดไม่ถูกต้อง",
+  },
   settings: {
     title: "ตั้งค่า",
     subtitle: "กฎการทำงานที่แก้ได้เองโดยไม่ต้องดีพลอย กฎใหม่จะปรากฏที่นี่อัตโนมัติ",
