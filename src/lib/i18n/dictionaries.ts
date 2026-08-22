@@ -56,6 +56,9 @@ const en = {
     errPercentRange: "A percentage discount must be between 0 and 100.", // DRAFT — no REQ line
     errBahtPositive: "A baht discount must be a whole number above zero.", // DRAFT — no REQ line
     errValue: "That discount value isn't valid.", // DRAFT — no REQ line
+    // The discount as RECORDED on a booking (TASK-170 Part 2). Rendered as the human number that was typed.
+    recordedPercent: "{value}%",
+    recordedBaht: "฿{value}",
   },
   settings: {
     title: "Settings",
@@ -929,6 +932,8 @@ const th: typeof en = {
     errPercentRange: "ส่วนลดเป็นเปอร์เซ็นต์ต้องอยู่ระหว่าง 0–100",
     errBahtPositive: "ส่วนลดเป็นบาทต้องเป็นจำนวนเต็มบวก",
     errValue: "ค่าส่วนลดไม่ถูกต้อง",
+    recordedPercent: "{value}%",
+    recordedBaht: "฿{value}",
   },
   settings: {
     title: "ตั้งค่า",

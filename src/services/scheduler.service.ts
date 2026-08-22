@@ -471,6 +471,11 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
     voucherId: input.bookingType === "VOUCHER" ? input.voucherId : undefined,
     courseId: input.bookingType === "COURSE_PACKAGE" ? input.courseId : undefined,
     badgeValueIds: input.badgeValueIds?.length ? input.badgeValueIds : undefined,
+    // 🔴 TASK-170 — this line was MISSING, which is the whole defect: the body below is an explicit allow-list,
+    // so adding `discount` to `CreateBookingInput` type-checked perfectly while the value was dropped at the wire.
+    // The state, the component and the rules engine were all correct the entire time. Any future field on a sale
+    // payload has to be added HERE too — the compiler cannot catch an omission from an object literal.
+    discount: input.discount,
   });
   return dtoToBooking(data.booking);
 };

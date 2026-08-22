@@ -466,6 +466,7 @@ export const createCoursePackage = (input: {
       pendingSlot: false,
       incomingBookingId: null,
       rescheduleTo: null,
+      discount: null, // TASK-171 — mocks post no discount; null (not undefined) matches the DTO contract.
     })),
   });
 };

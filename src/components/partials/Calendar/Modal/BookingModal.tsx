@@ -253,6 +253,29 @@ function ViewBooking({
         <Field label={t("booking.date")} value={booking.date} />
         <Field label={t("booking.time")} value={`${booking.startTime} - ${booking.endTime}`} />
       </dl>
+      {/* REQ-063 req 8 / AC-10 — a discount that lives only in the DB doesn't make "what and why" answerable.
+          Shown on the record wherever staff look at the booking. `value` is the human number (a percentage, or
+          whole baht), so it is rendered as typed — no conversion here; the money itself belongs to the ledger.
+          `actor` is deliberately NOT shown: one shared login today makes it honest-but-useless, and a meaningless
+          name reads as an answer to "who" when it isn't (SA note on Part 2). */}
+      {booking.discount && (
+        <>
+          <Divider />
+          <p className="text-sm tabular-nums">
+            {t("discount.section")}:{" "}
+            <strong>
+              {booking.discount.kind === "PERCENT"
+                ? t("discount.recordedPercent", { value: booking.discount.value })
+                : t("discount.recordedBaht", { value: booking.discount.value })}
+            </strong>
+            {" · "}
+            <span className="text-muted-500">
+              {t("discount.reason")}: {booking.discount.reason}
+            </span>
+          </p>
+        </>
+      )}
+
       {booking.note && (
         <>
           <Divider />

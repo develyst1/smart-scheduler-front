@@ -165,6 +165,11 @@ export interface BookingDTO {
   subject: SubjectRef;
   course: CourseSummary | null;
   badges?: BookingBadgeDTO[]; // always present from the real API; optional so mocks can omit it
+  /** TASK-171 (REQ-063) — the captured discount, **null or a whole object, never partly filled**, so an absent
+   *  discount and a discount of nothing can't look alike. `value` travels exactly as stored — the HUMAN number
+   *  (a percentage, or whole baht per TASK-168) — deliberately NOT satang: a second unit conversion on the wire is
+   *  the precise shape of the bug that cost us a day. */
+  discount: { kind: "PERCENT" | "BAHT"; value: number; reason: string; actor: string | null } | null;
   // Conflict resolution (B.1)
   pendingSlot: boolean;
   incomingBookingId: string | null;
