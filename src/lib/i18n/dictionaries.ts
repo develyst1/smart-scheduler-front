@@ -157,8 +157,13 @@ const en = {
   },
 
   bookingType: {
-    FIRST_TRIAL: "Trial",
-    SINGLE_SESSION: "Single session",
+    // REQ-067 Part A — the words on the customer's PRINTED PRICE CARD. Product names, so they are NOT
+    // translated: the Thai dictionary carries the same two strings. Labels only — the FIRST_TRIAL /
+    // SINGLE_SESSION values, stored data, reports and sale codes are untouched (AC-2). Every surface that
+    // names a booking type renders through the bookingType.* key family, so these two lines are the whole
+    // change (AC-3) — verified by grep across the repo.
+    FIRST_TRIAL: "1st Trial",
+    SINGLE_SESSION: "1 HR",
     COURSE_PACKAGE: "Weekly course",
     VOUCHER: "Voucher",
   },
@@ -1029,8 +1034,9 @@ const th: typeof en = {
   },
 
   bookingType: {
-    FIRST_TRIAL: "ทดลองเรียน",
-    SINGLE_SESSION: "จองรายครั้ง",
+    // Same strings as EN on purpose (AC-1) — product names off a printed card, not phrases to translate.
+    FIRST_TRIAL: "1st Trial",
+    SINGLE_SESSION: "1 HR",
     COURSE_PACKAGE: "คอร์สรายสัปดาห์",
     VOUCHER: "Voucher",
   },
