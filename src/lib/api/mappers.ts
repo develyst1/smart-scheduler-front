@@ -21,6 +21,9 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     courseId: dto.course?.id,
     note: dto.note ?? undefined,
     badges: dto.badges ?? [],
+    // ⚠️ This object literal is an allow-list, exactly like `createBooking`'s POST body — the omission that WAS
+    // TASK-170. A field added to `BookingDTO` reaches the UI only if it is also mapped here; the compiler won't say.
+    discount: dto.discount ?? null,
     // Conflict resolution (B.1)
     pendingSlot: dto.pendingSlot || undefined,
     incomingBookingId: dto.incomingBookingId ?? undefined,

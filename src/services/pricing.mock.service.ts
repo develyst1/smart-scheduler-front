@@ -45,6 +45,14 @@ export const getSellablePackages = async (): Promise<SellablePackagesResponse> =
             { code: "rental-helmet", priceMinor: THB(50) },
             { code: "rental-pads", priceMinor: THB(50) },
           ],
+          // TASK-164 — voucher + first-trial prices, matching the BE's single authority (VOUCHER_PRICE /
+          // FIRST_TRIAL_MINOR) so the offline discount summary shows the same numbers the server validates against.
+          voucherItems: [
+            { hours: 5, priceMinor: THB(6000) },
+            { hours: 10, priceMinor: THB(10500) },
+            { hours: 15, priceMinor: THB(13500) },
+          ],
+          firstTrialPriceMinor: THB(1390),
         }),
       200,
     ),

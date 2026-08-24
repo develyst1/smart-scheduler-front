@@ -134,6 +134,9 @@ export interface Booking {
   pendingSlot?: boolean;
   /** badge ที่ติดกับการจอง (type ละ ≤ 1 ค่า) — real API ส่งมาเสมอ (mapper coalesce เป็น []) */
   badges?: BookingBadge[];
+  /** REQ-063 — the captured discount (null when there is none). `value` is the human number: a percentage, or
+   *  whole baht. Display-only here; the money itself is the ledger's. */
+  discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string; actor: string | null } | null;
 }
 
 // ──────────────────────────── Badges ────────────────────────────
@@ -360,6 +363,8 @@ export interface RecordRentalInput {
   refId?: string;
   /** a standalone rental has no natural key → the client mints one per action so a double-submit posts once (AC #4). */
   idempotencyKey?: string;
+  /** REQ-063 — optional admin discount, validated server-side against hours × rate (AC-14). */
+  discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string };
 }
 
 export interface RentalResult {

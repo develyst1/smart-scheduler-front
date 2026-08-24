@@ -194,7 +194,13 @@ export default function ImportBalanceModal({ opened, onClose }: Props) {
 
         {kind === "COURSE" ? (
           <>
-            <Group grow align="flex-start">
+            {/* REQ-064 AC-8 — rows align at their INPUTS, not at the tops of their wrappers. A Mantine
+                Input.Wrapper renders label → description → input, so `flex-end` puts the input boxes on one
+                line **whatever height the helper text takes** — including when it wraps at 375. `flex-start`
+                is what pushed `Remaining sessions start` below `Time`: only the left field had a two-line
+                helper. Applied to EVERY field row in this form, so the next helper that wraps can't re-open
+                this; nudging the one reported box would have. */}
+            <Group grow align="flex-end">
               <NumberInput
                 label={t("importBalance.size")}
                 description={t("importBalance.sizeHint")}
@@ -239,7 +245,7 @@ export default function ImportBalanceModal({ opened, onClose }: Props) {
               required
             />
 
-            <Group grow align="flex-start">
+            <Group grow align="flex-end">
               <DatePickerInput
                 label={t("importBalance.resumeDate")}
                 description={t("importBalance.resumeHint")}
@@ -259,7 +265,7 @@ export default function ImportBalanceModal({ opened, onClose }: Props) {
             </Group>
           </>
         ) : (
-          <Group grow align="flex-start">
+          <Group grow align="flex-end">
             <NumberInput
               label={t("importBalance.totalHours")}
               value={totalHours}

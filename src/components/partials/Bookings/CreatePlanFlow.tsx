@@ -17,7 +17,9 @@ import {
 } from "@/hooks/scheduler";
 import { courseSizesFor, isUnpriced, packageFor } from "@/lib/scheduler/sellable";
 import { formatPriceMinor } from "@/types/app/pricing";
-import { ApiClientError } from "@/lib/api/client";
+import { ApiClientError, errorProblems } from "@/lib/api/client";
+import DiscountSection from "@/components/common/DiscountSection";
+import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
 import { useT } from "@/lib/i18n";
 import {
   LEAVE_QUOTA_BY_SIZE,
@@ -57,6 +59,9 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
   // both that rule and the make-up placement — this state only says WHICH weeks.
   const [absentWeeks, setAbsentWeeks] = useState<number[]>([]);
   const [ceiling, setCeiling] = useState(false);
+  // REQ-063 — the sale's discount. FE math is display only; the BE re-validates and is the source of truth.
+  const [discount, setDiscount] = useState<DiscountDraft>(emptyDiscount());
+  const [discountProblems, setDiscountProblems] = useState<string[]>([]);
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
@@ -91,6 +96,8 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
       setError(null);
       setAbsentWeeks([]);
       setCeiling(false);
+      setDiscount(emptyDiscount());
+      setDiscountProblems([]);
     }
   }, [opened]);
 
@@ -99,8 +106,17 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
     else setSubjectId("");
   }, [teacherId, subjectOptions.length]);
 
+  // REQ-063 — "refuse, never clamp": an invalid discount blocks the flow rather than being capped at the price.
+  const discountEval = evaluateDiscount(discount, chosen?.priceMinor ?? 0);
   const valid =
-    student?.name.trim() && teacherId && subjectId && !!chosen && startDate && startTime && !preview.isPending;
+    student?.name.trim() &&
+    teacherId &&
+    subjectId &&
+    !!chosen &&
+    startDate &&
+    startTime &&
+    !preview.isPending &&
+    discountEval.problemKeys.length === 0;
 
   /** One preview path for both the first generate and every absence toggle — so the rows on screen are always
    *  the server's answer for the CURRENT set of absences, never FE math (AC-2: saving creates what was previewed). */
@@ -173,6 +189,19 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
   // Confirm (from PlanModal create mode) → atomic create with the edited per-session plan. A refusal throws
   // ApiClientError, which PlanModal surfaces as the server's reason.
   const confirmCreate = async (sessions: PlanSession[]) => {
+    setDiscountProblems([]);
+    try {
+      return await submitCreate(sessions);
+    } catch (e) {
+      // REQ-063 — a DISCOUNT_REFUSED carries an ARRAY of reasons; surface them all on the form, then rethrow so
+      // PlanModal still shows the headline refusal. Showing one at a time is the failure this AC names.
+      const problems = errorProblems(e);
+      if (problems.length) setDiscountProblems(problems);
+      throw e;
+    }
+  };
+
+  const submitCreate = async (sessions: PlanSession[]) => {
     const result = await create.mutateAsync({
       studentName: student?.name.trim() ?? "",
       studentId: student?.id,
@@ -184,6 +213,8 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
       startTime,
       note: note.trim() || undefined,
       absentWeeks: absentWeeks.length ? absentWeeks : undefined,
+      // Untouched ⇒ `undefined` ⇒ the request is byte-identical to a pre-REQ-063 create (AC-7).
+      discount: discountPayload(discount, chosen?.priceMinor ?? 0),
       // SPEC-045 (REQ-054) — the program is a COURSE-level fact, sent once as `subjectId` above. Per-row
       // `subjectId` is deliberately NOT sent: it was the door through which a brand-new course could be born
       // mixed-program (and its derived program then became whatever `bookings[0]` happened to be). The BE falls
@@ -291,6 +322,16 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
             allowDeselect={false}
             searchable
             description={chosen ? t("course.priceInclVat", { price: formatPriceMinor(chosen.priceMinor) }) : undefined}
+          />
+        )}
+
+        {/* REQ-063 — right under the price it applies to. Hidden entirely for a non-admin (the server also 403s). */}
+        {chosen && (
+          <DiscountSection
+            fullMinor={chosen.priceMinor}
+            value={discount}
+            onChange={setDiscount}
+            serverProblems={discountProblems}
           />
         )}
 

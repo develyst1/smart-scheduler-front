@@ -410,6 +410,8 @@ export interface CreateBookingInput {
   voucherId?: string;
   /** ต้องระบุเมื่อ bookingType === "COURSE_PACKAGE" — คอร์สที่ session นี้ตัดโควตา (SPEC-017) */
   courseId?: string;
+  /** REQ-063 / TASK-162 — optional admin discount on a TRIAL / SINGLE session (the two that post revenue). */
+  discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string };
   /** badge value ids ที่จะติดกับการจอง (type ละ ≤ 1) */
   badgeValueIds?: string[];
 }
@@ -469,6 +471,11 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
     voucherId: input.bookingType === "VOUCHER" ? input.voucherId : undefined,
     courseId: input.bookingType === "COURSE_PACKAGE" ? input.courseId : undefined,
     badgeValueIds: input.badgeValueIds?.length ? input.badgeValueIds : undefined,
+    // 🔴 TASK-170 — this line was MISSING, which is the whole defect: the body below is an explicit allow-list,
+    // so adding `discount` to `CreateBookingInput` type-checked perfectly while the value was dropped at the wire.
+    // The state, the component and the rules engine were all correct the entire time. Any future field on a sale
+    // payload has to be added HERE too — the compiler cannot catch an omission from an object literal.
+    discount: input.discount,
   });
   return dtoToBooking(data.booking);
 };
@@ -529,6 +536,8 @@ export interface CreateCourseInput {
   sessions?: CoursePlanOverride[];
   /** SPEC-049 — 1-based weeks declared absent at creation (free of quota; each appends a make-up). */
   absentWeeks?: number[];
+  /** REQ-063 — optional admin discount on the sale; the BE re-validates against the list price. */
+  discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string };
 }
 
 export const createCoursePackage = async (
@@ -547,6 +556,7 @@ export const createCoursePackage = async (
     // SPEC-049 — the BE is the source of truth for what a declared absence does (free quota + appended
     // make-up + ceiling check); the FE only says WHICH weeks.
     absentWeeks: input.absentWeeks,
+    discount: input.discount,
   });
   return data;
 };
@@ -571,6 +581,8 @@ export interface CreateVoucherInput {
   studentId?: string;
   studentPhone?: string;
   totalHours: 5 | 10 | 15;
+  /** REQ-063 — optional admin discount; the BE re-validates against the voucher's list price. */
+  discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string };
 }
 
 export const createVoucher = async (
@@ -580,6 +592,7 @@ export const createVoucher = async (
   const { data } = await api.post<CreateVoucherResponse>("/vouchers", {
     student: studentPayload(input),
     totalHours: input.totalHours,
+    discount: input.discount,
   });
   return data;
 };
