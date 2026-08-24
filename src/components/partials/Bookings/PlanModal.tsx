@@ -30,6 +30,7 @@ import {
   useAddExtraSession,
   useApplyPlanChange,
   useCancelBooking,
+  useSetAttendeeNote,
   useEntitlementPlan,
   useMoveBooking,
   usePreviewPlanChange,
@@ -47,6 +48,7 @@ import {
 } from "@/types/app/scheduler";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 import EndCourseDialog from "./EndCourseDialog";
+import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
 
 /** PENDING / CONFIRMED / EXTENDED — a live session that can be plainly cancelled (re-owes, no reason). */
 const isLiveStatus = (s: string) => s === "PENDING" || s === "CONFIRMED" || s === "EXTENDED";
@@ -165,6 +167,7 @@ export default function PlanModal({
     }
   };
   const insertable = plan?.insertable !== false; // undefined (voucher/create) → allow; explicit false → disable
+  const courseEnded = plan?.summary.kind === "course" && !!plan.summary.endedAt;
 
   return (
     <Modal
@@ -195,10 +198,14 @@ export default function PlanModal({
 
           <SessionTable
             sessions={sessions}
-            onEdit={(session) => {
-              setError(null);
-              setEdit({ kind: "move", session });
-            }}
+            onEdit={
+              courseEnded
+                ? undefined
+                : (session) => {
+                    setError(null);
+                    setEdit({ kind: "move", session });
+                  }
+            }
             onMarkAbsence={
               !isCourse
                 ? undefined
@@ -252,7 +259,15 @@ export default function PlanModal({
             </Stack>
           )}
 
-          {isCourse && !isCreate && (
+          {/* REQ-036 — an ended course is offered no write action at all. TASK-185's server guard is the real
+              protection; this exists so staff aren't handed a button whose only outcome is a 409. */}
+          {isCourse && !isCreate && courseEnded && (
+            <Text fz="sm" c="dimmed">
+              {t("course.endedNoWrites")}
+            </Text>
+          )}
+
+          {isCourse && !isCreate && !courseEnded && (
             <Group justify="space-between" wrap="wrap" gap="xs">
               <Text fz="xs" c="dimmed">
                 {t("plan.owedHint", { n: (plan.summary.kind === "course" ? plan.summary.owedCount : 0) })}
@@ -378,6 +393,10 @@ export default function PlanModal({
 
 function SummaryBar({ plan }: { plan: EntitlementPlan }) {
   const t = useT();
+  // 🔴 REQ-036 — an ENDED course has no live sessions, which the generic branch below renders as "ยังไม่มีคาบ"
+  // (never started). That is the opposite of the truth: the sessions were forfeited on purpose. Say so.
+  const ended = plan.summary.kind === "course" ? plan.summary.endedAt : null;
+  const endedReason = plan.summary.kind === "course" ? plan.summary.endReason : null;
   const end = plan.liveEndDate ? dayjs(plan.liveEndDate).format("D MMM YY") : t("plan.noLiveEnd");
   return (
     <div className="rounded-xl border border-muted-200 bg-muted-50/40 p-3">
@@ -404,9 +423,17 @@ function SummaryBar({ plan }: { plan: EntitlementPlan }) {
             </Text>
           )}
         </Group>
-        <Text fz="sm" c="dimmed">
-          {t("plan.endsOn", { date: end })}
-        </Text>
+        {ended ? (
+          <Text fz="sm" c="red" fw={600}>
+            {endedReason
+              ? t("course.endedPlanHeader", { reason: t(`endCourse.${endedReason}`) })
+              : t("course.ended")}
+          </Text>
+        ) : (
+          <Text fz="sm" c="dimmed">
+            {t("plan.endsOn", { date: end })}
+          </Text>
+        )}
       </Group>
     </div>
   );
@@ -420,7 +447,8 @@ function SessionTable({
   onCancelSession,
 }: {
   sessions: PlanSession[];
-  onEdit: (s: PlanSession) => void;
+  /** Absent ⇒ the row offers no edit at all (REQ-036: an ended course is read-only). */
+  onEdit?: (s: PlanSession) => void;
   /** Edit mode, course only: mark a planned absence (goes through the preview-confirm). */
   onMarkAbsence?: (s: PlanSession) => void;
   /** Per-row label for that action — `null` hides it on this row (SPEC-049: create mode offers it only on the
@@ -502,14 +530,14 @@ function SessionActions({
   session: PlanSession;
   locked: boolean;
   isExtra: boolean;
-  onEdit: (s: PlanSession) => void;
+  onEdit?: (s: PlanSession) => void;
   onMarkAbsence?: (s: PlanSession) => void;
   /** `undefined` = use the default wording; `null` = this row doesn't offer the action at all. */
   absenceLabel?: string | null;
   onCancelSession?: (s: PlanSession) => void;
 }) {
   const t = useT();
-  const canEdit = !locked;
+  const canEdit = !locked && !!onEdit;
   const canMarkAbsence = !locked && !!onMarkAbsence && !isExtra && absenceLabel !== null;
   const canCancel = !!onCancelSession && (locked || isLiveStatus(session.status));
 
@@ -528,7 +556,7 @@ function SessionActions({
         </Menu.Target>
         <Menu.Dropdown>
           {canEdit && (
-            <Menu.Item leftSection={<Pencil size={14} />} onClick={() => onEdit(session)}>
+            <Menu.Item leftSection={<Pencil size={14} />} onClick={() => onEdit?.(session)}>
               {t("plan.edit")}
             </Menu.Item>
           )}
@@ -586,6 +614,11 @@ function SessionEditor({
   const [submitting, setSubmitting] = useState(false);
 
   const seed = target.kind === "move" ? target.session : null;
+  // REQ-068 AC-3 — ONE session's note. Saved through its own endpoint (`PATCH /bookings/:id/note`), which is the
+  // structural reason a note edit can't notify a teacher or touch the other sessions of the course.
+  const noteMut = useSetAttendeeNote();
+  const [attendeeNote, setAttendeeNote] = useState(seed?.attendeeNote ?? "");
+  const [noteSaving, setNoteSaving] = useState(false);
   const [date, setDate] = useState<string>(seed?.date ?? dayjs().format("YYYY-MM-DD"));
   const [startTime, setStartTime] = useState<string>(seed?.startTime ?? TIME_SLOTS[0]);
   const [teacherId, setTeacherId] = useState<string | null>(seed?.teacher?.id ?? null);
@@ -735,6 +768,40 @@ function SessionEditor({
           />
         )}
       </Group>
+
+      {/* REQ-068 — per-session note. Only on an EXISTING session: a create-mode draft row has no booking id yet,
+          and the note endpoint is keyed by booking. Saved on its own button so it is unmistakably one session's
+          note, not part of the move being composed above it. */}
+      {target.kind === "move" && !onLocalSave && (
+        <div className="mt-3">
+          <AttendeeNoteInput value={attendeeNote} onChange={setAttendeeNote} disabled={noteSaving} />
+          <Group justify="flex-end" mt="xs">
+            <Button
+              size="xs"
+              variant="light"
+              loading={noteSaving}
+              disabled={(seed?.attendeeNote ?? "") === attendeeNote}
+              onClick={async () => {
+                setNoteSaving(true);
+                try {
+                  // `null` clears it; a trimmed string sets it. Only this booking id is touched (AC-3).
+                  await noteMut.mutateAsync({
+                    id: target.session.id,
+                    attendeeNote: attendeeNote.trim() || null,
+                  });
+                  notify({ title: t("attendeeNote.saved"), color: "success" });
+                } catch (e) {
+                  onError(e instanceof ApiClientError ? e.message : t("plan.genericError"));
+                } finally {
+                  setNoteSaving(false);
+                }
+              }}
+            >
+              {t("common.save")}
+            </Button>
+          </Group>
+        </div>
+      )}
 
       {/* availability + clash view */}
       <div className="mt-2">

@@ -16,7 +16,21 @@ export function toCourseView(course: CoursePackage): CoursePackageView {
   const leaveRemaining = Math.max(0, leaveQuota - course.leaveUsed);
   const leaveLocked = course.leaveUsed >= leaveQuota && !course.adminUnlocked;
 
-  return { ...course, leaveQuota, maxWeek, leaveRemaining, leaveLocked };
+  // REQ-036 — normalise the ended fields so every view answers "is this course ended?" the same way, whether it
+  // came from the API mapper or from an offline CoursePackage.
+  return {
+    ...course,
+    leaveQuota,
+    maxWeek,
+    leaveRemaining,
+    leaveLocked,
+    endedAt: course.endedAt ?? null,
+    endReason: course.endReason ?? null,
+    // TASK-189 — lifecycle is the SERVER's word. Offline (no server) the only honest local answer is the one fact
+    // this shape actually carries: cancelled or not. Never re-derive COMPLETED/EXPIRED here — that second
+    // computation is the bug this task removes.
+    status: course.endedAt ? "CANCELLED" : "ACTIVE",
+  };
 }
 
 /** true = ยังลาเพิ่ม/เลื่อนตารางได้ */

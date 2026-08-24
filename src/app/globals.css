@@ -22,6 +22,15 @@
   --color-muted-700: 51 65 85; /* #334155 */
   --color-muted-800: 30 41 59; /* #1e293b */
   --color-muted-900: 15 23 42; /* #0f172a */
+
+  /* SPEC-046 / REQ-052 — BOOKING TYPE is a second dimension and gets its OWN hues. Deliberately none of the
+     semantic status colours (green/red/orange/blue are spoken for by ยืนยันแล้ว/ลา/รอยืนยัน/…): a cell shows
+     status AND type at once, so sharing a hue would make one unreadable. The text label is always present —
+     colour is redundant reinforcement, never the carrier (AC-1/AC-8, and the a11y rule from REQ-041). */
+  --booking-type-first-trial: 217 70 239; /* fuchsia — the "new face" */
+  --booking-type-single-session: 20 184 166; /* teal */
+  --booking-type-course-package: 79 70 229; /* indigo */
+  --booking-type-voucher: 202 138 4; /* amber-700 */
 }
 
 /* Minimal reset (Tailwind preflight is disabled so it doesn't fight Mantine).

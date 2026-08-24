@@ -7,6 +7,7 @@ import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
 import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
 import { useT } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
+import { BOOKING_TYPE_ICON, BOOKING_TYPE_VAR } from "@/components/common/BookingCellBody";
 
 interface Props {
   teachers: TeacherView[];
@@ -115,12 +116,31 @@ function Row({
                 onClick={() => onSelectBooking(booking)}
                 className={`relative flex h-full w-full flex-col gap-1 overflow-hidden rounded-xl border p-2 pl-3 text-left shadow-sm transition-shadow hover:shadow-md ${CARD_STYLE[accent]}`}
               >
+                {/* This left stripe is STATUS (it predates REQ-052). The day cell therefore gives TYPE its own
+                    channel — an icon plus a type-hued label — instead of a second competing stripe: two stripes on
+                    one card would make neither dimension readable, which is the collision REQ-052 exists to avoid. */}
                 <span className={`absolute left-0 top-0 h-full w-1 ${ACCENT_STYLE[accent]}`} />
-                <span className="truncate text-sm font-semibold">{booking.studentName}</span>
-                <span className="truncate text-xs text-muted-500">{booking.subject}</span>
-                <span className="truncate text-[10px] uppercase tracking-wide text-muted-400">
+                <span className="truncate text-sm font-semibold">
+                  {booking.nickname || booking.studentName}
+                </span>
+                {/* AC-4 — the day view keeps the FULL program name; only the week cell may shorten it. */}
+                <span className="text-xs text-muted-500">{booking.subject}</span>
+                <span
+                  className="flex items-center gap-1 text-[10px] uppercase tracking-wide"
+                  style={{ color: `rgb(${BOOKING_TYPE_VAR[booking.bookingType]})` }}
+                >
+                  {(() => {
+                    const Icon = BOOKING_TYPE_ICON[booking.bookingType];
+                    return <Icon size={11} aria-hidden className="shrink-0" />;
+                  })()}
                   {t(`bookingType.${booking.bookingType}`)}
                 </span>
+                {/* REQ-068 — the session note, where staff read "today". Absent ⇒ nothing (AC-5). */}
+                {booking.attendeeNote && (
+                  <span className="truncate text-[10px] italic text-muted-500" title={booking.attendeeNote}>
+                    {booking.attendeeNote}
+                  </span>
+                )}
                 {(booking.badges ?? []).length > 0 && (
                   <span className="flex flex-wrap gap-1">
                     {(booking.badges ?? []).map((bd) => (

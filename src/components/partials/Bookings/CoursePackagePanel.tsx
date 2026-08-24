@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader, Modal, TextInput } from "@mantine/core";
+import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader, Modal, SegmentedControl, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { LockKeyholeOpen, Lock, GraduationCap, Search, History } from "lucide-react";
+import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban } from "lucide-react";
 import { useSetCourseAdminUnlock, useCoursePackages } from "@/hooks/scheduler";
+import { COURSE_STATUSES, type CourseStatus } from "@/types/app/scheduler";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
@@ -12,6 +13,14 @@ import PagerBar from "@/components/common/PagerBar";
 import CourseHistoryModal from "./CourseHistoryModal";
 import { useT } from "@/lib/i18n";
 import type { CoursePackageView } from "@/types/app/scheduler";
+
+/** One place mapping lifecycle → colour, so the four states can't drift apart across screens. */
+const COURSE_STATUS_COLOR: Record<CourseStatus, string> = {
+  ACTIVE: "green",
+  COMPLETED: "blue",
+  EXPIRED: "gray",
+  CANCELLED: "red",
+};
 
 const PAGE_SIZE = 9;
 
@@ -21,9 +30,21 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   const [debounced] = useDebouncedValue(search, 300);
   const [page, setPage] = useState(1);
   useEffect(() => setPage(1), [debounced]);
-  const { data, isLoading } = useCoursePackages({ q: debounced.trim() || undefined, page, limit: PAGE_SIZE });
+  // REQ-036 B3 (TASK-189) — default ACTIVE, so a cancelled course drops out of the everyday view but stays
+  // findable. The filter goes to the SERVER, so paging and counts are true — TASK-186 filtered the current page
+  // client-side, which miscounted across pages; that predicate is deleted, not left to rot.
+  const [status, setStatus] = useState<CourseStatus>("ACTIVE");
+  useEffect(() => setPage(1), [status]);
+  const { data, isLoading } = useCoursePackages({
+    q: debounced.trim() || undefined,
+    status,
+    page,
+    limit: PAGE_SIZE,
+  });
   const courses = data?.items ?? [];
   const total = data?.total ?? 0;
+  // AC-B6 — the server's counts, over the search-filtered set before paging; they partition the unfiltered total.
+  const counts = data?.counts;
   const setUnlock = useSetCourseAdminUnlock();
 
   // คอร์ส + ทิศทาง (unlock/relock) ที่รอการยืนยันใน modal
@@ -65,13 +86,25 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
 
   return (
     <Stack gap="md">
-      <TextInput
-        placeholder={t("bookings.searchPlaceholder")}
-        value={search}
-        onChange={(e) => setSearch(e.currentTarget.value)}
-        leftSection={<Search size={16} />}
-        className="max-w-md"
-      />
+      <Group gap="sm" wrap="wrap" align="center">
+        <TextInput
+          placeholder={t("bookings.searchPlaceholder")}
+          value={search}
+          onChange={(e) => setSearch(e.currentTarget.value)}
+          leftSection={<Search size={16} />}
+          className="max-w-md grow"
+        />
+        <SegmentedControl
+          value={status}
+          onChange={(v) => setStatus(v as CourseStatus)}
+          data={COURSE_STATUSES.map((s) => ({
+            value: s,
+            // The count comes from the BE so the chips say what switching would actually find — a client
+            // recount is the disagreement this task exists to remove.
+            label: counts ? `${t(`course.status.${s}`)} (${counts[s]})` : t(`course.status.${s}`),
+          }))}
+        />
+      </Group>
       {isLoading ? (
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500">
           <Loader size="md" />
@@ -81,7 +114,15 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
         <Card padding="xl">
           <Group justify="center" c="dimmed" gap="xs">
             <GraduationCap size={18} />
-            <Text size="sm">{debounced.trim() ? t("bookings.noMatch") : t("course.empty")}</Text>
+            {/* The empty state has to name WHICH view is empty — "no courses" under an Inactive filter
+                would read as "nothing was ever cancelled", which is a different claim. */}
+            <Text size="sm">
+              {debounced.trim()
+                ? t("bookings.noMatch")
+                : status === "ACTIVE"
+                  ? t("course.empty")
+                  : t("course.emptyStatus", { status: t(`course.status.${status}`) })}
+            </Text>
           </Group>
         </Card>
       ) : (
@@ -109,19 +150,30 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                     </p>
                   )}
                 </div>
-                {c.leaveLocked ? (
-                  <Badge color="red" variant="light" leftSection={<Lock size={13} />}>
-                    {t("course.locked")}
+                {/* 🔴 TASK-189 — LIFECYCLE comes from the server's ONE `status` field. The FE no longer computes
+                    "is it over": that second computation is exactly what let a cancelled course show a green
+                    `ปกติ`. Quota state (leave-lock / special-unlock) is ORTHOGONAL and stays its own indicator —
+                    a locked course is still ACTIVE — so the two are shown side by side, never collapsed. */}
+                <Group gap={6} wrap="nowrap">
+                  <Badge
+                    color={COURSE_STATUS_COLOR[c.status]}
+                    variant="light"
+                    leftSection={c.status === "CANCELLED" ? <Ban size={13} /> : undefined}
+                  >
+                    {c.status === "CANCELLED" && c.endReason
+                      ? t("course.endedWithReason", { reason: t(`endCourse.${c.endReason}`) })
+                      : t(`course.status.${c.status}`)}
                   </Badge>
-                ) : c.adminUnlocked ? (
-                  <Badge color="orange" variant="light">
-                    {t("course.specialUnlock")}
-                  </Badge>
-                ) : (
-                  <Badge color="green" variant="light">
-                    {t("course.normal")}
-                  </Badge>
-                )}
+                  {c.leaveLocked ? (
+                    <Badge color="red" variant="light" leftSection={<Lock size={13} />}>
+                      {t("course.locked")}
+                    </Badge>
+                  ) : c.adminUnlocked ? (
+                    <Badge color="orange" variant="light">
+                      {t("course.specialUnlock")}
+                    </Badge>
+                  ) : null}
+                </Group>
               </div>
 
               <Group gap="lg" wrap="nowrap">

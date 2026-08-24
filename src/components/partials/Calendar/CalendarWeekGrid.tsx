@@ -9,6 +9,8 @@ import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
 import { useI18n } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
+import BookingCellBody, { BookingTypeStripe } from "@/components/common/BookingCellBody";
+import { useCellDisplay } from "@/lib/scheduler/cell-display";
 
 interface Props {
   teachers: TeacherView[];
@@ -45,6 +47,8 @@ export default function CalendarWeekGrid({
   onCreate,
 }: Props) {
   const { lang, t } = useI18n();
+  // Display-only preference (SPEC-046 re-cut) — it hides lines, it never filters bookings.
+  const { display } = useCellDisplay();
   const activeTeachers = teachers.filter((tc) => tc.bookable);
   const today = dayjs().format("YYYY-MM-DD");
 
@@ -113,13 +117,18 @@ export default function CalendarWeekGrid({
                         key={b.id}
                         type="button"
                         onClick={() => onSelectBooking(b)}
-                        className={`flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left transition-colors ${CHIP_STYLE[accent]}`}
+                        className={`relative flex w-full flex-col gap-0.5 rounded-lg py-1.5 pl-3 pr-2 text-left transition-colors ${CHIP_STYLE[accent]}`}
                       >
-                        <span className={`h-2 w-2 shrink-0 rounded-full ${DOT_STYLE[accent]}`} />
-                        <span className="shrink-0 text-[11px] font-medium text-muted-500">
-                          {b.startTime}
+                        {/* SPEC-046 — TYPE as a second, quieter channel. Status keeps the dot (primary signal). */}
+                        <BookingTypeStripe type={b.bookingType} />
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className={`h-2 w-2 shrink-0 rounded-full ${DOT_STYLE[accent]}`} />
+                          <span className="shrink-0 text-[11px] font-medium tabular-nums text-muted-500">
+                            {b.startTime}
+                          </span>
+                          <span className="truncate text-xs font-medium">{b.nickname || b.studentName}</span>
                         </span>
-                        <span className="truncate text-xs font-medium">{b.studentName}</span>
+                        <BookingCellBody booking={b} display={display} />
                       </button>
                     );
                   })}

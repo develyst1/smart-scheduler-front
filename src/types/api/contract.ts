@@ -83,6 +83,9 @@ export interface TeacherDTO {
   archived?: boolean;
 }
 
+/** SPEC-064 / TASK-188 — server-computed lifecycle. Mirrored from the BE contract; never re-derived here. */
+export type CourseStatus = "CANCELLED" | "COMPLETED" | "EXPIRED" | "ACTIVE";
+
 export interface CourseSummary {
   id: string;
   size: PackageSize;
@@ -93,6 +96,16 @@ export interface CourseSummary {
   maxWeek: number;
   leaveLocked: boolean;
   adminUnlocked: boolean;
+  /** SPEC-064 / TASK-181 (REQ-036) — when the course was ended early, and why. `null` for a live course.
+   *  `size` still reads what the family BOUGHT; these say the plan is finished. Required, not optional: an
+   *  ended course that silently maps to `undefined` is the `ปกติ` badge bug (TASK-183). */
+  endedAt: string | null;
+  endReason: "PROGRAM_CHANGED" | "CUSTOMER_CANCELLED" | "ADMIN_ERROR" | null;
+  /** SPEC-064 / TASK-188 — the course's lifecycle status, computed SERVER-side with a fixed precedence
+   *  (CANCELLED → COMPLETED → EXPIRED → ACTIVE) so every course is exactly one. **The badge renders this.**
+   *  The FE must never re-derive lifecycle: a second computation is precisely what let a cancelled course show a
+   *  green `ปกติ`. */
+  status: CourseStatus;
   expiryDate: IsoDate;
   /** Sport program of the course, derived from its bookings (SPEC-010). The `/courses` list carries it
    *  (TASK-034); other embeds (e.g. `BookingDTO.course`) / post-mutation responses may omit it → optional. */
@@ -209,7 +222,12 @@ export interface Paged<T> {
 }
 
 export type CourseListItem = CourseSummary & { student: StudentRef };
-export type CoursesResponse = Paged<CourseListItem>;
+
+/** TASK-188 — how many courses are in each lifecycle state, over the SEARCH-filtered set before paging, so the
+ *  chips show what switching to another status would find (AC-B6: they partition the unfiltered total). */
+export type CourseStatusCounts = Record<CourseStatus, number>;
+
+export type CoursesResponse = Paged<CourseListItem> & { counts: CourseStatusCounts };
 
 export interface CreateCoursePackageRequest {
   student: StudentInput;

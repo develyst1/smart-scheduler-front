@@ -11,6 +11,9 @@ export function dtoToBooking(dto: BookingDTO): Booking {
   return {
     id: dto.id,
     studentName: dto.student.name,
+    // TASK-141/142 — the BE always sent this; the flatten dropped it. `nickname || studentName` is what the
+    // cells render, because a nickname is what staff actually call the child.
+    nickname: dto.student.nickname ?? null,
     teacherId: dto.teacher.id,
     subject: dto.subject.name,
     date: dto.date,
@@ -72,6 +75,13 @@ export function dtoToCourseView(row: CourseSummary & { student: StudentRef }): C
     leaveRemaining: row.leaveRemaining,
     maxWeek: row.maxWeek,
     leaveLocked: row.leaveLocked,
+    // ⚠️ REQ-036 / TASK-183 — these two arrived from the BE all along and were dropped HERE; that omission is why
+    // a cancelled course still showed the green `ปกติ` badge. Third time this allow-list shape has cost us
+    // (see `createBooking` body, `dtoToBooking`) — a field on the DTO reaches the UI only if it is mapped.
+    endedAt: row.endedAt ?? null,
+    endReason: row.endReason ?? null,
+    // TASK-189 — one source of lifecycle truth. `ACTIVE` only as a defensive default for pre-TASK-188 payloads.
+    status: row.status ?? "ACTIVE",
     subject: row.subject ?? null,
   };
 }

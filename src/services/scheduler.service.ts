@@ -41,6 +41,7 @@ import type {
   CalendarResponse,
   CourseListItem,
   CoursesResponse,
+  CourseStatusCounts,
   Paged,
   CreateCoursePackageResponse,
   CreateVoucherResponse,
@@ -54,7 +55,7 @@ import type {
   VoucherSummary,
   VouchersResponse,
 } from "@/types/api/contract";
-import type { EndCoursePreview, EndCourseReason, PackageSize } from "@/types/app/scheduler";
+import type { CourseStatus, EndCoursePreview, EndCourseReason, PackageSize } from "@/types/app/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import * as mock from "./scheduler.mock.service";
 
@@ -507,14 +508,24 @@ export interface CoursesQuery {
   q?: string;
   page?: number;
   limit?: number;
+  /** TASK-188/189 — filtered SERVER-side so paging and counts are true (TASK-186 Q1's miscount). */
+  status?: CourseStatus;
 }
 
 export const getCoursePackages = async (
   query: CoursesQuery = {},
-): Promise<Paged<CoursePackageView>> => {
+): Promise<Paged<CoursePackageView> & { counts?: CourseStatusCounts }> => {
   if (useMock) return mock.getCoursePackages(query);
   const { data } = await api.get<CoursesResponse>("/courses", { params: query });
-  return { items: data.items.map(dtoToCourseView), page: data.page, limit: data.limit, total: data.total };
+  return {
+    items: data.items.map(dtoToCourseView),
+    page: data.page,
+    limit: data.limit,
+    total: data.total,
+    // AC-B6 — the per-status counts are the SERVER's, over the search-filtered set before paging. Recounting
+    // them here would reintroduce exactly the disagreement this task exists to remove.
+    counts: data.counts,
+  };
 };
 
 export const setCourseAdminUnlock = async (id: string, unlocked: boolean) => {

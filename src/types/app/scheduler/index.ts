@@ -116,6 +116,8 @@ export interface RescheduleTarget {
 export interface Booking {
   id: string;
   studentName: string;
+  /** REQ-052 — what staff actually call the child; falls back to `studentName` when absent. */
+  nickname?: string | null;
   teacherId: string;
   subject: string;
   date: string; // YYYY-MM-DD
@@ -251,6 +253,9 @@ export interface CoursePackage {
   expiryDate: string; // YYYY-MM-DD
   /** โปรแกรมกีฬาของคอร์ส (มาจาก booking ของคอร์ส — SPEC-010); null เมื่อไม่มีข้อมูล */
   subject?: SubjectOption | null;
+  /** REQ-036 — carried here as well so `toCourseView`'s spread yields a complete view offline. */
+  endedAt?: string | null;
+  endReason?: EndCourseReason | null;
 }
 
 export interface CoursePackageView extends CoursePackage {
@@ -259,7 +264,22 @@ export interface CoursePackageView extends CoursePackage {
   maxWeek: number;
   /** ลาเกินโควตา และยังไม่ถูกปลดล็อก → ห้ามเลื่อนตารางเพิ่ม */
   leaveLocked: boolean;
+  /** REQ-036 — set ⇒ the course was ENDED EARLY. An empty plan then means **forfeited**, not never-started.
+   *  **Required on the VIEW** (both builders always set it): making it optional is how it silently became
+   *  `undefined` and a cancelled course kept its green `ปกติ` badge. A type beats a reminder — TASK-184's lesson. */
+  endedAt: string | null;
+  endReason: EndCourseReason | null;
+  /** TASK-188/189 — **the** lifecycle answer, from the server. The badge reads this; nothing re-computes it. */
+  status: CourseStatus;
 }
+
+/** SPEC-064 / TASK-188 — the four lifecycle states, in the server's own precedence order. The FE renders and
+ *  filters on this; it does **not** compute it. */
+export const COURSE_STATUSES = ["ACTIVE", "COMPLETED", "EXPIRED", "CANCELLED"] as const;
+export type CourseStatus = (typeof COURSE_STATUSES)[number];
+
+/** REQ-036 — one predicate, so "is this course ended?" is answered the same way on every screen. */
+export const isCourseEnded = (c: { endedAt?: string | null } | null | undefined) => !!c?.endedAt;
 
 // ──────────── Per-entitlement plan (SPEC-028 / REQ-030 — TASK-099) ────────────
 // Synced 1:1 with the backend `getEntitlementPlan` / `applyPlanChange` / `getSlotAvailability`
@@ -283,6 +303,9 @@ export interface PlanSession {
   bookingType?: string;
   teacher: PlanSessionRef | null;
   subject: { id: string; name: string } | null;
+  /** REQ-068 / TASK-184 — this session's attendee note. Required so a future mapper can't drop it silently
+   *  (the fourth time that shape bit us was TASK-183). */
+  attendeeNote?: string | null;
 }
 
 /** REQ-036 — the three reasons a course may be ended early. **The contract; there is no fourth.** */
@@ -307,6 +330,10 @@ export interface CoursePlanSummary {
   maxWeek: number;
   owedCount: number;
   expiryDate: string; // the MAX_WEEK ceiling (NOT the live end)
+  /** REQ-036 — the BE's plan summary carries these (`lib/leave.ts:61-62`); an ended course must not read as
+   *  "never started" just because its live sessions are gone. */
+  endedAt?: string | null;
+  endReason?: EndCourseReason | null;
 }
 
 export interface VoucherPlanSummary {
