@@ -49,6 +49,9 @@ import {
   recordRental,
   getSlotAvailability,
   previewCoursePackage,
+  setAttendeeNote,
+  previewEndCourse,
+  endCourse,
   type CreateBookingInput,
   type CreateCourseInput,
   type CoursesQuery,
@@ -59,7 +62,7 @@ import {
   type SetFreelanceBudgetInput,
   type ExtraSessionInput,
 } from "@/services/scheduler.service";
-import type { PlanChange, RecordRentalInput, TeacherType } from "@/types/app/scheduler";
+import type { EndCourseReason, PlanChange, RecordRentalInput, TeacherType } from "@/types/app/scheduler";
 
 export const TEACHERS_KEY = ["teachers"] as const;
 export const BOOKINGS_KEY = ["bookings"] as const;
@@ -252,6 +255,31 @@ export const useEligibleStudents = (
     // The list is a picker: keep the current options on screen while a new search resolves.
     placeholderData: keepPreviousData,
   });
+
+/** REQ-068 — save one session's attendee note. Invalidates like any other booking write so the calendar,
+ *  the day view and the plan all re-read it; it never notifies (that's the endpoint's whole point). */
+export const useSetAttendeeNote = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, attendeeNote }: { id: string; attendeeNote: string | null }) =>
+      setAttendeeNote(id, attendeeNote),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/** REQ-036 — the server's own account of what ending this course will remove (R2: never a client re-count). */
+export const usePreviewEndCourse = () =>
+  useMutation({ mutationFn: (courseId: string) => previewEndCourse(courseId) });
+
+/** REQ-036 — commit it. Invalidates everything: the plan, the calendar and the attention panel all change. */
+export const useEndCourse = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, reason, note }: { courseId: string; reason: EndCourseReason; note?: string }) =>
+      endCourse(courseId, { reason, note }),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
 
 export const useBulkConfirm = () => {
   const qc = useQueryClient();

@@ -170,6 +170,9 @@ export interface BookingDTO {
    *  (a percentage, or whole baht per TASK-168) — deliberately NOT satang: a second unit conversion on the wire is
    *  the precise shape of the bug that cost us a day. */
   discount: { kind: "PERCENT" | "BAHT"; value: number; reason: string; actor: string | null } | null;
+  /** TASK-178 (REQ-068) — the attendee note: who is actually bringing the child, and logistics. Separate from
+   *  `note`, which the status flows own. Editing it notifies nobody (AC-8, structural: its own endpoint). */
+  attendeeNote: string | null;
   // Conflict resolution (B.1)
   pendingSlot: boolean;
   incomingBookingId: string | null;

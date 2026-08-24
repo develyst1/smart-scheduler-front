@@ -137,6 +137,8 @@ export interface Booking {
   /** REQ-063 — the captured discount (null when there is none). `value` is the human number: a percentage, or
    *  whole baht. Display-only here; the money itself is the ledger's. */
   discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string; actor: string | null } | null;
+  /** REQ-068 — who's bringing the child / logistics for THIS session. Not the status `note`. */
+  attendeeNote?: string | null;
 }
 
 // ──────────────────────────── Badges ────────────────────────────
@@ -281,6 +283,20 @@ export interface PlanSession {
   bookingType?: string;
   teacher: PlanSessionRef | null;
   subject: { id: string; name: string } | null;
+}
+
+/** REQ-036 — the three reasons a course may be ended early. **The contract; there is no fourth.** */
+export const END_COURSE_REASONS = ["PROGRAM_CHANGED", "CUSTOMER_CANCELLED", "ADMIN_ERROR"] as const;
+export type EndCourseReason = (typeof END_COURSE_REASONS)[number];
+
+/** `POST /courses/:id/cancel/preview` — what the SERVER will actually remove. R2: the count shown to staff is
+ *  this one, never a client re-count; the two have disagreed before. */
+export interface EndCoursePreview {
+  alreadyEnded: boolean;
+  removedSessions: number;
+  sessions: { date: string; time: string; teacher: string | null }[];
+  student: { id: string; name: string; nickname: string | null } | null;
+  program: string | null;
 }
 
 export interface CoursePlanSummary {

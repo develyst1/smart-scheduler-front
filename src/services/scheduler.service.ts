@@ -54,7 +54,7 @@ import type {
   VoucherSummary,
   VouchersResponse,
 } from "@/types/api/contract";
-import type { PackageSize } from "@/types/app/scheduler";
+import type { EndCoursePreview, EndCourseReason, PackageSize } from "@/types/app/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import * as mock from "./scheduler.mock.service";
 
@@ -412,6 +412,8 @@ export interface CreateBookingInput {
   courseId?: string;
   /** REQ-063 / TASK-162 — optional admin discount on a TRIAL / SINGLE session (the two that post revenue). */
   discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string };
+  /** REQ-068 — who's bringing the child / logistics. Optional; empty sends nothing (AC-5). */
+  attendeeNote?: string;
   /** badge value ids ที่จะติดกับการจอง (type ละ ≤ 1) */
   badgeValueIds?: string[];
 }
@@ -476,6 +478,7 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
     // The state, the component and the rules engine were all correct the entire time. Any future field on a sale
     // payload has to be added HERE too — the compiler cannot catch an omission from an object literal.
     discount: input.discount,
+    attendeeNote: input.attendeeNote,
   });
   return dtoToBooking(data.booking);
 };
@@ -538,6 +541,8 @@ export interface CreateCourseInput {
   absentWeeks?: number[];
   /** REQ-063 — optional admin discount on the sale; the BE re-validates against the list price. */
   discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string };
+  /** REQ-068 — seeded onto every session the course creates; per-session edits happen in manage-course. */
+  attendeeNote?: string;
 }
 
 export const createCoursePackage = async (
@@ -557,6 +562,7 @@ export const createCoursePackage = async (
     // make-up + ceiling check); the FE only says WHICH weeks.
     absentWeeks: input.absentWeeks,
     discount: input.discount,
+    attendeeNote: input.attendeeNote,
   });
   return data;
 };
@@ -790,6 +796,37 @@ export const getCourseHistory = async (courseId: string): Promise<CourseHistory>
 export const recordRental = async (input: RecordRentalInput): Promise<RentalResult> => {
   if (useMock) return mock.recordRental(input);
   const { data } = await api.post<RentalResult>("/rentals", input);
+  return data;
+};
+
+/**
+ * REQ-068 / TASK-178 — set ONE session's attendee note. Deliberately its own endpoint, not a field on
+ * `PATCH /bookings/:id`: that path re-times a session and pushes LINE to the teacher, and a note must notify
+ * nobody (AC-8). `null` clears the note; omitting the call leaves it untouched.
+ */
+export const setAttendeeNote = async (id: string, attendeeNote: string | null) => {
+  if (useMock) return mock.setAttendeeNote(id, attendeeNote);
+  const { data } = await api.patch(`/bookings/${id}/note`, { attendeeNote });
+  return dtoToBooking(data.booking ?? data);
+};
+
+/**
+ * REQ-036 — end a course early. Two calls, deliberately: the preview says what WILL happen (in the server's own
+ * numbers), the cancel does it. The dialog never computes the removed count itself — R2 exists because a client
+ * re-count and the server have disagreed before, and this action cannot be undone.
+ */
+export const previewEndCourse = async (courseId: string): Promise<EndCoursePreview> => {
+  if (useMock) return mock.previewEndCourse(courseId);
+  const { data } = await api.post<EndCoursePreview>(`/courses/${courseId}/cancel/preview`, {});
+  return data;
+};
+
+export const endCourse = async (courseId: string, input: { reason: EndCourseReason; note?: string }) => {
+  if (useMock) return mock.endCourse(courseId, input);
+  const { data } = await api.post(`/courses/${courseId}/cancel`, {
+    reason: input.reason,
+    note: input.note,
+  });
   return data;
 };
 

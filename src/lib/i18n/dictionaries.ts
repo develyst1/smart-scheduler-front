@@ -41,6 +41,31 @@ const en = {
 
   // REQ-063 / TASK-161 — the discount block shared by all five sale/booking forms. Wording is REQ-063's
   // verbatim so the screen says what the server says; the three marked DRAFT have no REQ line yet (Q1).
+  // REQ-068 / TASK-179 — the attendee note. ⚠️ `hint` is a DRAFT: Porter owns the not-for-PII wording and it
+  // wasn't drafted yet when this shipped. Everything else is descriptive, not new product copy.
+  // REQ-036 / TASK-182 — ending a course early. The confirm sentence is REQ-036's, and the {n} in it comes
+  // from the SERVER preview, never a client re-count (R2).
+  endCourse: {
+    action: "Cancel course",
+    title: "Cancel this course?",
+    confirmLine: "Cancel the {program} course for {student} — this removes the {n} remaining sessions. It cannot be undone.",
+    reasonLabel: "Reason",
+    reasonRequired: "Pick a reason to continue",
+    PROGRAM_CHANGED: "Customer changed activity",
+    CUSTOMER_CANCELLED: "Customer no longer wants it",
+    ADMIN_ERROR: "Admin entered it by mistake",
+    noteLabel: "Note (optional)",
+    alreadyEnded: "This course has already been cancelled.",
+    confirm: "Cancel the course",
+    done: "Course cancelled",
+  },
+  attendeeNote: {
+    label: "Session note",
+    hint: "Who is bringing the child, and logistics for this session. Not for phone numbers, addresses or medical details.",
+    placeholder: "e.g. Grandmother is collecting at 4pm",
+    tooLong: "Keep it under {max} characters.",
+    saved: "Session note saved",
+  },
   discount: {
     section: "Discount",
     percent: "Percent",
@@ -920,6 +945,27 @@ const th: typeof en = {
     settings: "ตั้งค่า",
   },
 
+  endCourse: {
+    action: "ยกเลิกคอร์ส",
+    title: "ยกเลิกคอร์สนี้?",
+    confirmLine: "ยกเลิกคอร์ส {program} ของ {student} — จะลบคาบที่เหลือ {n} คาบ ทำแล้วย้อนกลับไม่ได้",
+    reasonLabel: "เหตุผล",
+    reasonRequired: "เลือกเหตุผลก่อนจึงจะดำเนินการต่อได้",
+    PROGRAM_CHANGED: "ลูกค้าเปลี่ยนกิจกรรม",
+    CUSTOMER_CANCELLED: "ลูกค้าไม่เอาแล้ว",
+    ADMIN_ERROR: "แอดมินคีย์ผิด",
+    noteLabel: "หมายเหตุ (ไม่บังคับ)",
+    alreadyEnded: "คอร์สนี้ถูกยกเลิกไปแล้ว",
+    confirm: "ยกเลิกคอร์ส",
+    done: "ยกเลิกคอร์สแล้ว",
+  },
+  attendeeNote: {
+    label: "โน้ตของคาบนี้",
+    hint: "ใครเป็นคนพามา และรายละเอียดการรับส่งของคาบนี้ ไม่ใช่ที่สำหรับเบอร์โทร ที่อยู่ หรือข้อมูลสุขภาพ",
+    placeholder: "เช่น คุณยายมารับตอน 16:00",
+    tooLong: "ความยาวต้องไม่เกิน {max} ตัวอักษร",
+    saved: "บันทึกโน้ตของคาบแล้ว",
+  },
   discount: {
     section: "ส่วนลด",
     percent: "เปอร์เซ็นต์",

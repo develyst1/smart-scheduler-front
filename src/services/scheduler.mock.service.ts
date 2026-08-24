@@ -467,6 +467,7 @@ export const createCoursePackage = (input: {
       incomingBookingId: null,
       rescheduleTo: null,
       discount: null, // TASK-171 — mocks post no discount; null (not undefined) matches the DTO contract.
+      attendeeNote: null,
     })),
   });
 };
@@ -782,3 +783,24 @@ export const getSlotAvailability = (date: string, startTime: string): Promise<Sl
   };
   return delay(clone(out));
 };
+
+/** REQ-068 — the mock's per-session note edit: echoes the change back so the UI can be exercised offline. */
+export const setAttendeeNote = (id: string, attendeeNote: string | null) =>
+  delay({ id, attendeeNote });
+
+/** REQ-036 — offline stand-in for the end-course preview/commit so the dialog is exercisable without a server. */
+export const previewEndCourse = (courseId: string) =>
+  delay({
+    alreadyEnded: false,
+    removedSessions: 3,
+    sessions: [
+      { date: "2026-09-01", time: "10:00", teacher: "บีม" },
+      { date: "2026-09-08", time: "10:00", teacher: "บีม" },
+      { date: "2026-09-15", time: "10:00", teacher: "บีม" },
+    ],
+    student: { id: "s1", name: "น้องพอลล่า", nickname: "พอลล่า" },
+    program: "Surfskate",
+  });
+
+export const endCourse = (courseId: string, input: { reason: string; note?: string }) =>
+  delay({ id: courseId, ended: true, reason: input.reason });

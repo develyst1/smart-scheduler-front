@@ -46,6 +46,7 @@ import {
   type PlanSession,
 } from "@/types/app/scheduler";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
+import EndCourseDialog from "./EndCourseDialog";
 
 /** PENDING / CONFIRMED / EXTENDED — a live session that can be plainly cancelled (re-owes, no reason). */
 const isLiveStatus = (s: string) => s === "PENDING" || s === "CONFIRMED" || s === "EXTENDED";
@@ -100,6 +101,8 @@ export default function PlanModal({
   // Create mode edits a LOCAL draft (preview rows have no bookings yet); confirm sends the whole set to
   // POST /courses. Edit mode goes straight to the server (plan.sessions is the source of truth).
   const [draft, setDraft] = useState<PlanSession[]>([]);
+  // REQ-036 — ending the course lives on the course's OWN plan, so it can only ever act on this one course.
+  const [endOpen, setEndOpen] = useState(false);
   const previewMut = usePreviewPlanChange();
   const applyMut = useApplyPlanChange();
 
@@ -109,6 +112,7 @@ export default function PlanModal({
       setError(null);
       setCancelTarget(null);
       setPending(null);
+      setEndOpen(false);
     }
   }, [opened]);
 
@@ -254,6 +258,20 @@ export default function PlanModal({
                 {t("plan.owedHint", { n: (plan.summary.kind === "course" ? plan.summary.owedCount : 0) })}
               </Text>
               <Group gap="xs">
+                {/* REQ-036 — destructive and irreversible, so it is coloured as such, sits apart from the
+                    add-a-session actions, and opens a SERVER-powered confirm rather than acting on the click. */}
+                <Button
+                  variant="light"
+                  color="red"
+                  size="xs"
+                  leftSection={<Ban size={14} />}
+                  onClick={() => {
+                    setError(null);
+                    setEndOpen(true);
+                  }}
+                >
+                  {t("endCourse.action")}
+                </Button>
                 {/* SPEC-033 — visibly separate from Insert: a charged single-session, not a quota reschedule. */}
                 <Tooltip label={t("plan.extraHint")} withArrow multiline w={220}>
                   <Button
@@ -345,6 +363,15 @@ export default function PlanModal({
           )}
         </Stack>
       )}
+
+      {/* REQ-036 — one course only, opened from its own plan. On success the plan re-reads (owed → 0, remaining
+          sessions gone) via the mutation's invalidation, and we close this modal behind it. */}
+      <EndCourseDialog
+        opened={endOpen}
+        courseId={isCourse && !isCreate ? (plan?.id ?? null) : null}
+        onClose={() => setEndOpen(false)}
+        onEnded={onClose}
+      />
     </Modal>
   );
 }

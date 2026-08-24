@@ -24,6 +24,7 @@ import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { ApiClientError, errorProblems } from "@/lib/api/client";
 import DiscountSection from "@/components/common/DiscountSection";
+import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
 import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
 import { useT } from "@/lib/i18n";
 import {
@@ -272,6 +273,17 @@ function ViewBooking({
             <span className="text-muted-500">
               {t("discount.reason")}: {booking.discount.reason}
             </span>
+          </p>
+        </>
+      )}
+
+      {/* REQ-068 — the session note, shown where staff look at the booking. Distinct from the status `note`
+          below it, which the cancel/leave flows write. Empty ⇒ nothing rendered (AC-5). */}
+      {booking.attendeeNote && (
+        <>
+          <Divider />
+          <p className="text-sm">
+            {t("attendeeNote.label")}: <span className="text-muted-700">{booking.attendeeNote}</span>
           </p>
         </>
       )}
@@ -606,6 +618,8 @@ function CreateForm({
   // REQ-063 — a discount on the two booking types that actually post revenue.
   const [discount, setDiscount] = useState<DiscountDraft>(emptyDiscount());
   const [discountProblems, setDiscountProblems] = useState<string[]>([]);
+  // REQ-068 — optional on every booking type; empty sends nothing and changes nothing (AC-5).
+  const [attendeeNote, setAttendeeNote] = useState("");
 
   const isVoucher = bookingType === "VOUCHER";
   // SPEC-047 — voucher is now the ONLY entitlement-backed tab; the alias stays so the branch below reads by intent.
@@ -661,6 +675,7 @@ function CreateForm({
     setVoucherSubjectId(null);
     setDiscount(emptyDiscount());
     setDiscountProblems([]);
+    setAttendeeNote("");
   };
 
   // Preselect ONLY when there is exactly one thing to pick — and it still lands in state as a choice, so the
@@ -704,6 +719,7 @@ function CreateForm({
         bookingType: "VOUCHER",
         voucherId: ctx.voucherId,
         badgeValueIds,
+        attendeeNote: attendeeNote.trim() || undefined,
       };
     }
   } else {
@@ -722,6 +738,7 @@ function CreateForm({
       bookingType,
       badgeValueIds,
       discount: discountPayload(discount, singleFullMinor),
+      attendeeNote: attendeeNote.trim() || undefined,
     };
   }
 
@@ -908,6 +925,10 @@ function CreateForm({
           )}
         </>
       )}
+
+      {/* REQ-068 — one field, every booking type: the note belongs to the SESSION, so it sits with the
+          session's own details rather than inside a type-specific branch. Empty ⇒ nothing sent (AC-5). */}
+      <AttendeeNoteInput value={attendeeNote} onChange={setAttendeeNote} />
 
       {activeBadgeTypes.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
