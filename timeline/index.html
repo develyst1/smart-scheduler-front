@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Scheduler — Project Timeline Dashboard</title>
+
+<!-- Tailwind CSS (CDN) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Thai fonts: Chakra Petch (display) + IBM Plex Sans Thai (body) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['"Chakra Petch"', 'sans-serif'],
+          body: ['"IBM Plex Sans Thai"', 'sans-serif'],
+        },
+      }
+    }
+  }
+</script>
+
+<style>
+  :root {
+    --bg:        #0b1120;
+    --panel:     #111a2e;
+    --panel-2:   #16213a;
+    --line:      #24304d;
+    --ink:       #e6ecf7;
+    --ink-dim:   #8fa0bf;
+    --indigo:    #6d7cff;
+    --indigo-2:  #4f5ee0;
+    --green:     #34d399;
+    --amber:     #fbbf24;
+    --red:       #f87171;
+    --cyan:      #38d6e8;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+  }
+
+  /* พื้นหลังตารางกริดจาง ๆ ให้ความรู้สึก command-center */
+  .grid-bg {
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(109,124,255,.14), transparent),
+      linear-gradient(rgba(109,124,255,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(109,124,255,.05) 1px, transparent 1px);
+    background-size: 100% 100%, 44px 44px, 44px 44px;
+  }
+
+  .font-display { font-family: 'Chakra Petch', sans-serif; }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+  }
+
+  /* ===== Plan Switcher ===== */
+  .switcher {
+    position: relative;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 999px;
+    display: inline-flex;
+    padding: 4px;
+  }
+  .switcher .thumb {
+    position: absolute;
+    top: 4px; bottom: 4px; left: 4px;
+    width: calc(50% - 4px);
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--indigo), var(--indigo-2));
+    box-shadow: 0 4px 18px rgba(109,124,255,.4);
+    transition: transform .35s cubic-bezier(.6,0,.2,1), background .35s;
+  }
+  .switcher[data-plan="conservative"] .thumb {
+    transform: translateX(100%);
+    background: linear-gradient(135deg, #1d976c, #0f766e);
+    box-shadow: 0 4px 18px rgba(52,211,153,.35);
+  }
+  .switcher button {
+    position: relative; z-index: 1;
+    padding: .55rem 1.25rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: .875rem;
+    color: var(--ink-dim);
+    transition: color .3s;
+    white-space: nowrap;
+  }
+  .switcher button.active { color: #fff; }
+
+  /* ===== Gantt bars ===== */
+  .gantt-bar {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    height: 2.4rem;
+    border-radius: .6rem;
+    transition: left .6s cubic-bezier(.6,0,.2,1), width .6s cubic-bezier(.6,0,.2,1);
+    display: flex; align-items: center;
+    padding: 0 .75rem;
+    font-size: .78rem; font-weight: 600;
+    overflow: hidden; white-space: nowrap;
+    box-shadow: 0 6px 20px rgba(0,0,0,.35);
+  }
+  .gantt-bar::after {           /* แถบเงาวิ่งบนบาร์ */
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.18) 50%, transparent 70%);
+    background-size: 220% 100%;
+    animation: shine 3.5s linear infinite;
+  }
+  @keyframes shine { from { background-position: 200% 0 } to { background-position: -20% 0 } }
+
+  .bar-p1 { background: linear-gradient(135deg, #6d7cff, #4348c9); }
+  .bar-p2 { background: linear-gradient(135deg, #38d6e8, #0e7490); }
+  .bar-p3 { background: linear-gradient(135deg, #34d399, #047857); }
+
+  .weekline { border-left: 1px dashed rgba(143,160,191,.18); }
+  .week-label { transition: opacity .4s; }
+
+  /* ===== Tooltip ===== */
+  .tip { position: relative; cursor: help; }
+  .tip .tipbox {
+    position: absolute;
+    bottom: calc(100% + 10px); left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    width: max-content; max-width: 270px;
+    background: #1c2742;
+    border: 1px solid var(--line);
+    border-radius: .6rem;
+    padding: .6rem .75rem;
+    font-size: .75rem; font-weight: 400;
+    line-height: 1.5;
+    color: var(--ink);
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5);
+    z-index: 30;
+    white-space: normal;
+  }
+  .tip .tipbox::after {
+    content: '';
+    position: absolute; top: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #1c2742;
+  }
+  .tip:hover .tipbox, .tip:focus-within .tipbox {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ===== Checklist ===== */
+  .check-item { transition: background .25s, border-color .25s; }
+  .check-item:has(input:checked) {
+    background: rgba(52,211,153,.08);
+    border-color: rgba(52,211,153,.4);
+  }
+  .check-item:has(input:checked) .check-text {
+    color: var(--ink-dim);
+    text-decoration: line-through;
+    text-decoration-color: rgba(52,211,153,.6);
+  }
+  .checkbox-ui {
+    width: 1.35rem; height: 1.35rem; flex: none;
+    border: 2px solid var(--ink-dim);
+    border-radius: .4rem;
+    display: grid; place-items: center;
+    transition: all .25s;
+  }
+  .check-item input:checked + .checkbox-ui {
+    background: var(--green);
+    border-color: var(--green);
+    box-shadow: 0 0 14px rgba(52,211,153,.45);
+  }
+  .checkbox-ui svg { opacity: 0; transform: scale(.4); transition: all .2s; }
+  .check-item input:checked + .checkbox-ui svg { opacity: 1; transform: scale(1); }
+
+  /* ===== Status pills ===== */
+  .pill { font-size: .68rem; font-weight: 700; padding: .18rem .6rem; border-radius: 999px; letter-spacing: .03em; white-space: nowrap; }
+  .pill-done    { background: rgba(52,211,153,.14); color: var(--green);  border: 1px solid rgba(52,211,153,.35); }
+  .pill-wip     { background: rgba(56,214,232,.12); color: var(--cyan);   border: 1px solid rgba(56,214,232,.35); }
+  .pill-todo    { background: rgba(143,160,191,.12); color: var(--ink-dim); border: 1px solid rgba(143,160,191,.3); }
+  .pill-wait    { background: rgba(251,191,36,.12); color: var(--amber);  border: 1px solid rgba(251,191,36,.35); }
+
+  /* stagger reveal ตอนโหลดหน้า */
+  .reveal { opacity: 0; transform: translateY(16px); animation: rise .7s cubic-bezier(.2,.7,.3,1) forwards; }
+  @keyframes rise { to { opacity: 1; transform: none } }
+
+  .num-flip { transition: opacity .2s; }
+</style>
+</head>
+
+<body class="grid-bg min-h-screen font-body antialiased">
+
+<div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+
+  <!-- ================= HEADER ================= -->
+  <header class="reveal" style="animation-delay:.05s">
+    <div class="flex items-center gap-3 text-xs font-display font-semibold tracking-[.25em] text-indigo-300/80 uppercase">
+      <span class="w-8 h-px bg-indigo-400/50"></span>
+      Project Timeline Dashboard
+    </div>
+    <div class="mt-3 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+      <div>
+        <h1 class="font-display text-4xl sm:text-5xl font-bold tracking-tight">
+          SMART<span class="text-indigo-400">SCHEDULER</span>
+        </h1>
+        <p class="mt-2 text-sm text-slate-400 max-w-xl">
+          แผนการส่งมอบโปรเจกต์แบ่งเป็น 3 ระยะ — สลับดูได้ทั้งแผนเร็วที่สุดและแผนปลอดภัย
+          พร้อมเงื่อนไขความเชื่อมโยงของงาน (Dependencies) ที่ต้องระวังในแต่ละช่วง
+        </p>
+      </div>
+
+      <!-- Plan Switcher -->
+      <div class="flex flex-col items-start lg:items-end gap-2">
+        <span class="text-[.7rem] font-semibold tracking-widest text-slate-500 uppercase">เลือกแผนการทำงาน</span>
+        <div id="switcher" class="switcher" data-plan="optimistic">
+          <div class="thumb"></div>
+          <button id="btn-opt" class="active" onclick="setPlan('optimistic')">⚡ แผนเร็วที่สุด · 6 สัปดาห์</button>
+          <button id="btn-con" onclick="setPlan('conservative')">🛡️ แผนปลอดภัย · 11 สัปดาห์</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="panel p-4">
+        <div class="text-[.68rem] tracking-widest text-slate-500 uppercase font-semibold">ระยะเวลารวม</div>
+        <div class="font-display text-3xl font-bold mt-1 num-flip"><span id="stat-weeks">6</span> <span class="text-base text-slate-400 font-medium">สัปดาห์</span></div>
+      </div>
+      <div class="panel p-4">
+        <div class="text-[.68rem] tracking-widest text-slate-500 uppercase font-semibold">รอบการทำงาน</div>
+        <div class="font-display text-3xl font-bold mt-1 num-flip"><span id="stat-rounds">≈ 30</span> <span class="text-base text-slate-400 font-medium">รอบ</span></div>
+      </div>
+      <div class="panel p-4">
+        <div class="text-[.68rem] tracking-widest text-slate-500 uppercase font-semibold">จำนวนระยะ</div>
+        <div class="font-display text-3xl font-bold mt-1">3 <span class="text-base text-slate-400 font-medium">ระยะ</span></div>
+      </div>
+      <div class="panel p-4">
+        <div class="text-[.68rem] tracking-widest text-slate-500 uppercase font-semibold">ความพร้อม (Assumptions)</div>
+        <div class="font-display text-3xl font-bold mt-1 text-emerald-400"><span id="stat-ready">0</span><span class="text-base text-slate-400 font-medium">/4</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= GANTT TIMELINE ================= -->
+  <section class="panel mt-8 p-5 sm:p-7 reveal" style="animation-delay:.15s">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <h2 class="font-display text-lg font-bold tracking-wide">📊 TIMELINE ภาพรวม</h2>
+      <span id="plan-label" class="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-400/30">
+        ⚡ Optimistic Plan — 6 สัปดาห์
+      </span>
+    </div>
+
+    <!-- แกนสัปดาห์ + บาร์ (แนวนอน, ซ่อนบนมือถือ) -->
+    <div class="hidden md:block mt-6">
+      <div class="relative">
+        <!-- week axis -->
+        <div id="week-axis" class="relative h-6 ml-40"></div>
+        <!-- rows -->
+        <div id="gantt-rows" class="space-y-1"></div>
+      </div>
+    </div>
+
+    <!-- Timeline แนวตั้งสำหรับมือถือ -->
+    <div id="mobile-timeline" class="md:hidden mt-6 relative pl-6 space-y-6">
+      <div class="absolute left-[9px] top-2 bottom-2 w-px bg-slate-700"></div>
+    </div>
+  </section>
+
+  <!-- ================= PHASE CARDS ================= -->
+  <section id="phase-cards" class="mt-6 grid md:grid-cols-3 gap-4"></section>
+
+  <!-- ================= ASSUMPTIONS + TASK BOARD ================= -->
+  <section class="mt-6 grid lg:grid-cols-5 gap-4">
+
+    <!-- Assumptions Checklist -->
+    <div class="panel p-5 sm:p-6 lg:col-span-2 reveal" style="animation-delay:.35s">
+      <h2 class="font-display text-lg font-bold tracking-wide">✅ ปัจจัยความสำเร็จ (Assumptions)</h2>
+      <p class="text-xs text-slate-400 mt-1">ติ๊กเพื่อตรวจสอบความพร้อมของโปรเจกต์ — แผนนี้จะเดินตามกำหนดได้เมื่อครบทุกข้อ</p>
+
+      <div class="mt-3 h-2 rounded-full bg-slate-800 overflow-hidden">
+        <div id="ready-bar" class="h-full w-0 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-500"></div>
+      </div>
+
+      <div id="assumptions" class="mt-4 space-y-3"></div>
+    </div>
+
+    <!-- Task Status Board -->
+    <div class="panel p-5 sm:p-6 lg:col-span-3 reveal" style="animation-delay:.45s">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h2 class="font-display text-lg font-bold tracking-wide">🗂️ สถานะงานปัจจุบัน</h2>
+        <div class="flex gap-2 text-[.68rem]">
+          <span class="pill pill-done">COMPLETED</span>
+          <span class="pill pill-wip">IN PROGRESS</span>
+          <span class="pill pill-wait">WAITING</span>
+          <span class="pill pill-todo">TODO</span>
+        </div>
+      </div>
+      <div id="task-board" class="mt-4 grid sm:grid-cols-3 gap-4"></div>
+    </div>
+  </section>
+
+  <footer class="mt-10 pb-6 text-center text-xs text-slate-600">
+    Smart Scheduler · Interactive Project Timeline Dashboard · อัปเดตแผนโดยสลับปุ่มด้านบน
+  </footer>
+</div>
+
+<script>
+/* =====================================================
+   DATA
+===================================================== */
+const PLANS = {
+  optimistic:   { label: '⚡ Optimistic Plan — 6 สัปดาห์',  totalWeeks: 6,  rounds: '≈ 30',
+                  badgeClass: 'bg-indigo-500/15 text-indigo-300 border-indigo-400/30' },
+  conservative: { label: '🛡️ Conservative Plan — 11 สัปดาห์', totalWeeks: 11, rounds: '—',
+                  badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30' },
+};
+
+const PHASES = [
+  {
+    id: 'p1',
+    name: 'ระยะที่ 1 · ระบบหน้าบ้าน',
+    sub: 'Front-end System',
+    barClass: 'bar-p1',
+    dotColor: '#6d7cff',
+    goal: 'พัฒนาระบบหน้าบ้านให้สามารถใช้งานหน้าร้านได้ครบถ้วนสมบูรณ์',
+    optimistic:   { start: 0, end: 2, note: '2 สัปดาห์ · ≈ 16–19 รอบ' },
+    conservative: { start: 0, end: 4, note: '4 สัปดาห์' },
+    deps: [
+      { icon: '⚠️', color: 'text-amber-400', short: 'Blocker ของระยะที่ 2',
+        text: 'งานนี้ต้องเสร็จสิ้นและนิ่งก่อน จึงจะเริ่มงาน "ระยะที่ 2" ได้ เพื่อป้องกันการแก้โค้ดซ้ำซ้อน' },
+      { icon: '🔄', color: 'text-cyan-400', short: 'REQ-BO-005 รอหน้าบ้านนิ่ง',
+        text: 'REQ-BO-005 (ระบบตัดคอร์สเรียน) จะทำได้ก็ต่อเมื่อหน้าบ้านนิ่งแล้วเท่านั้น' },
+    ],
+  },
+  {
+    id: 'p2',
+    name: 'ระยะที่ 2 · เชื่อมระบบหลังบ้าน',
+    sub: 'Back-end Integration',
+    barClass: 'bar-p2',
+    dotColor: '#38d6e8',
+    goal: 'เชื่อมต่อระบบเพื่อให้ข้อมูลเงินและข้อมูลการจองไหลจากหน้าร้านเข้าสู่ระบบหลังบ้านโดยอัตโนมัติ',
+    optimistic:   { start: 2, end: 5, note: '3 สัปดาห์ · ≈ 10–11 รอบ' },
+    conservative: { start: 4, end: 9, note: '5 สัปดาห์' },
+    deps: [
+      { icon: '🔑', color: 'text-amber-400', short: 'REQ-BO-004 รอ REQ-BO-003',
+        text: 'ระบบคำนวณเงินเดือนครู (REQ-BO-004) จะเริ่มพัฒนาได้หลังจากระบบกำหนดเพดานค่าครู freelance (REQ-BO-003) ออกแบบเสร็จสิ้นแล้วเท่านั้น' },
+    ],
+  },
+  {
+    id: 'p3',
+    name: 'ระยะที่ 3 · Management Dashboard',
+    sub: 'Dashboard ระบบหน้าบ้าน',
+    barClass: 'bar-p3',
+    dotColor: '#34d399',
+    goal: 'พัฒนาระบบ Dashboard สำหรับดูภาพรวมของธุรกิจและสถิติต่าง ๆ จากข้อมูลจริง',
+    optimistic:   { start: 5, end: 6, note: '1 สัปดาห์ · ≈ 3 รอบ' },
+    conservative: { start: 9, end: 11, note: '2 สัปดาห์' },
+    deps: [
+      { icon: '🛑', color: 'text-red-400', short: 'ต้องเป็นระยะสุดท้าย',
+        text: 'ต้องทำเป็นระยะสุดท้ายเท่านั้น เนื่องจากจำเป็นต้องใช้โครงสร้างข้อมูลที่สมบูรณ์และนิ่งแล้วจากทั้งระยะที่ 1 และระยะที่ 2' },
+    ],
+  },
+];
+
+const ASSUMPTIONS = [
+  'ลูกค้าตอบคำถามหรือส่งมอบข้อมูลสำคัญ (เช่น ข้อมูลนักเรียน REQ-002) ภายใน 1–2 วัน',
+  'คำถามและเงื่อนไขทางธุรกิจได้รับการสรุปก่อนเริ่มงาน (เช่น นโยบายปุ่มยกเลิก/คืนเงินคอร์สเรียน REQ-008)',
+  'ขอบเขตงาน (Scope) ไม่มีการปรับเปลี่ยนหรือเพิ่มเติมนอกเหนือข้อตกลงระหว่างทาง',
+  'ทีมพัฒนาได้รับผลการตรวจรับงาน (Feedback) รายสัปดาห์อย่างสม่ำเสมอเพื่อประเมินความเร็วที่แท้จริง',
+];
+
+const TASKS = [
+  { group: 'ระบบหน้าบ้าน', items: [
+    { id: 'REQ-001', name: 'Upload ข้อมูลกิจกรรม', status: 'done' },
+    { id: 'REQ-002', name: 'Upload ข้อมูลนักเรียน', status: 'wait' },
+    { id: 'REQ-003', name: 'ส่วนลดรายครั้ง', status: 'done' },
+    { id: 'REQ-004', name: 'เช่าอุปกรณ์', status: 'todo' },
+    { id: 'REQ-005', name: 'การจองลงตารางแบบ Other', status: 'todo' },
+    { id: 'REQ-006', name: 'Popup confirm ปุ่มมาเรียน', status: 'todo' },
+    { id: 'REQ-007', name: 'ช่อง Note ทุกการจอง + ส่งไลน์ครู', status: 'todo' },
+    { id: 'REQ-008', name: 'ปุ่มยกเลิกคอร์สกดเองได้', status: 'todo' },
+  ]},
+  { group: 'ระบบหลังบ้าน', items: [
+    { id: 'REQ-BO-001', name: 'เชื่อมหน้าบ้าน — กิจกรรม', status: 'todo' },
+    { id: 'REQ-BO-002', name: 'เชื่อมหน้าบ้าน — Dashboard', status: 'todo' },
+    { id: 'REQ-BO-003', name: 'เชื่อมหน้าบ้าน — เพดาน Freelance', status: 'todo' },
+    { id: 'REQ-BO-004', name: 'เชื่อมเงินเดือนครู', status: 'todo' },
+    { id: 'REQ-BO-005', name: 'ตัดคอร์สจาก Frontoffice', status: 'todo' },
+  ]},
+  { group: 'งานแก้ปัญหา (FIX)', items: [
+    { id: 'FIX-001', name: 'สมัครคอร์สแล้วลาเป็น extended', status: 'done' },
+    { id: 'FIX-002', name: 'เอา Program "1st trial" ออก', status: 'done' },
+    { id: 'FIX-003', name: 'แก้ข้อความ booking type', status: 'wip' },
+    { id: 'FIX-004', name: 'จัดรูปแบบข้อความไลน์ครู', status: 'wip' },
+    { id: 'FIX-005', name: 'ราคากิจกรรม 1hr ทั้งหมด', status: 'wip' },
+    { id: 'FIX-006', name: 'เอาแจ้งเปลี่ยนครูล่วงหน้า 3 วันออก', status: 'todo' },
+  ]},
+];
+
+const STATUS_PILL = {
+  done: ['pill-done', 'DONE'],
+  wip:  ['pill-wip',  'WIP'],
+  wait: ['pill-wait', 'WAIT'],
+  todo: ['pill-todo', 'TODO'],
+};
+
+/* =====================================================
+   STATE + RENDER
+===================================================== */
+let currentPlan = 'optimistic';
+
+function depBadge(d) {
+  return `
+    <span class="tip inline-flex items-center gap-1.5 text-[.7rem] font-semibold ${d.color}
+                 bg-slate-800/70 border border-slate-700 rounded-full px-2.5 py-1" tabindex="0">
+      <span>${d.icon}</span><span>${d.short}</span>
+      <span class="tipbox">${d.text}</span>
+    </span>`;
+}
+
+/* --- แกนสัปดาห์ (desktop) --- */
+function renderAxis() {
+  const total = PLANS[currentPlan].totalWeeks;
+  const axis = document.getElementById('week-axis');
+  let html = '';
+  for (let w = 0; w <= total; w++) {
+    const left = (w / total) * 100;
+    html += `<span class="week-label absolute -translate-x-1/2 text-[.65rem] text-slate-500 font-display font-semibold"
+                   style="left:${left}%">W${w}</span>`;
+  }
+  axis.innerHTML = html;
+}
+
+/* --- แถว Gantt (desktop) — สร้างครั้งเดียว แล้วอัปเดตตำแหน่งบาร์ด้วย CSS transition --- */
+function buildGanttRows() {
+  const rows = document.getElementById('gantt-rows');
+  rows.innerHTML = PHASES.map(p => `
+    <div class="flex items-stretch">
+      <div class="w-40 flex-none pr-3 py-4">
+        <div class="text-sm font-semibold leading-tight">${p.name}</div>
+        <div class="text-[.68rem] text-slate-500">${p.sub}</div>
+      </div>
+      <div class="relative flex-1 h-16 border-l border-slate-700/60" id="lane-${p.id}">
+        ${gridLines()}
+        <div class="gantt-bar ${p.barClass}" id="bar-${p.id}">
+          <span class="relative z-10" id="bartext-${p.id}"></span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function gridLines() {
+  // เส้นแบ่งสัปดาห์ — วาดใหม่ทุกครั้งที่สลับแผน (จำนวนช่องต่างกัน)
+  const total = PLANS[currentPlan].totalWeeks;
+  let html = '';
+  for (let w = 1; w <= total; w++) {
+    html += `<div class="weekline absolute top-0 bottom-0" style="left:${(w/total)*100}%"></div>`;
+  }
+  return html;
+}
+
+function updateBars() {
+  const total = PLANS[currentPlan].totalWeeks;
+  PHASES.forEach(p => {
+    const t = p[currentPlan];
+    const bar = document.getElementById('bar-' + p.id);
+    bar.style.left  = (t.start / total * 100) + '%';
+    bar.style.width = ((t.end - t.start) / total * 100) + '%';
+    document.getElementById('bartext-' + p.id).textContent = `W${t.start}–W${t.end} · ${t.note}`;
+    // วาดเส้นกริดใหม่ให้ตรงจำนวนสัปดาห์
+    const lane = document.getElementById('lane-' + p.id);
+    lane.querySelectorAll('.weekline').forEach(el => el.remove());
+    lane.insertAdjacentHTML('afterbegin', gridLines());
+  });
+}
+
+/* --- Timeline แนวตั้ง (mobile) --- */
+function renderMobile() {
+  const wrap = document.getElementById('mobile-timeline');
+  wrap.querySelectorAll('.m-item').forEach(el => el.remove());
+  PHASES.forEach(p => {
+    const t = p[currentPlan];
+    wrap.insertAdjacentHTML('beforeend', `
+      <div class="m-item relative">
+        <span class="absolute -left-6 top-1 w-[19px] h-[19px] rounded-full border-4 border-[var(--bg)]"
+              style="background:${p.dotColor}"></span>
+        <div class="text-sm font-bold">${p.name}</div>
+        <div class="text-[.7rem] text-slate-400 font-display font-semibold mt-.5">
+          สัปดาห์ที่ ${t.start} – ${t.end} · ${t.note}
+        </div>
+        <div class="mt-2 flex flex-wrap gap-1.5">${p.deps.map(depBadge).join('')}</div>
+      </div>`);
+  });
+}
+
+/* --- การ์ดรายละเอียดแต่ละระยะ --- */
+function renderCards() {
+  document.getElementById('phase-cards').innerHTML = PHASES.map((p, i) => {
+    const t = p[currentPlan];
+    return `
+    <div class="panel p-5 reveal" style="animation-delay:${.22 + i * .08}s; border-top: 3px solid ${p.dotColor}">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="font-display font-bold text-sm tracking-wide">${p.name}</h3>
+        <span class="text-[.68rem] font-display font-bold text-slate-300 bg-slate-800 border border-slate-700 rounded px-2 py-.5 whitespace-nowrap">
+          W${t.start}–W${t.end}
+        </span>
+      </div>
+      <p class="text-xs text-slate-400 mt-2 leading-relaxed"><span class="text-slate-300 font-semibold">เป้าหมาย:</span> ${p.goal}</p>
+      <div class="mt-3 pt-3 border-t border-slate-700/60">
+        <div class="text-[.65rem] tracking-widest text-slate-500 uppercase font-semibold mb-2">เงื่อนไขสำคัญ (Dependencies)</div>
+        <div class="flex flex-wrap gap-1.5">${p.deps.map(depBadge).join('')}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* --- Assumptions checklist --- */
+function renderAssumptions() {
+  document.getElementById('assumptions').innerHTML = ASSUMPTIONS.map((a, i) => `
+    <label class="check-item flex items-start gap-3 p-3 rounded-xl border border-slate-700/70 bg-slate-800/30 cursor-pointer select-none">
+      <input type="checkbox" class="sr-only" onchange="updateReady()" id="as-${i}">
+      <span class="checkbox-ui mt-.5">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0b1120" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
+      <span class="check-text text-sm leading-relaxed">${a}</span>
+    </label>`).join('');
+}
+
+function updateReady() {
+  const boxes = document.querySelectorAll('#assumptions input');
+  const n = [...boxes].filter(b => b.checked).length;
+  document.getElementById('stat-ready').textContent = n;
+  document.getElementById('ready-bar').style.width = (n / boxes.length * 100) + '%';
+}
+
+/* --- Task board --- */
+function renderTasks() {
+  document.getElementById('task-board').innerHTML = TASKS.map(g => `
+    <div>
+      <div class="text-[.7rem] tracking-widest text-slate-500 uppercase font-semibold mb-2">${g.group}</div>
+      <div class="space-y-1.5">
+        ${g.items.map(t => {
+          const [cls, label] = STATUS_PILL[t.status];
+          return `
+          <div class="flex items-center justify-between gap-2 text-xs bg-slate-800/40 border border-slate-700/50 rounded-lg px-2.5 py-1.5">
+            <div class="min-w-0">
+              <span class="font-display font-semibold text-slate-300">${t.id}</span>
+              <span class="text-slate-400 block truncate">${t.name}</span>
+            </div>
+            <span class="pill ${cls}">${label}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+/* --- สลับแผน --- */
+function setPlan(plan) {
+  currentPlan = plan;
+  const cfg = PLANS[plan];
+
+  document.getElementById('switcher').dataset.plan = plan;
+  document.getElementById('btn-opt').classList.toggle('active', plan === 'optimistic');
+  document.getElementById('btn-con').classList.toggle('active', plan === 'conservative');
+
+  const label = document.getElementById('plan-label');
+  label.textContent = cfg.label;
+  label.className = 'text-xs font-semibold px-3 py-1 rounded-full border ' + cfg.badgeClass;
+
+  document.getElementById('stat-weeks').textContent = cfg.totalWeeks;
+  document.getElementById('stat-rounds').textContent = cfg.rounds;
+
+  renderAxis();
+  updateBars();
+  renderMobile();
+  renderCards();
+}
+
+/* --- init --- */
+buildGanttRows();
+renderAssumptions();
+renderTasks();
+setPlan('optimistic');
+updateReady();
+</script>
+</body>
+</html>
