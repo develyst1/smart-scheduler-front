@@ -66,6 +66,8 @@
     border-radius: 1rem;
   }
 
+  .icon { width: 1em; height: 1em; display: inline-block; vertical-align: -.12em; flex: none; }
+
   /* ===== Plan Switcher ===== */
   .switcher {
     position: relative;
@@ -98,6 +100,7 @@
     color: var(--ink-dim);
     transition: color .3s;
     white-space: nowrap;
+    display: inline-flex; align-items: center; gap: .45rem;
   }
   .switcher button.active { color: #fff; }
 
@@ -111,12 +114,14 @@
     display: flex; align-items: center;
     padding: 0 .75rem;
     font-size: .78rem; font-weight: 600;
-    overflow: hidden; white-space: nowrap;
+    white-space: nowrap;
     box-shadow: 0 6px 20px rgba(0,0,0,.35);
   }
+  .gantt-bar span { text-shadow: 0 1px 6px rgba(0,0,0,.6); }
   .gantt-bar::after {           /* แถบเงาวิ่งบนบาร์ */
     content: '';
     position: absolute; inset: 0;
+    border-radius: inherit;
     background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.18) 50%, transparent 70%);
     background-size: 220% 100%;
     animation: shine 3.5s linear infinite;
@@ -128,7 +133,50 @@
   .bar-p3 { background: linear-gradient(135deg, #34d399, #047857); }
 
   .weekline { border-left: 1px dashed rgba(143,160,191,.18); }
-  .week-label { transition: opacity .4s; }
+
+  /* ===== เส้น "วันนี้" ===== */
+  .today-line {
+    position: absolute; top: 0; bottom: 0;
+    width: 0;
+    border-left: 2px dashed var(--amber);
+    z-index: 20;
+    transition: left .6s cubic-bezier(.6,0,.2,1);
+    filter: drop-shadow(0 0 6px rgba(251,191,36,.5));
+  }
+  .today-line .flag {
+    position: absolute; top: -2px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--amber);
+    color: #0b1120;
+    font-size: .62rem; font-weight: 700;
+    padding: .15rem .5rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    display: inline-flex; align-items: center; gap: .25rem;
+  }
+  .today-line .dot {
+    position: absolute; bottom: -4px; left: -5px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--amber);
+    animation: pulse 1.8s ease-out infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(251,191,36,.55); }
+    100% { box-shadow: 0 0 0 12px rgba(251,191,36,0); }
+  }
+
+  /* ===== Date input ===== */
+  input[type="date"] {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: .6rem;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: .8rem;
+    padding: .35rem .6rem;
+    color-scheme: dark;
+  }
+  input[type="date"]:focus { outline: 2px solid var(--indigo); outline-offset: 1px; }
 
   /* ===== Tooltip ===== */
   .tip { position: relative; cursor: help; }
@@ -224,14 +272,21 @@
         </p>
       </div>
 
-      <!-- Plan Switcher -->
-      <div class="flex flex-col items-start lg:items-end gap-2">
-        <span class="text-[.7rem] font-semibold tracking-widest text-slate-500 uppercase">เลือกแผนการทำงาน</span>
-        <div id="switcher" class="switcher" data-plan="optimistic">
-          <div class="thumb"></div>
-          <button id="btn-opt" class="active" onclick="setPlan('optimistic')">⚡ แผนเร็วที่สุด · 6 สัปดาห์</button>
-          <button id="btn-con" onclick="setPlan('conservative')">🛡️ แผนปลอดภัย · 11 สัปดาห์</button>
+      <!-- Plan Switcher + Start date -->
+      <div class="flex flex-col items-start lg:items-end gap-3">
+        <div class="flex flex-col items-start lg:items-end gap-2">
+          <span class="text-[.7rem] font-semibold tracking-widest text-slate-500 uppercase">เลือกแผนการทำงาน</span>
+          <div id="switcher" class="switcher" data-plan="optimistic">
+            <div class="thumb"></div>
+            <button id="btn-opt" class="active" onclick="setPlan('optimistic')"><span data-icon="zap"></span>แผนเร็วที่สุด · 6 สัปดาห์</button>
+            <button id="btn-con" onclick="setPlan('conservative')"><span data-icon="shield"></span>แผนปลอดภัย · 11 สัปดาห์</button>
+          </div>
         </div>
+        <label class="flex items-center gap-2 text-xs text-slate-400">
+          <span data-icon="calendar" class="text-indigo-300"></span>
+          วันเริ่มโปรเจกต์
+          <input type="date" id="start-date" onchange="onStartDateChange()">
+        </label>
       </div>
     </div>
 
@@ -240,14 +295,16 @@
       <div class="panel p-4">
         <div class="text-[.68rem] tracking-widest text-slate-500 uppercase font-semibold">ระยะเวลารวม</div>
         <div class="font-display text-3xl font-bold mt-1 num-flip"><span id="stat-weeks">6</span> <span class="text-base text-slate-400 font-medium">สัปดาห์</span></div>
+        <div id="stat-dates" class="text-[.7rem] text-slate-500 mt-1"></div>
       </div>
       <div class="panel p-4">
         <div class="text-[.68rem] tracking-widest text-slate-500 uppercase font-semibold">รอบการทำงาน</div>
         <div class="font-display text-3xl font-bold mt-1 num-flip"><span id="stat-rounds">≈ 30</span> <span class="text-base text-slate-400 font-medium">รอบ</span></div>
       </div>
       <div class="panel p-4">
-        <div class="text-[.68rem] tracking-widest text-slate-500 uppercase font-semibold">จำนวนระยะ</div>
-        <div class="font-display text-3xl font-bold mt-1">3 <span class="text-base text-slate-400 font-medium">ระยะ</span></div>
+        <div class="text-[.68rem] tracking-widest text-slate-500 uppercase font-semibold">วันนี้</div>
+        <div class="font-display text-xl sm:text-2xl font-bold mt-1 text-amber-400" id="stat-today">—</div>
+        <div id="stat-today-week" class="text-[.7rem] text-slate-500 mt-1"></div>
       </div>
       <div class="panel p-4">
         <div class="text-[.68rem] tracking-widest text-slate-500 uppercase font-semibold">ความพร้อม (Assumptions)</div>
@@ -259,19 +316,24 @@
   <!-- ================= GANTT TIMELINE ================= -->
   <section class="panel mt-8 p-5 sm:p-7 reveal" style="animation-delay:.15s">
     <div class="flex items-center justify-between flex-wrap gap-2">
-      <h2 class="font-display text-lg font-bold tracking-wide">📊 TIMELINE ภาพรวม</h2>
-      <span id="plan-label" class="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-400/30">
-        ⚡ Optimistic Plan — 6 สัปดาห์
-      </span>
+      <h2 class="font-display text-lg font-bold tracking-wide flex items-center gap-2">
+        <span data-icon="gantt" class="text-indigo-400"></span>TIMELINE ภาพรวม
+      </h2>
+      <span id="plan-label" class="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-400/30"></span>
     </div>
 
     <!-- แกนสัปดาห์ + บาร์ (แนวนอน, ซ่อนบนมือถือ) -->
-    <div class="hidden md:block mt-6">
-      <div class="relative">
+    <div class="hidden md:block mt-8">
+      <div class="relative" id="gantt-wrap">
         <!-- week axis -->
-        <div id="week-axis" class="relative h-6 ml-40"></div>
+        <div id="week-axis" class="relative h-10 ml-40"></div>
         <!-- rows -->
         <div id="gantt-rows" class="space-y-1"></div>
+        <!-- เส้นวันนี้ -->
+        <div id="today-line" class="today-line" style="display:none">
+          <span class="flag"><span data-icon="pin"></span>วันนี้</span>
+          <span class="dot"></span>
+        </div>
       </div>
     </div>
 
@@ -289,7 +351,9 @@
 
     <!-- Assumptions Checklist -->
     <div class="panel p-5 sm:p-6 lg:col-span-2 reveal" style="animation-delay:.35s">
-      <h2 class="font-display text-lg font-bold tracking-wide">✅ ปัจจัยความสำเร็จ (Assumptions)</h2>
+      <h2 class="font-display text-lg font-bold tracking-wide flex items-center gap-2">
+        <span data-icon="check-circle" class="text-emerald-400"></span>ปัจจัยความสำเร็จ (Assumptions)
+      </h2>
       <p class="text-xs text-slate-400 mt-1">ติ๊กเพื่อตรวจสอบความพร้อมของโปรเจกต์ — แผนนี้จะเดินตามกำหนดได้เมื่อครบทุกข้อ</p>
 
       <div class="mt-3 h-2 rounded-full bg-slate-800 overflow-hidden">
@@ -302,7 +366,9 @@
     <!-- Task Status Board -->
     <div class="panel p-5 sm:p-6 lg:col-span-3 reveal" style="animation-delay:.45s">
       <div class="flex items-center justify-between flex-wrap gap-2">
-        <h2 class="font-display text-lg font-bold tracking-wide">🗂️ สถานะงานปัจจุบัน</h2>
+        <h2 class="font-display text-lg font-bold tracking-wide flex items-center gap-2">
+          <span data-icon="clipboard" class="text-cyan-400"></span>สถานะงานปัจจุบัน
+        </h2>
         <div class="flex gap-2 text-[.68rem]">
           <span class="pill pill-done">COMPLETED</span>
           <span class="pill pill-wip">IN PROGRESS</span>
@@ -321,12 +387,37 @@
 
 <script>
 /* =====================================================
+   ICONS (Lucide-style inline SVG)
+===================================================== */
+const ICON_PATHS = {
+  zap:          '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  shield:       '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  gantt:        '<path d="M8 6h10"/><path d="M6 12h9"/><path d="M11 18h7"/>',
+  calendar:     '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  'check-circle':'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  clipboard:    '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+  alert:        '<path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  refresh:      '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  key:          '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
+  stop:         '<polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86"/><path d="M12 8v4"/><path d="M12 16h.01"/>',
+  pin:          '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+};
+
+function icon(name, cls = '') {
+  return `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
+}
+
+// แทนที่ placeholder <span data-icon="..."> ทั้งหมดใน HTML คงที่
+document.querySelectorAll('[data-icon]').forEach(el => { el.outerHTML = icon(el.dataset.icon, el.className); });
+
+/* =====================================================
    DATA
 ===================================================== */
 const PLANS = {
-  optimistic:   { label: '⚡ Optimistic Plan — 6 สัปดาห์',  totalWeeks: 6,  rounds: '≈ 30',
+  optimistic:   { name: 'Optimistic Plan',   iconName: 'zap',    totalWeeks: 6,  rounds: '≈ 30',
                   badgeClass: 'bg-indigo-500/15 text-indigo-300 border-indigo-400/30' },
-  conservative: { label: '🛡️ Conservative Plan — 11 สัปดาห์', totalWeeks: 11, rounds: '—',
+  conservative: { name: 'Conservative Plan', iconName: 'shield', totalWeeks: 11, rounds: '—',
                   badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30' },
 };
 
@@ -341,9 +432,9 @@ const PHASES = [
     optimistic:   { start: 0, end: 2, note: '2 สัปดาห์ · ≈ 16–19 รอบ' },
     conservative: { start: 0, end: 4, note: '4 สัปดาห์' },
     deps: [
-      { icon: '⚠️', color: 'text-amber-400', short: 'Blocker ของระยะที่ 2',
+      { icon: 'alert', color: 'text-amber-400', short: 'Blocker ของระยะที่ 2',
         text: 'งานนี้ต้องเสร็จสิ้นและนิ่งก่อน จึงจะเริ่มงาน "ระยะที่ 2" ได้ เพื่อป้องกันการแก้โค้ดซ้ำซ้อน' },
-      { icon: '🔄', color: 'text-cyan-400', short: 'REQ-BO-005 รอหน้าบ้านนิ่ง',
+      { icon: 'refresh', color: 'text-cyan-400', short: 'REQ-BO-005 รอหน้าบ้านนิ่ง',
         text: 'REQ-BO-005 (ระบบตัดคอร์สเรียน) จะทำได้ก็ต่อเมื่อหน้าบ้านนิ่งแล้วเท่านั้น' },
     ],
   },
@@ -357,7 +448,7 @@ const PHASES = [
     optimistic:   { start: 2, end: 5, note: '3 สัปดาห์ · ≈ 10–11 รอบ' },
     conservative: { start: 4, end: 9, note: '5 สัปดาห์' },
     deps: [
-      { icon: '🔑', color: 'text-amber-400', short: 'REQ-BO-004 รอ REQ-BO-003',
+      { icon: 'key', color: 'text-amber-400', short: 'REQ-BO-004 รอ REQ-BO-003',
         text: 'ระบบคำนวณเงินเดือนครู (REQ-BO-004) จะเริ่มพัฒนาได้หลังจากระบบกำหนดเพดานค่าครู freelance (REQ-BO-003) ออกแบบเสร็จสิ้นแล้วเท่านั้น' },
     ],
   },
@@ -371,7 +462,7 @@ const PHASES = [
     optimistic:   { start: 5, end: 6, note: '1 สัปดาห์ · ≈ 3 รอบ' },
     conservative: { start: 9, end: 11, note: '2 สัปดาห์' },
     deps: [
-      { icon: '🛑', color: 'text-red-400', short: 'ต้องเป็นระยะสุดท้าย',
+      { icon: 'stop', color: 'text-red-400', short: 'ต้องเป็นระยะสุดท้าย',
         text: 'ต้องทำเป็นระยะสุดท้ายเท่านั้น เนื่องจากจำเป็นต้องใช้โครงสร้างข้อมูลที่สมบูรณ์และนิ่งแล้วจากทั้งระยะที่ 1 และระยะที่ 2' },
     ],
   },
@@ -420,28 +511,49 @@ const STATUS_PILL = {
 };
 
 /* =====================================================
-   STATE + RENDER
+   DATE HELPERS — แปลงสัปดาห์เป็นวันที่จริง
 ===================================================== */
+const DAY = 24 * 60 * 60 * 1000;
 let currentPlan = 'optimistic';
+let projectStart = stripTime(new Date());     // ค่าเริ่มต้น = วันนี้ (แก้ได้จากช่องวันเริ่มโปรเจกต์)
 
+function stripTime(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function weekToDate(w) { return new Date(projectStart.getTime() + w * 7 * DAY); }
+function fmtShort(d)  { return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }); }
+function fmtFull(d)   { return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }); }
+// ช่วงวันที่ของระยะ (วันสุดท้าย = วันก่อนสัปดาห์ end จะเริ่ม)
+function phaseRange(t) {
+  const s = weekToDate(t.start);
+  const e = new Date(weekToDate(t.end).getTime() - DAY);
+  return { s, e, label: `${fmtShort(s)} – ${fmtFull(e)}` };
+}
+// วันนี้อยู่สัปดาห์ที่เท่าไรของโปรเจกต์ (ทศนิยม)
+function todayWeekFloat() { return (stripTime(new Date()) - projectStart) / (7 * DAY); }
+
+/* =====================================================
+   RENDER
+===================================================== */
 function depBadge(d) {
   return `
     <span class="tip inline-flex items-center gap-1.5 text-[.7rem] font-semibold ${d.color}
                  bg-slate-800/70 border border-slate-700 rounded-full px-2.5 py-1" tabindex="0">
-      <span>${d.icon}</span><span>${d.short}</span>
+      ${icon(d.icon)}<span>${d.short}</span>
       <span class="tipbox">${d.text}</span>
     </span>`;
 }
 
-/* --- แกนสัปดาห์ (desktop) --- */
+/* --- แกนสัปดาห์ + วันที่ (desktop) --- */
 function renderAxis() {
   const total = PLANS[currentPlan].totalWeeks;
   const axis = document.getElementById('week-axis');
   let html = '';
   for (let w = 0; w <= total; w++) {
     const left = (w / total) * 100;
-    html += `<span class="week-label absolute -translate-x-1/2 text-[.65rem] text-slate-500 font-display font-semibold"
-                   style="left:${left}%">W${w}</span>`;
+    html += `
+      <span class="absolute -translate-x-1/2 text-center" style="left:${left}%">
+        <span class="block text-[.65rem] text-slate-400 font-display font-semibold">W${w}</span>
+        <span class="block text-[.58rem] text-slate-600">${fmtShort(weekToDate(w))}</span>
+      </span>`;
   }
   axis.innerHTML = html;
 }
@@ -478,10 +590,11 @@ function updateBars() {
   const total = PLANS[currentPlan].totalWeeks;
   PHASES.forEach(p => {
     const t = p[currentPlan];
+    const r = phaseRange(t);
     const bar = document.getElementById('bar-' + p.id);
     bar.style.left  = (t.start / total * 100) + '%';
     bar.style.width = ((t.end - t.start) / total * 100) + '%';
-    document.getElementById('bartext-' + p.id).textContent = `W${t.start}–W${t.end} · ${t.note}`;
+    document.getElementById('bartext-' + p.id).textContent = `${r.label} · ${t.note}`;
     // วาดเส้นกริดใหม่ให้ตรงจำนวนสัปดาห์
     const lane = document.getElementById('lane-' + p.id);
     lane.querySelectorAll('.weekline').forEach(el => el.remove());
@@ -489,18 +602,42 @@ function updateBars() {
   });
 }
 
+/* --- เส้น "วันนี้" บน Gantt --- */
+function updateTodayLine() {
+  const total = PLANS[currentPlan].totalWeeks;
+  const frac = todayWeekFloat() / total;
+  const line = document.getElementById('today-line');
+  if (frac < 0 || frac > 1) { line.style.display = 'none'; return; }
+  line.style.display = 'block';
+  // เลนบาร์เริ่มหลังคอลัมน์ชื่อระยะ (w-40 = 10rem)
+  line.style.left = `calc(10rem + (100% - 10rem) * ${frac})`;
+}
+
 /* --- Timeline แนวตั้ง (mobile) --- */
 function renderMobile() {
   const wrap = document.getElementById('mobile-timeline');
   wrap.querySelectorAll('.m-item').forEach(el => el.remove());
+  const tw = todayWeekFloat();
+  const total = PLANS[currentPlan].totalWeeks;
+  // แถบ "วันนี้" ด้านบนสุด
+  wrap.insertAdjacentHTML('beforeend', `
+    <div class="m-item relative">
+      <span class="absolute -left-6 top-1 w-[19px] h-[19px] rounded-full border-4 border-[var(--bg)] bg-amber-400"></span>
+      <div class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400">
+        ${icon('pin')} วันนี้ · ${fmtFull(stripTime(new Date()))}
+        ${tw >= 0 && tw <= total ? `<span class="text-slate-500 font-medium">(สัปดาห์ที่ ${Math.floor(tw)})</span>` : ''}
+      </div>
+    </div>`);
   PHASES.forEach(p => {
     const t = p[currentPlan];
+    const r = phaseRange(t);
     wrap.insertAdjacentHTML('beforeend', `
       <div class="m-item relative">
         <span class="absolute -left-6 top-1 w-[19px] h-[19px] rounded-full border-4 border-[var(--bg)]"
               style="background:${p.dotColor}"></span>
         <div class="text-sm font-bold">${p.name}</div>
-        <div class="text-[.7rem] text-slate-400 font-display font-semibold mt-.5">
+        <div class="text-[.72rem] text-amber-300/90 font-semibold mt-.5">${r.label}</div>
+        <div class="text-[.7rem] text-slate-400 font-display font-semibold">
           สัปดาห์ที่ ${t.start} – ${t.end} · ${t.note}
         </div>
         <div class="mt-2 flex flex-wrap gap-1.5">${p.deps.map(depBadge).join('')}</div>
@@ -512,6 +649,7 @@ function renderMobile() {
 function renderCards() {
   document.getElementById('phase-cards').innerHTML = PHASES.map((p, i) => {
     const t = p[currentPlan];
+    const r = phaseRange(t);
     return `
     <div class="panel p-5 reveal" style="animation-delay:${.22 + i * .08}s; border-top: 3px solid ${p.dotColor}">
       <div class="flex items-center justify-between gap-2">
@@ -519,6 +657,9 @@ function renderCards() {
         <span class="text-[.68rem] font-display font-bold text-slate-300 bg-slate-800 border border-slate-700 rounded px-2 py-.5 whitespace-nowrap">
           W${t.start}–W${t.end}
         </span>
+      </div>
+      <div class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300/90">
+        ${icon('calendar')} ${r.label}
       </div>
       <p class="text-xs text-slate-400 mt-2 leading-relaxed"><span class="text-slate-300 font-semibold">เป้าหมาย:</span> ${p.goal}</p>
       <div class="mt-3 pt-3 border-t border-slate-700/60">
@@ -569,7 +710,7 @@ function renderTasks() {
     </div>`).join('');
 }
 
-/* --- สลับแผน --- */
+/* --- สลับแผน / เปลี่ยนวันเริ่ม --- */
 function setPlan(plan) {
   currentPlan = plan;
   const cfg = PLANS[plan];
@@ -579,19 +720,44 @@ function setPlan(plan) {
   document.getElementById('btn-con').classList.toggle('active', plan === 'conservative');
 
   const label = document.getElementById('plan-label');
-  label.textContent = cfg.label;
-  label.className = 'text-xs font-semibold px-3 py-1 rounded-full border ' + cfg.badgeClass;
+  label.innerHTML = `${icon(cfg.iconName)} ${cfg.name} — ${cfg.totalWeeks} สัปดาห์`;
+  label.className = 'text-xs font-semibold px-3 py-1 rounded-full border inline-flex items-center gap-1.5 ' + cfg.badgeClass;
 
   document.getElementById('stat-weeks').textContent = cfg.totalWeeks;
   document.getElementById('stat-rounds').textContent = cfg.rounds;
 
+  // ช่วงวันที่รวมของทั้งโปรเจกต์
+  const projEnd = new Date(weekToDate(cfg.totalWeeks).getTime() - DAY);
+  document.getElementById('stat-dates').textContent = `${fmtShort(projectStart)} – ${fmtFull(projEnd)}`;
+
+  // การ์ด "วันนี้"
+  const tw = todayWeekFloat();
+  document.getElementById('stat-today').textContent = fmtFull(stripTime(new Date()));
+  document.getElementById('stat-today-week').textContent =
+    tw < 0 ? 'ยังไม่ถึงวันเริ่มโปรเจกต์'
+    : tw > cfg.totalWeeks ? 'เลยกำหนดการของแผนนี้แล้ว'
+    : `อยู่ในสัปดาห์ที่ ${Math.floor(tw)} ของแผน`;
+
   renderAxis();
   updateBars();
+  updateTodayLine();
   renderMobile();
   renderCards();
 }
 
+function onStartDateChange() {
+  const v = document.getElementById('start-date').value;
+  if (!v) return;
+  projectStart = stripTime(new Date(v + 'T00:00:00'));
+  setPlan(currentPlan);
+}
+
 /* --- init --- */
+function toInputValue(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+document.getElementById('start-date').value = toInputValue(projectStart);
+
 buildGanttRows();
 renderAssumptions();
 renderTasks();
