@@ -9,6 +9,7 @@ import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
 import { useI18n } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
+import CalendarLegendBar from "./CalendarLegendBar";
 import BookingCellBody, { BookingTypeStripe } from "@/components/common/BookingCellBody";
 import { useCellDisplay } from "@/lib/scheduler/cell-display";
 
@@ -64,11 +65,13 @@ export default function CalendarWeekGrid({
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   return (
-    <div className="overflow-auto rounded-2xl border border-muted-200 bg-content1 shadow-sm">
-      <div
-        className="grid min-w-max"
-        style={{ gridTemplateColumns: `160px repeat(7, minmax(150px, 1fr))` }}
-      >
+    <div className="rounded-2xl border border-muted-200 bg-content1 shadow-sm">
+      <CalendarLegendBar />
+      <div className="overflow-auto rounded-b-2xl">
+        <div
+          className="grid min-w-max"
+          style={{ gridTemplateColumns: `160px repeat(7, minmax(150px, 1fr))` }}
+        >
         {/* Header row */}
         <div className="sticky left-0 top-0 z-20 border-b border-r border-muted-200 bg-content1 p-3 text-xs font-medium text-muted-400">
           {t("calendar.teacherDay")}
@@ -148,6 +151,7 @@ export default function CalendarWeekGrid({
             })}
           </div>
         ))}
+        </div>
       </div>
     </div>
   );

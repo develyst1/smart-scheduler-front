@@ -5,8 +5,10 @@ import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
 import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
+import { useCellDisplay, type CellDisplay } from "@/lib/scheduler/cell-display";
 import { useT } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
+import CalendarLegendBar from "./CalendarLegendBar";
 import { BOOKING_TYPE_ICON, BOOKING_TYPE_VAR } from "@/components/common/BookingCellBody";
 
 interface Props {
@@ -38,6 +40,9 @@ const ACCENT_STYLE: Record<string, string> = {
 
 export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCreate }: Props) {
   const t = useT();
+  // Display-only preference (SPEC-046) — shared with the week grid via the cell-display store. It hides lines,
+  // it never filters bookings, so the day cell honours the SAME toggles the week cell does.
+  const { display } = useCellDisplay();
   const activeTeachers = teachers.filter((tt) => tt.bookable);
 
   const findBooking = (teacherId: string, time: string) =>
@@ -50,11 +55,13 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
     );
 
   return (
-    <div className="overflow-auto rounded-2xl border border-muted-200 bg-content1 shadow-sm">
-      <div
-        className="grid min-w-max"
-        style={{ gridTemplateColumns: `72px repeat(${activeTeachers.length}, minmax(160px, 1fr))` }}
-      >
+    <div className="rounded-2xl border border-muted-200 bg-content1 shadow-sm">
+      <CalendarLegendBar />
+      <div className="overflow-auto rounded-b-2xl">
+        <div
+          className="grid min-w-max"
+          style={{ gridTemplateColumns: `72px repeat(${activeTeachers.length}, minmax(160px, 1fr))` }}
+        >
         {/* Header row */}
         <div className="sticky left-0 top-0 z-20 border-b border-r border-muted-200 bg-content1 p-3 text-xs font-medium text-muted-400">
           {t("calendar.time")}
@@ -79,8 +86,10 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
             findBooking={findBooking}
             onSelectBooking={onSelectBooking}
             onCreate={onCreate}
+            display={display}
           />
         ))}
+        </div>
       </div>
     </div>
   );
@@ -92,12 +101,14 @@ function Row({
   findBooking,
   onSelectBooking,
   onCreate,
+  display,
 }: {
   time: string;
   teachers: TeacherView[];
   findBooking: (teacherId: string, time: string) => Booking | undefined;
   onSelectBooking: (b: Booking) => void;
   onCreate: (teacherId: string, time: string) => void;
+  display: CellDisplay;
 }) {
   const t = useT();
   return (
@@ -124,24 +135,28 @@ function Row({
                   {booking.nickname || booking.studentName}
                 </span>
                 {/* AC-4 — the day view keeps the FULL program name; only the week cell may shorten it. */}
-                <span className="text-xs text-muted-500">{booking.subject}</span>
-                <span
-                  className="flex items-center gap-1 text-[10px] uppercase tracking-wide"
-                  style={{ color: `rgb(${BOOKING_TYPE_VAR[booking.bookingType]})` }}
-                >
-                  {(() => {
-                    const Icon = BOOKING_TYPE_ICON[booking.bookingType];
-                    return <Icon size={11} aria-hidden className="shrink-0" />;
-                  })()}
-                  {t(`bookingType.${booking.bookingType}`)}
-                </span>
+                {display.program && booking.subject && (
+                  <span className="text-xs text-muted-500">{booking.subject}</span>
+                )}
+                {display.type && (
+                  <span
+                    className="flex items-center gap-1 text-[10px] uppercase tracking-wide"
+                    style={{ color: `rgb(${BOOKING_TYPE_VAR[booking.bookingType]})` }}
+                  >
+                    {(() => {
+                      const Icon = BOOKING_TYPE_ICON[booking.bookingType];
+                      return <Icon size={11} aria-hidden className="shrink-0" />;
+                    })()}
+                    {t(`bookingType.${booking.bookingType}`)}
+                  </span>
+                )}
                 {/* REQ-068 — the session note, where staff read "today". Absent ⇒ nothing (AC-5). */}
-                {booking.attendeeNote && (
+                {display.note && booking.attendeeNote && (
                   <span className="truncate text-[10px] italic text-muted-500" title={booking.attendeeNote}>
                     {booking.attendeeNote}
                   </span>
                 )}
-                {(booking.badges ?? []).length > 0 && (
+                {display.badge && (booking.badges ?? []).length > 0 && (
                   <span className="flex flex-wrap gap-1">
                     {(booking.badges ?? []).map((bd) => (
                       <span
