@@ -34,13 +34,19 @@ export default function CellDisplayMenu() {
       <Menu.Dropdown>
         <Menu.Label>{t("calendar.cellDisplayHint")}</Menu.Label>
         {CELL_FIELDS.map((f) => (
+          // 🔴 EXACTLY ONE handler. This row previously toggled twice for a single click — `Menu.Item`'s
+          // `onClick` AND the `Checkbox`'s `onChange` both fired, netting zero — while a click on the row's
+          // padding (which misses the checkbox) fired once and worked. That position-dependence is what read as
+          // "sometimes it works, same button" and is why waiting/re-clicking never helped: a parity bug has
+          // nothing settling in the background. The comment below was already right; the code contradicted it.
           <Menu.Item key={f} onClick={() => toggle(f)}>
             <Checkbox
               checked={display[f]}
-              onChange={() => toggle(f)}
+              // The ROW is the control; the box is the affordance. `readOnly` keeps it controlled without
+              // giving it a second handler (and without React's uncontrolled-input warning).
+              readOnly
               label={t(`calendar.cellField.${f}`)}
               size="xs"
-              // The row itself toggles; the box is the affordance, not a second control to hit exactly.
               styles={{ input: { cursor: "pointer" }, label: { cursor: "pointer" } }}
             />
           </Menu.Item>
