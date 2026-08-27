@@ -8,7 +8,6 @@ import {
   Divider,
   Group,
   Pagination,
-  RingProgress,
   SegmentedControl,
   SimpleGrid,
   Stack,
@@ -18,24 +17,14 @@ import {
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { AreaChart, DonutChart, Sparkline } from "@mantine/charts";
-import {
-  Users,
-  CheckCircle2,
-  Bell,
-  Clock,
-  CalendarOff,
-  Ban,
-  TrendingUp,
-  Coins,
-  type LucideIcon,
-} from "lucide-react";
-import { BookingTypeChip, TeacherTypeChip } from "@/components/common/BookingBadges";
+import { Users, CheckCircle2, TrendingUp, Coins, type LucideIcon } from "lucide-react";
+import { BookingTypeChip } from "@/components/common/BookingBadges";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import { useI18n } from "@/lib/i18n";
 import { useOverview } from "@/hooks/scheduler";
 import { SOM_UNKNOWN_KEY, type Breakdown, type BreakdownBucket } from "@/types/app/som";
-import type { OverviewScope, ScopePreset, TrendPoint, NewCustomers, CustomerSpend, TypeActivityCount } from "@/types/app/overview";
+import type { OverviewScope, ScopePreset, TrendPoint, CustomerSpend, TypeActivityCount } from "@/types/app/overview";
 import type { BookingType } from "@/types/app/scheduler";
 
 // Resolve a preset (or custom range) into concrete inclusive from/to dates.
@@ -52,13 +41,6 @@ function resolveScope(preset: ScopePreset, from: string, to: string): OverviewSc
       return { preset, from, to };
   }
 }
-
-const BOOKING_TYPE_COLOR: Record<BookingType, string> = {
-  FIRST_TRIAL: "orange",
-  SINGLE_SESSION: "gray",
-  COURSE_PACKAGE: "blue",
-  VOUCHER: "grape",
-};
 
 const ACTIVITY_PALETTE = ["blue", "teal", "grape", "orange", "cyan", "gray"];
 
@@ -77,29 +59,6 @@ export default function OverviewContent() {
     dayjs(iso).locale(lang).format(lang === "th" ? "D MMM HH:mm น." : "D MMM YYYY, HH:mm");
 
   const rateColor = pulse.attendanceRate >= 80 ? "green" : pulse.attendanceRate >= 50 ? "orange" : "red";
-
-  const statusDonut = [
-    { name: t("bookingStatus.ATTENDED"), value: pulse.attended, color: "green.6" },
-    { name: t("bookingStatus.CONFIRMED"), value: pulse.confirmed, color: "blue.6" },
-    { name: t("bookingStatus.PENDING"), value: pulse.pending, color: "orange.6" },
-    { name: t("bookingStatus.SICK_LEAVE"), value: pulse.onLeave, color: "gray.5" },
-    { name: t("bookingStatus.CANCELLED"), value: pulse.cancelled, color: "red.6" },
-  ].filter((s) => s.value > 0);
-
-  const kpis: { label: string; value: number; icon: LucideIcon; color: string; series?: number[] }[] = [
-    { label: t("reports.statTotalBooked"), value: pulse.totalBooked, icon: Users, color: "blue", series: pulse.trend.map((d) => d.booked) },
-    { label: t("reports.statAttended"), value: pulse.attended, icon: CheckCircle2, color: "green", series: pulse.trend.map((d) => d.attended) },
-    { label: t("reports.statConfirmed"), value: pulse.confirmed, icon: Bell, color: "cyan" },
-    { label: t("reports.statPending"), value: pulse.pending, icon: Clock, color: "orange" },
-    { label: t("reports.statOnLeave"), value: pulse.onLeave, icon: CalendarOff, color: "gray" },
-    { label: t("reports.statCancelled"), value: pulse.cancelled, icon: Ban, color: "red" },
-  ];
-
-  const typeDonut = ops.byBookingType.map((b) => ({
-    name: t(`bookingType.${b.type}`),
-    value: b.count,
-    color: `${BOOKING_TYPE_COLOR[b.type]}.6`,
-  }));
 
   const activityDonut = biz.activityShare.buckets
     .filter((b) => b.count > 0 && b.key !== SOM_UNKNOWN_KEY)
@@ -129,7 +88,6 @@ export default function OverviewContent() {
     return key;
   }
 
-  const maxTeacher = ops.byTeacher.reduce((m, x) => Math.max(m, x.count), 0) || 1;
   const maxBadge = ops.byBadge.reduce((m, x) => Math.max(m, x.count), 0) || 1;
 
   return (
@@ -186,172 +144,70 @@ export default function OverviewContent() {
       <section className="space-y-4">
         <ZoneHeading n={1} icon={TrendingUp} title={t("overview.zonePulse")} hint={t("overview.zonePulseHint")} />
 
-        <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
-          <Card withBorder radius="lg" padding="lg" className="flex items-center justify-center">
-            <RingProgress
-              size={168}
-              thickness={13}
-              roundCaps
-              sections={[{ value: pulse.attendanceRate, color: rateColor }]}
-              label={
-                <div className="text-center">
-                  <Text fz={32} fw={700} lh={1}>
-                    {pulse.attendanceRate}%
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    {t("reports.attendanceRate")}
-                  </Text>
-                  <Text size="xs" c="dimmed" className="font-num">
-                    {pulse.attended}/{pulse.totalBooked}
-                  </Text>
-                </div>
-              }
-            />
-          </Card>
+        {/* Executive KPI strip — headline numbers only; operational status lives in the Daily report */}
+        <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm">
+          <KpiCard
+            value={`${pulse.attendanceRate}%`}
+            label={t("reports.attendanceRate")}
+            sub={`${pulse.attended}/${pulse.totalBooked}`}
+            icon={CheckCircle2}
+            color={rateColor}
+          />
+          <KpiCard
+            value={pulse.totalBooked}
+            label={t("reports.statTotalBooked")}
+            icon={Users}
+            color="blue"
+            series={pulse.trend.map((d) => d.booked)}
+          />
+          <KpiCard
+            value={pulse.attended}
+            label={t("reports.statAttended")}
+            icon={CheckCircle2}
+            color="green"
+            series={pulse.trend.map((d) => d.attended)}
+          />
+          <KpiCard value={fmtBaht(rev.total)} label={t("overview.totalRevenue")} icon={Coins} color="teal" />
+        </SimpleGrid>
 
-          <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="sm">
-            {kpis.map((k) => {
-              const Icon = k.icon;
-              return (
-                <Card key={k.label} withBorder radius="lg" padding="md">
-                  <Group justify="space-between" align="flex-start" wrap="nowrap">
-                    <div className="min-w-0">
-                      <p className="text-2xl font-bold leading-none tracking-tight tabular-nums">{k.value}</p>
-                      <p className="mt-1 truncate text-xs text-default-400">{k.label}</p>
-                    </div>
-                    <ThemeIcon variant="light" color={k.color} size={36} radius="md">
-                      <Icon size={18} />
-                    </ThemeIcon>
-                  </Group>
-                  {k.series && k.series.length > 1 && (
-                    <Sparkline
-                      className="mt-2"
-                      h={28}
-                      data={k.series}
-                      color={k.color}
-                      fillOpacity={0.25}
-                      strokeWidth={1.5}
-                      curveType="monotone"
-                    />
-                  )}
-                </Card>
-              );
-            })}
-          </SimpleGrid>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          {/* Trend (multi-day scope only) */}
-          {pulse.trend.length > 1 ? (
-            <Card withBorder radius="lg" padding="lg">
-              <Text size="sm" fw={600} mb="md">
-                {t("overview.trendTitle")}
-              </Text>
-              <AreaChart
-                h={220}
-                data={pulse.trend.map((d: TrendPoint) => ({
-                  date: dayjs(d.date).locale(lang).format("D MMM"),
-                  [t("overview.trendBooked")]: d.booked,
-                  [t("overview.trendAttended")]: d.attended,
-                }))}
-                dataKey="date"
-                withDots={false}
-                curveType="monotone"
-                series={[
-                  { name: t("overview.trendBooked"), color: "blue.5" },
-                  { name: t("overview.trendAttended"), color: "green.5" },
-                ]}
-              />
-            </Card>
-          ) : (
-            <DonutCard title={t("overview.statusTitle")} data={statusDonut} t={t} />
-          )}
-
-          {pulse.trend.length > 1 ? (
-            <DonutCard title={t("overview.statusTitle")} data={statusDonut} t={t} />
-          ) : (
-            <DonutCard title={t("reports.byType")} data={typeDonut} unit={t("overview.unitSessions")} t={t} />
-          )}
-        </div>
-      </section>
-
-      <Divider />
-
-      {/* ══ Zone 2 · Operations ══════════════════════════════ */}
-      <section className="space-y-4">
-        <ZoneHeading n={2} icon={Users} title={t("overview.zoneOps")} hint={t("overview.zoneOpsHint")} />
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          {/* Teacher workload */}
-          <Card withBorder radius="lg" padding="lg">
-            <Text size="sm" fw={600} mb="md">
-              {t("reports.workload")}
-            </Text>
-            {ops.byTeacher.length === 0 ? (
-              <Text size="sm" c="dimmed">
-                {t("reports.noSessions")}
-              </Text>
-            ) : (
-              <Stack gap="sm">
-                {ops.byTeacher.map((tc) => (
-                  <div key={tc.teacherId} className="flex items-center gap-3">
-                    <div className="flex w-36 shrink-0 items-center gap-2">
-                      <span className="truncate text-sm font-medium">{tc.nickname}</span>
-                      <TeacherTypeChip type={tc.type} />
-                    </div>
-                    <div className="min-w-0 grow">
-                      <div
-                        className="h-5 rounded"
-                        style={{ width: `${Math.max(6, (tc.count / maxTeacher) * 100)}%`, backgroundColor: badgeColorVar("blue") }}
-                      />
-                    </div>
-                    <span className="w-20 shrink-0 text-right text-xs text-default-500">
-                      {t("reports.sessionsAttended", { count: tc.count, attended: tc.attended })}
-                    </span>
-                  </div>
-                ))}
-              </Stack>
-            )}
-          </Card>
-
-          {/* Booking type mix on multi-day; badge distribution on single-day (trend takes zone-1 donut slot) */}
-          {pulse.trend.length > 1 ? (
-            <DonutCard title={t("reports.byType")} data={typeDonut} unit={t("overview.unitSessions")} t={t} />
-          ) : (
-            <Card withBorder radius="lg" padding="lg">
-              <Text size="sm" fw={600} mb="md">
-                {t("overview.branchTitle")}
-              </Text>
-              <BadgeBars badges={ops.byBadge} max={maxBadge} empty={t("dashboard.noData")} unit={t("overview.unitSessions")} />
-            </Card>
-          )}
-        </div>
-
-        {/* Badge distribution — full width when the compact slot is taken by booking-type */}
         {pulse.trend.length > 1 && (
           <Card withBorder radius="lg" padding="lg">
             <Text size="sm" fw={600} mb="md">
-              {t("overview.branchTitle")}
+              {t("overview.trendTitle")}
             </Text>
-            <BadgeBars badges={ops.byBadge} max={maxBadge} empty={t("dashboard.noData")} unit={t("overview.unitSessions")} />
+            <AreaChart
+              h={240}
+              data={pulse.trend.map((d: TrendPoint) => ({
+                date: dayjs(d.date).locale(lang).format("D MMM"),
+                [t("overview.trendBooked")]: d.booked,
+                [t("overview.trendAttended")]: d.attended,
+              }))}
+              dataKey="date"
+              withDots={false}
+              curveType="monotone"
+              series={[
+                { name: t("overview.trendBooked"), color: "blue.5" },
+                { name: t("overview.trendAttended"), color: "green.5" },
+              ]}
+            />
           </Card>
         )}
       </section>
 
       <Divider />
 
-      {/* ══ Zone 3 · Business & Market ═══════════════════════ */}
+      {/* ══ Zone 2 · Business & Market ═══════════════════════ */}
       <section className="space-y-5">
-        <ZoneHeading n={3} icon={TrendingUp} title={t("overview.zoneBiz")} hint={t("overview.zoneBizHint")} />
+        <ZoneHeading n={2} icon={Users} title={t("overview.zoneBiz")} hint={t("overview.zoneBizHint")} />
 
-        {/* Existing customers — total + by registration type (course/voucher/trial/single) */}
+        {/* EXISTING COURSE — active entitlements + win-back */}
         <div>
-          <SubHeading>{t("som.existingTitle")}</SubHeading>
-          <SimpleGrid cols={{ base: 2, sm: 3, lg: 5 }} spacing="sm">
-            <Stat label={t("som.totalCustomers")} value={existing.total} unit={t("overview.unitPeople")} accent />
-            {existing.byType.map((x) => (
-              <Stat key={x.type} label={t(`bookingType.${x.type}`)} value={x.count} unit={t("overview.unitPeople")} />
-            ))}
+          <SubHeading>{t("overview.existingTitle")}</SubHeading>
+          <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
+            <Stat label={t("overview.activeCourse")} value={existing.activeCourse} unit={t("overview.unitCourses")} />
+            <Stat label={t("overview.activeVoucher")} value={existing.activeVoucher} unit={t("overview.unitVouchers")} />
+            <Stat label={t("overview.existingTotal")} value={existing.total} unit={t("overview.unitItems")} accent />
+            <Stat label={t("overview.previous3M")} value={existing.previous3M} unit={t("overview.unitPeople")} />
           </SimpleGrid>
         </div>
 
@@ -365,13 +221,22 @@ export default function OverviewContent() {
           </div>
         </div>
 
-        {/* New customers this month — by registration type + by activity */}
+        {/* Sessions per branch — how each สาขา performs (moved from the parked Dashboard) */}
         <div>
-          <SubHeading>{t("overview.newCustomerTitle")}</SubHeading>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <NewCustomersCard data={newCust} t={t} />
-            <BreakdownCard title={t("overview.newByActivityTitle")} data={newCust.byActivity} t={t} labelOf={(b) => b.label ?? b.key} unknown={t("som.unknown")} />
-          </div>
+          <SubHeading>{t("overview.branchTitle")}</SubHeading>
+          <Card withBorder radius="lg" padding="lg">
+            <BadgeBars badges={ops.byBadge} max={maxBadge} empty={t("dashboard.noData")} unit={t("overview.unitSessions")} />
+          </Card>
+        </div>
+
+        {/* NEW VS REMAINING — three period-filterable headcounts (scope filter drives the period) */}
+        <div>
+          <SubHeading>{t("overview.newVsRemainingTitle")}</SubHeading>
+          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
+            <Stat label={t("overview.newFirstTrial")} value={newCust.newFirstTrial} unit={t("overview.unitPeople")} />
+            <Stat label={t("overview.newCourse")} value={newCust.newCourse} unit={t("overview.unitPeople")} />
+            <Stat label={t("overview.renewing")} value={newCust.renewing} unit={t("overview.unitPeople")} accent />
+          </SimpleGrid>
         </div>
 
         {/* req 4: activity counts per registration type — one card per type (scales with more activities) */}
@@ -397,9 +262,9 @@ export default function OverviewContent() {
 
       <Divider />
 
-      {/* ══ Zone 4 · Revenue & value ═════════════════════════ */}
+      {/* ══ Zone 3 · Revenue & value ═════════════════════════ */}
       <section className="space-y-4">
-        <ZoneHeading n={4} icon={Coins} title={t("overview.zoneRevenue")} hint={t("overview.zoneRevenueHint")} />
+        <ZoneHeading n={3} icon={Coins} title={t("overview.zoneRevenue")} hint={t("overview.zoneRevenueHint")} />
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,220px)_1fr]">
           <Card withBorder radius="lg" padding="lg" className="flex flex-col justify-center">
@@ -462,6 +327,41 @@ function SubHeading({ children }: { children: ReactNode }) {
       <span className="h-3.5 w-1 shrink-0 rounded-full bg-default-300" />
       {children}
     </h3>
+  );
+}
+
+// Executive headline tile — big number, icon, optional trend sparkline.
+function KpiCard({
+  value,
+  label,
+  sub,
+  icon: Icon,
+  color,
+  series,
+}: {
+  value: number | string;
+  label: string;
+  sub?: string;
+  icon: LucideIcon;
+  color: string;
+  series?: number[];
+}) {
+  return (
+    <Card withBorder radius="lg" padding="md">
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <div className="min-w-0">
+          <p className="text-2xl font-bold leading-none tracking-tight tabular-nums">{value}</p>
+          <p className="mt-1 truncate text-xs text-default-400">{label}</p>
+          {sub ? <p className="mt-0.5 text-xs text-default-400 font-num">{sub}</p> : null}
+        </div>
+        <ThemeIcon variant="light" color={color} size={36} radius="md">
+          <Icon size={18} />
+        </ThemeIcon>
+      </Group>
+      {series && series.length > 1 && (
+        <Sparkline className="mt-2" h={28} data={series} color={color} fillOpacity={0.25} strokeWidth={1.5} curveType="monotone" />
+      )}
+    </Card>
   );
 }
 
@@ -641,61 +541,6 @@ function MoneyBars({
           ))}
         </Stack>
       )}
-    </Card>
-  );
-}
-
-// New customers this month: total + "new members not yet purchased" + enrolment by registration type.
-function NewCustomersCard({ data, t }: { data: NewCustomers; t: TFn }) {
-  const enrolled = data.byType.reduce((s, x) => s + x.count, 0);
-  const maxType = data.byType.reduce((m, x) => Math.max(m, x.count), 0) || 1;
-  return (
-    <Card withBorder radius="lg" padding="lg">
-      <SimpleGrid cols={3} spacing="xs" mb="md">
-        <div>
-          <Text fw={700} fz={28} lh={1} className="font-num">
-            {data.total}
-            <span className="ml-1 text-xs font-normal text-default-400">{t("overview.unitPeople")}</span>
-          </Text>
-          <Text size="xs" c="dimmed" className="mt-1">
-            {t("overview.newThisMonth")}
-          </Text>
-        </div>
-        <div className="rounded-lg bg-default-100/60 p-2.5">
-          <Text fw={700} className="font-num">
-            {enrolled}
-          </Text>
-          <Text size="xs" c="dimmed">
-            {t("overview.enrolled")}
-          </Text>
-        </div>
-        <div className="rounded-lg bg-default-100/60 p-2.5">
-          <Text fw={700} className="font-num">
-            {data.registeredNotPurchased}
-          </Text>
-          <Text size="xs" c="dimmed">
-            {t("overview.registeredNotPurchased")}
-          </Text>
-        </div>
-      </SimpleGrid>
-
-      {/* Enrolment by registration type */}
-      <Text size="xs" c="dimmed" mb="xs">
-        {t("overview.newByTypeTitle")}
-      </Text>
-      <Stack gap="sm">
-        {data.byType.map((x) => (
-          <div key={x.type} className="flex items-center gap-3">
-            <span className="w-28 shrink-0 truncate text-xs font-semibold text-default-800">
-              {t(`bookingType.${x.type}`)}
-            </span>
-            <div className="min-w-0 grow">
-              <div className="h-4 rounded" style={{ width: `${Math.max(4, (x.count / maxType) * 100)}%`, backgroundColor: badgeColorVar("teal") }} />
-            </div>
-            <span className="w-8 shrink-0 text-right text-sm font-semibold tabular-nums">{x.count}</span>
-          </div>
-        ))}
-      </Stack>
     </Card>
   );
 }
