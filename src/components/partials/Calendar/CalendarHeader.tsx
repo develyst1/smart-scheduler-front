@@ -5,19 +5,11 @@ import "dayjs/locale/th";
 import { ActionIcon, Button, CloseButton, MultiSelect, Paper, SegmentedControl, TextInput, Tooltip } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users, Tag, Search } from "lucide-react";
-import { StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import type { BadgeType, TeacherType, TeacherView } from "@/types/app/scheduler";
 import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { useI18n } from "@/lib/i18n";
-import { STATUS_LEGEND } from "./Calendar.config";
-import CellDisplayMenu from "./CellDisplayMenu";
-import { BOOKING_TYPE_ICON, BOOKING_TYPE_VAR } from "@/components/common/BookingCellBody";
-import type { BookingType } from "@/types/app/scheduler";
-
-/** AC-9 — the legend lists the four types in the same order the booking modal offers them. */
-const BOOKING_TABS_LEGEND: BookingType[] = ["FIRST_TRIAL", "SINGLE_SESSION", "COURSE_PACKAGE", "VOUCHER"];
 
 export type CalendarView = "day" | "week";
 
@@ -90,86 +82,56 @@ export default function CalendarHeader({
   return (
     <Paper withBorder p="sm" className="flex flex-col gap-3 bg-content1">
       {/* แถวบน: ชื่อช่วงวัน + ปุ่มควบคุม | legend สถานะ */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-1.5">
-          <span className="pl-1 text-base font-semibold tracking-tight text-foreground">
-            {view === "week" ? weekLabel : dayLabel}
-          </span>
+      {/* Top row — date label + view/nav controls. Unchanged; only the legend moved out to its own line below. */}
+      <div className="flex flex-col gap-1.5">
+        <span className="pl-1 text-base font-semibold tracking-tight text-foreground">
+          {view === "week" ? weekLabel : dayLabel}
+        </span>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <SegmentedControl
-              size="sm"
-              radius="md"
-              value={view}
-              onChange={(v) => onChangeView(v as CalendarView)}
-              data={[
-                { label: t("calendar.weekly"), value: "week" },
-                { label: t("calendar.daily"), value: "day" },
-              ]}
-            />
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedControl
+            size="sm"
+            radius="md"
+            value={view}
+            onChange={(v) => onChangeView(v as CalendarView)}
+            data={[
+              { label: t("calendar.weekly"), value: "week" },
+              { label: t("calendar.daily"), value: "day" },
+            ]}
+          />
 
-            <Tooltip label={view === "week" ? t("calendar.prevWeek") : t("calendar.prevDay")}>
-              <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(-1)} aria-label={t("calendar.prev")}>
-                <ChevronLeft size={18} />
-              </ActionIcon>
-            </Tooltip>
+          <Tooltip label={view === "week" ? t("calendar.prevWeek") : t("calendar.prevDay")}>
+            <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(-1)} aria-label={t("calendar.prev")}>
+              <ChevronLeft size={18} />
+            </ActionIcon>
+          </Tooltip>
 
-            <DatePickerInput
-              value={date}
-              onChange={(v) => v && onChangeDate(v)}
-              valueFormat="D MMM YYYY"
-              size="sm"
-              radius="md"
-              popoverProps={{ withinPortal: true }}
-              leftSection={<CalendarDays size={16} />}
-              className="min-w-52"
-              aria-label={t("calendar.pickDate")}
-            />
+          <DatePickerInput
+            value={date}
+            onChange={(v) => v && onChangeDate(v)}
+            valueFormat="D MMM YYYY"
+            size="sm"
+            radius="md"
+            popoverProps={{ withinPortal: true }}
+            leftSection={<CalendarDays size={16} />}
+            className="min-w-52"
+            aria-label={t("calendar.pickDate")}
+          />
 
-            <Tooltip label={view === "week" ? t("calendar.nextWeek") : t("calendar.nextDay")}>
-              <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(1)} aria-label={t("calendar.next")}>
-                <ChevronRight size={18} />
-              </ActionIcon>
-            </Tooltip>
+          <Tooltip label={view === "week" ? t("calendar.nextWeek") : t("calendar.nextDay")}>
+            <ActionIcon variant="default" size="lg" radius="md" onClick={() => shift(1)} aria-label={t("calendar.next")}>
+              <ChevronRight size={18} />
+            </ActionIcon>
+          </Tooltip>
 
-            <Button
-              variant={isToday ? "filled" : "light"}
-              size="sm"
-              radius="md"
-              onClick={() => onChangeDate(dayjs().format("YYYY-MM-DD"))}
-            >
-              {t("calendar.today")}
-            </Button>
-          </div>
-        </div>
-
-        {/* SPEC-046 AC-9 — the legend names BOTH dimensions. Status and type are different questions about the
-            same cell, so a legend that explains only one teaches staff that the other is decoration. */}
-        <div className="flex flex-col items-end gap-1.5">
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
-            <span className="text-[11px] text-muted-400">{t("calendar.legendStatus")}</span>
-            {STATUS_LEGEND.map((status) => (
-              <StatusChip key={status} status={status} size="md" />
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <span className="text-[11px] text-muted-400">{t("calendar.legendType")}</span>
-            {BOOKING_TABS_LEGEND.map((bt) => {
-              const Icon = BOOKING_TYPE_ICON[bt];
-              return (
-                <span key={bt} className="flex items-center gap-1 text-[11px] text-muted-600">
-                  <span
-                    aria-hidden
-                    className="h-2.5 w-1 rounded-sm"
-                    style={{ backgroundColor: `rgb(${BOOKING_TYPE_VAR[bt]})` }}
-                  />
-                  <Icon size={11} aria-hidden />
-                  {t(`bookingType.${bt}`)}
-                </span>
-              );
-            })}
-          </div>
-          <CellDisplayMenu />
+          <Button
+            variant={isToday ? "filled" : "light"}
+            size="sm"
+            radius="md"
+            onClick={() => onChangeDate(dayjs().format("YYYY-MM-DD"))}
+          >
+            {t("calendar.today")}
+          </Button>
         </div>
       </div>
 

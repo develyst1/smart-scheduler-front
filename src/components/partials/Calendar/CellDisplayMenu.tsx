@@ -23,10 +23,10 @@ export default function CellDisplayMenu() {
     <Menu shadow="md" width={200} closeOnItemClick={false} position="bottom-end" withArrow>
       <Menu.Target>
         <Button
-          variant="subtle"
-          size="compact-xs"
-          color="gray"
-          leftSection={<SlidersHorizontal size={13} />}
+          variant="default"
+          size="xs"
+          radius="md"
+          leftSection={<SlidersHorizontal size={15} />}
         >
           {t("calendar.cellDisplay")}
         </Button>

@@ -6,9 +6,11 @@ import { Plus } from "lucide-react";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
+import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
 import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
 import { useI18n } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
+import CalendarLegendBar from "./CalendarLegendBar";
 import BookingCellBody, { BookingTypeStripe } from "@/components/common/BookingCellBody";
 import { useCellDisplay } from "@/lib/scheduler/cell-display";
 
@@ -20,7 +22,7 @@ interface Props {
   onCreate: (teacherId: string, time: string, date: string) => void;
 }
 
-// แถบสีบาง ๆ ด้านซ้ายของ chip ตามสถานะ
+// สี dot สถานะ (จุดกลมหน้าเวลา) — แถบซ้าย chip = ประเภท, พื้น chip = สถานะ
 const DOT_STYLE: Record<string, string> = {
   primary: "bg-primary",
   success: "bg-success",
@@ -30,13 +32,14 @@ const DOT_STYLE: Record<string, string> = {
   default: "bg-muted-400",
 };
 
+// พื้น+ขอบ chip ตามสถานะ (พื้นอ่อน ขอบเข้ม) — คงสัญญาณสถานะที่พื้น + ขอบชัดไม่กลืนพื้นเซลล์
 const CHIP_STYLE: Record<string, string> = {
-  primary: "bg-primary/10 hover:bg-primary/15",
-  success: "bg-success/10 hover:bg-success/15",
-  warning: "bg-warning/10 hover:bg-warning/15",
-  secondary: "bg-secondary/10 hover:bg-secondary/15",
-  danger: "bg-danger/10 hover:bg-danger/15",
-  default: "bg-muted-100 hover:bg-muted-200",
+  primary: "bg-primary/10 border-primary/30 hover:bg-primary/15",
+  success: "bg-success/10 border-success/30 hover:bg-success/15",
+  warning: "bg-warning/10 border-warning/40 hover:bg-warning/15",
+  secondary: "bg-secondary/10 border-secondary/30 hover:bg-secondary/15",
+  danger: "bg-danger/10 border-danger/30 hover:bg-danger/15",
+  default: "bg-muted-100 border-muted-300 hover:bg-muted-200",
 };
 
 export default function CalendarWeekGrid({
@@ -64,11 +67,13 @@ export default function CalendarWeekGrid({
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   return (
-    <div className="overflow-auto rounded-2xl border border-muted-200 bg-content1 shadow-sm">
-      <div
-        className="grid min-w-max"
-        style={{ gridTemplateColumns: `160px repeat(7, minmax(150px, 1fr))` }}
-      >
+    <div className="rounded-2xl border border-muted-200 bg-content1 shadow-sm">
+      <CalendarLegendBar />
+      <div className="overflow-auto rounded-b-2xl">
+        <div
+          className="grid min-w-max"
+          style={{ gridTemplateColumns: `160px repeat(7, minmax(150px, 1fr))` }}
+        >
         {/* Header row */}
         <div className="sticky left-0 top-0 z-20 border-b border-r border-muted-200 bg-content1 p-3 text-xs font-medium text-muted-400">
           {t("calendar.teacherDay")}
@@ -117,16 +122,35 @@ export default function CalendarWeekGrid({
                         key={b.id}
                         type="button"
                         onClick={() => onSelectBooking(b)}
-                        className={`relative flex w-full flex-col gap-0.5 rounded-lg py-1.5 pl-3 pr-2 text-left transition-colors ${CHIP_STYLE[accent]}`}
+                        className={`relative flex w-full flex-col gap-0.5 rounded-lg border-y border-r py-1.5 pl-3 pr-2 text-left transition-colors ${CHIP_STYLE[accent]}`}
                       >
-                        {/* SPEC-046 — TYPE as a second, quieter channel. Status keeps the dot (primary signal). */}
+                        {/* SPEC-046 — the left stripe carries TYPE; STATUS rides the dot beside the time. */}
                         <BookingTypeStripe type={b.bookingType} />
                         <span className="flex min-w-0 items-center gap-1.5">
-                          <span className={`h-2 w-2 shrink-0 rounded-full ${DOT_STYLE[accent]}`} />
+                          <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${DOT_STYLE[accent]}`} />
                           <span className="shrink-0 text-[11px] font-medium tabular-nums text-muted-500">
                             {b.startTime}
                           </span>
-                          <span className="truncate text-xs font-medium">{b.nickname || b.studentName}</span>
+                          <span className="min-w-0 flex-1 truncate text-xs font-medium">
+                            {b.nickname || b.studentName}
+                          </span>
+                          {/* Branch (badge) — a primary identifier, kept as a labelled chip like the day cell. */}
+                          {display.badge && (b.badges ?? []).length > 0 && (
+                            <span className="flex shrink-0 flex-wrap justify-end gap-1">
+                              {(b.badges ?? []).map((bd) => (
+                                <span
+                                  key={bd.valueId}
+                                  className="inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[9px] font-medium leading-tight"
+                                  style={{
+                                    backgroundColor: badgeColorSoftVar(bd.color ?? "gray"),
+                                    color: badgeColorVar(bd.color ?? "gray"),
+                                  }}
+                                >
+                                  {bd.label}
+                                </span>
+                              ))}
+                            </span>
+                          )}
                         </span>
                         <BookingCellBody booking={b} display={display} />
                       </button>
@@ -148,6 +172,7 @@ export default function CalendarWeekGrid({
             })}
           </div>
         ))}
+        </div>
       </div>
     </div>
   );

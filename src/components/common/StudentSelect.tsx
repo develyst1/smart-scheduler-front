@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Combobox, InputBase, Loader, TextInput, useCombobox } from "@mantine/core";
+import { Combobox, InputBase, Loader, ScrollArea, TextInput, useCombobox } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { UserPlus } from "lucide-react";
 import { useStudentSearch } from "@/hooks/scheduler";
@@ -89,18 +89,22 @@ export default function StudentSelect({ value, onChange, label, required }: Prop
         </Combobox.Target>
 
         <Combobox.Dropdown>
+          {/* Combobox (low-level) doesn't scroll on its own like Select's maxDropdownHeight — a long student list
+              would otherwise run off the bottom of the screen. Cap the height and let ScrollArea handle overflow-Y. */}
           <Combobox.Options>
-            {options}
-            {search.trim() && !exactMatch && (
-              <Combobox.Option value={NEW}>
-                <span className="flex items-center gap-1.5 text-primary-600">
-                  <UserPlus size={14} /> {t("student.addNew", { name: search.trim() })}
-                </span>
-              </Combobox.Option>
-            )}
-            {!options.length && !search.trim() && (
-              <Combobox.Empty>{t("student.searchHint")}</Combobox.Empty>
-            )}
+            <ScrollArea.Autosize mah={280} type="scroll">
+              {options}
+              {search.trim() && !exactMatch && (
+                <Combobox.Option value={NEW}>
+                  <span className="flex items-center gap-1.5 text-primary-600">
+                    <UserPlus size={14} /> {t("student.addNew", { name: search.trim() })}
+                  </span>
+                </Combobox.Option>
+              )}
+              {!options.length && !search.trim() && (
+                <Combobox.Empty>{t("student.searchHint")}</Combobox.Empty>
+              )}
+            </ScrollArea.Autosize>
           </Combobox.Options>
         </Combobox.Dropdown>
       </Combobox>

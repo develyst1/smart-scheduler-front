@@ -50,14 +50,14 @@ interface Props {
 export default function BookingCellBody({ booking, display, fullProgram = false }: Props) {
   const t = useT();
   const Icon = BOOKING_TYPE_ICON[booking.bookingType];
-  const badge = booking.badges?.[0];
 
   const showType = display.type;
   const showProgram = display.program && !!booking.subject;
-  const showBadge = display.badge && !!badge;
   const showNote = display.note && !!booking.attendeeNote;
 
-  if (!showType && !showProgram && !showBadge && !showNote) return null;
+  // NOTE: the badge (branch) is rendered by the caller on the name row — a primary identifier deserves the
+  // top line, not the meta stack — so it is intentionally absent here even though `display.badge` gates it there.
+  if (!showType && !showProgram && !showNote) return null;
 
   return (
     <span className="flex min-w-0 flex-col gap-0.5">
@@ -65,7 +65,12 @@ export default function BookingCellBody({ booking, display, fullProgram = false 
         <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-600">
           {showType && (
             <>
-              <Icon size={11} aria-hidden className="shrink-0" />
+              <Icon
+                size={11}
+                aria-hidden
+                className="shrink-0"
+                style={{ color: `rgb(${BOOKING_TYPE_VAR[booking.bookingType]})` }}
+              />
               {/* Never truncated — the type label is the one thing that must survive a narrow cell. */}
               <span className="shrink-0 font-medium">{t(`bookingType.${booking.bookingType}`)}</span>
             </>
@@ -77,13 +82,13 @@ export default function BookingCellBody({ booking, display, fullProgram = false 
         </span>
       )}
 
-      {showBadge && (
-        <span className="truncate text-[10px] text-muted-500">{badge!.label}</span>
-      )}
-
-      {/* REQ-068 — the session note. Absent ⇒ nothing rendered at all (AC-5). */}
+      {/* REQ-068 — the session note as a neutral-bordered callout so it reads as a note, not more meta. Absent ⇒
+          nothing rendered at all (AC-5). */}
       {showNote && (
-        <span className="truncate text-[10px] italic text-muted-500" title={booking.attendeeNote ?? undefined}>
+        <span
+          className="truncate border-l-2 border-muted-300 pl-1.5 text-[10px] text-muted-500"
+          title={booking.attendeeNote ?? undefined}
+        >
           {booking.attendeeNote}
         </span>
       )}

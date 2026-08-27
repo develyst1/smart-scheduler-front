@@ -248,7 +248,10 @@ function ViewBooking({
 
   return (
     <Stack gap="md">
-      <dl className="grid grid-cols-2 gap-3 text-sm">
+      {/* Details + note as ONE tight group (gap-2.5) so the session note reads as part of the booking, not a
+          detached block floating below it. */}
+      <div className="flex flex-col gap-1.5">
+      <dl className="grid grid-cols-2 gap-2.5 text-sm">
         <Field label={t("booking.teacher")} value={teacherName} />
         <Field label={t("booking.subject")} value={booking.subject} />
         <Field label={t("booking.date")} value={booking.date} />
@@ -261,7 +264,6 @@ function ViewBooking({
           name reads as an answer to "who" when it isn't (SA note on Part 2). */}
       {booking.discount && (
         <>
-          <Divider />
           <p className="text-sm tabular-nums">
             {t("discount.section")}:{" "}
             <strong>
@@ -277,27 +279,24 @@ function ViewBooking({
         </>
       )}
 
-      {/* REQ-068 — the session note, shown where staff look at the booking. Distinct from the status `note`
-          below it, which the cancel/leave flows write. Empty ⇒ nothing rendered (AC-5). */}
+      {/* REQ-068 — the session note, shown where staff look at the booking. Rendered as a neutral-bordered callout
+          (matching the calendar cell) so it reads as a note. Distinct from the status `note` below it, which the
+          cancel/leave flows write. Empty ⇒ nothing rendered (AC-5). */}
       {booking.attendeeNote && (
-        <>
-          <Divider />
-          <p className="text-sm">
-            {t("attendeeNote.label")}: <span className="text-muted-700">{booking.attendeeNote}</span>
-          </p>
-        </>
+        <div className="rounded-r-lg border-l-2 border-warning bg-warning/10 py-1.5 pl-2.5 pr-3 text-sm">
+          <span className="block text-xs font-medium text-warning">{t("attendeeNote.label")}</span>
+          <span className="text-muted-700">{booking.attendeeNote}</span>
+        </div>
       )}
 
       {booking.note && (
-        <>
-          <Divider />
-          <p className="text-sm text-muted-500">{t("booking.noteLabel")}: {booking.note}</p>
-        </>
+        <p className="text-sm text-muted-500">{t("booking.noteLabel")}: {booking.note}</p>
       )}
+      </div>
 
       {activeBadgeTypes.length > 0 && (
-        <>
-          <Divider label={t("calendar.badge")} labelPosition="left" />
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium text-muted-500">{t("calendar.badge")}</span>
           <div className="grid grid-cols-2 gap-3">
             {activeBadgeTypes.map((bt) => {
               const colorOf = new Map(bt.values.map((v) => [v.id, v.color]));
@@ -337,7 +336,7 @@ function ViewBooking({
               {t("booking.saveBadges")}
             </Button>
           )}
-        </>
+        </div>
       )}
 
       <Divider />
@@ -379,9 +378,8 @@ function ViewBooking({
         </Button>
 
         <Button
-          variant="light"
-          color="green"
-          leftSection={<BadgeCheck size={16} />}
+          variant="default"
+          leftSection={<BadgeCheck size={16} className="text-success" />}
           loading={attended.isPending}
           onClick={handleAttended}
           className="w-full sm:w-auto"
@@ -567,9 +565,11 @@ function MoveBookingForm({
 }
 
 function Field({ label, value }: { label: string; value: string }) {
+  // Tile (option B): a light fill with no border guides the eye field-by-field, and reads as read-only info —
+  // distinct from the bordered badge selects, which are editable.
   return (
-    <div>
-      <dt className="text-xs text-muted-400">{label}</dt>
+    <div className="rounded-lg bg-muted-50 px-3 py-2">
+      <dt className="text-xs text-muted-500">{label}</dt>
       <dd className="font-medium">{value}</dd>
     </div>
   );

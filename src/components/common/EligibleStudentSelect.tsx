@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Combobox, InputBase, Loader, useCombobox } from "@mantine/core";
+import { Combobox, InputBase, Loader, ScrollArea, useCombobox } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useEligibleStudents } from "@/hooks/scheduler";
 import { useT } from "@/lib/i18n";
@@ -97,11 +97,14 @@ export default function EligibleStudentSelect({ type, value, onChange, label, re
       </Combobox.Target>
 
       <Combobox.Dropdown>
+        {/* Combobox doesn't scroll on its own — cap height + ScrollArea so a long list can't run off-screen. */}
         <Combobox.Options>
-          {options}
-          {!options.length && (
-            <Combobox.Empty>{isFetching ? t("common.loading") : emptyMessage}</Combobox.Empty>
-          )}
+          <ScrollArea.Autosize mah={280} type="scroll">
+            {options}
+            {!options.length && (
+              <Combobox.Empty>{isFetching ? t("common.loading") : emptyMessage}</Combobox.Empty>
+            )}
+          </ScrollArea.Autosize>
         </Combobox.Options>
       </Combobox.Dropdown>
     </Combobox>
