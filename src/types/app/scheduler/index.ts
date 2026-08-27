@@ -116,8 +116,9 @@ export interface RescheduleTarget {
 export interface Booking {
   id: string;
   studentName: string;
-  /** REQ-052 — what staff actually call the child; falls back to `studentName` when absent. */
-  nickname?: string | null;
+  /** REQ-052 — what staff actually call the child; falls back to `studentName` when absent.
+   *  **Required** (TASK-187): the mapper always sets it, so an allow-list that forgets it is now a compile error. */
+  nickname: string | null;
   teacherId: string;
   subject: string;
   date: string; // YYYY-MM-DD
@@ -125,8 +126,12 @@ export interface Booking {
   endTime: string; // HH:mm
   bookingType: BookingType;
   status: BookingStatus;
-  /** อ้างถึงคอร์สแพ็คเกจ (ถ้ามี) สำหรับการนับโควตาการลา */
+  /** อ้างถึงคอร์สแพ็คเกจ (ถ้ามี) สำหรับการนับโควตาการลา
+   *  **Deliberately optional** (TASK-187): a trial / single / voucher booking has no course, so `undefined` is a
+   *  fact about the booking, not a mapper that forgot. */
   courseId?: string;
+  /** **Deliberately optional** (TASK-187): the mapper coalesces `null` → `undefined` and every reader treats
+   *  "no note" the same way; there is nothing for a required field to protect here. */
   note?: string;
   /** ปลายทางที่เสนอย้าย (เมื่อ status = PENDING_RESCHEDULE) */
   rescheduleTo?: RescheduleTarget;
@@ -135,10 +140,10 @@ export interface Booking {
   /** true = การจองใหม่ที่ยังรอช่องว่าง (ไม่แสดงในตารางจนกว่าของเดิมจะย้าย) */
   pendingSlot?: boolean;
   /** badge ที่ติดกับการจอง (type ละ ≤ 1 ค่า) — real API ส่งมาเสมอ (mapper coalesce เป็น []) */
-  badges?: BookingBadge[];
+  badges: BookingBadge[];
   /** REQ-063 — the captured discount (null when there is none). `value` is the human number: a percentage, or
    *  whole baht. Display-only here; the money itself is the ledger's. */
-  discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string; actor: string | null } | null;
+  discount: { kind: "PERCENT" | "BAHT"; value: number; reason: string; actor: string | null } | null;
   /** REQ-068 — who's bringing the child / logistics for THIS session. Not the status `note`. */
   attendeeNote?: string | null;
 }
@@ -278,8 +283,9 @@ export interface CoursePackageView extends CoursePackage {
 export const COURSE_STATUSES = ["ACTIVE", "COMPLETED", "EXPIRED", "CANCELLED"] as const;
 export type CourseStatus = (typeof COURSE_STATUSES)[number];
 
-/** REQ-036 — one predicate, so "is this course ended?" is answered the same way on every screen. */
-export const isCourseEnded = (c: { endedAt?: string | null } | null | undefined) => !!c?.endedAt;
+/* TASK-189 removed the last caller of `isCourseEnded`: lifecycle is the server's `status` field now, and a
+   second way to ask "is this over?" is exactly the duplication that made a cancelled course show a green badge.
+   Deleted rather than left for someone to find and reuse (TASK-187). */
 
 // ──────────── Per-entitlement plan (SPEC-028 / REQ-030 — TASK-099) ────────────
 // Synced 1:1 with the backend `getEntitlementPlan` / `applyPlanChange` / `getSlotAvailability`
@@ -303,9 +309,9 @@ export interface PlanSession {
   bookingType?: string;
   teacher: PlanSessionRef | null;
   subject: { id: string; name: string } | null;
-  /** REQ-068 / TASK-184 — this session's attendee note. Required so a future mapper can't drop it silently
-   *  (the fourth time that shape bit us was TASK-183). */
-  attendeeNote?: string | null;
+  /** REQ-068 / TASK-184 — this session's attendee note. **Required** (TASK-187), mirroring the BE's
+   *  `PlanSessionRow`: a mapper that drops it is a compile error, not a blank line on screen. */
+  attendeeNote: string | null;
 }
 
 /** REQ-036 — the three reasons a course may be ended early. **The contract; there is no fourth.** */

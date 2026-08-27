@@ -773,6 +773,8 @@ export const getSlotAvailability = async (
 
 /** Dry-run a plan change (TASK-114) — same body as /plan; returns the resulting plan (or throws the same
  *  typed refusal). preview == apply by construction (BE rolls the tx back). */
+/** The mock's preview rows are built from mock bookings, which now carry `attendeeNote` — TASK-187's required
+ *  field flows through rather than being re-defaulted here. */
 export const previewPlanChange = async (
   courseId: string,
   change: PlanChange,

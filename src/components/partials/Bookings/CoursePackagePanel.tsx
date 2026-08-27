@@ -6,6 +6,7 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban } from "lucide-react";
 import { useSetCourseAdminUnlock, useCoursePackages } from "@/hooks/scheduler";
 import { COURSE_STATUSES, type CourseStatus } from "@/types/app/scheduler";
+import { NO_TRUNCATE } from "@/components/common/BookingBadges";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
@@ -137,7 +138,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
         return (
           <Card key={c.id} padding="lg">
             <Stack gap="md">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-semibold">{c.studentName}</p>
                   <p className="text-xs text-muted-400">
@@ -154,22 +155,27 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                     "is it over": that second computation is exactly what let a cancelled course show a green
                     `ปกติ`. Quota state (leave-lock / special-unlock) is ORTHOGONAL and stays its own indicator —
                     a locked course is still ACTIVE — so the two are shown side by side, never collapsed. */}
-                <Group gap={6} wrap="nowrap">
+                {/* TASK-192 — at 375 these chips were squeezed onto the title's line and truncated to "AC…"/"LO…".
+                    They now WRAP as a group instead of competing for that line. Deliberately NOT fixed by merging
+                    the lock chip into the status (orthogonal — TASK-189) nor by going icon-only: a label has to be
+                    readable as text, not as colour or an icon alone (REQ-052 AC-8 / REQ-041). */}
+                <Group gap={6} wrap="wrap" className="shrink-0">
                   <Badge
                     color={COURSE_STATUS_COLOR[c.status]}
                     variant="light"
                     leftSection={c.status === "CANCELLED" ? <Ban size={13} /> : undefined}
+                    styles={NO_TRUNCATE}
                   >
                     {c.status === "CANCELLED" && c.endReason
                       ? t("course.endedWithReason", { reason: t(`endCourse.${c.endReason}`) })
                       : t(`course.status.${c.status}`)}
                   </Badge>
                   {c.leaveLocked ? (
-                    <Badge color="red" variant="light" leftSection={<Lock size={13} />}>
+                    <Badge color="red" variant="light" leftSection={<Lock size={13} />} styles={NO_TRUNCATE}>
                       {t("course.locked")}
                     </Badge>
                   ) : c.adminUnlocked ? (
-                    <Badge color="orange" variant="light">
+                    <Badge color="orange" variant="light" styles={NO_TRUNCATE}>
                       {t("course.specialUnlock")}
                     </Badge>
                   ) : null}

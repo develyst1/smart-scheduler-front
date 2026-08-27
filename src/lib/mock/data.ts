@@ -82,7 +82,16 @@ export const coursePackages: CoursePackage[] = [
   },
 ];
 
-export const bookings: Booking[] = [
+/**
+ * TASK-187 — the DTO-derived fields are now REQUIRED on `Booking` (an allow-list mapper that forgets one is a
+ * compile error). Fixtures fill them here, once, instead of repeating `nickname: null, badges: [], discount: null`
+ * on every row — so adding the next required field is one edit, not twenty, and the fixtures can't drift.
+ */
+const mockBooking = (
+  b: Omit<Booking, "nickname" | "badges" | "discount"> & Partial<Pick<Booking, "nickname" | "badges" | "discount">>,
+): Booking => ({ nickname: null, badges: [], discount: null, ...b });
+
+export const bookings: Booking[] = ([
   { id: "b1", studentName: "น้องพีพี", teacherId: "t1", subject: "คณิต", date: today, startTime: "10:00", endTime: "11:00", bookingType: "COURSE_PACKAGE", status: "CONFIRMED", courseId: "c1" },
   { id: "b2", studentName: "น้องโอ๊ค", teacherId: "t1", subject: "ฟิสิกส์", date: today, startTime: "13:00", endTime: "14:00", bookingType: "SINGLE_SESSION", status: "ATTENDED" },
   { id: "b3", studentName: "น้องเบล", teacherId: "t2", subject: "อังกฤษ", date: today, startTime: "11:00", endTime: "12:00", bookingType: "FIRST_TRIAL", status: "PENDING", note: "ทักมาทาง Line ขอทดลองเรียน" },
@@ -99,7 +108,7 @@ export const bookings: Booking[] = [
   { id: "b10", studentName: "น้องแทน", teacherId: "t2", subject: "อังกฤษ", date: dayjs().subtract(14, "day").format("YYYY-MM-DD"), startTime: "09:00", endTime: "10:00", bookingType: "SINGLE_SESSION", status: "ATTENDED" },
   { id: "b11", studentName: "น้องปุย", teacherId: "t4", subject: "คณิต", date: dayjs().subtract(1, "day").format("YYYY-MM-DD"), startTime: "15:00", endTime: "16:00", bookingType: "COURSE_PACKAGE", status: "ATTENDED", courseId: "c2" },
   { id: "b12", studentName: "น้องพีพี", teacherId: "t1", subject: "คณิต", date: dayjs().add(9, "week").format("YYYY-MM-DD"), startTime: "10:00", endTime: "11:00", bookingType: "COURSE_PACKAGE", status: "CONFIRMED", courseId: "c1" },
-];
+] as const).map((b) => mockBooking(b as Parameters<typeof mockBooking>[0]));
 
 let bookingSeq = bookings.length;
 export const nextBookingId = () => `b${++bookingSeq}`;

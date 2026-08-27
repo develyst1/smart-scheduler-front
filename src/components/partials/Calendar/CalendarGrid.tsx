@@ -8,6 +8,7 @@ import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
 import { useT } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import { BOOKING_TYPE_ICON, BOOKING_TYPE_VAR } from "@/components/common/BookingCellBody";
+import { useCellDisplay } from "@/lib/scheduler/cell-display";
 
 interface Props {
   teachers: TeacherView[];
@@ -100,6 +101,9 @@ function Row({
   onCreate: (teacherId: string, time: string) => void;
 }) {
   const t = useT();
+  // TASK-191 — the cells live HERE, so this is where the shared preference must be read. One Context, one state:
+  // the original bug was two independent `useState`s that could disagree.
+  const { display } = useCellDisplay();
   return (
     <>
       <div className="sticky left-0 z-10 flex items-start justify-end border-r border-t border-muted-100 bg-content1 p-2 pr-3 text-xs font-medium text-muted-500">
@@ -124,7 +128,8 @@ function Row({
                   {booking.nickname || booking.studentName}
                 </span>
                 {/* AC-4 — the day view keeps the FULL program name; only the week cell may shorten it. */}
-                <span className="text-xs text-muted-500">{booking.subject}</span>
+                {display.program && <span className="text-xs text-muted-500">{booking.subject}</span>}
+                {display.type && (
                 <span
                   className="flex items-center gap-1 text-[10px] uppercase tracking-wide"
                   style={{ color: `rgb(${BOOKING_TYPE_VAR[booking.bookingType]})` }}
@@ -135,13 +140,14 @@ function Row({
                   })()}
                   {t(`bookingType.${booking.bookingType}`)}
                 </span>
+                )}
                 {/* REQ-068 — the session note, where staff read "today". Absent ⇒ nothing (AC-5). */}
-                {booking.attendeeNote && (
+                {display.note && booking.attendeeNote && (
                   <span className="truncate text-[10px] italic text-muted-500" title={booking.attendeeNote}>
                     {booking.attendeeNote}
                   </span>
                 )}
-                {(booking.badges ?? []).length > 0 && (
+                {display.badge && (booking.badges ?? []).length > 0 && (
                   <span className="flex flex-wrap gap-1">
                     {(booking.badges ?? []).map((bd) => (
                       <span

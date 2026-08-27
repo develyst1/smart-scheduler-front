@@ -22,7 +22,9 @@ type Size = "sm" | "md";
 // Mantine Badge truncates its label with an ellipsis by default (root max-width:100% + label
 // overflow:hidden). In a table cell that collapses "PENDING" → "PEN…". Let the badge size to its
 // text so the full label always shows — the row scrolls instead of clipping.
-const NO_TRUNCATE = { root: { maxWidth: "none" }, label: { overflow: "visible" } } as const;
+/** Mantine `Badge` ellipsises its own label — FRONTEND-STANDARD §2 names this as a known trap. Exported so any
+ *  screen showing a chip whose text must stay readable can reuse the one fix (TASK-192). */
+export const NO_TRUNCATE = { root: { maxWidth: "none" }, label: { overflow: "visible" } } as const;
 
 // SPEC-037 §2 / TASK-129 item 7 — a per-status icon so status is NEVER signalled by colour alone
 // (three of these share `danger` red: NO_SHOW / PENDING_RESCHEDULE / CANCELLED). Label + colour + shape.

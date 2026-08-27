@@ -349,6 +349,11 @@ export const detectConflict = (
 
 export const createBooking = (input: CreateBookingInput) => {
   const newBooking: Booking = {
+    // TASK-187 — the DTO-derived fields are required now; a mock that omits one is a compile error, which is the
+    // whole point. Spread AFTER them so a caller-supplied value still wins.
+    nickname: null,
+    badges: [],
+    discount: null,
     id: nextBookingId(),
     ...input,
     endTime: endOf(input.startTime),
@@ -427,6 +432,9 @@ export const createCoursePackage = (input: {
   coursePackages.push(newCourse);
 
   const generated: Booking[] = Array.from({ length: input.size }, (_, i) => ({
+    nickname: null,
+    badges: [],
+    discount: null,
     id: nextBookingId(),
     studentName: input.studentName,
     teacherId: input.teacherId,
@@ -620,6 +628,7 @@ export const getEntitlementPlan = (id: string): Promise<EntitlementPlan> => {
       status: b.status as string,
       teacher: teacher ? { id: teacher.id, name: teacher.name, nickname: teacher.nickname } : null,
       subject: { id: "mock-subj", name: b.subject },
+      attendeeNote: b.attendeeNote ?? null,
     };
   });
   const liveEnd = rows.length ? rows[rows.length - 1].date : null;
@@ -660,6 +669,7 @@ export const previewPlanChange = (courseId: string, _change: PlanChange) => {
         bookingType: b.bookingType as string,
         teacher: teacher ? { id: teacher.id, name: teacher.name, nickname: teacher.nickname } : null,
         subject: { id: "mock-subj", name: b.subject },
+        attendeeNote: b.attendeeNote ?? null,
       };
     }),
     liveEndDate: rows.length ? rows[rows.length - 1].date : null,

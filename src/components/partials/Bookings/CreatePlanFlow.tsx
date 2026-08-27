@@ -152,6 +152,8 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
           status: s.absent ? "SICK_LEAVE" : s.makeup ? "EXTENDED" : "PENDING",
           teacher: s.teacher,
           subject: s.subject,
+          // A draft row has no booking yet, so it cannot carry a note — `null` is the fact, not a gap.
+          attendeeNote: null,
         })),
         liveEndDate: p.endDate ?? p.sessions.at(-1)?.date ?? null,
         summary: {

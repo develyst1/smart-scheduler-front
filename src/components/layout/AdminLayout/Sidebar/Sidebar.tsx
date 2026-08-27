@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarRange } from "lucide-react";
+import { buildStamp } from "@/lib/ui/build-stamp";
 import { useT } from "@/lib/i18n";
 import { NAV_ITEMS, APP_NAME } from "../AdminLayout.config";
 
@@ -33,7 +34,19 @@ function Brand({ collapsed }: { collapsed: boolean }) {
 
 function SidebarFooter() {
   const t = useT();
-  return <div className="px-5 py-4 text-xs text-muted-400">{t("brand.footer")}</div>;
+  // TASK-193 — the stamp sits with the existing footer: always present, never in the way of the calendar.
+  // `title` carries the full value for a QA screenshot even when the sidebar is narrow.
+  const stamp = buildStamp();
+  return (
+    <div className="px-5 py-4 text-xs text-muted-400">
+      <div>{t("brand.footer")}</div>
+      {stamp && (
+        <div className="mt-0.5 font-mono text-[10px] tabular-nums text-muted-300" title={stamp}>
+          {stamp}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function NavList({

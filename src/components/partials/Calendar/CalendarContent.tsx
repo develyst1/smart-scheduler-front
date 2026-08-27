@@ -12,6 +12,7 @@ import type { Booking } from "@/types/app/scheduler";
 import CalendarHeader, { type CalendarView } from "./CalendarHeader";
 import CalendarGrid from "./CalendarGrid";
 import CalendarWeekGrid from "./CalendarWeekGrid";
+import { CellDisplayProvider } from "@/lib/scheduler/cell-display";
 import BookingModal from "./Modal/BookingModal";
 
 export default function CalendarContent() {
@@ -89,6 +90,9 @@ export default function CalendarContent() {
   const loading = loadingTeachers || loadingCalendar;
 
   return (
+    // TASK-191 — the toggle (in the header) and the cells (in the grids) must read ONE state. Two independent
+    // hooks is what made a tick persist without re-rendering; the provider wraps both so it cannot recur.
+    <CellDisplayProvider>
     <div className="space-y-5">
       <CalendarHeader
         date={date}
@@ -140,5 +144,6 @@ export default function CalendarContent() {
         onOverbook={openOverbook}
       />
     </div>
+    </CellDisplayProvider>
   );
 }
