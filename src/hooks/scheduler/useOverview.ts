@@ -147,28 +147,10 @@ function buildOverview(scope: OverviewScope): OverviewData {
     };
   }).sort((a, b) => b.spend - a.spend);
 
-  const activityCounts = (min: number, max: number) =>
-    ACTIVITIES.map((a) => ({ key: a.key, label: a.label, count: intn(min, max) }));
-
-  // ── Customers by registration type (course/voucher/trial/single) ──
-  const existingByType: RegistrationTypeCount[] = [
-    { type: "COURSE_PACKAGE", count: intn(40, 90) },
-    { type: "VOUCHER", count: intn(15, 45) },
-    { type: "FIRST_TRIAL", count: intn(5, 25) },
-    { type: "SINGLE_SESSION", count: intn(8, 30) },
-  ];
-  const existingTotal = existingByType.reduce((s, x) => s + x.count, 0);
+  // ── EXISTING COURSE: active entitlements + win-back ──
+  const activeCourse = intn(40, 90);
+  const activeVoucher = intn(15, 45);
   const existingCourseSize = [4, 6, 10].map((size) => ({ size, count: intn(8, 40) }));
-
-  const newByType: RegistrationTypeCount[] = [
-    { type: "COURSE_PACKAGE", count: intn(3, 12) },
-    { type: "VOUCHER", count: intn(1, 8) },
-    { type: "FIRST_TRIAL", count: intn(2, 10) },
-    { type: "SINGLE_SESSION", count: intn(1, 7) },
-  ];
-  const newEnrolled = newByType.reduce((s, x) => s + x.count, 0);
-  const registeredNotPurchased = intn(2, 12);
-  const newCourseSize = [4, 6, 10].map((size) => ({ size, count: intn(1, 8) }));
 
   // req 4: activity counts per registration type (type × activity matrix).
   const REG_TYPES: RegistrationTypeCount["type"][] = ["COURSE_PACKAGE", "VOUCHER", "FIRST_TRIAL", "SINGLE_SESSION"];
@@ -184,16 +166,16 @@ function buildOverview(scope: OverviewScope): OverviewData {
     operations: { byTeacher, byBookingType, byBadge },
     business: {
       existingCustomers: {
-        total: existingTotal,
-        byType: existingByType,
+        activeCourse,
+        activeVoucher,
+        total: activeCourse + activeVoucher,
+        previous3M: intn(8, 30),
         courseSizeSplit: existingCourseSize,
       },
       newCustomers: {
-        total: newEnrolled + registeredNotPurchased,
-        registeredNotPurchased,
-        byType: newByType,
-        courseSizeSplit: newCourseSize,
-        byActivity: breakdown(activityCounts(1, 8), intn(0, 2)),
+        newFirstTrial: intn(3, 14),
+        newCourse: intn(2, 10),
+        renewing: intn(4, 16),
       },
       typeActivityMatrix,
       activityShare: breakdown(

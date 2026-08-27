@@ -68,29 +68,38 @@ export interface RegistrationTypeCount {
   count: number;
 }
 
-/** Course package customers split by size (sub-detail of the COURSE_PACKAGE type). */
+/** Active courses split by package size (4/6/10). */
 export interface CourseSizeSlice {
   size: number; // 4 | 6 | 10
   count: number;
 }
 
-/** Existing customers, broken down by registration type (SOM req point 1). */
+/**
+ * EXISTING COURSE (SOM timeline). Counts of ACTIVE (not-expired) ENTITLEMENTS, not distinct customers:
+ *   - activeCourse : # active courses (all not-expired, even ones with no schedule)
+ *   - activeVoucher: # active (not-expired) vouchers
+ *   - total        : activeCourse + activeVoucher
+ *   - previous3M   : customers who studied within the last 3 months but are NOT active now
+ *                    (win-back / "potential bring back") — this is a headcount, not an entitlement.
+ */
 export interface ExistingCustomers {
+  activeCourse: number;
+  activeVoucher: number;
   total: number;
-  byType: RegistrationTypeCount[]; // course / voucher / trial / single-session
-  courseSizeSplit: CourseSizeSlice[]; // sub-detail of the course type (4/6/10)
+  previous3M: number;
+  courseSizeSplit: CourseSizeSlice[]; // active courses split by size (4/6/10)
 }
 
 /**
- * New customers for the month (SOM req point 2). Split by the registration type they enrolled in,
- * plus the count of brand-new members who signed up but have NOT purchased anything yet.
+ * NEW VS REMAINING (SOM timeline). Three period-filterable headcounts:
+ *   - newFirstTrial: brand-new walk-ins doing their first 1-hr trial
+ *   - newCourse    : new customers who open a course as their very first course
+ *   - renewing     : customers whose course finished and who renew into a new course
  */
 export interface NewCustomers {
-  total: number; // all new customers this month
-  registeredNotPurchased: number; // "สมัครเข้ามาใหม่" — new members, no purchase yet
-  byType: RegistrationTypeCount[]; // enrolled by registration type (course/voucher/trial/single)
-  courseSizeSplit: CourseSizeSlice[]; // course sub-detail among the new (4/6/10)
-  byActivity: Breakdown; // new customers split by activity
+  newFirstTrial: number;
+  newCourse: number;
+  renewing: number;
 }
 
 /** One activity's money figures (SOM req: sales & avg-per-course "แต่ละกิจกรรม"). */
