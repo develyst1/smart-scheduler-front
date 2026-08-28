@@ -256,6 +256,11 @@ export interface CoursePackage {
   /** REQ-036 — carried here as well so `toCourseView`'s spread yields a complete view offline. */
   endedAt?: string | null;
   endReason?: EndCourseReason | null;
+  /** TASK-198/199 — set while the course is PAUSED (reversible; cleared on resume). Carried on the offline
+   *  shape too, so `toCourseView` can report DROPPED without casting its own input.
+   */
+  droppedAt?: string | null;
+  dropReason?: string | null;
 }
 
 export interface CoursePackageView extends CoursePackage {

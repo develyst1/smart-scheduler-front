@@ -29,7 +29,14 @@ export function toCourseView(course: CoursePackage): CoursePackageView {
     // TASK-189 — lifecycle is the SERVER's word. Offline (no server) the only honest local answer is the one fact
     // this shape actually carries: cancelled or not. Never re-derive COMPLETED/EXPIRED here — that second
     // computation is the bug this task removes.
-    status: course.endedAt ? "CANCELLED" : "ACTIVE",
+    // Precedence mirrors the server's (CANCELLED → DROPPED → …). Offline still does NOT guess
+    // COMPLETED/EXPIRED — those need the clock and real usage, and inventing them here is the
+    // re-derivation TASK-189 removed.
+    status: course.endedAt
+      ? "CANCELLED"
+      : course.droppedAt
+        ? "DROPPED"
+        : "ACTIVE",
   };
 }
 

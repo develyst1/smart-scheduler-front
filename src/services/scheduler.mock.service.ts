@@ -14,6 +14,7 @@ import type {
   Booking,
   BookingType,
   BookingStatus,
+  CourseStatus,
   CoursePackageView,
   DailyReport,
   EligibleStudent,
@@ -381,14 +382,34 @@ export const moveBooking = (
   return delay(clone(b));
 };
 
-export const getCoursePackages = (query: { q?: string; page?: number; limit?: number } = {}) => {
+/**
+ * Mirrors `listCoursesPaged` (TASK-188/205): the status filter is applied server-side, and `counts` are taken
+ * over the SEARCH-filtered set **before** the status filter — so the chips say what switching would find.
+ *
+ * 🔴 Counts are derived from the SAME `status` each row reports. TASK-204's bug was a hand-written projection
+ * that dropped `droppedAt`, so counts and rows disagreed; deriving both from one value means this mock cannot
+ * reproduce that split. That property is the part worth copying, not the numbers.
+ */
+export const getCoursePackages = (query: { q?: string; page?: number; limit?: number; status?: string } = {}) => {
   const q = query.q?.trim().toLowerCase();
   const page = query.page ?? 1;
   const limit = query.limit ?? 12;
-  const filtered = coursePackages
+  const searched = coursePackages
     .map((c) => toCourseView(clone(c)))
     .filter((c) => (q ? c.studentName.toLowerCase().includes(q) : true));
-  return delay({ items: filtered.slice((page - 1) * limit, page * limit), page, limit, total: filtered.length });
+
+  // Typed as the real contract so the mock cannot drift from the five the FE renders.
+  const counts: Record<CourseStatus, number> = { ACTIVE: 0, DROPPED: 0, COMPLETED: 0, EXPIRED: 0, CANCELLED: 0 };
+  for (const c of searched) counts[c.status] += 1;
+
+  const matching = query.status ? searched.filter((c) => c.status === query.status) : searched;
+  return delay({
+    items: matching.slice((page - 1) * limit, page * limit),
+    page,
+    limit,
+    total: matching.length,
+    counts,
+  });
 };
 
 export const setCourseAdminUnlock = (id: string, unlocked: boolean) => {
@@ -806,11 +827,27 @@ export const endCourse = (courseId: string, input: { reason: string; note?: stri
   delay({ id: courseId, ended: true, reason: input.reason });
 
 /** TASK-199 — offline stand-ins so the drop/resume dialogs are exercisable without a server. */
-export const dropCourse = (courseId: string, input: { reason?: string }) =>
-  delay({ id: courseId, dropped: true, reason: input.reason ?? null });
+export const dropCourse = (courseId: string, input: { reason?: string }) => {
+  // Mutate the fixture, so a drop actually moves a course between buckets offline. A mock that returned
+  // success without changing state would make the counts LOOK right while proving nothing — the kind of
+  // evidence that let TASK-204 sit unnoticed.
+  const c = coursePackages.find((x) => x.id === courseId) as any;
+  if (c) {
+    c.droppedAt = new Date().toISOString();
+    c.dropReason = input.reason ?? null;
+  }
+  return delay({ id: courseId, dropped: true, reason: input.reason ?? null });
+};
 
-export const resumeCourse = (courseId: string, input: { expiryDate: string }) =>
-  delay({ id: courseId, dropped: false, expiryDate: input.expiryDate });
+export const resumeCourse = (courseId: string, input: { expiryDate: string }) => {
+  const c = coursePackages.find((x) => x.id === courseId) as any;
+  if (c) {
+    c.droppedAt = null;
+    c.dropReason = null;
+    c.expiryDate = input.expiryDate;
+  }
+  return delay({ id: courseId, dropped: false, expiryDate: input.expiryDate });
+};
 
 /** TASK-202 — offline stand-in; mirrors the real shape incl. a skip so the skip path is exercisable. */
 export const confirmCourse = (courseId: string) =>
