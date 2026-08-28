@@ -30,6 +30,7 @@ import {
   useAddExtraSession,
   useApplyPlanChange,
   useCancelBooking,
+  useConfirmCourse,
   useSetAttendeeNote,
   useEntitlementPlan,
   useMoveBooking,
@@ -108,6 +109,10 @@ export default function PlanModal({
   const [endOpen, setEndOpen] = useState(false);
   // TASK-199 — pause / resume. One dialog, two modes; `null` = closed.
   const [dropMode, setDropMode] = useState<"drop" | "resume" | null>(null);
+  // TASK-202 — confirm every PENDING session at once. `skips` is kept in state because a skip is a fact the
+  // admin must see: "10 confirmed" when 9 were is worse than 9 and the reason.
+  const confirmCourseMut = useConfirmCourse();
+  const [skips, setSkips] = useState<{ id: string; reason?: string }[]>([]);
   const previewMut = usePreviewPlanChange();
   const applyMut = useApplyPlanChange();
 
@@ -119,6 +124,7 @@ export default function PlanModal({
       setPending(null);
       setEndOpen(false);
       setDropMode(null);
+      setSkips([]);
     }
   }, [opened]);
 
@@ -178,6 +184,7 @@ export default function PlanModal({
   const courseEnded =
     courseStatus === "CANCELLED" || (plan?.summary.kind === "course" && !!plan.summary.endedAt);
   const courseWritable = !courseEnded && !courseDropped;
+  const pendingCount = sessions.filter((s) => s.status === "PENDING").length;
 
   return (
     <Modal
@@ -199,6 +206,20 @@ export default function PlanModal({
       ) : !plan ? null : (
         <Stack gap="md">
           <SummaryBar plan={plan} />
+
+          {/* Every skip, with the SERVER's reason — the point of the endpoint returning per-session results. */}
+          {skips.length > 0 && (
+            <Alert color="orange" icon={<AlertTriangle size={16} />} variant="light" withCloseButton onClose={() => setSkips([])}>
+              <Stack gap={2}>
+                <Text fz="sm" fw={600}>{t("plan.confirmCourseSkipped", { n: skips.length })}</Text>
+                {skips.map((s) => (
+                  <Text key={s.id} fz="sm">
+                    {s.reason ?? t("plan.genericError")}
+                  </Text>
+                ))}
+              </Stack>
+            </Alert>
+          )}
 
           {error && (
             <Alert color="red" icon={<AlertTriangle size={16} />} withCloseButton onClose={() => setError(null)}>
@@ -308,6 +329,33 @@ export default function PlanModal({
               <Group gap="xs">
                 {/* REQ-036 — destructive and irreversible, so it is coloured as such, sits apart from the
                     add-a-session actions, and opens a SERVER-powered confirm rather than acting on the click. */}
+                {/* TASK-202 — only meaningful while something is still PENDING, so it is not rendered otherwise:
+                    a button whose only outcome is "0 confirmed" teaches staff to ignore it. */}
+                {pendingCount > 0 && (
+                  <Button
+                    variant="light"
+                    color="blue"
+                    size="xs"
+                    leftSection={<Check size={14} />}
+                    loading={confirmCourseMut.isPending}
+                    onClick={async () => {
+                      setError(null);
+                      setSkips([]);
+                      try {
+                        const res = await confirmCourseMut.mutateAsync(plan.id);
+                        setSkips(res.results.filter((r) => r.outcome === "skipped"));
+                        notify({
+                          title: t("plan.confirmCourseDone", { n: res.confirmed }),
+                          color: res.skipped > 0 ? "default" : "success",
+                        });
+                      } catch (e) {
+                        setError(e instanceof ApiClientError ? e.message : t("plan.genericError"));
+                      }
+                    }}
+                  >
+                    {t("plan.confirmCourse", { n: pendingCount })}
+                  </Button>
+                )}
                 {/* TASK-199 — a PAUSE sits beside the cancel but is visibly not it: amber, not red, because it
                     keeps the course, its slot and its size and can be undone. Cancel stays the grave one. */}
                 <Button

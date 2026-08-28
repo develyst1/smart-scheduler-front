@@ -54,6 +54,7 @@ import {
   endCourse,
   dropCourse,
   resumeCourse,
+  confirmCourse,
   type CreateBookingInput,
   type CreateCourseInput,
   type CoursesQuery,
@@ -299,6 +300,15 @@ export const useResumeCourse = () => {
   return useMutation({
     mutationFn: ({ courseId, expiryDate }: { courseId: string; expiryDate: string }) =>
       resumeCourse(courseId, { expiryDate }),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/** TASK-202 — confirm a whole course. Invalidates everything: statuses, the calendar and the counts all move. */
+export const useConfirmCourse = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (courseId: string) => confirmCourse(courseId),
     onSuccess: () => invalidateAll(qc),
   });
 };

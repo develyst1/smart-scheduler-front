@@ -277,6 +277,16 @@ export interface CoursePackageView extends CoursePackage {
  *  filters on this; it does **not** compute it. */
 /** Server precedence is CANCELLED → DROPPED → COMPLETED → EXPIRED → ACTIVE; this list is display order
  *  (what staff look for first), which is why it is not simply the same sequence. */
+/** `POST /courses/:id/confirm` — TASK-201. Every PENDING session in one call. `results` carries a per-session
+ *  outcome with the server's own refusal text, so a skip (e.g. freelance over-budget) can be shown as the reason it
+ *  was, not hidden behind a count. */
+export interface ConfirmCourseResult {
+  confirmed: number;
+  skipped: number;
+  alreadyConfirmed: number;
+  results: { id: string; outcome: "confirmed" | "skipped"; reason?: string }[];
+}
+
 export const COURSE_STATUSES = ["ACTIVE", "DROPPED", "COMPLETED", "EXPIRED", "CANCELLED"] as const;
 export type CourseStatus = (typeof COURSE_STATUSES)[number];
 

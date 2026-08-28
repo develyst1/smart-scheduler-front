@@ -55,7 +55,13 @@ import type {
   VoucherSummary,
   VouchersResponse,
 } from "@/types/api/contract";
-import type { CourseStatus, EndCoursePreview, EndCourseReason, PackageSize } from "@/types/app/scheduler";
+import type {
+  ConfirmCourseResult,
+  CourseStatus,
+  EndCoursePreview,
+  EndCourseReason,
+  PackageSize,
+} from "@/types/app/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import * as mock from "./scheduler.mock.service";
 
@@ -860,6 +866,19 @@ export const dropCourse = async (courseId: string, input: { reason?: string }) =
 export const resumeCourse = async (courseId: string, input: { expiryDate: string }) => {
   if (useMock) return mock.resumeCourse(courseId, input);
   const { data } = await api.post(`/courses/${courseId}/resume`, { expiryDate: input.expiryDate });
+  return data;
+};
+
+/**
+ * TASK-201/202 — confirm every PENDING session of a course in one call.
+ *
+ * The **LINE summary is the server's job** (one message for the course, not one per session); this only calls the
+ * endpoint. The response's per-session `results` matter: a skip is a fact the admin has to see, because being told
+ * "10 confirmed" when 9 were is worse than being told 9 and why.
+ */
+export const confirmCourse = async (courseId: string): Promise<ConfirmCourseResult> => {
+  if (useMock) return mock.confirmCourse(courseId);
+  const { data } = await api.post<ConfirmCourseResult>(`/courses/${courseId}/confirm`, {});
   return data;
 };
 

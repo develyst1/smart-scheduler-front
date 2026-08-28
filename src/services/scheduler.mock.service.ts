@@ -811,3 +811,7 @@ export const dropCourse = (courseId: string, input: { reason?: string }) =>
 
 export const resumeCourse = (courseId: string, input: { expiryDate: string }) =>
   delay({ id: courseId, dropped: false, expiryDate: input.expiryDate });
+
+/** TASK-202 — offline stand-in; mirrors the real shape incl. a skip so the skip path is exercisable. */
+export const confirmCourse = (courseId: string) =>
+  delay({ confirmed: 3, skipped: 0, alreadyConfirmed: 1, results: [] });
