@@ -52,6 +52,8 @@ import {
   setAttendeeNote,
   previewEndCourse,
   endCourse,
+  dropCourse,
+  resumeCourse,
   type CreateBookingInput,
   type CreateCourseInput,
   type CoursesQuery,
@@ -277,6 +279,26 @@ export const useEndCourse = () => {
   return useMutation({
     mutationFn: ({ courseId, reason, note }: { courseId: string; reason: EndCourseReason; note?: string }) =>
       endCourse(courseId, { reason, note }),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/** TASK-199 — pause a course. Invalidates everything: the calendar, the plan and the status counts all change. */
+export const useDropCourse = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, reason }: { courseId: string; reason?: string }) =>
+      dropCourse(courseId, { reason }),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/** TASK-199 — bring it back on its own slot under a NEW expiry (the server requires the date). */
+export const useResumeCourse = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, expiryDate }: { courseId: string; expiryDate: string }) =>
+      resumeCourse(courseId, { expiryDate }),
     onSuccess: () => invalidateAll(qc),
   });
 };

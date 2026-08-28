@@ -275,7 +275,9 @@ export interface CoursePackageView extends CoursePackage {
 
 /** SPEC-064 / TASK-188 — the four lifecycle states, in the server's own precedence order. The FE renders and
  *  filters on this; it does **not** compute it. */
-export const COURSE_STATUSES = ["ACTIVE", "COMPLETED", "EXPIRED", "CANCELLED"] as const;
+/** Server precedence is CANCELLED → DROPPED → COMPLETED → EXPIRED → ACTIVE; this list is display order
+ *  (what staff look for first), which is why it is not simply the same sequence. */
+export const COURSE_STATUSES = ["ACTIVE", "DROPPED", "COMPLETED", "EXPIRED", "CANCELLED"] as const;
 export type CourseStatus = (typeof COURSE_STATUSES)[number];
 
 /** REQ-036 — one predicate, so "is this course ended?" is answered the same way on every screen. */
@@ -334,6 +336,9 @@ export interface CoursePlanSummary {
    *  "never started" just because its live sessions are gone. */
   endedAt?: string | null;
   endReason?: EndCourseReason | null;
+  /** TASK-188/199 — the SAME server lifecycle the card badge renders. The plan reads it rather than deriving
+   *  "is this course writable?" a second way, which is the duplication TASK-189 removed. */
+  status?: CourseStatus;
 }
 
 export interface VoucherPlanSummary {

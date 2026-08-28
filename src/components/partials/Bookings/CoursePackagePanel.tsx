@@ -17,6 +17,9 @@ import type { CoursePackageView } from "@/types/app/scheduler";
 /** One place mapping lifecycle → colour, so the four states can't drift apart across screens. */
 const COURSE_STATUS_COLOR: Record<CourseStatus, string> = {
   ACTIVE: "green",
+  // A pause is not a failure and not an ending — amber reads as "on hold", distinct from CANCELLED's red and
+  // EXPIRED's grey, so the four existing states keep their meanings.
+  DROPPED: "yellow",
   COMPLETED: "blue",
   EXPIRED: "gray",
   CANCELLED: "red",

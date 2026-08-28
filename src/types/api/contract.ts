@@ -84,7 +84,7 @@ export interface TeacherDTO {
 }
 
 /** SPEC-064 / TASK-188 — server-computed lifecycle. Mirrored from the BE contract; never re-derived here. */
-export type CourseStatus = "CANCELLED" | "COMPLETED" | "EXPIRED" | "ACTIVE";
+export type CourseStatus = "CANCELLED" | "DROPPED" | "COMPLETED" | "EXPIRED" | "ACTIVE";
 
 export interface CourseSummary {
   id: string;

@@ -18,7 +18,7 @@ import {
   Text,
 } from "@mantine/core";
 import { Textarea, Tooltip } from "@mantine/core";
-import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, Pencil, Ticket, UserMinus, X } from "lucide-react";
+import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Ticket, UserMinus, X } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
 import { formatDateDisplay } from "@/lib/ui/format";
@@ -48,6 +48,7 @@ import {
 } from "@/types/app/scheduler";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 import EndCourseDialog from "./EndCourseDialog";
+import DropResumeDialog from "./DropResumeDialog";
 import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
 
 /** PENDING / CONFIRMED / EXTENDED — a live session that can be plainly cancelled (re-owes, no reason). */
@@ -105,6 +106,8 @@ export default function PlanModal({
   const [draft, setDraft] = useState<PlanSession[]>([]);
   // REQ-036 — ending the course lives on the course's OWN plan, so it can only ever act on this one course.
   const [endOpen, setEndOpen] = useState(false);
+  // TASK-199 — pause / resume. One dialog, two modes; `null` = closed.
+  const [dropMode, setDropMode] = useState<"drop" | "resume" | null>(null);
   const previewMut = usePreviewPlanChange();
   const applyMut = useApplyPlanChange();
 
@@ -115,6 +118,7 @@ export default function PlanModal({
       setCancelTarget(null);
       setPending(null);
       setEndOpen(false);
+      setDropMode(null);
     }
   }, [opened]);
 
@@ -167,7 +171,13 @@ export default function PlanModal({
     }
   };
   const insertable = plan?.insertable !== false; // undefined (voucher/create) → allow; explicit false → disable
-  const courseEnded = plan?.summary.kind === "course" && !!plan.summary.endedAt;
+  const courseStatus = plan?.summary.kind === "course" ? plan.summary.status : undefined;
+  // TASK-199 — a PAUSED course is as unwritable as a cancelled one, but it is not over: it gets a resume action
+  // instead of nothing. Both read the server's status; neither re-derives "is it over" (TASK-189's rule).
+  const courseDropped = courseStatus === "DROPPED";
+  const courseEnded =
+    courseStatus === "CANCELLED" || (plan?.summary.kind === "course" && !!plan.summary.endedAt);
+  const courseWritable = !courseEnded && !courseDropped;
 
   return (
     <Modal
@@ -199,7 +209,7 @@ export default function PlanModal({
           <SessionTable
             sessions={sessions}
             onEdit={
-              courseEnded
+              !courseWritable
                 ? undefined
                 : (session) => {
                     setError(null);
@@ -267,7 +277,30 @@ export default function PlanModal({
             </Text>
           )}
 
-          {isCourse && !isCreate && !courseEnded && (
+          {/* A paused course offers exactly one action: bring it back. Everything that would write to the
+              schedule stays hidden — the server refuses it anyway (COURSE_DROPPED), so offering it would only
+              hand staff a button that 409s. */}
+          {isCourse && !isCreate && courseDropped && (
+            <Group justify="space-between" wrap="wrap" gap="xs">
+              <Text fz="sm" c="dimmed">
+                {t("course.droppedNoWrites")}
+              </Text>
+              <Button
+                variant="light"
+                color="green"
+                size="xs"
+                leftSection={<PlayCircle size={14} />}
+                onClick={() => {
+                  setError(null);
+                  setDropMode("resume");
+                }}
+              >
+                {t("endCourse.resume")}
+              </Button>
+            </Group>
+          )}
+
+          {isCourse && !isCreate && courseWritable && (
             <Group justify="space-between" wrap="wrap" gap="xs">
               <Text fz="xs" c="dimmed">
                 {t("plan.owedHint", { n: (plan.summary.kind === "course" ? plan.summary.owedCount : 0) })}
@@ -275,6 +308,20 @@ export default function PlanModal({
               <Group gap="xs">
                 {/* REQ-036 — destructive and irreversible, so it is coloured as such, sits apart from the
                     add-a-session actions, and opens a SERVER-powered confirm rather than acting on the click. */}
+                {/* TASK-199 — a PAUSE sits beside the cancel but is visibly not it: amber, not red, because it
+                    keeps the course, its slot and its size and can be undone. Cancel stays the grave one. */}
+                <Button
+                  variant="light"
+                  color="yellow"
+                  size="xs"
+                  leftSection={<PauseCircle size={14} />}
+                  onClick={() => {
+                    setError(null);
+                    setDropMode("drop");
+                  }}
+                >
+                  {t("endCourse.drop")}
+                </Button>
                 <Button
                   variant="light"
                   color="red"
@@ -386,6 +433,19 @@ export default function PlanModal({
         courseId={isCourse && !isCreate ? (plan?.id ?? null) : null}
         onClose={() => setEndOpen(false)}
         onEnded={onClose}
+      />
+
+      {/* The sentence uses the plan's OWN live-session count — there is no `/drop/preview`, and inventing a
+          number here would be worse than using the one already on screen. */}
+      <DropResumeDialog
+        opened={dropMode !== null}
+        mode={dropMode ?? "drop"}
+        courseId={isCourse && !isCreate ? (plan?.id ?? null) : null}
+        program={plan?.sessions[0]?.subject?.name ?? null}
+        student={plan?.student?.nickname || plan?.student?.name || null}
+        remaining={liveSessions.length}
+        onClose={() => setDropMode(null)}
+        onDone={onClose}
       />
     </Modal>
   );

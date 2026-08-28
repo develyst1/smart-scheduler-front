@@ -46,6 +46,19 @@ const en = {
   // REQ-036 / TASK-182 — ending a course early. The confirm sentence is REQ-036's, and the {n} in it comes
   // from the SERVER preview, never a client re-count (R2).
   endCourse: {
+    // TASK-199 — pause / resume. A pause keeps the course, its slot and its size; only the schedule stops.
+    drop: "Pause course",
+    dropTitle: "Pause this course?",
+    dropLine: "Pause {program} for {student} — the remaining {n} sessions come off the schedule. The course keeps its slot and can be resumed.",
+    dropReason: "Reason (optional)",
+    dropConfirm: "Pause the course",
+    dropDone: "Course paused",
+    resume: "Resume course",
+    resumeTitle: "Resume this course?",
+    resumeLine: "{program} for {student} returns on its usual slot. Choose the new expiry date — the pause has eaten into the old one.",
+    resumeExpiry: "New expiry date",
+    resumeConfirm: "Resume the course",
+    resumeDone: "Course resumed",
     action: "Cancel course",
     title: "Cancel this course?",
     confirmLine: "Cancel the {program} course for {student} — this removes the {n} remaining sessions. It cannot be undone.",
@@ -405,6 +418,7 @@ const en = {
     // TASK-189 — the four SERVER-computed lifecycle states. The badge and the filter both read these.
     status: {
       ACTIVE: "Active",
+      DROPPED: "Paused",
       COMPLETED: "Completed",
       EXPIRED: "Expired",
       CANCELLED: "Cancelled",
@@ -413,6 +427,7 @@ const en = {
     endedWithReason: "Cancelled — {reason}",
     endedPlanHeader: "Cancelled — {reason}",
     endedNoWrites: "This course was cancelled, so sessions can no longer be added or changed.",
+    droppedNoWrites: "This course is paused — resume it to change the schedule.",
     sessionsUnit: "sessions",
     leaveQuota: "Leave quota",
     leftN: "{n} left",
@@ -976,6 +991,18 @@ const th: typeof en = {
   },
 
   endCourse: {
+    drop: "พักคอร์ส",
+    dropTitle: "พักคอร์สนี้?",
+    dropLine: "พักคอร์ส {program} ของ {student} — คาบที่เหลือ {n} คาบจะถูกนำออกจากตาราง คอร์สยังเก็บช่วงเวลาเดิมไว้ และกลับมาเรียนได้",
+    dropReason: "เหตุผล (ไม่บังคับ)",
+    dropConfirm: "พักคอร์ส",
+    dropDone: "พักคอร์สแล้ว",
+    resume: "กลับมาเรียน",
+    resumeTitle: "ให้คอร์สนี้กลับมาเรียน?",
+    resumeLine: "{program} ของ {student} จะกลับมาที่ช่วงเวลาเดิม กรุณาเลือกวันหมดอายุใหม่ เพราะช่วงที่พักไปกินเวลาของเดิมไปแล้ว",
+    resumeExpiry: "วันหมดอายุใหม่",
+    resumeConfirm: "กลับมาเรียน",
+    resumeDone: "กลับมาเรียนแล้ว",
     action: "ยกเลิกคอร์ส",
     title: "ยกเลิกคอร์สนี้?",
     confirmLine: "ยกเลิกคอร์ส {program} ของ {student} — จะลบคาบที่เหลือ {n} คาบ ทำแล้วย้อนกลับไม่ได้",
@@ -1323,6 +1350,7 @@ const th: typeof en = {
     ended: "ยกเลิกแล้ว",
     status: {
       ACTIVE: "ปกติ",
+      DROPPED: "พักคอร์ส",
       COMPLETED: "จบแล้ว",
       EXPIRED: "หมดอายุ",
       CANCELLED: "ยกเลิกแล้ว",
@@ -1331,6 +1359,7 @@ const th: typeof en = {
     endedWithReason: "ยกเลิกแล้ว — {reason}",
     endedPlanHeader: "ยกเลิกแล้ว — {reason}",
     endedNoWrites: "คอร์สนี้ถูกยกเลิกแล้ว จึงเพิ่มหรือแก้คาบไม่ได้",
+    droppedNoWrites: "คอร์สนี้กำลังพักอยู่ — กดกลับมาเรียนก่อนจึงจะแก้ตารางได้",
     sessionsUnit: "ครั้ง",
     leaveQuota: "สิทธิ์การลา",
     leftN: "เหลือ {n}",

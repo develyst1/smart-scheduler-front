@@ -841,4 +841,26 @@ export const endCourse = async (courseId: string, input: { reason: EndCourseReas
   return data;
 };
 
+/**
+ * TASK-198/199 — **pause** a course, and bring it back.
+ *
+ * Drop is not a cancel: the sessions come off the schedule but the course keeps its `size`, its slot
+ * (`weekday`/`startTime`) and its history, and `resume` rebuilds on that same slot. There is deliberately **no
+ * `/drop/preview`** on the BE, so the dialog states what will happen from the plan it already has rather than
+ * inventing a count of its own.
+ */
+export const dropCourse = async (courseId: string, input: { reason?: string }) => {
+  if (useMock) return mock.dropCourse(courseId, input);
+  const { data } = await api.post(`/courses/${courseId}/drop`, { reason: input.reason });
+  return data;
+};
+
+/** `expiryDate` is **required** by the server: a pause eats into the old window, so resuming without a new one
+ *  would silently leave the family short. The form asks for it rather than defaulting one. */
+export const resumeCourse = async (courseId: string, input: { expiryDate: string }) => {
+  if (useMock) return mock.resumeCourse(courseId, input);
+  const { data } = await api.post(`/courses/${courseId}/resume`, { expiryDate: input.expiryDate });
+  return data;
+};
+
 export { DEFAULT_TEACHER_TYPE_ORDER };

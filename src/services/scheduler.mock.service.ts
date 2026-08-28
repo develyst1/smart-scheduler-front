@@ -804,3 +804,10 @@ export const previewEndCourse = (courseId: string) =>
 
 export const endCourse = (courseId: string, input: { reason: string; note?: string }) =>
   delay({ id: courseId, ended: true, reason: input.reason });
+
+/** TASK-199 — offline stand-ins so the drop/resume dialogs are exercisable without a server. */
+export const dropCourse = (courseId: string, input: { reason?: string }) =>
+  delay({ id: courseId, dropped: true, reason: input.reason ?? null });
+
+export const resumeCourse = (courseId: string, input: { expiryDate: string }) =>
+  delay({ id: courseId, dropped: false, expiryDate: input.expiryDate });
