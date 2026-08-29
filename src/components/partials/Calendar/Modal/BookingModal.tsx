@@ -281,11 +281,18 @@ function ViewBooking({
   // จองทับได้เฉพาะช่องที่นักเรียนเดิม "ลา" เท่านั้น (UC-004)
   const canOverbook = booking.status === "SICK_LEAVE";
   const canMove = MOVABLE_STATUSES.includes(booking.status);
-  // REQ-074 — cancel-with-reason applies to the two types the REQ names (1HR / voucher). A course session is
-  // cancelled from its PLAN (TASK-105), where the re-owe/make-up consequence is visible; offering it here too
-  // would be a second door to a different behaviour.
+  // REQ-074 + TASK-220 — cancel-with-reason covers the three NON-course types: 1HR, voucher and 1st Trial. A
+  // course session is still cancelled from its PLAN (TASK-105), where the re-owe/make-up consequence is visible;
+  // offering it here too would be a second door to a different behaviour.
+  //
+  // ⛔ This line MUST ship with Jason's BE line (TASK-220): the dialog forces a reason, but the BE only STORES
+  // one for the types in `REASON_ENUM_REQUIRED`. Shipping the FE alone would make staff pick a reason the server
+  // silently discards — worse than not asking, because the record would look complete and be empty.
   const canCancelWithReason =
-    (booking.bookingType === "SINGLE_SESSION" || booking.bookingType === "VOUCHER") &&
+    (booking.bookingType === "SINGLE_SESSION" ||
+      booking.bookingType === "VOUCHER" ||
+      booking.bookingType === "FIRST_TRIAL") &&
+    booking.status !== "CANCELLED";
     booking.status !== "CANCELLED";
 
   return (
