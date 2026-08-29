@@ -89,7 +89,8 @@ export default function CalendarWeekGrid({
               }`}
             >
               <p className={`text-sm font-semibold leading-none ${isToday ? "text-primary" : ""}`}>
-                {d.format("dd")}
+                {/* REQ-075 — same rule as `dayShort`: `ddd` in English, `dd` in Thai (no 3-letter Thai form). */}
+                {d.format(lang === "th" ? "dd" : "ddd")}
               </p>
               <p className="mt-1 text-xs text-muted-400">{d.format("D MMM")}</p>
             </div>

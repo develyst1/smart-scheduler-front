@@ -26,6 +26,7 @@ import PagerBar from "@/components/common/PagerBar";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { useAllBookings, useBulkConfirm, useTeachers } from "@/hooks/scheduler";
+import { useConfirm } from "@/components/common/useConfirm";
 import { formatDateDisplay } from "@/lib/ui/format";
 import type { BookingSort } from "@/services/scheduler.service";
 import type { BookingStatus, BookingType } from "@/types/app/scheduler";
@@ -111,6 +112,9 @@ export default function BookingsTable() {
 
   // ── Bulk-confirm (SPEC-011): tick PENDING rows → confirm in one call ──
   const bulk = useBulkConfirm();
+  // REQ-073 (2) — bulk-confirm messages EVERY selected booking's teacher. Bulk is more consequence than a
+  // single confirm, not less, so it is the one place the count belongs in the sentence.
+  const { confirm: askConfirm, confirmDialog } = useConfirm();
   const [selected, setSelected] = useState<string[]>([]);
   const [results, setResults] = useState<BulkConfirmResult[] | null>(null);
 
@@ -129,6 +133,15 @@ export default function BookingsTable() {
 
   const handleBulkConfirm = async () => {
     if (selected.length === 0) return;
+    if (
+      !(await askConfirm({
+        title: t("confirmAction.bulkTitle"),
+        message: t("confirmAction.bulkMsg", { n: selected.length }),
+        confirmLabel: t("bookings.bulkConfirmSelected", { n: selected.length }),
+        color: "blue",
+      }))
+    )
+      return;
     try {
       const res = await bulk.mutateAsync(selected);
       setResults(res);
@@ -162,6 +175,7 @@ export default function BookingsTable() {
 
   return (
     <Card padding="lg" className="space-y-3">
+      {confirmDialog}
       {/* TASK-081 — every control here carries a **min** width, not just a max. A flex item defaults to
           shrinking below its content, and an empty date input has no text to hold it open, so before this the
           two CUSTOM pickers collapsed to ~30px while the text-bearing Selects looked fine. With a min, a row

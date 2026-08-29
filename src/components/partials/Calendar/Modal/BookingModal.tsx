@@ -15,7 +15,7 @@ import {
   Text,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { BadgeCheck, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PackageOpen } from "lucide-react";
+import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PackageOpen } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -42,6 +42,8 @@ import {
 import { packageFor, voucherAllowsSubject } from "@/lib/scheduler/sellable";
 import { entKey, type EligibleType } from "@/lib/scheduler/eligible";
 import RentalModal from "@/components/partials/Rental/RentalModal";
+import CancelBookingDialog from "./CancelBookingDialog";
+import { useConfirm } from "@/components/common/useConfirm";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
 import type {
   Booking,
@@ -139,6 +141,9 @@ function ViewBooking({
   const [noticeError, setNoticeError] = useState<string | null>(null);
   // REQ-028 / TASK-109 — record an equipment rental as an add-on to this booking (refId = booking.id).
   const [rentalOpen, setRentalOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  // REQ-073 — one shared confirm for the actions that consume a session, message a teacher, or charge.
+  const { confirm: askConfirm, confirmDialog } = useConfirm();
 
   // Editable badges (view mode): one value per active type, seeded from the booking.
   const { data: badgeTypes = [] } = useBadges();
@@ -170,6 +175,16 @@ function ViewBooking({
   };
 
   const handleConfirm = async () => {
+    // REQ-073 (2) — this sends a LINE to the teacher. Reaching a human is not undoable by clicking again.
+    if (
+      !(await askConfirm({
+        title: t("confirmAction.confirmTitle"),
+        message: t("confirmAction.confirmMsg", { teacher: teacherName }),
+        confirmLabel: t("booking.confirmBtn"),
+        color: "blue",
+      }))
+    )
+      return;
     const res = await confirm.mutateAsync(booking.id);
     const n = res.notification;
     if (n?.status === "queued") {
@@ -195,6 +210,16 @@ function ViewBooking({
   };
 
   const handleSickLeave = async (override = false) => {
+    // REQ-073 (1) — consumes leave quota and appends a make-up; both are work to unpick.
+    if (
+      !(await askConfirm({
+        title: t("confirmAction.leaveTitle"),
+        message: t("confirmAction.leaveMsg"),
+        confirmLabel: t("booking.sickLeaveBtn"),
+        color: "orange",
+      }))
+    )
+      return;
     try {
       const res = await sickLeave.mutateAsync({ id: booking.id, override });
       if (res.locked) {
@@ -224,6 +249,17 @@ function ViewBooking({
   };
 
   const handleAttended = async () => {
+    // 🔴 REQ-073 — the LIGHT variant, deliberately. On 2026-08-23 fifteen real sessions went NO_SHOW because
+    // staff pressed confirm and never pressed มาเรียน; we need this pressed MORE, so the confirm costs a
+    // keystroke (focused button, Enter) and not a read. No reason field, one line.
+    if (
+      !(await askConfirm({
+        title: t("confirmAction.attendTitle"),
+        confirmLabel: t("booking.attendBtn"),
+        light: true,
+      }))
+    )
+      return;
     await attended.mutateAsync(booking.id);
     notify({ title: t("booking.attendedTitle"), color: "success" });
     onClose();
@@ -245,6 +281,12 @@ function ViewBooking({
   // จองทับได้เฉพาะช่องที่นักเรียนเดิม "ลา" เท่านั้น (UC-004)
   const canOverbook = booking.status === "SICK_LEAVE";
   const canMove = MOVABLE_STATUSES.includes(booking.status);
+  // REQ-074 — cancel-with-reason applies to the two types the REQ names (1HR / voucher). A course session is
+  // cancelled from its PLAN (TASK-105), where the re-owe/make-up consequence is visible; offering it here too
+  // would be a second door to a different behaviour.
+  const canCancelWithReason =
+    (booking.bookingType === "SINGLE_SESSION" || booking.bookingType === "VOUCHER") &&
+    booking.status !== "CANCELLED";
 
   return (
     <Stack gap="md">
@@ -435,6 +477,15 @@ function ViewBooking({
             >
               {t("booking.sickLeaveBtn")}
             </Menu.Item>
+            {canCancelWithReason && (
+              <Menu.Item
+                color="red"
+                leftSection={<Ban size={16} />}
+                onClick={() => setCancelOpen(true)}
+              >
+                {t("cancelBooking.action")}
+              </Menu.Item>
+            )}
             <Menu.Item leftSection={<PackageOpen size={16} />} onClick={() => setRentalOpen(true)}>
               {t("rental.addonBtn")}
             </Menu.Item>
@@ -442,6 +493,14 @@ function ViewBooking({
         </Menu>
       </div>
 
+      {/* REQ-074 — placement: the booking detail's ⋯ menu, beside sick-leave/move. See the task notes. */}
+      {confirmDialog}
+      <CancelBookingDialog
+        opened={cancelOpen}
+        booking={booking}
+        onClose={() => setCancelOpen(false)}
+        onCancelled={onClose}
+      />
       <RentalModal
         opened={rentalOpen}
         onClose={() => setRentalOpen(false)}

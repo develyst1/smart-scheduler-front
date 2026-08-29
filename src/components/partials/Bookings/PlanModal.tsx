@@ -49,6 +49,7 @@ import {
 } from "@/types/app/scheduler";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 import EndCourseDialog from "./EndCourseDialog";
+import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
 import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
 
@@ -724,6 +725,8 @@ function SessionEditor({
   const seed = target.kind === "move" ? target.session : null;
   // REQ-068 AC-3 — ONE session's note. Saved through its own endpoint (`PATCH /bookings/:id/note`), which is the
   // structural reason a note edit can't notify a teacher or touch the other sessions of the course.
+  // REQ-073 (3) — an extra session CHARGES. Money is the one consequence a second click can't take back.
+  const { confirm: askConfirm, confirmDialog } = useConfirm();
   const noteMut = useSetAttendeeNote();
   const [attendeeNote, setAttendeeNote] = useState(seed?.attendeeNote ?? "");
   const [noteSaving, setNoteSaving] = useState(false);
@@ -763,6 +766,15 @@ function SessionEditor({
     // Extra (SPEC-033) — a charged single-session; applied directly (it doesn't change the plan → no preview).
     if (target.kind === "extra") {
       if (!teacherId || !subjectId) return onError(t("plan.pickTeacherSubject"));
+      if (
+        !(await askConfirm({
+          title: t("confirmAction.extraTitle"),
+          message: t("confirmAction.extraMsg"),
+          confirmLabel: t("plan.extra"),
+          color: "grape",
+        }))
+      )
+        return;
       try {
         setSubmitting(true);
         await extra.mutateAsync({ courseId: plan.id, input: { teacherId, subjectId, date, startTime } });
@@ -818,6 +830,7 @@ function SessionEditor({
 
   return (
     <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+      {confirmDialog}
       <Text fw={600} fz="sm" mb="xs">
         {target.kind === "insert"
           ? t("plan.insertSession")

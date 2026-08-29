@@ -342,7 +342,8 @@ export const useMarkAttended = () => {
 export const useCancelBooking = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) => cancelBooking(id, reason),
+    mutationFn: ({ id, reason, reasonCode }: { id: string; reason?: string; reasonCode?: EndCourseReason }) =>
+      cancelBooking(id, reason, reasonCode),
     onSuccess: () => invalidateAll(qc),
   });
 };

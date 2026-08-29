@@ -45,6 +45,28 @@ const en = {
   // wasn't drafted yet when this shipped. Everything else is descriptive, not new product copy.
   // REQ-036 / TASK-182 — ending a course early. The confirm sentence is REQ-036's, and the {n} in it comes
   // from the SERVER preview, never a client re-count (R2).
+  // REQ-074 / TASK-212 — cancelling a 1HR or voucher booking. The three REASONS live in `endCourse.*` and are
+  // reused, not restated: one vocabulary across both cancel paths, or the two drift.
+  // REQ-073 / TASK-216 — the confirm sentences. Each says the CONSEQUENCE, not the mechanism: what staff need
+  // to weigh is what happens after they press it.
+  confirmAction: {
+    attendTitle: "Mark this session attended?",
+    confirmTitle: "Confirm this booking?",
+    confirmMsg: "{teacher} will be sent the schedule on LINE.",
+    leaveTitle: "Record leave for this session?",
+    leaveMsg: "This uses one of the course's leaves and adds a make-up session at the end.",
+    extraTitle: "Add a charged extra session?",
+    extraMsg: "This is billed on top of the package — it does not use a course session.",
+    bulkTitle: "Confirm the selected bookings?",
+    bulkMsg: "{n} bookings will be confirmed and their teachers messaged on LINE.",
+  },
+  cancelBooking: {
+    action: "Cancel booking",
+    title: "Cancel this booking?",
+    line: "Cancel {student}'s session on {date} at {time}.",
+    confirm: "Cancel booking",
+    done: "Booking cancelled",
+  },
   endCourse: {
     // TASK-199 — pause / resume. A pause keeps the course, its slot and its size; only the schedule stops.
     drop: "Pause course",
@@ -202,7 +224,7 @@ const en = {
     // change (AC-3) — verified by grep across the repo.
     FIRST_TRIAL: "1st Trial",
     SINGLE_SESSION: "1 HR",
-    COURSE_PACKAGE: "Weekly course",
+    COURSE_PACKAGE: "Course",
     VOUCHER: "Voucher",
   },
 
@@ -872,6 +894,11 @@ const en = {
     kindVoucher: "Voucher",
     size: "Sessions bought",
     sizeHint: "The whole package, as originally purchased",
+    sizeOption: "{n} sessions (price card)",
+    sizeOffCard: "Other (off the price card)",
+    sizeCustom: "Number of sessions",
+    leaveQuota: "Leave quota",
+    leaveQuotaHint: "How many leaves this package allows — the price card sizes bring their own",
     used: "Sessions already used",
     usedHint: "How many they have already attended",
     usedTooHigh: "Used cannot be more than bought.",
@@ -993,6 +1020,24 @@ const th: typeof en = {
     settings: "ตั้งค่า",
   },
 
+  confirmAction: {
+    attendTitle: "มาเรียนคาบนี้?",
+    confirmTitle: "ยืนยันการจองนี้?",
+    confirmMsg: "ระบบจะส่งตารางให้ครู {teacher} ทาง LINE",
+    leaveTitle: "บันทึกลาคาบนี้?",
+    leaveMsg: "จะใช้โควตาลาของคอร์ส 1 ครั้ง และเพิ่มคาบชดเชยต่อท้ายให้",
+    extraTitle: "เพิ่มคาบแบบคิดเงิน?",
+    extraMsg: "คาบนี้คิดเงินเพิ่มจากแพ็กเกจ ไม่ได้ตัดคาบของคอร์ส",
+    bulkTitle: "ยืนยันการจองที่เลือก?",
+    bulkMsg: "จะยืนยัน {n} รายการ และส่ง LINE ให้ครูของแต่ละคาบ",
+  },
+  cancelBooking: {
+    action: "ยกเลิกการจอง",
+    title: "ยกเลิกการจองนี้?",
+    line: "ยกเลิกคาบของ {student} วันที่ {date} เวลา {time}",
+    confirm: "ยกเลิกการจอง",
+    done: "ยกเลิกการจองแล้ว",
+  },
   endCourse: {
     drop: "พักคอร์ส",
     dropTitle: "พักคอร์สนี้?",
@@ -1143,7 +1188,7 @@ const th: typeof en = {
     // Same strings as EN on purpose (AC-1) — product names off a printed card, not phrases to translate.
     FIRST_TRIAL: "1st Trial",
     SINGLE_SESSION: "1 HR",
-    COURSE_PACKAGE: "คอร์สรายสัปดาห์",
+    COURSE_PACKAGE: "คอร์ส",
     VOUCHER: "Voucher",
   },
 
@@ -1798,6 +1843,11 @@ const th: typeof en = {
     kindVoucher: "วอยเชอร์",
     size: "จำนวนครั้งที่ซื้อ",
     sizeHint: "ทั้งแพ็กเกจตามที่ซื้อไว้เดิม",
+    sizeOption: "{n} คาบ (ตามการ์ดราคา)",
+    sizeOffCard: "อื่น ๆ (นอกการ์ดราคา)",
+    sizeCustom: "จำนวนคาบ",
+    leaveQuota: "โควตาการลา",
+    leaveQuotaHint: "แพ็กเกจนี้ลาได้กี่ครั้ง — ขนาดตามการ์ดราคามีค่าของตัวเองอยู่แล้ว",
     used: "ใช้ไปแล้ว (ครั้ง)",
     usedHint: "จำนวนครั้งที่เรียนไปแล้ว",
     usedTooHigh: "จำนวนที่ใช้ไปต้องไม่เกินจำนวนที่ซื้อ",

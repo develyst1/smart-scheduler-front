@@ -9,7 +9,17 @@ const WEEKDAY_DAYS = [1, 2, 3, 4, 5];
 export const ALL_WORK_DAYS = [1, 2, 3, 4, 5, 6, 0] as const;
 
 /** Locale-aware short weekday name (0=Sun … 6=Sat). */
-export const dayShort = (d: number, lang: string) => dayjs().day(d).locale(lang).format("dd");
+/**
+ * REQ-075 — English reads `Mon/Tue/Wed`, not `Mo/Tu/We`.
+ *
+ * 🔴 Thai deliberately stays on `dd` (จ. อ. พ.). dayjs' Thai locale has **no** three-letter form: `ddd` there
+ * yields the FULL name (จันทร์, อังคาร…), which is longer, not shorter — and widening the weekday would fight
+ * REQ-052 AC-3, the 375px no-truncation rule the calendar cell was just measured against. `dd` already IS the
+ * conventional Thai abbreviation, so the REQ's intent (a readable short day) is met in both languages by
+ * different tokens, not the same one.
+ */
+export const dayShort = (d: number, lang: string) =>
+  dayjs().day(d).locale(lang).format(lang === "th" ? "dd" : "ddd");
 
 /** 7 day buttons for the working-days picker, labelled in the active language. */
 export const workDayOptions = (lang: string) =>

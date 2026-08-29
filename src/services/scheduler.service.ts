@@ -359,10 +359,20 @@ export const markSickLeave = async (
 
 /** Cancel a booking (SPEC-028 §11 / TASK-105). A DELIVERED session (ATTENDED/NO_SHOW) requires a non-empty
  *  `reason` — else the server returns `REASON_REQUIRED`. A course cancel re-owes a makeup server-side. */
-export const cancelBooking = async (id: string, reason?: string): Promise<Booking> => {
+/**
+ * REQ-074 — a 1HR / voucher cancel must carry a **closed-set** `reasonCode`; the BE requires it for those two
+ * types and treats `reason` as the optional free-text note beside it. A typed reason can be reported on; free
+ * text cannot, which is why the enum exists.
+ */
+export const cancelBooking = async (
+  id: string,
+  reason?: string,
+  reasonCode?: EndCourseReason,
+): Promise<Booking> => {
   if (useMock) return mock.cancelBooking(id, reason);
   const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {
     action: "cancel",
+    ...(reasonCode ? { reasonCode } : {}),
     ...(reason ? { reason } : {}),
   });
   return dtoToBooking(data.booking);
@@ -638,6 +648,8 @@ export interface ImportCourseInput {
   startTime: string;
   /** The original purchase's expiry, taken as given and never computed. */
   expiryDate: string;
+  /** TASK-213 — REQUIRED for an OFF-CARD size (4/6/10 take the card's quota). `MAX_WEEK = size + quota`. */
+  leaveQuota?: number;
   note?: string;
 }
 
@@ -654,6 +666,7 @@ export const importCoursePackage = async (
     startDate: input.startDate,
     startTime: input.startTime,
     expiryDate: input.expiryDate,
+    leaveQuota: input.leaveQuota,
     note: input.note,
   });
   return data;
@@ -883,3 +896,19 @@ export const confirmCourse = async (courseId: string): Promise<ConfirmCourseResu
 };
 
 export { DEFAULT_TEACHER_TYPE_ORDER };
+
+/**
+ * TASK-213/214 — the import form's computed expiry + off-card size check, **server-side**.
+ * The form shows what this returns as a DEFAULT and lets a human overwrite it: a deliberate date the family
+ * actually bought beats anything we compute, which is why the value is seeded, not enforced.
+ */
+export const previewCourseImport = async (input: {
+  size: number;
+  leaveQuota?: number;
+  usedSessions: number;
+  startDate: string;
+}): Promise<{ ok: boolean; problem?: string; expiryDate?: string; maxWeek?: number }> => {
+  if (useMock) return { ok: true, expiryDate: input.startDate, maxWeek: input.size + (input.leaveQuota ?? 2) };
+  const { data } = await api.post("/courses/import/preview", input);
+  return data;
+};
