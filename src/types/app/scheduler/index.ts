@@ -71,7 +71,10 @@ export type BookingType =
   | "FIRST_TRIAL" // ทดลองเรียนครั้งแรก
   | "SINGLE_SESSION" // รายชั่วโมง
   | "COURSE_PACKAGE" // แพ็คเกจคอร์ส 4/6/10
-  | "VOUCHER"; // บัตรกำนัล 5/10/15 ชม.
+  | "VOUCHER" // บัตรกำนัล 5/10/15 ชม.
+  // SPEC-070 / REQ-078 — อื่นๆ: ไม่ใช่คาบเรียน (ประชุม / ปิดปรับปรุงลาน / ฯลฯ). ไม่มีโปรแกรม อาจไม่มีนักเรียน
+  // และมีครูได้หลายคน. ทุก `Record<BookingType, …>` จะคอมไพล์ไม่ผ่านจนกว่าจะมี `OTHER` — นั่นคือจุดประสงค์.
+  | "OTHER";
 
 // Display labels for booking types/statuses come from the i18n dictionary via
 // t(`bookingType.*`) / t(`bookingStatus.*`) — see src/lib/i18n/dictionaries.ts.
@@ -113,13 +116,42 @@ export interface RescheduleTarget {
   endTime: string; // HH:mm
 }
 
+/** TASK-227 (REQ-078 AC-18) — a teacher as a booking carries them. The same four fields the DTO sends. */
+export interface BookingTeacherRef {
+  id: string;
+  name: string;
+  nickname: string;
+  type: TeacherType;
+}
+
 export interface Booking {
   id: string;
-  studentName: string;
-  /** REQ-052 — what staff actually call the child; falls back to `studentName` when absent. */
+  /**
+   * 🔴 TASK-227 (REQ-078 AC-10) — **what this booking is CALLED. Render this, everywhere.**
+   *
+   * Computed once on the BE (`title ?? nickname ?? name`) for every booking type, so "never blank, never the
+   * word อื่นๆ, never a student's name it does not have" is one property of one function.
+   *
+   * 🚫 Never write `booking.displayName || something` at a call site: a local fallback is the 31-different-
+   * answers problem this field was created to delete, and it would hide a BE bug instead of showing it.
+   */
+  displayName: string;
+  /** TASK-224 — `null` on an อื่นๆ booking with no student. Use it when you mean **the child** (a link to their
+   *  record, a parent-facing message); use `displayName` when you mean *what this booking is called*. */
+  studentName: string | null;
+  /** REQ-052 — what staff actually call the child. `null` when there is no student, or none was recorded.
+   *  🚫 Not the cell's name source any more — `displayName` already resolved that. */
   nickname?: string | null;
+  /** TASK-224 — the admin's typed name for an อื่นๆ booking; `null` on the four lesson types. Already folded
+   *  into `displayName`; kept so a surface can tell "a typed title" from "a child's nickname". */
+  title?: string | null;
+  /** The FIRST teacher (`teachers[0]`). Unchanged meaning — every existing reader keeps working. */
   teacherId: string;
-  subject: string;
+  /** 🔴 TASK-227 (AC-18) — EVERY assigned teacher; length 1 for the four lesson types, so there is ONE shape.
+   *  The calendar places the booking once per entry here. `teachers[0].id === teacherId`, always. */
+  teachers: BookingTeacherRef[];
+  /** TASK-224 — `null` on an อื่นๆ booking: it has no program. Not "", not "อื่นๆ" — absent. */
+  subject: string | null;
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   endTime: string; // HH:mm

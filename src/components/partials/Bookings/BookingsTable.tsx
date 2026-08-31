@@ -129,7 +129,9 @@ export default function BookingsTable() {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   const toggleAllPending = () => setSelected(allPendingSelected ? [] : pendingIds);
 
-  const studentName = (id: string) => rows.find((b) => b.id === id)?.studentName ?? id;
+  // TASK-227 — what the booking is CALLED, for the bulk-confirm list. Falling back to the raw id was already
+  // the "row not found" case; `displayName` itself is never blank by contract.
+  const bookingName = (id: string) => rows.find((b) => b.id === id)?.displayName ?? id;
 
   const handleBulkConfirm = async () => {
     if (selected.length === 0) return;
@@ -339,9 +341,13 @@ export default function BookingsTable() {
                     />
                   )}
                 </Table.Td>
-                <Table.Td className="font-medium">{b.studentName}</Table.Td>
-                <Table.Td>{b.subject}</Table.Td>
-                <Table.Td>{teacherName(b.teacherId)}</Table.Td>
+                {/* AC-10 — the booking's own name (BE-computed), never a blank cell for an อื่นๆ row. */}
+                <Table.Td className="font-medium">{b.displayName}</Table.Td>
+                {/* AC-15 — an อื่นๆ booking has no program. An em dash says "there is none"; an empty cell in a
+                    dense table reads as data that failed to load. */}
+                <Table.Td>{b.subject ?? "—"}</Table.Td>
+                {/* AC-18 — all assigned teachers; length 1 for the four lesson types, so unchanged for them. */}
+                <Table.Td>{b.teachers.map((tc) => tc.nickname || tc.name).join(", ")}</Table.Td>
                 <Table.Td>{formatDateDisplay(b.date)}</Table.Td>
                 <Table.Td>
                   {b.startTime}-{b.endTime}
@@ -396,7 +402,7 @@ export default function BookingsTable() {
                   <Group key={r.id} justify="space-between" wrap="nowrap" gap="sm">
                     <div className="min-w-0">
                       <Text size="sm" truncate>
-                        {studentName(r.id)}
+                        {bookingName(r.id)}
                       </Text>
                       {r.reason && (
                         <Text size="xs" c="dimmed">

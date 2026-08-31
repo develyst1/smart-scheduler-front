@@ -29,6 +29,7 @@ import {
   getEligibleStudents,
   markSickLeave,
   cancelBooking,
+  getPostedSale,
   setTeacherActive,
   setTeacherLimitOverride,
   setTeacherTypeActive,
@@ -73,6 +74,8 @@ export const CALENDAR_KEY = ["calendar"] as const;
 export const COURSES_KEY = ["courses"] as const;
 export const REPORT_KEY = ["daily-report"] as const;
 export const VOUCHERS_KEY = ["vouchers"] as const;
+/** SPEC-069 / TASK-222 — per-booking, read-only. Never invalidated by a mutation: it describes the ledger, not us. */
+export const POSTED_SALE_KEY = ["posted-sale"] as const;
 
 // ───────────────────────────── Teachers ─────────────────────────────
 
@@ -347,6 +350,24 @@ export const useCancelBooking = () => {
     onSuccess: () => invalidateAll(qc),
   });
 };
+
+/**
+ * SPEC-069 / TASK-222 — has this booking's revenue already been posted?
+ *
+ * A **read**, so no `invalidateAll` and no mutation: this feature adds a warning, never a way to move money.
+ * `enabled` is the dialog's `opened`, so a dialog nobody opens never queries.
+ *
+ * 🔴 `retry: false` — a failure must reach the UI as "could not verify" **now**, not after three silent retries
+ * during which the dialog looks clean and staff can already press Confirm. A missing warning is the whole defect.
+ */
+export const usePostedSale = (id: string | null | undefined, enabled: boolean) =>
+  useQuery({
+    queryKey: [...POSTED_SALE_KEY, id],
+    queryFn: () => getPostedSale(id as string),
+    enabled: enabled && !!id,
+    retry: false,
+    staleTime: 0,
+  });
 
 export const useCreateBooking = () => {
   const qc = useQueryClient();

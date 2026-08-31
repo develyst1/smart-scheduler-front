@@ -9,7 +9,11 @@ import { useCellDisplay, type CellDisplay } from "@/lib/scheduler/cell-display";
 import { useT } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
-import { BOOKING_TYPE_ICON, BOOKING_TYPE_VAR } from "@/components/common/BookingCellBody";
+import {
+  BOOKING_TYPE_ICON,
+  BOOKING_TYPE_VAR,
+  SharedTeachersMarker,
+} from "@/components/common/BookingCellBody";
 
 interface Props {
   teachers: TeacherView[];
@@ -45,10 +49,20 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
   const { display } = useCellDisplay();
   const activeTeachers = teachers.filter((tt) => tt.bookable);
 
+  // 🔴 REQ-078 AC-18 / TASK-227 — placement is by EVERY assigned teacher. The BE indexes the calendar payload
+  // on the FIRST teacher only (`date|teacher.id|startTime`), so an อื่นๆ booking arrives exactly once and this
+  // is what puts it in each column. `teachers` has length 1 for the four lesson types ⇒ their placement is
+  // unchanged (AC-20 by construction, not by a guard).
+  //
+  // ⚠️ The day cell holds exactly ONE booking per (teacher, slot) — unchanged by this task. Additional teachers
+  // are deliberately NOT slot-checked on the BE (SPEC-070 amendment; the residue went to Porter as a business
+  // question), so a teacher can now be on an อื่นๆ AND a lesson in one slot. Then this returns the first match
+  // in payload order and the other is not drawn. Raised in TASK-227 §Questions Q2 rather than silently redesigned
+  // — making this cell hold a list is a layout change nobody has asked for.
   const findBooking = (teacherId: string, time: string) =>
     bookings.find(
       (b) =>
-        b.teacherId === teacherId &&
+        b.teachers.some((tc) => tc.id === teacherId) &&
         b.startTime === time &&
         !b.pendingSlot &&
         b.status !== "CANCELLED",
@@ -137,9 +151,9 @@ function Row({
                 />
                 <span className="flex items-center gap-1.5">
                   <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${DOT_STYLE[accent]}`} />
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                    {booking.nickname || booking.studentName}
-                  </span>
+                  {/* AC-10 — ONE name field, computed on the BE. 🚫 No `|| studentName` fallback here: that is
+                      exactly the per-call-site guessing `displayName` exists to delete. */}
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">{booking.displayName}</span>
                   {/* Branch (badge) — a primary identifier here, so it stays a labelled chip, never a bare dot. */}
                   {display.badge && (booking.badges ?? []).length > 0 && (
                     <span className="flex shrink-0 flex-wrap justify-end gap-1">
@@ -188,6 +202,9 @@ function Row({
                     {display.program && booking.subject && <span className="min-w-0">{booking.subject}</span>}
                   </span>
                 )}
+                {/* AC-18 — names the OTHER teachers on a shared booking, so three columns read as one booking
+                    rather than three meetings. Renders nothing when there is only one teacher. */}
+                <SharedTeachersMarker booking={booking} inColumnOf={tc.id} />
                 {/* REQ-068 — the session note as a neutral-bordered callout so it reads as a note, not more meta. */}
                 {display.note && booking.attendeeNote && (
                   <span

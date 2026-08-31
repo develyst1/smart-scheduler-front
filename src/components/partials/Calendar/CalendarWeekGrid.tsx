@@ -11,7 +11,7 @@ import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
 import { useI18n } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
-import BookingCellBody, { BookingTypeStripe } from "@/components/common/BookingCellBody";
+import BookingCellBody, { BookingTypeStripe, SharedTeachersMarker } from "@/components/common/BookingCellBody";
 import { useCellDisplay } from "@/lib/scheduler/cell-display";
 
 interface Props {
@@ -55,11 +55,16 @@ export default function CalendarWeekGrid({
   const activeTeachers = teachers.filter((tc) => tc.bookable);
   const today = dayjs().format("YYYY-MM-DD");
 
+  // 🔴 REQ-078 AC-18 / TASK-227 — placement is by EVERY assigned teacher, not just `teacherId`. The BE indexes
+  // the calendar payload on the FIRST teacher only (`date|teacher.id|startTime`), so an อื่นๆ booking arrives
+  // exactly once and this is what puts it in each column — one booking, one id, one status, several columns.
+  // `teachers` has length 1 for the four lesson types, so their placement is identical to the old
+  // `b.teacherId === teacherId` (AC-20 by construction, not by a guard).
   const cellBookings = (teacherId: string, date: string) =>
     bookings
       .filter(
         (b) =>
-          b.teacherId === teacherId &&
+          b.teachers.some((tc) => tc.id === teacherId) &&
           b.date === date &&
           !b.pendingSlot &&
           b.status !== "CANCELLED",
@@ -132,9 +137,9 @@ export default function CalendarWeekGrid({
                           <span className="shrink-0 text-[11px] font-medium tabular-nums text-muted-500">
                             {b.startTime}
                           </span>
-                          <span className="min-w-0 flex-1 truncate text-xs font-medium">
-                            {b.nickname || b.studentName}
-                          </span>
+                          {/* AC-10 — ONE name field, computed on the BE. 🚫 No `|| studentName` fallback here:
+                              that is exactly the per-call-site guessing `displayName` exists to delete. */}
+                          <span className="min-w-0 flex-1 truncate text-xs font-medium">{b.displayName}</span>
                           {/* Branch (badge) — a primary identifier, kept as a labelled chip like the day cell. */}
                           {display.badge && (b.badges ?? []).length > 0 && (
                             <span className="flex shrink-0 flex-wrap justify-end gap-1">
@@ -154,6 +159,9 @@ export default function CalendarWeekGrid({
                           )}
                         </span>
                         <BookingCellBody booking={b} display={display} />
+                        {/* AC-18 — names the OTHER teachers on a shared booking, so three columns read as one
+                            booking rather than three meetings. Renders nothing when there is only one teacher. */}
+                        <SharedTeachersMarker booking={b} inColumnOf={tc.id} />
                       </button>
                     );
                   })}

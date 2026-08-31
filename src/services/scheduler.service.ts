@@ -47,6 +47,8 @@ import type {
   CreateVoucherResponse,
   DailyReportResponse,
   MoveBookingResponse,
+  PostedSale,
+  PostedSaleResponse,
   SetTeacherWorkDaysResponse,
   TeacherDTO,
   TeachersResponse,
@@ -376,6 +378,21 @@ export const cancelBooking = async (
     ...(reason ? { reason } : {}),
   });
   return dtoToBooking(data.booking);
+};
+
+/**
+ * SPEC-069 / TASK-222 — has this booking's revenue already been posted, and how much?
+ *
+ * 🔴 **Deliberately does NOT swallow its error.** The BE route is equally deliberately un-caught (`api.ts:267`),
+ * because an error turned into `null` renders as "no money posted" — which is the entire defect this feature
+ * exists to fix. The caller turns a rejection into a visible "could not verify" band.
+ *
+ * The mock returns `null` (not a throw) so the offline UI is not permanently in the error state.
+ */
+export const getPostedSale = async (id: string): Promise<PostedSale | null> => {
+  if (useMock) return mock.getPostedSale(id);
+  const { data } = await api.get<PostedSaleResponse>(`/bookings/${id}/posted-sale`);
+  return data.posted;
 };
 
 export const markAttended = async (id: string) => {

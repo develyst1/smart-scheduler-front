@@ -5,7 +5,11 @@ export type BookingType =
   | "FIRST_TRIAL"
   | "SINGLE_SESSION"
   | "COURSE_PACKAGE"
-  | "VOUCHER";
+  | "VOUCHER"
+  // SPEC-070 / TASK-224 (REQ-078) — the fifth type: not a lesson. No program, optionally no student, and
+  // possibly several teachers. Every `Record<BookingType, …>` in the FE now REFUSES to compile until it has an
+  // `OTHER` entry — which is how the cell, the legend and the chip were found rather than remembered.
+  | "OTHER";
 export type BookingStatus =
   | "PENDING"
   | "CONFIRMED"
@@ -173,9 +177,23 @@ export interface BookingDTO {
   bookingType: BookingType;
   status: BookingStatus;
   note: string | null;
-  student: StudentRef;
+  /** TASK-224 (REQ-078) — `null` on an อื่นๆ booking with no student. Deliberately nullable rather than a
+   *  placeholder: the compiler then points at every caller that genuinely needs the student OBJECT. */
+  student: StudentRef | null;
+  /** The FIRST teacher — unchanged meaning, still always present. See `teachers` for all of them. */
   teacher: Pick<TeacherDTO, "id" | "name" | "nickname" | "type">;
-  subject: SubjectRef;
+  /** TASK-224 — `null` on an อื่นๆ booking: it has no program, and says so rather than naming a fiction
+   *  (a placeholder `อื่นๆ` subject row is exactly what REQ-065 had to undo). */
+  subject: SubjectRef | null;
+  /** TASK-224 — the admin's typed name for an อื่นๆ booking; `null` on the four lesson types. */
+  title: string | null;
+  /** 🔴 TASK-224 / AC-10 — the ONE field every surface renders a booking by (`title ?? nickname ?? name`),
+   *  computed on the BE for EVERY type. Never blank, never the word อื่นๆ. 🚫 Do not re-derive it here and do
+   *  not write a local fallback beside it — that is the 31-call-sites problem this field exists to delete. */
+  displayName: string;
+  /** 🔴 TASK-224 / AC-18 — EVERY assigned teacher, `teachers[0]` always being `teacher`. Present on every type
+   *  (length 1 for the four lesson types), so the FE has ONE shape instead of two. */
+  teachers: Array<Pick<TeacherDTO, "id" | "name" | "nickname" | "type">>;
   course: CourseSummary | null;
   badges?: BookingBadgeDTO[]; // always present from the real API; optional so mocks can omit it
   /** TASK-171 (REQ-063) — the captured discount, **null or a whole object, never partly filled**, so an absent
@@ -190,6 +208,36 @@ export interface BookingDTO {
   pendingSlot: boolean;
   incomingBookingId: string | null;
   rescheduleTo: RescheduleTarget | null;
+}
+
+/**
+ * SPEC-069 / TASK-221 — what the day-end job already put in the books for this booking.
+ * `GET /bookings/:id/posted-sale` → `{ posted: PostedSale | null }`.
+ *
+ * 🔴 It reports what was **POSTED**, never that the money is still there: a reversal is a manual backoffice
+ * movement carrying no `refId`, so it cannot be attributed back to the booking it undoes (SPEC-069 §Limitation).
+ * That is why the warning says "check and reverse in the backoffice" rather than "reverse it".
+ */
+export interface PostedSale {
+  /**
+   * 🔴 NET satang actually in the books — `listMinor + discountMinor`, computed by the BE.
+   * **Render this; never re-derive it** from the two fields below. `discountMinor` is already NEGATIVE, so
+   * `listMinor - discountMinor` yields a HIGHER number than the truth — on a warning whose entire job is the
+   * number (SA ruling, TASK-221 → TASK-222).
+   */
+  amountMinor: number;
+  /** The sale movement alone, before any discount. POSITIVE. Context only — not the number to show. */
+  listMinor: number;
+  /** The discount movement's own `value_minor`: NEGATIVE when there was one, `0` when there was not. */
+  discountMinor: number;
+  /** `bo.item.external_ref` — the product code ("first-trial", "single-session", …). */
+  productCode: string;
+  /** When the sale movement was written, ISO. */
+  postedAt: string;
+}
+
+export interface PostedSaleResponse {
+  posted: PostedSale | null;
 }
 
 export interface CalendarResponse {

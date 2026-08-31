@@ -169,7 +169,9 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
             <List size="sm" spacing={4}>
               {preview.bookings.map((b) => (
                 <List.Item key={b.id}>
-                  {b.date} {b.startTime}–{b.endTime} · {b.teacher.nickname} · {b.subject.name}
+                  {/* A course session always HAS a program (validation refuses one without) — `subject` became
+                      nullable on the DTO only because อื่นๆ exists, and an อื่นๆ never reaches this list. */}
+                  {b.date} {b.startTime}–{b.endTime} · {b.teacher.nickname} · {b.subject?.name ?? "—"}
                 </List.Item>
               ))}
             </List>

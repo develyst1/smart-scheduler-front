@@ -20,6 +20,7 @@ import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { useSettings, useUpdateSetting, useResetSetting } from "@/hooks/scheduler";
+import { settingHelp } from "@/lib/scheduler/setting-help";
 import type { SettingRow } from "@/types/app/settings";
 
 export default function SettingsContent() {
@@ -125,6 +126,9 @@ export default function SettingsContent() {
         <Stack gap="md">
           {rows.map((row) => {
             const editing = editingKey === row.key;
+            // `row.value` is the EFFECTIVE value — the override if one is set, else the coded default — so the
+            // help sentence reads back what staff actually configured.
+            const helpText = settingHelp(t, row.key, row.value);
             return (
               <Card key={row.key} padding="lg" withBorder>
                 <Stack gap="sm">
@@ -139,9 +143,23 @@ export default function SettingsContent() {
                         {t("settings.default")}: {displayValue(row, row.default)}
                         {row.type === "enum" ? "" : ` ${row.unit}`}
                       </Text>
-                      {row.type === "enum" && t(`settings.help.${row.key}`) !== `settings.help.${row.key}` && (
+                      {/* SPEC-048 / TASK-147 (Sober authorised 2026-09-01) — help is no longer gated on
+                          `row.type === "enum"`. That gate meant the two leave-cut-off rules (`type:"number"`)
+                          could carry help text in `dictionaries.ts` that NEVER reached a human: true of the
+                          file, false of the screen.
+
+                          🔴 What makes widening this safe is the dictionary-miss check inside `settingHelp` —
+                          a row with no `settings.help.<key>` entry still renders NOTHING, so no other row's
+                          appearance changed. That check is a named, tested function precisely because the whole
+                          safety of this line rests on it (`lib/scheduler/setting-help.test.ts`).
+
+                          🔴 And it passes `{n}` — the row's EFFECTIVE value, so the sentence tracks what staff
+                          just saved (REQ-047 AC-7: never a hardcoded "3"). Rendering it without vars would
+                          print a literal `{n}` on screen, which reads as a broken product rather than as
+                          missing copy — worse than shipping no help line at all. */}
+                      {helpText && (
                         <Text size="xs" c="dimmed" mt={4}>
-                          {t(`settings.help.${row.key}`)}
+                          {helpText}
                         </Text>
                       )}
                     </div>

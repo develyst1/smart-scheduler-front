@@ -66,6 +66,20 @@ const en = {
     line: "Cancel {student}'s session on {date} at {time}.",
     confirm: "Cancel booking",
     done: "Booking cancelled",
+    // SPEC-069 / TASK-222 — cancelling does NOT take the money back out. The band says so, with the number and
+    // the date, so staff can find the row instead of hunting the ledger.
+    //
+    // ⚠️ Deliberately "check and reverse", not "reverse it": a reversal carries no `refId`, so we cannot see
+    // that one already happened (SPEC-069 §Limitation) — telling staff to reverse invites a SECOND reversal.
+    postedTitle: "This session's revenue is already in the books",
+    posted:
+      "฿{amount} was posted as a sale on {date}. Cancelling does NOT take it back out — please check the backoffice and reverse it there if it should come out.",
+    // 🔴 The state that matters most. An error that renders as a clean dialog is indistinguishable from
+    // "no money posted", and that is the whole defect this feature exists to fix.
+    postedUnknownTitle: "Could not check the sale",
+    postedUnknown:
+      "We could not check whether this session's revenue has already been posted. Please check the backoffice before cancelling.",
+    postedChecking: "Checking the books…",
   },
   endCourse: {
     // TASK-199 — pause / resume. A pause keeps the course, its slot and its size; only the schedule stops.
@@ -141,6 +155,13 @@ const en = {
     help: {
       notify_on_leave:
         "Who gets told when a session is cancelled as leave. The teacher notified is the one on that session.",
+      // SPEC-048 / REQ-047 — the leave cut-off, one row per teacher type. The REQ's sentence is kept verbatim and
+      // only prefixed with WHICH teacher type it governs, because the two rows sit next to each other and would
+      // otherwise read identically. `{n}` is the row's configured number — the help must never hardcode "3" (AC-7).
+      leave_cutoff_hours_fulltime:
+        "Sessions taught by a full-time or part-time teacher — parents can take leave themselves until {n} hours before the session; after that only an admin can.",
+      leave_cutoff_hours_freelance:
+        "Sessions taught by a freelance teacher — parents can take leave themselves until {n} hours before the session; after that only an admin can.",
     },
     edit: "Edit",
     save: "Save",
@@ -226,6 +247,9 @@ const en = {
     SINGLE_SESSION: "1 HR",
     COURSE_PACKAGE: "Course",
     VOUCHER: "Voucher",
+    // REQ-078 — the TYPE's name. 🚫 Never a booking's name: AC-10 is that no cell ever reads "อื่นๆ" where a
+    // name belongs — that is `displayName`'s job, and the BE guarantees it is never this word.
+    OTHER: "Other",
   },
 
   bookingStatus: {
@@ -269,6 +293,12 @@ const en = {
     // SPEC-046 re-cut — the calendar cell display toggle + the two-dimension legend.
     legendStatus: "Status",
     legendType: "Type",
+    // REQ-078 AC-18 — an อื่นๆ booking stands in EVERY assigned teacher's column. Without this marker three
+    // columns read as three separate meetings, so it names the other teachers rather than counting them:
+    // "who else is on this?" is the question staff actually have, and a bare "×3" does not answer it.
+    sharedWith: "With {teachers}",
+    sharedWithMore: "With {teachers} +{count}",
+    sharedTitle: "One booking, {count} teachers: {teachers}",
     cellDisplay: "Cell display",
     cellDisplayHint: "Show on each booking",
     cellField: {
@@ -1037,6 +1067,16 @@ const th: typeof en = {
     line: "ยกเลิกคาบของ {student} วันที่ {date} เวลา {time}",
     confirm: "ยกเลิกการจอง",
     done: "ยกเลิกการจองแล้ว",
+    // SPEC-069 / TASK-222 — ประโยคของ Porter + วันที่ลงบัญชี + "ตรวจสอบแล้วค่อยกลับรายการ"
+    // ⚠️ ไม่ใช้คำว่า "ต้องไปกลับรายการ" ตรงๆ เพราะการกลับรายการไม่มี refId ⇒ เรามองไม่เห็นว่ากลับไปแล้วหรือยัง
+    // (SPEC-069 §Limitation) การสั่งให้กลับรายการจึงเสี่ยงทำให้กลับรายการซ้ำสองครั้ง
+    postedTitle: "คาบนี้ลงบัญชีขายไปแล้ว",
+    posted:
+      "คาบนี้ลงบัญชีขายไปแล้ว ฿{amount} เมื่อ {date} — การยกเลิกนี้ไม่ถอนเงินออกจากบัญชี กรุณาตรวจสอบและกลับรายการที่หลังบ้าน",
+    postedUnknownTitle: "ตรวจสอบยอดขายไม่ได้",
+    postedUnknown:
+      "ตรวจสอบไม่ได้ว่าคาบนี้ลงบัญชีขายไปแล้วหรือยัง — กรุณาตรวจสอบที่หลังบ้านก่อนยกเลิก",
+    postedChecking: "กำลังตรวจสอบบัญชี…",
   },
   endCourse: {
     drop: "พักคอร์ส",
@@ -1109,6 +1149,11 @@ const th: typeof en = {
     },
     help: {
       notify_on_leave: "ใครได้รับแจ้งเมื่อมีการลา ครูที่ได้รับแจ้งคือครูของคาบนั้น",
+      // SPEC-048 / REQ-047 — คู่กับฝั่ง EN ด้านบน: ประโยคของ REQ คงไว้ทั้งประโยค เติมเฉพาะว่าเป็นครูประเภทไหน
+      leave_cutoff_hours_fulltime:
+        "คาบที่สอนโดยครูประจำ/พาร์ทไทม์ — ผู้ปกครองแจ้งลาเองได้จนถึง {n} ชั่วโมงก่อนคาบเริ่ม หลังจากนั้นต้องให้แอดมินทำให้",
+      leave_cutoff_hours_freelance:
+        "คาบที่สอนโดยครูฟรีแลนซ์ — ผู้ปกครองแจ้งลาเองได้จนถึง {n} ชั่วโมงก่อนคาบเริ่ม หลังจากนั้นต้องให้แอดมินทำให้",
     },
     edit: "แก้ไข",
     save: "บันทึก",
@@ -1190,6 +1235,9 @@ const th: typeof en = {
     SINGLE_SESSION: "1 HR",
     COURSE_PACKAGE: "คอร์ส",
     VOUCHER: "Voucher",
+    // REQ-078 — ชื่อ "ประเภท" เท่านั้น 🚫 ไม่ใช่ชื่อการจอง: AC-10 บอกว่าต้องไม่มีเซลล์ไหนแสดงคำว่า อื่นๆ
+    // ตรงที่ควรเป็นชื่อ — ตรงนั้นคือ `displayName` และ BE รับประกันว่าไม่มีทางเป็นคำนี้
+    OTHER: "อื่นๆ",
   },
 
   bookingStatus: {
@@ -1232,6 +1280,10 @@ const th: typeof en = {
     addBooking: "เพิ่มการจอง",
     legendStatus: "สถานะ",
     legendType: "ประเภท",
+    // REQ-078 AC-18 — บอกว่าเป็นการจองเดียวกันที่มีครูหลายคน ไม่ใช่หลายการจอง
+    sharedWith: "ร่วมกับ {teachers}",
+    sharedWithMore: "ร่วมกับ {teachers} +{count}",
+    sharedTitle: "การจองเดียว ครู {count} คน: {teachers}",
     cellDisplay: "สิ่งที่แสดงในช่อง",
     cellDisplayHint: "แสดงในแต่ละการจอง",
     cellField: {

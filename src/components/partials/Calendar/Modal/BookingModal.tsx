@@ -92,7 +92,8 @@ export default function BookingModal({
           <span className="font-semibold">{t("booking.addTitle", { date: createSlot?.date ?? "" })}</span>
         ) : booking ? (
           <div className="flex flex-col gap-1">
-            <span className="font-semibold">{booking.studentName}</span>
+            {/* AC-10 — the booking's own name, from the BE's one `displayName`. No local fallback. */}
+            <span className="font-semibold">{booking.displayName}</span>
             <div className="flex items-center gap-2">
               <StatusChip status={booking.status} />
               <BookingTypeChip type={booking.bookingType} />
@@ -281,18 +282,24 @@ function ViewBooking({
   // จองทับได้เฉพาะช่องที่นักเรียนเดิม "ลา" เท่านั้น (UC-004)
   const canOverbook = booking.status === "SICK_LEAVE";
   const canMove = MOVABLE_STATUSES.includes(booking.status);
-  // REQ-074 + TASK-220 — cancel-with-reason covers the three NON-course types: 1HR, voucher and 1st Trial. A
-  // course session is still cancelled from its PLAN (TASK-105), where the re-owe/make-up consequence is visible;
-  // offering it here too would be a second door to a different behaviour.
+  // REQ-074 + TASK-220 — cancel-with-reason covers the NON-course types: 1HR, voucher, 1st Trial and (TASK-227 /
+  // REQ-078) อื่นๆ. A course session is still cancelled from its PLAN (TASK-105), where the re-owe/make-up
+  // consequence is visible; offering it here too would be a second door to a different behaviour.
   //
-  // ⛔ This line MUST ship with Jason's BE line (TASK-220): the dialog forces a reason, but the BE only STORES
-  // one for the types in `REASON_ENUM_REQUIRED`. Shipping the FE alone would make staff pick a reason the server
-  // silently discards — worse than not asking, because the record would look complete and be empty.
+  // ⛔ This list and the BE's `REASON_ENUM_REQUIRED` (`scheduler.service.ts`) are ONE RULE IN TWO FILES and must
+  // ship together — the pairing TASK-220 established and TASK-224/227 extended with `OTHER`. The dialog forces a
+  // reason; the BE only STORES one for the types in its set, and REFUSES the cancel with `REASON_REQUIRED` for
+  // the types in its set that this list omits. Either half alone is a defect:
+  //   · FE ahead of BE → staff pick a reason the server discards; the record looks complete and is empty.
+  //   · BE ahead of FE → the dialog never asks, the API refuses, and the button silently does nothing —
+  //     precisely the failure the owner rejected REQ-019 acceptance for.
+  // A test on the BE side asserts its comment names `canCancelWithReason`, so editing one list puts the other
+  // one grep away.
   const canCancelWithReason =
     (booking.bookingType === "SINGLE_SESSION" ||
       booking.bookingType === "VOUCHER" ||
-      booking.bookingType === "FIRST_TRIAL") &&
-    booking.status !== "CANCELLED";
+      booking.bookingType === "FIRST_TRIAL" ||
+      booking.bookingType === "OTHER") &&
     booking.status !== "CANCELLED";
 
   return (
@@ -301,8 +308,20 @@ function ViewBooking({
           detached block floating below it. */}
       <div className="flex flex-col gap-1.5">
       <dl className="grid grid-cols-2 gap-2.5 text-sm">
-        <Field label={t("booking.teacher")} value={teacherName} />
-        <Field label={t("booking.subject")} value={booking.subject} />
+        {/* AC-18 — an อื่นๆ booking can carry several teachers, and the modal is where staff confirm WHO. One
+            booking, so one field listing all of them; `teachers` is length 1 for the four lesson types, which
+            leaves their tile reading exactly as before. */}
+        <Field
+          label={t("booking.teacher")}
+          value={
+            booking.teachers.length > 1
+              ? booking.teachers.map((tc) => tc.nickname || tc.name).join(", ")
+              : teacherName
+          }
+        />
+        {/* AC-15 — an อื่นๆ booking has NO program. The tile is omitted rather than rendered empty: a labelled
+            field with nothing in it reads as information that went missing (TASK-219's lesson). */}
+        {booking.subject && <Field label={t("booking.subject")} value={booking.subject} />}
         <Field label={t("booking.date")} value={booking.date} />
         <Field label={t("booking.time")} value={`${booking.startTime} - ${booking.endTime}`} />
       </dl>
@@ -508,11 +527,12 @@ function ViewBooking({
         onClose={() => setCancelOpen(false)}
         onCancelled={onClose}
       />
+      {/* The rental is logged against the BOOKING, so it is named by what the booking is called. */}
       <RentalModal
         opened={rentalOpen}
         onClose={() => setRentalOpen(false)}
         refId={booking.id}
-        contextName={booking.studentName}
+        contextName={booking.displayName}
       />
     </Stack>
   );
@@ -841,9 +861,12 @@ function CreateForm({
     return (
       <Stack gap="md">
         <Alert color="red" icon={<AlertTriangle size={18} />} title={t("booking.blockedTitle")}>
+          {/* TASK-227 — the slot's current occupant, named by what THAT booking is called: it may well be an
+              อื่นๆ block with no student and no program, which is precisely a reason the slot is unavailable.
+              `subject` falls back to the type's word rather than an empty gap in the middle of a sentence. */}
           {t("booking.blockedDesc", {
-            student: blocked.studentName,
-            subject: blocked.subject,
+            student: blocked.displayName,
+            subject: blocked.subject ?? t(`bookingType.${blocked.bookingType}`),
             time: blocked.startTime,
           })}
         </Alert>
@@ -873,7 +896,7 @@ function CreateForm({
 
       {leaveOccupant && (
         <Alert color="orange" icon={<ArrowLeftRight size={18} />} title={t("booking.overbookBannerTitle")}>
-          {t("booking.overbookBannerDesc", { student: leaveOccupant.studentName })}
+          {t("booking.overbookBannerDesc", { student: leaveOccupant.displayName })}
         </Alert>
       )}
 

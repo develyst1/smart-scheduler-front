@@ -1,6 +1,7 @@
 /** In-memory mock — used when NEXT_PUBLIC_USE_MOCK=true */
 import dayjs from "dayjs";
 import {
+  asBooking,
   bookings,
   coursePackages,
   nextBookingId,
@@ -25,7 +26,7 @@ import type {
   TeacherType,
   TeacherView,
 } from "@/types/app/scheduler";
-import type { BulkConfirmResult } from "@/types/api/contract";
+import type { BulkConfirmResult, PostedSale } from "@/types/api/contract";
 
 const delay = <T>(value: T, ms = 200) =>
   new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
@@ -158,6 +159,15 @@ export const cancelBooking = (id: string, _reason?: string): Promise<Booking> =>
   return delay(clone(b) as Booking);
 };
 
+/**
+ * SPEC-069 / TASK-222 — the posted-sale lookup, offline.
+ *
+ * 🔴 Returns `null` (never a rejection) **on purpose**: an offline mock that threw would leave the cancel dialog
+ * permanently in its "could not verify" state, which is exactly the band staff must keep taking seriously. The
+ * error path is exercised against the real endpoint, not by breaking the mock.
+ */
+export const getPostedSale = (_id: string): Promise<PostedSale | null> => delay(null);
+
 export const getBookingsByDate = (date: string) =>
   delay(clone(bookings.filter((b) => b.date === date)));
 
@@ -192,7 +202,9 @@ export const getAllBookings = (query: {
   const q = query.q?.trim().toLowerCase();
   const filtered = bookings
     .filter((b) => !b.pendingSlot)
-    .filter((b) => (q ? b.studentName.toLowerCase().includes(q) : true))
+    // TASK-227 — search what the booking is CALLED, matching the real bookings list: an อื่นๆ booking may have
+    // no student, and would otherwise be unfindable by the words printed on its own row.
+    .filter((b) => (q ? b.displayName.toLowerCase().includes(q) : true))
     .filter((b) => (query.type ? b.bookingType === query.type : true))
     .filter((b) => (query.status ? b.status === query.status : true))
     .filter((b) => (query.teacherId ? b.teacherId === query.teacherId : true))
@@ -349,12 +361,14 @@ export const detectConflict = (
 };
 
 export const createBooking = (input: CreateBookingInput) => {
-  const newBooking: Booking = {
+  // TASK-227 — `asBooking` derives `displayName` + `teachers` by the same rules the BE uses, so the mock cannot
+  // drift from the contract (and a newly created booking lands in the calendar rather than in no column).
+  const newBooking: Booking = asBooking({
     id: nextBookingId(),
     ...input,
     endTime: endOf(input.startTime),
     status: "PENDING",
-  };
+  });
   bookings.push(newBooking);
   return delay(clone(newBooking));
 };
@@ -447,19 +461,21 @@ export const createCoursePackage = (input: {
   };
   coursePackages.push(newCourse);
 
-  const generated: Booking[] = Array.from({ length: input.size }, (_, i) => ({
-    id: nextBookingId(),
-    studentName: input.studentName,
-    teacherId: input.teacherId,
-    subject: subjectName,
-    date: dayjs(input.startDate).add(i, "week").format("YYYY-MM-DD"),
-    startTime: input.startTime,
-    endTime: dayjs(`2000-01-01 ${input.startTime}`).add(1, "hour").format("HH:mm"),
-    bookingType: "COURSE_PACKAGE" as const,
-    status: "CONFIRMED" as const,
-    courseId,
-    note: input.note,
-  }));
+  const generated: Booking[] = Array.from({ length: input.size }, (_, i) =>
+    asBooking({
+      id: nextBookingId(),
+      studentName: input.studentName,
+      teacherId: input.teacherId,
+      subject: subjectName,
+      date: dayjs(input.startDate).add(i, "week").format("YYYY-MM-DD"),
+      startTime: input.startTime,
+      endTime: dayjs(`2000-01-01 ${input.startTime}`).add(1, "hour").format("HH:mm"),
+      bookingType: "COURSE_PACKAGE" as const,
+      status: "CONFIRMED" as const,
+      courseId,
+      note: input.note,
+    }),
+  );
   bookings.push(...generated);
 
   return delay({
@@ -475,7 +491,7 @@ export const createCoursePackage = (input: {
       bookingType: b.bookingType,
       status: b.status,
       note: b.note ?? null,
-      student: { id: "s-mock", name: b.studentName, nickname: b.studentName },
+      student: { id: "s-mock", name: b.studentName ?? "", nickname: b.studentName },
       teacher: {
         id: teacher!.id,
         name: teacher!.name,
@@ -483,6 +499,18 @@ export const createCoursePackage = (input: {
         type: teacher!.type,
       },
       subject: { id: input.subjectId, name: subjectName },
+      // TASK-224/227 — the three fields the DTO now always carries. A course session has no title and exactly
+      // one teacher, so these are the four-lesson-type shape: `displayName` from the student, `teachers` of one.
+      title: null,
+      displayName: b.displayName,
+      teachers: [
+        {
+          id: teacher!.id,
+          name: teacher!.name,
+          nickname: teacher!.nickname,
+          type: teacher!.type,
+        },
+      ],
       course: toCourseView(newCourse),
       pendingSlot: false,
       incomingBookingId: null,
@@ -640,7 +668,7 @@ export const getEntitlementPlan = (id: string): Promise<EntitlementPlan> => {
       startTime: b.startTime,
       status: b.status as string,
       teacher: teacher ? { id: teacher.id, name: teacher.name, nickname: teacher.nickname } : null,
-      subject: { id: "mock-subj", name: b.subject },
+      subject: { id: "mock-subj", name: b.subject ?? "—" }, // TASK-227: `subject` is nullable now (อื่นๆ); a course plan session always has one.
     };
   });
   const liveEnd = rows.length ? rows[rows.length - 1].date : null;
@@ -680,7 +708,7 @@ export const previewPlanChange = (courseId: string, _change: PlanChange) => {
         status: b.status as string,
         bookingType: b.bookingType as string,
         teacher: teacher ? { id: teacher.id, name: teacher.name, nickname: teacher.nickname } : null,
-        subject: { id: "mock-subj", name: b.subject },
+        subject: { id: "mock-subj", name: b.subject ?? "—" }, // TASK-227: `subject` is nullable now (อื่นๆ); a course plan session always has one.
       };
     }),
     liveEndDate: rows.length ? rows[rows.length - 1].date : null,
@@ -702,7 +730,7 @@ export const getCourseHistory = (courseId: string) => {
     sessionDate: b.date,
     status: b.status as string,
     teacher: null,
-    subject: { id: "mock-subj", name: b.subject },
+    subject: { id: "mock-subj", name: b.subject ?? "—" }, // TASK-227: `subject` is nullable now (อื่นๆ); a course plan session always has one.
     reason: null,
     makeupOfDate: null,
     valueMinor: null,

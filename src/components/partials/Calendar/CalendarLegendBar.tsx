@@ -7,8 +7,20 @@ import { useT } from "@/lib/i18n";
 import { STATUS_LEGEND } from "./Calendar.config";
 import CellDisplayMenu from "./CellDisplayMenu";
 
-/** AC-9 — the legend lists the four types in the same order the booking modal offers them. */
-const BOOKING_TABS_LEGEND: BookingType[] = ["FIRST_TRIAL", "SINGLE_SESSION", "COURSE_PACKAGE", "VOUCHER"];
+/**
+ * AC-9 — the legend lists the types in the same order the booking modal offers them.
+ *
+ * ⚠️ TASK-227 **checked this instead of assuming it**: the array is hand-written, NOT derived from
+ * `BOOKING_TYPE_ICON`, so widening `BookingType` adds no row here and the compiler says nothing. A new type
+ * must be added on this line, or it renders in the grid under a legend that cannot explain it.
+ */
+const BOOKING_TABS_LEGEND: BookingType[] = [
+  "FIRST_TRIAL",
+  "SINGLE_SESSION",
+  "COURSE_PACKAGE",
+  "VOUCHER",
+  "OTHER",
+];
 
 /**
  * SPEC-046 AC-9 — the cell legend, sitting on top of the grid it explains rather than in the header: staff read a

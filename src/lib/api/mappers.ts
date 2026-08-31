@@ -10,12 +10,22 @@ import type { Booking, CoursePackageView, Teacher } from "@/types/app/scheduler"
 export function dtoToBooking(dto: BookingDTO): Booking {
   return {
     id: dto.id,
-    studentName: dto.student.name,
-    // TASK-141/142 — the BE always sent this; the flatten dropped it. `nickname || studentName` is what the
-    // cells render, because a nickname is what staff actually call the child.
-    nickname: dto.student.nickname ?? null,
+    // 🔴 TASK-227 (REQ-078 AC-10) — carried straight through, NEVER re-derived. The BE computed it once for
+    // every booking type; the moment this becomes `dto.displayName || dto.student?.name` the property stops
+    // being a property and goes back to being 31 separate opinions.
+    displayName: dto.displayName,
+    // `null` when there is no student (อื่นๆ). This means THE CHILD — not "what this booking is called".
+    studentName: dto.student?.name ?? null,
+    // TASK-141/142 — the BE always sent this; the flatten dropped it. Kept for the surfaces that mean the
+    // child specifically; the cells render `displayName` now.
+    nickname: dto.student?.nickname ?? null,
+    title: dto.title ?? null,
     teacherId: dto.teacher.id,
-    subject: dto.subject.name,
+    // AC-18 — every assigned teacher. The `?? [dto.teacher]` covers an embedded/post-mutation payload that
+    // predates TASK-224: one column is wrong-ish, no column at all would be a booking that vanished.
+    teachers: dto.teachers ?? [dto.teacher],
+    // `null` for อื่นๆ — it has no program. Every reader is guarded; the compiler listed them.
+    subject: dto.subject?.name ?? null,
     date: dto.date,
     startTime: dto.startTime,
     endTime: dto.endTime,

@@ -59,6 +59,10 @@ const BOOKING_TYPE_COLOR: Record<BookingType, SemanticColor> = {
   SINGLE_SESSION: "default",
   COURSE_PACKAGE: "primary",
   VOUCHER: "secondary",
+  // REQ-078 — `default` (grey) is the honest chip for "not a paid lesson". It is shared with SINGLE_SESSION,
+  // which is fine here and NOT the same compromise as the cell: this chip always renders its own label beside
+  // the dot, so the colour is reinforcement. The cell's stripe has no label, which is why it got its own hue.
+  OTHER: "default",
 };
 
 export function BookingTypeChip({ type, size = "sm" }: { type: BookingType; size?: Size }) {

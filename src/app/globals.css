@@ -31,6 +31,11 @@
   --booking-type-single-session: 20 184 166; /* teal */
   --booking-type-course-package: 79 70 229; /* indigo */
   --booking-type-voucher: 202 138 4; /* amber-700 */
+  /* REQ-078 / TASK-227 — อื่นๆ. The four above are saturated because they are the four PAID products; this one
+     is deliberately the only WARM-NEUTRAL hue, which is the distinction it has to carry: "not a lesson". Its
+     own token, not a re-use — and stone rather than slate, so it never collides with the `--color-muted-*`
+     ramp the borders and dimmed text already use. */
+  --booking-type-other: 120 113 108; /* stone-500 */
 }
 
 /* Minimal reset (Tailwind preflight is disabled so it doesn't fight Mantine).

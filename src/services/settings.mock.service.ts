@@ -19,6 +19,26 @@ interface MockSpec {
 const SPECS: MockSpec[] = [
   { key: "teacher_change_notice_days", label: "Teacher-change notice", type: "number", unit: "days", default: 3, min: 0, max: 30 },
   { key: "checkin_early_minutes", label: "Check-in early window", type: "number", unit: "minutes", default: 30, min: 0, max: 240 },
+  // SPEC-048 / REQ-047 (TASK-146) — two number rules, one per teacher type. Labels + bounds copied from the BE
+  // registry (`lib/settings.ts`), including its new `hours` unit, so these rows are exercisable offline like the rest.
+  {
+    key: "leave_cutoff_hours_fulltime",
+    label: "แจ้งลาล่วงหน้า — ครูประจำ/พาร์ทไทม์ (ชั่วโมง)",
+    type: "number",
+    unit: "hours",
+    default: 3,
+    min: 0,
+    max: 72,
+  },
+  {
+    key: "leave_cutoff_hours_freelance",
+    label: "แจ้งลาล่วงหน้า — ครูฟรีแลนซ์ (ชั่วโมง)",
+    type: "number",
+    unit: "hours",
+    default: 3,
+    min: 0,
+    max: 72,
+  },
   {
     key: "notify_on_leave",
     label: "แจ้งเตือนเมื่อมีการลา",

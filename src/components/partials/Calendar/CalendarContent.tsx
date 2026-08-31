@@ -40,10 +40,13 @@ export default function CalendarContent() {
           (b.badges ?? []).some((bd) => selectedBadgeValueIds.includes(bd.valueId)),
         );
 
-  // Student search (REQ-038 #3): case-insensitive substring on the booking's student name. Composes with byBadge.
+  // Student search (REQ-038 #3): case-insensitive substring on what the booking is CALLED. Composes with byBadge.
+  //
+  // TASK-227 — reads `displayName`, not `studentName`: an อื่นๆ booking may have no student at all, and a
+  // search that cannot match the words printed on the cell in front of you is worse than no search.
   const byStudent = (list: Booking[]) => {
     const q = studentQuery.trim().toLowerCase();
-    return q ? list.filter((b) => b.studentName.toLowerCase().includes(q)) : list;
+    return q ? list.filter((b) => b.displayName.toLowerCase().includes(q)) : list;
   };
 
   const dayBookings = useMemo(
