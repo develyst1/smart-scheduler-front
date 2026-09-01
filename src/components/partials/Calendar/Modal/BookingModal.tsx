@@ -51,6 +51,9 @@ import { eligibleLabel, entKey, type EligibleType } from "@/lib/scheduler/eligib
 import {
   emptyOtherBooking,
   evaluateOtherBooking,
+  onOtherChargeToggle,
+  onOtherConsumeToggle,
+  onOtherTitleChange,
   type OtherBookingDraft,
   type OtherPriceSource,
 } from "@/lib/scheduler/other-booking";
@@ -191,10 +194,28 @@ function ViewBooking({
 
   const handleConfirm = async () => {
     // REQ-073 (2) — this sends a LINE to the teacher. Reaching a human is not undoable by clicking again.
+    //
+    // 🔴 DEF-6 / TASK-241 — and it must name EVERY teacher it is about to message. The BE already fans the
+    // send out (`assignedTeacherIds` → one outbox row each); only this sentence under-reported it. Confirming
+    // is the moment an admin chooses to message people, so a dialog naming one of two is asking them to
+    // approve something other than what happens.
+    //
+    // 🚫 The names come from `booking.teachers` — the ONE accessor TASK-224 put on the DTO and TASK-227
+    // already renders in the cell. Never re-derived from the teacher roster or from `teacherId`.
+    // The single-teacher path is deliberately left on `teacherName` and `confirmMsg`, byte-identical to
+    // before: the four existing types must not see a changed dialog.
+    const assigned = booking.teachers ?? [];
+    const message =
+      assigned.length > 1
+        ? t("confirmAction.confirmMsgMulti", {
+            n: assigned.length,
+            teachers: assigned.map((tc) => tc.nickname || tc.name).join(", "),
+          })
+        : t("confirmAction.confirmMsg", { teacher: teacherName });
     if (
       !(await askConfirm({
         title: t("confirmAction.confirmTitle"),
-        message: t("confirmAction.confirmMsg", { teacher: teacherName }),
+        message,
         confirmLabel: t("booking.confirmBtn"),
         color: "blue",
       }))
@@ -1085,7 +1106,7 @@ function CreateForm({
             description={t("booking.otherTitleHint")}
             placeholder={t("booking.otherTitlePlaceholder")}
             value={other.title}
-            onChange={(e) => setOther((p) => ({ ...p, title: e.currentTarget.value }))}
+            onChange={onOtherTitleChange(setOther)}
             required={!otherDraft.hasStudent}
           />
 
@@ -1105,7 +1126,7 @@ function CreateForm({
             <Switch
               label={t("booking.otherCharge")}
               checked={other.charge}
-              onChange={(e) => setOther((p) => ({ ...p, charge: e.currentTarget.checked }))}
+              onChange={onOtherChargeToggle(setOther)}
             />
             {other.charge && (
               <Stack gap="sm" mt="sm">
@@ -1174,7 +1195,7 @@ function CreateForm({
             <Switch
               label={t("booking.otherConsume")}
               checked={other.consume}
-              onChange={(e) => setOther((p) => ({ ...p, consume: e.currentTarget.checked }))}
+              onChange={onOtherConsumeToggle(setOther)}
             />
             {other.consume &&
               (!student?.id ? (

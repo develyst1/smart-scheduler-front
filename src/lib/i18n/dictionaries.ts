@@ -53,6 +53,11 @@ const en = {
     attendTitle: "Mark this session attended?",
     confirmTitle: "Confirm this booking?",
     confirmMsg: "{teacher} will be sent the schedule on LINE.",
+    // 🔴 DEF-6 / TASK-241 — used ONLY when a booking has more than one teacher, so the single-teacher dialog
+    // (and all four existing types) is untouched. The count is there on purpose: with the names alone, a list
+    // that silently lost one reads exactly like a correct list. It is the cheapest guard against the very
+    // defect this key exists to fix.
+    confirmMsgMulti: "The schedule will be sent on LINE to {n} teachers: {teachers}",
     leaveTitle: "Record leave for this session?",
     leaveMsg: "This uses one of the course's leaves and adds a make-up session at the end.",
     extraTitle: "Add a charged extra session?",
@@ -1085,6 +1090,9 @@ const th: typeof en = {
     attendTitle: "มาเรียนคาบนี้?",
     confirmTitle: "ยืนยันการจองนี้?",
     confirmMsg: "ระบบจะส่งตารางให้ครู {teacher} ทาง LINE",
+    // 🔴 DEF-6 / TASK-241 — ใช้เฉพาะตอนมีครูมากกว่า 1 คน กล่องของครูคนเดียวจึงไม่เปลี่ยนเลย
+    // ใส่จำนวนไว้ด้วยตั้งใจ: ถ้ามีแต่ชื่อ รายชื่อที่ตกไป 1 คนจะอ่านเหมือนรายชื่อที่ถูกต้องทุกประการ
+    confirmMsgMulti: "ระบบจะส่งตารางให้ครู {n} คน ทาง LINE: {teachers}",
     leaveTitle: "บันทึกลาคาบนี้?",
     leaveMsg: "จะใช้โควตาลาของคอร์ส 1 ครั้ง และเพิ่มคาบชดเชยต่อท้ายให้",
     extraTitle: "เพิ่มคาบแบบคิดเงิน?",

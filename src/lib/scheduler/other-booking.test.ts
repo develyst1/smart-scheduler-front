@@ -1,5 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { emptyOtherBooking, evaluateOtherBooking, type OtherBookingDraft } from "./other-booking";
+import {
+  emptyOtherBooking,
+  evaluateOtherBooking,
+  onOtherChargeToggle,
+  onOtherConsumeToggle,
+  onOtherTitleChange,
+  type OtherBookingDraft,
+} from "./other-booking";
 import { dictionaries } from "@/lib/i18n/dictionaries";
 
 /**
@@ -190,5 +197,93 @@ describe("🔴 every problem key resolves in BOTH languages", () => {
       ...evaluateOtherBooking(draft({ consume: true, hasStudent: true })).problemKeys,
     ]);
     for (const k of emitted) expect(ALL_KEYS).toContain(k as (typeof ALL_KEYS)[number]);
+  });
+});
+
+/**
+ * 🔴 TASK-237 (REQ-078 DEF-1 / DEF-5) — the crash that lost staff a half-filled form.
+ *
+ * `TypeError: Cannot read properties of null (reading 'value')`, reproduced by Tanya 3 of 3: remove the last
+ * teacher chip, type one character in ชื่อรายการ, page dies.
+ *
+ * **This block simulates React's actual lifecycle, which is the only thing that reproduces it:**
+ *   1. React calls the listener with a live event.
+ *   2. React sets `event.currentTarget = null` the instant the listener returns (`executeDispatch`).
+ *   3. React calls the `setState` **updater** later, during the render it scheduled.
+ *
+ * A handler that reads `e.currentTarget.value` *inside* the updater therefore reads it at step 3, on `null`.
+ * Run these against that shape and they throw — which is what makes them a regression rather than a
+ * restatement. (Why it is intermittent rather than constant: React's eager-evaluation fast path runs the
+ * updater synchronously at step 1 when the hook has no pending update, and that path hides the bug. Emptying
+ * the MultiSelect queues one, which takes the path away.)
+ */
+describe("🔴 DEF-1 — the form's own handlers must not read the event after it is dead", () => {
+  /** Drives a handler factory the way React does: the updater is captured, not run, until the event is dead. */
+  const runDeferred = <E extends { currentTarget: unknown }>(
+    make: (set: (u: (d: OtherBookingDraft) => OtherBookingDraft) => void) => (e: E) => void,
+    event: E,
+    start: OtherBookingDraft,
+  ): OtherBookingDraft => {
+    let deferred: ((d: OtherBookingDraft) => OtherBookingDraft) | null = null;
+    make((u) => {
+      deferred = u;
+    })(event);
+    event.currentTarget = null; // React nulls it here, BEFORE the render below
+    return deferred ? (deferred as (d: OtherBookingDraft) => OtherBookingDraft)(start) : start;
+  };
+
+  const start = emptyOtherBooking("t1");
+
+  it("keeps the typed character — the exact repro, and it must not throw", () => {
+    const next = runDeferred(onOtherTitleChange, { currentTarget: { value: "ป" } }, start);
+    expect(next.title).toBe("ป");
+  });
+
+  it("keeps the WHOLE title, not an empty string", () => {
+    // 🚫 The tempting non-fix (`e.currentTarget?.value ?? ""`) passes "does not throw" and silently wipes what
+    // staff typed. A title that vanishes as you type is worse than a stack trace: nobody reports it.
+    const next = runDeferred(
+      onOtherTitleChange,
+      { currentTarget: { value: "ปิดปรับปรุงลานสเก็ตช่วงบ่าย" } },
+      start,
+    );
+    expect(next.title).toBe("ปิดปรับปรุงลานสเก็ตช่วงบ่าย");
+    expect(next.title).not.toBe("");
+  });
+
+  it("carries the charge toggle across the same gap (DEF-5's likely second path)", () => {
+    const next = runDeferred(onOtherChargeToggle, { currentTarget: { checked: true } }, start);
+    expect(next.charge).toBe(true);
+  });
+
+  it("carries the consume toggle across the same gap", () => {
+    const next = runDeferred(onOtherConsumeToggle, { currentTarget: { checked: true } }, start);
+    expect(next.consume).toBe(true);
+  });
+
+  it("touches nothing else on the draft — the rest of a half-filled form survives", () => {
+    // The defect's real cost was losing everything already entered, so that is asserted, not assumed.
+    const filled: OtherBookingDraft = {
+      ...start,
+      teacherIds: [],
+      charge: true,
+      priceSource: "AMOUNT",
+      amountBaht: 500,
+      consume: true,
+      entitlementId: "course:c-1",
+    };
+    const next = runDeferred(onOtherTitleChange, { currentTarget: { value: "ก" } }, filled);
+    expect(next).toEqual({ ...filled, title: "ก" });
+  });
+
+  it("AC-19 still holds — the guard did not turn 'no teachers' into something the form prevents", () => {
+    // ⚠️ The task's explicit warning: do NOT 'fix' this by keeping at least one teacher. Emptying the list is
+    // legal; SAVING without one is what must be refused.
+    const emptied = runDeferred(onOtherTitleChange, { currentTarget: { value: "x" } }, {
+      ...start,
+      teacherIds: [],
+    });
+    expect(emptied.teacherIds).toEqual([]);
+    expect(evaluateOtherBooking(emptied).problemKeys).toContain("booking.errOtherNoTeacher");
   });
 });
