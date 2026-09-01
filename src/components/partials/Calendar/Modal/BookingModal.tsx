@@ -13,6 +13,12 @@ import {
   ActionIcon,
   Tabs,
   Text,
+  MultiSelect,
+  NumberInput,
+  SegmentedControl,
+  Switch,
+  TextInput,
+  Loader,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PackageOpen } from "lucide-react";
@@ -29,6 +35,7 @@ import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } 
 import { useT } from "@/lib/i18n";
 import {
   useBadges,
+  useCatalogItems,
   useConfirmBooking,
   useCreateBooking,
   useDetectConflict,
@@ -40,7 +47,14 @@ import {
   useSetBookingBadges,
 } from "@/hooks/scheduler";
 import { packageFor, voucherAllowsSubject } from "@/lib/scheduler/sellable";
-import { entKey, type EligibleType } from "@/lib/scheduler/eligible";
+import { eligibleLabel, entKey, type EligibleType } from "@/lib/scheduler/eligible";
+import {
+  emptyOtherBooking,
+  evaluateOtherBooking,
+  type OtherBookingDraft,
+  type OtherPriceSource,
+} from "@/lib/scheduler/other-booking";
+import { formatPriceMinor } from "@/types/app/pricing";
 import RentalModal from "@/components/partials/Rental/RentalModal";
 import CancelBookingDialog from "./CancelBookingDialog";
 import { useConfirm } from "@/components/common/useConfirm";
@@ -667,7 +681,11 @@ function Field({ label, value }: { label: string; value: string }) {
 // SPEC-047 (REQ-044, option C) — the COURSE tab is gone. It did a plain `createBooking` (+1 session, no owed
 // check → could over-fill a course to size+1); its real job, the make-up insert, lives on the plan modal
 // (`แทรกคาบชดเชย`, owed-gated) and paid-extra on Single / `เพิ่มคาบ(คิดเงิน)`. Removing it loses no capability.
-const BOOKING_TABS: BookingType[] = ["FIRST_TRIAL", "SINGLE_SESSION", "VOUCHER"];
+//
+// ⚠️ Hand-written, like `BOOKING_TYPE_OPTIONS` and the legend array — widening `BookingType` adds no tab and
+// the compiler says nothing. `OTHER` (SPEC-070 / TASK-226) is added here explicitly, and it is last on purpose:
+// it is not a product, and it should not sit among the four things the school sells.
+const BOOKING_TABS: BookingType[] = ["FIRST_TRIAL", "SINGLE_SESSION", "VOUCHER", "OTHER"];
 
 function CreateForm({
   createSlot,
@@ -706,9 +724,15 @@ function CreateForm({
   const [discountProblems, setDiscountProblems] = useState<string[]>([]);
   // REQ-068 — optional on every booking type; empty sends nothing and changes nothing (AC-5).
   const [attendeeNote, setAttendeeNote] = useState("");
+  // SPEC-070 / REQ-078 — the อื่นๆ branch. All of its RULES live in `lib/scheduler/other-booking.ts`; this is
+  // only the draft the controls edit.
+  const [other, setOther] = useState<OtherBookingDraft>(() => emptyOtherBooking(createSlot.teacherId));
 
   const isVoucher = bookingType === "VOUCHER";
+  const isOther = bookingType === "OTHER";
   // SPEC-047 — voucher is now the ONLY entitlement-backed tab; the alias stays so the branch below reads by intent.
+  // อื่นๆ deliberately does NOT use it: its student is a free picker (or absent), and its optional deduction is a
+  // second, separate question about that student — not a way of choosing them.
   const usesEligible = isVoucher;
 
   const eligibleType: EligibleType = "VOUCHER";
@@ -718,6 +742,37 @@ function CreateForm({
   // search is always present here too) — see the BE's "paging this would silently truncate" note.
   const { data: voucherStudents = [] } = useEligibleStudents("VOUCHER", isVoucher);
   const eligible: EligibleStudent[] = isVoucher ? voucherStudents : [];
+
+  // ── SPEC-070 / TASK-226 — the อื่นๆ branch's own data ──
+  // The optional deduction needs THIS student's entitlements, so both lists are fetched and filtered by student
+  // id. Only an EXISTING student can hold one — a name typed into `StudentSelect` has no id and no entitlements,
+  // which is why the gate below is `student?.id` and not `student`.
+  const consumeEnabled = isOther && other.consume && !!student?.id;
+  const { data: otherCourseElig = [] } = useEligibleStudents("COURSE_PACKAGE", consumeEnabled);
+  const { data: otherVoucherElig = [] } = useEligibleStudents("VOUCHER", consumeEnabled);
+  const consumeOptions = [
+    ...otherCourseElig
+      .filter((e) => e.id === student?.id)
+      .map((e) => ({
+        value: `course:${entKey(e, "COURSE_PACKAGE")}`,
+        label: eligibleLabel(e, "COURSE_PACKAGE", otherCourseElig),
+      })),
+    ...otherVoucherElig
+      .filter((e) => e.id === student?.id)
+      .map((e) => ({
+        value: `voucher:${entKey(e, "VOUCHER")}`,
+        label: eligibleLabel(e, "VOUCHER", otherVoucherElig),
+      })),
+  ];
+  // Only fetched while the charge toggle is on AND the item source is chosen — opening the form on a lesson
+  // type queries nothing.
+  const catalog = useCatalogItems(isOther && other.charge && other.priceSource === "ITEM");
+
+  // 🔴 `hasStudent` is DERIVED at every read, never stored-and-synced: a copy of the student's presence inside
+  // the draft is one `setState` away from disagreeing with the picker, and the rule it feeds (AC-10 — no
+  // student ⇒ a title is mandatory) is exactly the one that must not go stale.
+  const otherDraft: OtherBookingDraft = { ...other, hasStudent: !!student?.name.trim() };
+  const otherEval = evaluateOtherBooking(otherDraft);
   const selectedEligible = eligible.find((e) => entKey(e, eligibleType) === entitlementId) ?? null;
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
@@ -762,6 +817,7 @@ function CreateForm({
     setDiscount(emptyDiscount());
     setDiscountProblems([]);
     setAttendeeNote("");
+    setOther(emptyOtherBooking(createSlot.teacherId));
   };
 
   // Preselect ONLY when there is exactly one thing to pick — and it still lands in state as a choice, so the
@@ -806,6 +862,41 @@ function CreateForm({
         voucherId: ctx.voucherId,
         badgeValueIds,
         attendeeNote: attendeeNote.trim() || undefined,
+      };
+    }
+  } else if (isOther) {
+    // SPEC-070 / REQ-078 — every RULE is in `evaluateOtherBooking`; this branch only shapes the payload.
+    const [firstTeacher, ...additional] = otherDraft.teacherIds;
+    valid = otherEval.problemKeys.length === 0 && !!firstTeacher && !!startTime;
+    if (firstTeacher) {
+      const ent = otherDraft.consume ? (otherDraft.entitlementId ?? "") : "";
+      input = {
+        // Both empty when there is no student — `createBooking` then omits `student` entirely rather than
+        // asking the BE to find-or-create a nameless guardian.
+        studentName: student?.name.trim() ?? "",
+        studentId: student?.id,
+        studentPhone: student?.phone,
+        teacherId: firstTeacher,
+        // 🔴 An อื่นๆ booking has NO program. `subject`/`subjectId` stay empty and `createBooking` skips
+        // `resolveSubjectId` for this type — that helper throws when it cannot resolve a name, which would
+        // refuse every อื่นๆ booking client-side before the request was made.
+        subject: "",
+        subjectId: undefined,
+        date: createSlot.date,
+        startTime,
+        bookingType: "OTHER",
+        // "Consume" IS "set courseId/voucherId" — the same field the day-end engine already deducts from
+        // (SPEC-070 §AC-7/8: nothing new to build, only to validate).
+        courseId: ent.startsWith("course:") ? ent.slice("course:".length) : undefined,
+        voucherId: ent.startsWith("voucher:") ? ent.slice("voucher:".length) : undefined,
+        badgeValueIds,
+        attendeeNote: attendeeNote.trim() || undefined,
+        // 🚫 No `discount` — the server refuses one on อื่นๆ (SPEC-070 §Out of scope); a typed amount already
+        // lets staff charge whatever they mean to.
+        otherTitle: otherEval.otherTitle,
+        otherPriceMinor: otherEval.otherPriceMinor,
+        otherPriceItemId: otherEval.otherPriceItemId,
+        additionalTeacherIds: additional,
       };
     }
   } else {
@@ -966,6 +1057,163 @@ function CreateForm({
             searchable
             required
           />
+        </>
+      ) : isOther ? (
+        /* ── SPEC-070 / REQ-078 — the อื่นๆ form. Deliberately NOT the lesson layout: no program picker (there
+           is no program), the student is optional, and the teacher control is a multi-select. ── */
+        <>
+          {/* AC-19 — at least one teacher; several allowed for อื่นๆ only (owner: "ทุกการจองต้องมีครู … อาจจะ
+              ครูหลายคนได้"). The clicked column is pre-filled as a fact, not a guess, and staff may swap it. */}
+          <MultiSelect
+            label={t("booking.otherTeachers")}
+            description={t("booking.otherTeachersHint")}
+            placeholder={t("booking.movePickTeacher")}
+            data={teacherSelectData(teachers.filter((tc) => bookableOnDate(tc, createSlot.date)))}
+            value={other.teacherIds}
+            onChange={(v) => setOther((p) => ({ ...p, teacherIds: v }))}
+            searchable
+            required
+            renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+          />
+
+          <StudentSelect value={student} onChange={setStudent} label={t("booking.otherStudentOptional")} />
+
+          {/* AC-10 — always shown for อื่นๆ, mandatory only when there is no student. It is the ONLY thing left
+              to name the booking with, and `displayName` must never fall through to blank or to the word อื่นๆ. */}
+          <TextInput
+            label={t("booking.otherTitle")}
+            description={t("booking.otherTitleHint")}
+            placeholder={t("booking.otherTitlePlaceholder")}
+            value={other.title}
+            onChange={(e) => setOther((p) => ({ ...p, title: e.currentTarget.value }))}
+            required={!otherDraft.hasStudent}
+          />
+
+          <Select
+            label={t("booking.time")}
+            value={startTime}
+            onChange={(v) => setStartTime(v ?? "")}
+            data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
+            allowDeselect={false}
+            searchable
+            className="max-w-xs"
+          />
+
+          {/* ── Charge (AC-5/6/11/12) — off by default. ✅ Stays available with several teachers: the owner's
+              "ไม่ต้องมีให้ใส่การได้ตังค์" was about TEACHER PAY (Q7 = ก), not the customer charge. ── */}
+          <div className="rounded-lg border border-muted-200 p-3">
+            <Switch
+              label={t("booking.otherCharge")}
+              checked={other.charge}
+              onChange={(e) => setOther((p) => ({ ...p, charge: e.currentTarget.checked }))}
+            />
+            {other.charge && (
+              <Stack gap="sm" mt="sm">
+                {/* 🔴 AC-12 — ONE value, so "both price sources set" is unrepresentable rather than merely
+                    refused. The DB CHECK and the server refusal are the backstops; this is the product. */}
+                <SegmentedControl
+                  fullWidth
+                  value={other.priceSource}
+                  onChange={(v) =>
+                    setOther((p) => ({ ...p, priceSource: v as OtherPriceSource }))
+                  }
+                  data={[
+                    { value: "AMOUNT", label: t("booking.otherChargeSourceAmount") },
+                    { value: "ITEM", label: t("booking.otherChargeSourceItem") },
+                  ]}
+                />
+                {other.priceSource === "AMOUNT" ? (
+                  <NumberInput
+                    label={t("booking.otherAmountLabel")}
+                    // ⚠️ VAT-inclusive, said on the field: the first person to type a net figure silently
+                    // misstates a month, and nothing downstream can detect it.
+                    description={t("booking.otherAmountHint")}
+                    value={other.amountBaht}
+                    onChange={(v) =>
+                      setOther((p) => ({ ...p, amountBaht: typeof v === "number" ? v : "" }))
+                    }
+                    min={1}
+                    step={1}
+                    allowDecimal={false}
+                    thousandSeparator=","
+                    className="max-w-xs"
+                  />
+                ) : catalog.isLoading ? (
+                  <Loader size="sm" />
+                ) : catalog.data && catalog.data.length > 0 ? (
+                  <Select
+                    label={t("booking.otherItemLabel")}
+                    placeholder={t("booking.otherItemPlaceholder")}
+                    data={catalog.data.map((it) => ({
+                      value: it.id,
+                      label: `${it.name} · ฿${formatPriceMinor(it.unitPriceMinor)}`,
+                    }))}
+                    value={other.itemId}
+                    onChange={(v) => setOther((p) => ({ ...p, itemId: v }))}
+                    searchable
+                    required
+                  />
+                ) : (
+                  /* 🔴 The empty state, built unconditionally. `/catalog-items` legitimately returns zero on a
+                     box where nobody created a backoffice item — and an empty dropdown with no words is
+                     indistinguishable from a broken endpoint. The typed amount still works from here. */
+                  <Alert color="blue" variant="light" icon={<AlertTriangle size={16} />}>
+                    <Text fz="sm">{t("booking.otherItemEmpty")}</Text>
+                    <Text fz="xs" c="dimmed" mt={4}>
+                      {t("booking.otherItemEmptyHint")}
+                    </Text>
+                  </Alert>
+                )}
+              </Stack>
+            )}
+          </div>
+
+          {/* ── Consume (AC-7/8) — off by default. "Consume" IS setting courseId/voucherId; the existing
+              day-end engine deducts from whichever is set, so there is nothing new here but the choice. ── */}
+          <div className="rounded-lg border border-muted-200 p-3">
+            <Switch
+              label={t("booking.otherConsume")}
+              checked={other.consume}
+              onChange={(e) => setOther((p) => ({ ...p, consume: e.currentTarget.checked }))}
+            />
+            {other.consume &&
+              (!student?.id ? (
+                // A brand-new student typed into the picker has no id and therefore no entitlements — say which
+                // step is missing rather than showing an empty dropdown.
+                <Text fz="sm" c="dimmed" mt="sm">
+                  {t("booking.otherConsumeNeedsStudent")}
+                </Text>
+              ) : consumeOptions.length === 0 ? (
+                <Text fz="sm" c="dimmed" mt="sm">
+                  {t("booking.otherConsumeNone")}
+                </Text>
+              ) : (
+                <Select
+                  mt="sm"
+                  label={t("booking.otherConsumePick")}
+                  placeholder={t("booking.pickProgram")}
+                  data={consumeOptions}
+                  value={other.entitlementId}
+                  onChange={(v) => setOther((p) => ({ ...p, entitlementId: v }))}
+                  searchable
+                  required
+                />
+              ))}
+          </div>
+
+          {/* Every problem at once, in staff's language — the negatives ARE the requirement in REQ-078, and a
+              user who can submit an impossible combination and gets a 400 has been told nothing useful. */}
+          {otherEval.problemKeys.length > 0 && (
+            <Alert color="orange" variant="light" icon={<AlertTriangle size={16} />}>
+              <Stack gap={2}>
+                {otherEval.problemKeys.map((k) => (
+                  <Text key={k} fz="sm">
+                    {t(k)}
+                  </Text>
+                ))}
+              </Stack>
+            </Alert>
+          )}
         </>
       ) : (
         <>

@@ -30,6 +30,7 @@ import {
   markSickLeave,
   cancelBooking,
   getPostedSale,
+  getCatalogItems,
   setTeacherActive,
   setTeacherLimitOverride,
   setTeacherTypeActive,
@@ -76,6 +77,8 @@ export const REPORT_KEY = ["daily-report"] as const;
 export const VOUCHERS_KEY = ["vouchers"] as const;
 /** SPEC-069 / TASK-222 — per-booking, read-only. Never invalidated by a mutation: it describes the ledger, not us. */
 export const POSTED_SALE_KEY = ["posted-sale"] as const;
+/** SPEC-070 / TASK-229 — the backoffice INCOME items an อื่นๆ booking can be charged to. */
+export const CATALOG_ITEMS_KEY = ["catalog-items"] as const;
 
 // ───────────────────────────── Teachers ─────────────────────────────
 
@@ -368,6 +371,15 @@ export const usePostedSale = (id: string | null | undefined, enabled: boolean) =
     retry: false,
     staleTime: 0,
   });
+
+/**
+ * SPEC-070 / TASK-226 — the catalogue an อื่นๆ booking can be charged to. `enabled` only while the charge
+ * toggle is on and the item source is chosen, so opening the form on a lesson type queries nothing.
+ *
+ * A **read** — no invalidation. An empty result is data, not an error, and the picker says so in words.
+ */
+export const useCatalogItems = (enabled: boolean) =>
+  useQuery({ queryKey: CATALOG_ITEMS_KEY, queryFn: getCatalogItems, enabled });
 
 export const useCreateBooking = () => {
   const qc = useQueryClient();

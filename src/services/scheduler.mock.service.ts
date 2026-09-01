@@ -26,7 +26,7 @@ import type {
   TeacherType,
   TeacherView,
 } from "@/types/app/scheduler";
-import type { BulkConfirmResult, PostedSale } from "@/types/api/contract";
+import type { BulkConfirmResult, CatalogItem, PostedSale } from "@/types/api/contract";
 
 const delay = <T>(value: T, ms = 200) =>
   new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
@@ -167,6 +167,20 @@ export const cancelBooking = (id: string, _reason?: string): Promise<Booking> =>
  * error path is exercised against the real endpoint, not by breaking the mock.
  */
 export const getPostedSale = (_id: string): Promise<PostedSale | null> => delay(null);
+
+/**
+ * SPEC-070 / TASK-229 — backoffice INCOME items, offline. Deliberately **not** this repo's own seeded sale
+ * items (`first-trial`, `course-*`, …): the real endpoint excludes them, and a mock that offered them would
+ * rehearse exactly the mistake the filter exists to prevent.
+ *
+ * ⚠️ Returns a non-empty list, so the normal path is exercisable offline. **The empty state is therefore NOT
+ * reachable here** — set this to `[]` for one run to see it (TASK-226 §Implementation Notes says so too).
+ */
+export const getCatalogItems = (): Promise<CatalogItem[]> =>
+  delay([
+    { id: "bo-item-1", name: "ค่าเช่าสถานที่ (จัดงาน)", unitPriceMinor: 250000 },
+    { id: "bo-item-2", name: "คอร์สอบรมครูภายนอก", unitPriceMinor: 150000 },
+  ]);
 
 export const getBookingsByDate = (date: string) =>
   delay(clone(bookings.filter((b) => b.date === date)));
@@ -327,6 +341,11 @@ export const bulkConfirm = (ids: string[]): Promise<BulkConfirmResult[]> => {
   return delay(results);
 };
 
+/**
+ * ⚠️ A **narrower** mirror of the service's `CreateBookingInput` — it carries only what the mock actually uses.
+ * The service passes its full object, so the extra keys ride along; anything the mock must *read* has to be
+ * listed here or it is invisible to it (TypeScript included).
+ */
 export interface CreateBookingInput {
   studentName: string;
   teacherId: string;
@@ -336,6 +355,11 @@ export interface CreateBookingInput {
   startTime: string;
   bookingType: BookingType;
   voucherId?: string;
+  // SPEC-070 / TASK-226 — needed because the wire and a `Booking` name these differently (`otherTitle` →
+  // `title`, `additionalTeacherIds` → `teachers`). Without them the mock built an อื่นๆ with a blank
+  // `displayName`, which is the AC-10 failure.
+  otherTitle?: string;
+  additionalTeacherIds?: string[];
 }
 
 const endOf = (startTime: string) =>
@@ -363,9 +387,20 @@ export const detectConflict = (
 export const createBooking = (input: CreateBookingInput) => {
   // TASK-227 — `asBooking` derives `displayName` + `teachers` by the same rules the BE uses, so the mock cannot
   // drift from the contract (and a newly created booking lands in the calendar rather than in no column).
+  //
+  // 🔴 TASK-226 — the payload and the booking name these fields DIFFERENTLY: the wire carries `otherTitle` and
+  // `additionalTeacherIds`; a `Booking` carries `title` and `teachers`. Spreading `...input` alone therefore
+  // left an อื่นๆ booking created offline with **`displayName: ""`** — a blank calendar cell, which is exactly
+  // the AC-10 failure this whole feature exists to prevent. Neither the compiler nor tsc could see it (`title`
+  // is optional, and the extra keys ride along harmlessly), so it is mapped explicitly here.
   const newBooking: Booking = asBooking({
     id: nextBookingId(),
     ...input,
+    title: input.otherTitle ?? null,
+    extraTeacherIds: input.additionalTeacherIds,
+    // A student is optional on อื่นๆ — `""` would render as a name that is merely invisible rather than absent.
+    studentName: input.studentName.trim() || null,
+    subject: input.subject || null,
     endTime: endOf(input.startTime),
     status: "PENDING",
   });

@@ -211,6 +211,26 @@ export interface BookingDTO {
 }
 
 /**
+ * SPEC-070 / TASK-229 — a backoffice INCOME item an อื่นๆ booking may be charged to.
+ * `GET /catalog-items` → `{ items: CatalogItem[] }`.
+ *
+ * 🔴 The endpoint deliberately EXCLUDES this repo's own seeded sale items (`first-trial`, `course-*`,
+ * `voucher-*`, the rentals, `other-booking`) — charging an อื่นๆ to "Course 6h (onewheel)" would post course
+ * revenue with no course behind it. So this list can legitimately be **empty**, and an empty dropdown with no
+ * words is indistinguishable from a broken endpoint: the picker must say so (TASK-226 §empty state).
+ */
+export interface CatalogItem {
+  id: string;
+  name: string;
+  /** The item's own price in satang, read at posting time by the BE — the FE only displays it. */
+  unitPriceMinor: number;
+}
+
+export interface CatalogItemsResponse {
+  items: CatalogItem[];
+}
+
+/**
  * SPEC-069 / TASK-221 — what the day-end job already put in the books for this booking.
  * `GET /bookings/:id/posted-sale` → `{ posted: PostedSale | null }`.
  *

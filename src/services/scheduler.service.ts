@@ -47,6 +47,8 @@ import type {
   CreateVoucherResponse,
   DailyReportResponse,
   MoveBookingResponse,
+  CatalogItem,
+  CatalogItemsResponse,
   PostedSale,
   PostedSaleResponse,
   SetTeacherWorkDaysResponse,
@@ -395,6 +397,19 @@ export const getPostedSale = async (id: string): Promise<PostedSale | null> => {
   return data.posted;
 };
 
+/**
+ * SPEC-070 / TASK-229 — the backoffice INCOME items an อื่นๆ booking can be charged to.
+ *
+ * 🔴 An **empty list is a legitimate answer**, not an error: the endpoint filters out this repo's own seeded
+ * sale items, so a box where nobody created a backoffice item returns zero. The caller must say so in words —
+ * an empty dropdown reads as a broken endpoint (TASK-226 §empty state).
+ */
+export const getCatalogItems = async (): Promise<CatalogItem[]> => {
+  if (useMock) return mock.getCatalogItems();
+  const { data } = await api.get<CatalogItemsResponse>("/catalog-items");
+  return data.items;
+};
+
 export const markAttended = async (id: string) => {
   if (useMock) return mock.markAttended(id);
   const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {
@@ -450,6 +465,15 @@ export interface CreateBookingInput {
   attendeeNote?: string;
   /** badge value ids ที่จะติดกับการจอง (type ละ ≤ 1) */
   badgeValueIds?: string[];
+  // ── SPEC-070 / REQ-078 — `OTHER` only. The server REFUSES every one of these on the four lesson types. ──
+  /** The admin's typed name for an อื่นๆ booking. **Required when there is no student** (AC-10). */
+  otherTitle?: string;
+  /** A typed charge in **satang** (AC-5). Converted from baht once, at the form, via `bahtToMinor`. */
+  otherPriceMinor?: number;
+  /** A `bo.item` id to charge instead of a typed amount. 🔴 Never both (AC-12). */
+  otherPriceItemId?: string;
+  /** AC-18/19 — the teachers BEYOND `teacherId`; `teacherId` is always the first. `OTHER` only (AC-20). */
+  additionalTeacherIds?: string[];
 }
 
 /** Existing id → { id }; otherwise an inline new student (+ optional parent phone). */
@@ -496,9 +520,19 @@ export const detectConflict = async (
 
 export const createBooking = async (input: CreateBookingInput, teachers?: TeacherView[]) => {
   if (useMock) return mock.createBooking(input);
-  const subjectId = resolveSubjectId(input.teacherId, input.subject, input.subjectId, teachers);
+  // 🔴 SPEC-070 / TASK-226 — an อื่นๆ booking has **no program**, so it must not go through `resolveSubjectId`:
+  // that helper THROWS a client-side `VALIDATION` error when it cannot resolve a name, which would refuse every
+  // อื่นๆ booking before the request was even made. Nullable `subject_id` on the BE is what makes this legal.
+  const isOther = input.bookingType === "OTHER";
+  const subjectId = isOther
+    ? input.subjectId // usually undefined; an อื่นๆ may carry one, but is never required to
+    : resolveSubjectId(input.teacherId, input.subject, input.subjectId, teachers);
+  // An อื่นๆ booking may have no student at all (AC-2). `undefined` omits the key; sending `{ name: "" }` would
+  // ask the BE to find-or-create a nameless guardian.
+  const student =
+    isOther && !input.studentId && !input.studentName.trim() ? undefined : studentPayload(input);
   const { data } = await api.post("/bookings", {
-    student: studentPayload(input),
+    student,
     teacherId: input.teacherId,
     subjectId,
     date: input.date,
@@ -513,6 +547,15 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
     // payload has to be added HERE too — the compiler cannot catch an omission from an object literal.
     discount: input.discount,
     attendeeNote: input.attendeeNote,
+    // SPEC-070 / TASK-226 — the four อื่นๆ fields, added HERE and not only to the type, because of the line
+    // above: this literal is the wire, and the compiler cannot see an omission from it. 🔴 Gated on the type so
+    // a lesson booking never carries one — the BE refuses them outright rather than ignoring them, so sending
+    // `undefined` vs not sending is the difference between a booking and a 400.
+    otherTitle: isOther ? input.otherTitle : undefined,
+    otherPriceMinor: isOther ? input.otherPriceMinor : undefined,
+    otherPriceItemId: isOther ? input.otherPriceItemId : undefined,
+    additionalTeacherIds:
+      isOther && input.additionalTeacherIds?.length ? input.additionalTeacherIds : undefined,
   });
   return dtoToBooking(data.booking);
 };
