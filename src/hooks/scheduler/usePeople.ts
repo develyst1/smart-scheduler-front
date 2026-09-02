@@ -3,6 +3,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listParents,
+  getParent,
+  clearParentLineLink,
   createParent,
   updateParent,
   createStudentForParent,
@@ -22,6 +24,34 @@ export const useParents = (query: ParentsQuery = {}) =>
     queryFn: () => listParents(query),
     placeholderData: keepPreviousData,
   });
+
+/**
+ * SPEC-071 / TASK-243 — one family's detail, incl. its LINE binding. `enabled` is the dialog's own `opened`,
+ * so a screen full of parent cards issues **no** extra request until an admin opens one.
+ *
+ * 🚫 Never call this per row. The BE resolves `lineAccounts` through the family-link accessor (one query each);
+ * a badge on every card is a **batched** BE read, not 20 of these.
+ */
+export const useParent = (id: string | null, enabled: boolean) =>
+  useQuery({
+    queryKey: [...PARENTS_KEY, "detail", id],
+    queryFn: () => getParent(id as string),
+    enabled: enabled && !!id,
+    // The admin is about to act on what this says, so it is never served from a previous look.
+    staleTime: 0,
+  });
+
+/**
+ * SPEC-071 / TASK-243 — the staff act. Invalidates the parents cache so the reopened dialog reads the new
+ * state rather than the one the admin just changed.
+ */
+export const useClearParentLineLink = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => clearParentLineLink(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PARENTS_KEY }),
+  });
+};
 
 export const useCreateParent = () => {
   const qc = useQueryClient();

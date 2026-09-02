@@ -834,6 +834,25 @@ const en = {
     unsuspendBody: "This restores their LINE bot access and lets new bookings be made again.",
     suspendedOk: "Account suspended",
     unsuspendedOk: "Account un-suspended",
+    // ── SPEC-071 / TASK-243 — clearing a family's LINE binding ──
+    lineLinkTitle: "LINE link — {family}",
+    lineLinkChecking: "Checking this family's LINE link…",
+    lineLinkedOne: "This family has 1 LINE account linked.",
+    // TASK-230 made a family able to hold more than one account, so the plural is a real case, not decoration.
+    lineLinkedMany: "This family has {n} LINE accounts linked.",
+    lineNotLinked: "No LINE account is linked to this family.",
+    // 🔴 The whole reason this dialog has copy at all: the tempting misreading is "unlink" = "remove the
+    // family". It says what is lost (the link) and what is not (everything else), in that order.
+    lineClearBody:
+      "Clearing removes only the LINE link. Students, bookings, notes and message history are all kept, and the parent can link again from LINE at any time.",
+    // ⚠️ And the part staff would otherwise discover afterwards: after a clear, whoever types the phone number
+    // next is who gets bound — so this is a hand-over, not merely a reset (SPEC-071 §2's accepted risk).
+    lineClearHandover:
+      "After clearing, the LINE account can be linked to a family again — including a different one.",
+    lineClear: "Clear LINE link",
+    lineClearedOk: "LINE link cleared",
+    lineClearedDesc: "{n} LINE account(s) unlinked from {family}.",
+    lineClearFailed: "Could not clear the LINE link",
   },
 
   som: {
@@ -1842,6 +1861,21 @@ const th: typeof en = {
     unsuspendBody: "จะเปิดการใช้งาน LINE บอท และสร้างการจองใหม่ได้อีกครั้ง",
     suspendedOk: "ระงับบัญชีแล้ว",
     unsuspendedOk: "ยกเลิกการระงับแล้ว",
+    // ── SPEC-071 / TASK-243 — ล้างการเชื่อมไลน์ของครอบครัว ──
+    lineLinkTitle: "การเชื่อมไลน์ — {family}",
+    lineLinkChecking: "กำลังตรวจสอบการเชื่อมไลน์ของครอบครัวนี้…",
+    lineLinkedOne: "ครอบครัวนี้เชื่อมบัญชีไลน์ไว้ 1 บัญชี",
+    lineLinkedMany: "ครอบครัวนี้เชื่อมบัญชีไลน์ไว้ {n} บัญชี",
+    lineNotLinked: "ครอบครัวนี้ยังไม่ได้เชื่อมบัญชีไลน์",
+    // 🔴 กันการเข้าใจผิดที่ล่อใจที่สุด: "ล้างการเชื่อม" ไม่ใช่ "ลบครอบครัว"
+    lineClearBody:
+      "การล้างจะตัดเฉพาะการเชื่อมไลน์เท่านั้น นักเรียน การจอง โน้ต และประวัติข้อความยังอยู่ครบ และผู้ปกครองเชื่อมใหม่จากไลน์ได้ทุกเมื่อ",
+    // ⚠️ หลังล้างแล้ว ใครพิมพ์เบอร์เข้ามาก่อนก็ผูกได้ — จึงเป็นการ "ส่งต่อ" ไม่ใช่แค่รีเซ็ต
+    lineClearHandover: "หลังล้างแล้ว บัญชีไลน์นั้นจะถูกนำไปเชื่อมกับครอบครัวใดก็ได้ รวมถึงครอบครัวอื่น",
+    lineClear: "ล้างการเชื่อมไลน์",
+    lineClearedOk: "ล้างการเชื่อมไลน์แล้ว",
+    lineClearedDesc: "ตัดการเชื่อมบัญชีไลน์ {n} บัญชี ออกจาก {family} แล้ว",
+    lineClearFailed: "ล้างการเชื่อมไลน์ไม่สำเร็จ",
   },
 
   som: {

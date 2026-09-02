@@ -17,11 +17,16 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { Search, UserPlus, Pencil, Ban, CircleCheck, Baby, Phone, MapPin } from "lucide-react";
+import { Search, UserPlus, Pencil, Ban, CircleCheck, Baby, Phone, MapPin, Link2Off } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
-import { useParents, useSetParentSuspended } from "@/hooks/scheduler";
+import {
+  useClearParentLineLink,
+  useParent,
+  useParents,
+  useSetParentSuspended,
+} from "@/hooks/scheduler";
 import { THAI_NATIONALITY, type Parent, type Student } from "@/types/app/people";
 import ParentFormModal from "./ParentFormModal";
 import StudentFormModal from "./StudentFormModal";
@@ -57,6 +62,8 @@ export default function PeopleContent() {
     student: null,
   });
   const [suspendTarget, setSuspendTarget] = useState<{ parent: Parent; suspend: boolean } | null>(null);
+  // SPEC-071 / TASK-243 — which family's LINE link is open in the dialog. `null` = closed, so nothing is fetched.
+  const [lineTarget, setLineTarget] = useState<Parent | null>(null);
 
   const genderLabel = (g: string | null) =>
     g === "male"
@@ -178,6 +185,18 @@ export default function PeopleContent() {
                       >
                         {t("people.addStudent")}
                       </Button>
+                      {/* SPEC-071 / TASK-243 — the admin end of *"contact an admin"*. This screen said nothing
+                          about LINE at all until now, so that refusal pointed at someone with neither the
+                          information nor the button. The dialog reads the family's real binding first. */}
+                      <Button
+                        size="compact-sm"
+                        variant="light"
+                        color="gray"
+                        leftSection={<Link2Off size={13} />}
+                        onClick={() => setLineTarget(p)}
+                      >
+                        {t("people.lineClear")}
+                      </Button>
                       {suspended ? (
                         <Button
                           size="compact-sm"
@@ -264,6 +283,8 @@ export default function PeopleContent() {
         onClose={() => setStudentModal({ open: false, parentId: "", student: null })}
       />
 
+      <LineLinkDialog parent={lineTarget} onClose={() => setLineTarget(null)} />
+
       <Modal
         opened={suspendTarget !== null}
         onClose={() => setSuspendTarget(null)}
@@ -292,5 +313,107 @@ export default function PeopleContent() {
         )}
       </Modal>
     </Stack>
+  );
+}
+
+/**
+ * SPEC-071 / TASK-243 — the admin's end of *"this LINE account belongs to another family — contact an admin"*.
+ *
+ * 🔴 **It reads the family's real binding BEFORE offering to clear it.** `GET /parents/:id` is fetched only
+ * when this opens, never per row: the BE counts accounts through the family-link accessor (one query each), so
+ * a badge on all 20 cards would be N+1. A per-row indicator is a **batched** BE read — named in TASK-243
+ * §Questions, deliberately not built here.
+ *
+ * Three states, and the middle one matters most: **not linked** is what an admin sees for most families, and it
+ * must read as an answer rather than as a failed load. `Clear` only exists when there is something to clear —
+ * a button that no-ops is how staff learn to distrust a screen.
+ *
+ * ⚠️ The copy carries the two things staff would otherwise find out afterwards: clearing removes **only** the
+ * link (the tempting misreading is "unlink" = "remove the family"), and it is a **hand-over** — after a clear
+ * whoever types that phone number next is who gets bound.
+ */
+function LineLinkDialog({ parent, onClose }: { parent: Parent | null; onClose: () => void }) {
+  const t = useT();
+  const detail = useParent(parent?.id ?? null, parent !== null);
+  const clear = useClearParentLineLink();
+  const familyName = parent?.name || parent?.phone || "";
+
+  const runClear = async () => {
+    if (!parent) return;
+    try {
+      const { cleared } = await clear.mutateAsync(parent.id);
+      onClose();
+      notify({
+        title: t("people.lineClearedOk"),
+        description: t("people.lineClearedDesc", { n: cleared, family: familyName }),
+        color: "success",
+      });
+    } catch (e) {
+      notify({
+        title: t("people.lineClearFailed"),
+        description: e instanceof ApiClientError ? e.message : undefined,
+        color: "danger",
+      });
+    }
+  };
+
+  const linked = detail.data?.lineLinked ?? false;
+  const accounts = detail.data?.lineAccounts ?? 0;
+
+  return (
+    <Modal
+      opened={parent !== null}
+      onClose={onClose}
+      centered
+      title={t("people.lineLinkTitle", { family: familyName })}
+    >
+      <Stack gap="lg">
+        {detail.isPending ? (
+          <Group gap="sm">
+            <Loader size="sm" />
+            <Text size="sm" c="dimmed">
+              {t("people.lineLinkChecking")}
+            </Text>
+          </Group>
+        ) : (
+          <>
+            <Text size="sm" fw={500}>
+              {!linked
+                ? t("people.lineNotLinked")
+                : accounts === 1
+                  ? t("people.lineLinkedOne")
+                  : t("people.lineLinkedMany", { n: accounts })}
+            </Text>
+            {linked && (
+              <Stack gap="xs">
+                <Text size="sm" c="dimmed">
+                  {t("people.lineClearBody")}
+                </Text>
+                <Text size="sm" c="dimmed">
+                  {t("people.lineClearHandover")}
+                </Text>
+              </Stack>
+            )}
+          </>
+        )}
+
+        <Group justify="flex-end" gap="sm">
+          <Button variant="default" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          {/* Offered only when there is a link to clear — never a button that would do nothing. */}
+          {linked && (
+            <Button
+              color="red"
+              leftSection={<Link2Off size={15} />}
+              loading={clear.isPending}
+              onClick={runClear}
+            >
+              {t("people.lineClear")}
+            </Button>
+          )}
+        </Group>
+      </Stack>
+    </Modal>
   );
 }

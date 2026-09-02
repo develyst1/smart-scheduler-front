@@ -1,7 +1,7 @@
 // People (parents + students) data access — REQ-019 / SPEC-016. The only place that talks to the
 // scheduling API for the People screen. API JSON already matches the app shapes (no mapper needed).
 import { api, useMockData } from "@/lib/api/client";
-import type { Parent, ParentsResponse, Student } from "@/types/app/people";
+import type { Parent, ParentDetail, ParentsResponse, Student } from "@/types/app/people";
 import * as mock from "./people.mock.service";
 
 export interface ParentsQuery {
@@ -13,6 +13,33 @@ export interface ParentsQuery {
 export const listParents = async (query: ParentsQuery = {}): Promise<ParentsResponse> => {
   if (useMockData) return mock.listParents(query);
   const { data } = await api.get<ParentsResponse>("/parents", { params: query });
+  return data;
+};
+
+/**
+ * SPEC-071 / TASK-243 — one family's detail, including whether a LINE account is bound to it.
+ *
+ * The People screen loads this **on demand** (when an admin opens the LINE dialog for one row), never per row:
+ * the BE resolves `lineAccounts` through the family-link accessor, so a call per card would be N+1 on a page
+ * of 20.
+ */
+export const getParent = async (id: string): Promise<ParentDetail> => {
+  if (useMockData) return mock.getParent(id);
+  const { data } = await api.get<ParentDetail>(`/parents/${id}`);
+  return data;
+};
+
+/**
+ * SPEC-071 / TASK-243 — clear this family's LINE binding. Staff-only, and it takes **no body**: the actor is
+ * read from the token server-side, never sent from here (TASK-160's rule — an actor a caller can choose is not
+ * an actor).
+ *
+ * Returns how many accounts were unbound. 🚫 It clears the LINK and nothing else — no student, booking, note
+ * or message row is touched, which the BE asserts as an absence.
+ */
+export const clearParentLineLink = async (id: string): Promise<{ cleared: number }> => {
+  if (useMockData) return mock.clearParentLineLink(id);
+  const { data } = await api.post<{ cleared: number }>(`/parents/${id}/clear-line-link`);
   return data;
 };
 

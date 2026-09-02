@@ -1,6 +1,6 @@
 // In-memory People mock — used when NEXT_PUBLIC_USE_MOCK=true, so the /scheduler/people screen is
 // exercisable offline (list/search/create/edit/suspend) without a backend. Mirrors the real contract.
-import type { Parent, ParentsResponse, Student } from "@/types/app/people";
+import type { Parent, ParentDetail, ParentsResponse, Student } from "@/types/app/people";
 import type { CreateStudentInput, ParentInput, ParentsQuery, UpdateStudentInput } from "./people.service";
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -114,4 +114,36 @@ export const setParentSuspended = (id: string, suspended: boolean): Promise<Pare
   const p = parents.find((x) => x.id === id)!;
   p.suspendedAt = suspended ? new Date("2026-08-01T00:00:00.000Z").toISOString() : null;
   return delay(clone(p));
+};
+
+/**
+ * SPEC-071 / TASK-243 — LINE bindings, offline.
+ *
+ * Keyed by parent id so BOTH states are reachable without a backend: the **first** fixture parent holds two
+ * accounts (a family can hold more than one since TASK-230 — the plural is the case a boolean would hide), and
+ * every other parent holds none. The dialog's "not linked" branch is as important as the linked one: it is what
+ * an admin sees for most families, and it must not look like a failed load.
+ */
+const mockLineAccounts = new Map<string, number>();
+let mockLineSeeded = false;
+const seedLineAccounts = () => {
+  if (mockLineSeeded) return;
+  mockLineSeeded = true;
+  if (parents[0]) mockLineAccounts.set(parents[0].id, 2);
+};
+
+export const getParent = (id: string): Promise<ParentDetail> => {
+  seedLineAccounts();
+  const p = parents.find((x) => x.id === id)!;
+  const lineAccounts = mockLineAccounts.get(id) ?? 0;
+  return delay({ ...clone(p), lineAccounts, lineLinked: lineAccounts > 0 });
+};
+
+export const clearParentLineLink = (id: string): Promise<{ cleared: number }> => {
+  seedLineAccounts();
+  const cleared = mockLineAccounts.get(id) ?? 0;
+  mockLineAccounts.set(id, 0);
+  // 🚫 Nothing else is touched — the same absence the BE asserts. A mock that also dropped the students would
+  // rehearse exactly the misreading ("unlink" = "remove the family") the confirm copy exists to prevent.
+  return delay({ cleared });
 };
