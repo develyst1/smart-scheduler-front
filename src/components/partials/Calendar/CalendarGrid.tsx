@@ -3,7 +3,7 @@
 import { Plus } from "lucide-react";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
-import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
+import { BOOKING_STATUS_COLOR, OFF_CALENDAR_STATUSES, TIME_SLOTS } from "@/types/app/scheduler";
 import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
 import { useCellDisplay, type CellDisplay } from "@/lib/scheduler/cell-display";
 import { useT } from "@/lib/i18n";
@@ -65,7 +65,7 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
         b.teachers.some((tc) => tc.id === teacherId) &&
         b.startTime === time &&
         !b.pendingSlot &&
-        b.status !== "CANCELLED",
+        !OFF_CALENDAR_STATUSES.includes(b.status),
     );
 
   return (

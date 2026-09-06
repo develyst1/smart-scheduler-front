@@ -266,6 +266,7 @@ const en = {
     EXTENDED: "Extended",
     PENDING_RESCHEDULE: "Awaiting reschedule",
     CANCELLED: "Cancelled",
+    PAUSED: "Paused",
   },
 
   calendar: {
@@ -298,6 +299,30 @@ const en = {
     // SPEC-046 re-cut — the calendar cell display toggle + the two-dimension legend.
     legendStatus: "Status",
     legendType: "Type",
+    // ── SPEC-075 / REQ-076 §3 (TASK-261) — the พัก tray. Thai is @Porter's copy VERBATIM; English is the
+    //    equivalent. 🚫 "พัก" is the customer's own word — never "ระงับ", never "Hold".
+    pausedTray: "Paused bookings",
+    pausedTrayEmpty: "No paused bookings",
+    // 🔴 AC-11 — the empty line exists so the tray reads as deliberately empty rather than missing. A control
+    // that vanishes when it has nothing in it teaches staff it is not there, and then they stop looking.
+    pausedCount: "{n} paused",
+    pausedOriginalSlot: "Was: {date} {time}",
+    pauseAction: "Pause",
+    pauseTitle: "Pause this booking?",
+    // ⚠️ Says what a hold IS and what it is NOT. 🚫 No reason is asked for — offering REQ-009's list would
+    // teach staff that pausing and cancelling are the same act (AC-8).
+    pauseBody:
+      "It comes off the calendar and waits in the paused tray. Nothing is cancelled, no money moves, and the package expiry keeps running. Put it back on the schedule at any date and time.",
+    pausedOk: "Booking paused",
+    pauseFailed: "Could not pause this booking",
+    resumeAction: "Put back on the schedule",
+    resumeTitle: "Put this booking back on the schedule",
+    // AC-13 — any date and time, not only the one it came from.
+    resumeBody: "Choose any date and time — it does not have to be the original slot.",
+    resumeDate: "Date",
+    resumeTime: "Time",
+    resumedOk: "Booking is back on the schedule",
+    resumeFailed: "Could not put it back",
     // REQ-078 AC-18 — an อื่นๆ booking stands in EVERY assigned teacher's column. Without this marker three
     // columns read as three separate meetings, so it names the other teachers rather than counting them:
     // "who else is on this?" is the question staff actually have, and a bare "×3" does not answer it.
@@ -1307,6 +1332,8 @@ const th: typeof en = {
     EXTENDED: "ขยายคาบ",
     PENDING_RESCHEDULE: "รอย้าย (รอผู้ปกครอง)",
     CANCELLED: "ยกเลิก",
+    // REQ-076 §3 — @Porter's word, verbatim. 🚫 ไม่ใช่ "ระงับ" ไม่ใช่ "Hold" — เป็นคำที่ลูกค้าใช้เอง
+    PAUSED: "พัก",
   },
 
   calendar: {
@@ -1338,6 +1365,26 @@ const th: typeof en = {
     addBooking: "เพิ่มการจอง",
     legendStatus: "สถานะ",
     legendType: "ประเภท",
+    // ── SPEC-075 / REQ-076 §3 (TASK-261) — ถาด "พัก" · คำของ @Porter ทั้งหมด ห้ามแก้ ──
+    pausedTray: "รายการที่พักไว้",
+    pausedTrayEmpty: "ไม่มีรายการที่พักไว้",
+    pausedCount: "พักไว้ {n} รายการ",
+    pausedOriginalSlot: "เดิม: {date} {time}",
+    pauseAction: "พัก",
+    pauseTitle: "พักคาบนี้ไว้?",
+    // ⚠️ บอกว่า "พัก" คืออะไร และ *ไม่ใช่* อะไร 🚫 ไม่ถามเหตุผล — การใส่ลิสต์เหตุผลของ REQ-009 ตรงนี้
+    // จะสอนแอดมินว่า "พัก" กับ "ยกเลิก" เป็นเรื่องเดียวกัน (AC-8)
+    pauseBody:
+      "คาบจะออกจากปฏิทินไปรออยู่ในรายการที่พักไว้ ไม่ได้ยกเลิก ไม่มีการเคลื่อนไหวเรื่องเงิน และวันหมดอายุแพ็กเกจยังเดินต่อตามปกติ นำกลับมาลงตารางวันไหนเวลาไหนก็ได้",
+    pausedOk: "พักคาบไว้แล้ว",
+    pauseFailed: "พักคาบไม่สำเร็จ",
+    resumeAction: "นำกลับมาลงตาราง",
+    resumeTitle: "นำคาบนี้กลับมาลงตาราง",
+    resumeBody: "เลือกวันและเวลาไหนก็ได้ ไม่จำเป็นต้องเป็นช่วงเวลาเดิม",
+    resumeDate: "วันที่",
+    resumeTime: "เวลา",
+    resumedOk: "นำคาบกลับมาลงตารางแล้ว",
+    resumeFailed: "นำกลับมาลงตารางไม่สำเร็จ",
     // REQ-078 AC-18 — บอกว่าเป็นการจองเดียวกันที่มีครูหลายคน ไม่ใช่หลายการจอง
     sharedWith: "ร่วมกับ {teachers}",
     sharedWithMore: "ร่วมกับ {teachers} +{count}",

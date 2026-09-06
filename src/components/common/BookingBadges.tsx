@@ -10,6 +10,7 @@ import {
   CalendarPlus,
   ArrowLeftRight,
   Ban,
+  PauseCircle,
   type LucideIcon,
 } from "lucide-react";
 import type { BookingStatus, BookingType, TeacherType } from "@/types/app/scheduler";
@@ -35,6 +36,9 @@ const STATUS_ICON: Record<BookingStatus, LucideIcon> = {
   EXTENDED: CalendarPlus,
   PENDING_RESCHEDULE: ArrowLeftRight,
   CANCELLED: Ban,
+  // REQ-076 — the universal "paused" shape. It shares `secondary` with EXTENDED, so the icon is what tells them
+  // apart at a glance; that is exactly the job this map was added for.
+  PAUSED: PauseCircle,
 };
 
 export function StatusChip({ status, size = "sm" }: { status: BookingStatus; size?: Size }) {

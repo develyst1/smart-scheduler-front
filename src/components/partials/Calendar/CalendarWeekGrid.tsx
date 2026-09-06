@@ -7,7 +7,7 @@ import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
-import { BOOKING_STATUS_COLOR, TIME_SLOTS } from "@/types/app/scheduler";
+import { BOOKING_STATUS_COLOR, OFF_CALENDAR_STATUSES, TIME_SLOTS } from "@/types/app/scheduler";
 import { useI18n } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
@@ -67,7 +67,7 @@ export default function CalendarWeekGrid({
           b.teachers.some((tc) => tc.id === teacherId) &&
           b.date === date &&
           !b.pendingSlot &&
-          b.status !== "CANCELLED",
+          !OFF_CALENDAR_STATUSES.includes(b.status),
       )
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
 

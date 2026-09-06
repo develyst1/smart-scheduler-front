@@ -87,6 +87,9 @@ export type BookingStatus =
   | "SICK_LEAVE" // ลา/ป่วย
   | "EXTENDED" // คาบที่ขยายต่อท้ายจากการลา
   | "PENDING_RESCHEDULE" // รอย้าย — แจ้งผู้ปกครองแล้ว รอตอบรับ (จองทับ)
+  // SPEC-075 / REQ-076 — พัก: การพักไว้เฉยๆ ไม่ใช่การยกเลิก. คาบเก็บ `date`/`startTime` เดิมไว้ (กลายเป็น
+  // "ช่องที่มันมาจาก" ซึ่งคือสิ่งที่แถวในถาดต้องบอก) แต่หายไปจากปฏิทินและจากการเช็คคิวทุกที่
+  | "PAUSED"
   | "CANCELLED"; // ยกเลิก
 
 /** สี semantic ตามสถานะ — map เป็นสี Mantine ใน lib/ui/colors.ts (ใช้สีน้อย เรียบตา) */
@@ -102,7 +105,24 @@ export const BOOKING_STATUS_COLOR: Record<
   EXTENDED: "secondary",
   PENDING_RESCHEDULE: "danger",
   CANCELLED: "danger",
+  // REQ-076 — `secondary`, deliberately NOT `danger`: พัก is a hold the family is coming back from, and giving
+  // it the cancel colour would say the opposite of what the status means. It shares `secondary` with EXTENDED,
+  // which is why the icon below matters (SPEC-037 §2: status is never signalled by colour alone).
+  PAUSED: "secondary",
 };
+
+/**
+ * 🔴 SPEC-075 / REQ-076 AC-10 (TASK-261) — statuses a booking is NEVER drawn in the calendar grid for.
+ *
+ * ONE literal, read by both grids, for the reason TASK-239 made the backend's slot list one literal: two
+ * copies of "which statuses are off the calendar" is how the day view and the week view come to disagree.
+ *
+ * `PAUSED` is here because a paused booking **keeps its `date`/`startTime`** (they are the slot it came from,
+ * which the tray row names) — so it is perfectly renderable, and would quietly draw itself back into the grid
+ * it is supposed to have left. ⚠️ The backend excludes it too; this is not a substitute for that, it is the
+ * FE half of the same rule, at the one place AC-10 is actually about.
+ */
+export const OFF_CALENDAR_STATUSES: readonly BookingStatus[] = ["CANCELLED", "PAUSED"];
 
 /** วิธีย้ายการจองเดิมเมื่อมีการจองทับ */
 export type RescheduleReason = "MOVE_DAY" | "MOVE_WEEK" | "MOVE_TEACHER";

@@ -410,6 +410,40 @@ export const getCatalogItems = async (): Promise<CatalogItem[]> => {
   return data.items;
 };
 
+/**
+ * SPEC-075 / REQ-076 / TASK-261 — **พัก**: put one booking on hold.
+ *
+ * ⚠️ **Contract assumed, not yet published.** TASK-260 (the BE half) is being written in parallel and names no
+ * routes, so these two mirror the shape this repo already uses for the *course* pause/resume that REQ-071 owns
+ * (`POST /courses/:id/pause` · `POST /courses/:id/resume`). If @Jason lands different paths, this file is the
+ * only place that changes — see TASK-261 §Questions Q3.
+ *
+ * 🚫 **AC-8 — no body, and that is the point.** With no field to put one in, a reason cannot be sent even by
+ * accident: the absence is structural rather than a promise. Offering REQ-009's reason list here would teach
+ * staff that พัก and ยกเลิก are the same act.
+ */
+export const pauseBooking = async (id: string): Promise<Booking> => {
+  if (useMock) return mock.pauseBooking(id);
+  const { data } = await api.post<UpdateBookingStatusResponse>(`/bookings/${id}/pause`);
+  return dtoToBooking(data.booking);
+};
+
+/**
+ * SPEC-075 / REQ-076 — **นำกลับมาลงตาราง**: put it back on the calendar at **any** date and time (AC-13,
+ * *"ตอนไหนก็ได้"*), not only the slot it came from.
+ *
+ * 🔴 **AC-14: a clash comes back as the SERVER's message and is shown unchanged.** It names the teacher and the
+ * clashing booking; this layer neither pre-checks nor rewrites it. One clash rule in the product.
+ */
+export const resumeBooking = async (
+  id: string,
+  input: { date: string; startTime: string },
+): Promise<Booking> => {
+  if (useMock) return mock.resumeBooking(id, input);
+  const { data } = await api.post<UpdateBookingStatusResponse>(`/bookings/${id}/resume`, input);
+  return dtoToBooking(data.booking);
+};
+
 export const markAttended = async (id: string) => {
   if (useMock) return mock.markAttended(id);
   const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {

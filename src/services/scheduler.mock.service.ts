@@ -160,6 +160,47 @@ export const cancelBooking = (id: string, _reason?: string): Promise<Booking> =>
 };
 
 /**
+ * SPEC-075 / REQ-076 / TASK-261 — พัก / นำกลับมาลงตาราง, offline.
+ *
+ * 🔴 **The booking KEEPS its `date`/`startTime` while paused** — they become *the slot it came from*, which is
+ * exactly what the tray row names (AC-12). A mock that cleared them would make the tray look correct while
+ * hiding the one thing AC-12 asks for.
+ */
+export const pauseBooking = (id: string): Promise<Booking> => {
+  const b = bookings.find((x) => x.id === id);
+  if (b) b.status = "PAUSED";
+  return delay(clone(b) as Booking);
+};
+
+export const resumeBooking = (
+  id: string,
+  input: { date: string; startTime: string },
+): Promise<Booking> => {
+  const b = bookings.find((x) => x.id === id);
+  if (!b) return delay(undefined as unknown as Booking);
+  // AC-14 — the clash refusal is the SERVER's sentence. Offline we can still reach the branch, so the mock
+  // refuses the same case the server does (an active booking already in that teacher's slot) and throws a
+  // message shaped like the real one, rather than pretending every resume succeeds.
+  const clash = bookings.find(
+    (x) =>
+      x.id !== b.id &&
+      x.teacherId === b.teacherId &&
+      x.date === input.date &&
+      x.startTime === input.startTime &&
+      !["CANCELLED", "PAUSED", "SICK_LEAVE"].includes(x.status),
+  );
+  if (clash) {
+    return Promise.reject(
+      new Error(`ครูคนนี้มีคาบอยู่แล้วในช่วงเวลานี้ (${clash.displayName} ${input.date} ${input.startTime})`),
+    );
+  }
+  b.status = "CONFIRMED";
+  b.date = input.date;
+  b.startTime = input.startTime;
+  return delay(clone(b));
+};
+
+/**
  * SPEC-069 / TASK-222 — the posted-sale lookup, offline.
  *
  * 🔴 Returns `null` (never a rejection) **on purpose**: an offline mock that threw would leave the cancel dialog

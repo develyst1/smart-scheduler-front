@@ -18,6 +18,10 @@ export type BookingStatus =
   | "SICK_LEAVE"
   | "EXTENDED"
   | "PENDING_RESCHEDULE"
+  // SPEC-075 / REQ-076 — พัก: a hold, and nothing else. The booking KEEPS its `date`/`startTime` (they become
+  // the slot it came from, which is what the tray row names) but leaves the calendar and every availability
+  // check. 🚫 Never `PENDING_RESCHEDULE` reused — that one carries `incomingBookingId` and legacy B.1 rows.
+  | "PAUSED"
   | "CANCELLED";
 export type PackageSize = 4 | 6 | 10;
 

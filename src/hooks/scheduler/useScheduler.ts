@@ -29,6 +29,8 @@ import {
   getEligibleStudents,
   markSickLeave,
   cancelBooking,
+  pauseBooking,
+  resumeBooking,
   getPostedSale,
   getCatalogItems,
   setTeacherActive,
@@ -380,6 +382,39 @@ export const usePostedSale = (id: string | null | undefined, enabled: boolean) =
  */
 export const useCatalogItems = (enabled: boolean) =>
   useQuery({ queryKey: CATALOG_ITEMS_KEY, queryFn: getCatalogItems, enabled });
+
+/**
+ * SPEC-075 / REQ-076 / TASK-261 — the **รายการที่พักไว้** tray's source.
+ *
+ * 🔑 **No new endpoint.** A paused booking is a booking with a status, so the existing bookings list already
+ * answers this; asking @Jason for a `/paused` route would be a second way to ask one question. `limit` is
+ * generous because the tray shows them all — a paused booking that is off the calendar AND off the bottom of
+ * its own tray does not exist anywhere (AC-9).
+ */
+export const usePausedBookings = () =>
+  useQuery({
+    queryKey: [...BOOKINGS_KEY, "paused"],
+    queryFn: () => getAllBookings({ status: "PAUSED", limit: 200, sort: "date_asc" }),
+  });
+
+/** REQ-076 AC-1 — พัก. 🚫 Takes an id and nothing else: there is no reason to pass (AC-8). */
+export const usePauseBooking = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => pauseBooking(id),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/** REQ-076 AC-13 — นำกลับมาลงตาราง, at any date and time. A clash rejects with the SERVER's message (AC-14). */
+export const useResumeBooking = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, date, startTime }: { id: string; date: string; startTime: string }) =>
+      resumeBooking(id, { date, startTime }),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
 
 export const useCreateBooking = () => {
   const qc = useQueryClient();

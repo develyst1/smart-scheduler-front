@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dayjs from "dayjs";
 import {
   Modal,
   Button,
@@ -21,7 +22,7 @@ import {
   Loader,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PackageOpen } from "lucide-react";
+import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PackageOpen, PauseCircle, PlayCircle } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -43,6 +44,8 @@ import {
   useMarkAttended,
   useMarkSickLeave,
   useMoveBooking,
+  usePauseBooking,
+  useResumeBooking,
   useSellablePackages,
   useSetBookingBadges,
 } from "@/hooks/scheduler";
@@ -58,6 +61,12 @@ import {
   type OtherPriceSource,
 } from "@/lib/scheduler/other-booking";
 import { formatPriceMinor } from "@/types/app/pricing";
+import { formatDateDisplay } from "@/lib/ui/format";
+import {
+  canPauseBooking,
+  canResumeBooking,
+  canSubmitResume,
+} from "@/lib/scheduler/pause-booking";
 import RentalModal from "@/components/partials/Rental/RentalModal";
 import CancelBookingDialog from "./CancelBookingDialog";
 import { useConfirm } from "@/components/common/useConfirm";
@@ -160,6 +169,15 @@ function ViewBooking({
   // REQ-028 / TASK-109 — record an equipment rental as an add-on to this booking (refId = booking.id).
   const [rentalOpen, setRentalOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  // SPEC-075 / REQ-076 (TASK-261) — พัก / นำกลับมาลงตาราง.
+  const pause = usePauseBooking();
+  const resume = useResumeBooking();
+  const [resumeOpen, setResumeOpen] = useState(false);
+  const [resumeDate, setResumeDate] = useState<string | null>(null);
+  const [resumeTime, setResumeTime] = useState<string | null>(null);
+  // 🔴 AC-14 — the BACKEND's clash sentence, held verbatim. It already names the teacher and the clashing
+  // booking; composing a second one here would be two clash rules in the product that can disagree.
+  const [resumeError, setResumeError] = useState<string | null>(null);
   // REQ-073 — one shared confirm for the actions that consume a session, message a teacher, or charge.
   const { confirm: askConfirm, confirmDialog } = useConfirm();
 
@@ -243,6 +261,54 @@ function ViewBooking({
       });
     }
     onClose();
+  };
+
+  /**
+   * REQ-076 AC-1 — พัก. One confirm, then the call. 🚫 **No reason is collected anywhere on this path** (AC-8):
+   * `usePauseBooking` takes an id and the endpoint takes no body, so there is nowhere to put one even by
+   * accident — the absence is structural rather than a promise.
+   */
+  const handlePause = async () => {
+    if (
+      !(await askConfirm({
+        title: t("calendar.pauseTitle"),
+        message: t("calendar.pauseBody"),
+        confirmLabel: t("calendar.pauseAction"),
+        color: "grape",
+      }))
+    )
+      return;
+    try {
+      await pause.mutateAsync(booking.id);
+      notify({ title: t("calendar.pausedOk"), description: booking.displayName, color: "primary" });
+      onClose();
+    } catch (e) {
+      notify({
+        title: t("calendar.pauseFailed"),
+        description: e instanceof ApiClientError ? e.message : (e as Error).message,
+        color: "danger",
+      });
+    }
+  };
+
+  /** REQ-076 AC-13 — นำกลับมาลงตาราง, at ANY date and time. AC-14's clash comes back as the server's words. */
+  const handleResume = async () => {
+    if (!canSubmitResume(resumeDate, resumeTime)) return;
+    setResumeError(null);
+    try {
+      await resume.mutateAsync({
+        id: booking.id,
+        date: resumeDate as string,
+        startTime: resumeTime as string,
+      });
+      notify({ title: t("calendar.resumedOk"), description: booking.displayName, color: "success" });
+      setResumeOpen(false);
+      onClose();
+    } catch (e) {
+      // 🔴 Shown UNCHANGED. The server's refusal names the teacher and the booking already in that slot;
+      // rewriting or summarising it here would lose the one detail that tells staff what to do next.
+      setResumeError(e instanceof ApiClientError ? e.message : (e as Error).message);
+    }
   };
 
   const handleSickLeave = async (override = false) => {
@@ -538,6 +604,22 @@ function ViewBooking({
             >
               {t("booking.sickLeaveBtn")}
             </Menu.Item>
+            {/* 🔴 SPEC-075 / REQ-076 (TASK-261) — พัก. Offered for exactly the three non-course types, and only
+                while the session has not happened; the rule itself is `canPauseBooking`, a tested function, not
+                this condition (TASK-147/237's lesson: a rule that only lives in JSX cannot be tested).
+                🚫 AC-3: never for a course booking — REQ-071 owns that, with its own wording, on the plan modal.
+                🚫 AC-8: this opens a plain confirm with NO reason field. Offering REQ-009's reason list here
+                would teach staff that พัก and ยกเลิก are the same act, and they are not. */}
+            {canPauseBooking(booking) && (
+              <Menu.Item leftSection={<PauseCircle size={16} />} onClick={handlePause}>
+                {t("calendar.pauseAction")}
+              </Menu.Item>
+            )}
+            {canResumeBooking(booking) && (
+              <Menu.Item leftSection={<PlayCircle size={16} />} onClick={() => setResumeOpen(true)}>
+                {t("calendar.resumeAction")}
+              </Menu.Item>
+            )}
             {canCancelWithReason && (
               <Menu.Item
                 color="red"
@@ -562,6 +644,59 @@ function ViewBooking({
         onClose={() => setCancelOpen(false)}
         onCancelled={onClose}
       />
+      {/* REQ-076 AC-13/AC-14 — put it back on the schedule at ANY date and time. */}
+      <Modal
+        opened={resumeOpen}
+        onClose={() => setResumeOpen(false)}
+        centered
+        radius="lg"
+        title={t("calendar.resumeTitle")}
+      >
+        <Stack gap="md">
+          {/* AC-14 — the server's sentence, verbatim. */}
+          {resumeError && (
+            <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
+              {resumeError}
+            </Alert>
+          )}
+          <Text fz="sm" c="dimmed">
+            {t("calendar.resumeBody")}
+          </Text>
+          {/* The slot it came from, so staff can put it back where it was without remembering it. */}
+          <Text fz="xs" c="dimmed">
+            {t("calendar.pausedOriginalSlot", {
+              date: formatDateDisplay(booking.date),
+              time: booking.startTime,
+            })}
+          </Text>
+          <DatePickerInput
+            label={t("calendar.resumeDate")}
+            value={resumeDate ? new Date(resumeDate) : null}
+            onChange={(d) => setResumeDate(d ? dayjs(d).format("YYYY-MM-DD") : null)}
+            valueFormat="DD/MM/YYYY"
+          />
+          <Select
+            label={t("calendar.resumeTime")}
+            value={resumeTime}
+            onChange={setResumeTime}
+            data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
+            searchable
+          />
+          <Group justify="flex-end" gap="sm">
+            <Button variant="subtle" color="gray" onClick={() => setResumeOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              loading={resume.isPending}
+              disabled={!canSubmitResume(resumeDate, resumeTime)}
+              onClick={handleResume}
+            >
+              {t("calendar.resumeAction")}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
       {/* The rental is logged against the BOOKING, so it is named by what the booking is called. */}
       <RentalModal
         opened={rentalOpen}
