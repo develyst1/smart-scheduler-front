@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader, Modal, SegmentedControl, TextInput } from "@mantine/core";
+import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader, Modal, SegmentedControl, TextInput, ActionIcon } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban } from "lucide-react";
+import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban, CalendarClock } from "lucide-react";
 import { useSetCourseAdminUnlock, useCoursePackages } from "@/hooks/scheduler";
 import { COURSE_STATUSES, type CourseStatus } from "@/types/app/scheduler";
+import { isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import PagerBar from "@/components/common/PagerBar";
 import CourseHistoryModal from "./CourseHistoryModal";
+import EditExpiryDialog from "./EditExpiryDialog";
 import { useT } from "@/lib/i18n";
 import type { CoursePackageView } from "@/types/app/scheduler";
 
@@ -54,6 +56,8 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   const [pending, setPending] = useState<{ course: CoursePackageView; unlock: boolean } | null>(null);
   // คอร์สที่กำลังเปิดดูประวัติการตัดคอร์ส (TASK-120)
   const [historyId, setHistoryId] = useState<string | null>(null);
+  // REQ-082 AC-1 (TASK-265) — the course whose expiry is being moved; `null` = the dialog is closed.
+  const [expiryTarget, setExpiryTarget] = useState<CoursePackageView | null>(null);
 
   const runUnlock = async () => {
     if (!pending) return;
@@ -145,6 +149,22 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                   <p className="font-semibold">{c.studentName}</p>
                   <p className="text-xs text-muted-400">
                     {t("course.summary", { size: c.size, expiry: c.expiryDate })}
+                    {/* 🔴 SPEC-076 / REQ-082 AC-1 (TASK-265) — editable on ANY course, and deliberately NOT
+                        lifecycle-gated. TASK-264 left the endpoint ungated for the same reason: REQ-084's
+                        resume warning points the admin at THIS control on a course that is `DROPPED` at that
+                        moment, so a gate would aim the warning at a control that refuses.
+                        ⚠️ This is the one place today where TASK-262's *"gate the control on lifecycle"*
+                        instinct does NOT apply, and it is deliberate. */}
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      size="sm"
+                      ml={6}
+                      aria-label={t("expiry.edit")}
+                      onClick={() => setExpiryTarget(c)}
+                    >
+                      <CalendarClock size={14} />
+                    </ActionIcon>
                   </p>
                   {c.subject?.name && (
                     <p className="mt-0.5 text-xs text-muted-400">
@@ -235,33 +255,40 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                 </Button>
               </Group>
 
-              {c.leaveLocked ? (
-                <Button
-                  size="xs"
-                  color="orange"
-                  variant="light"
-                  fullWidth
-                  leftSection={<LockKeyholeOpen size={15} />}
-                  loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
-                  onClick={() => setPending({ course: c, unlock: true })}
-                >
-                  {t("course.unlockBtn")}
-                </Button>
-              ) : (
-                c.adminUnlocked && (
+              {/* 🔴 REQ-084 AC-C / TASK-262 — **the second surface the sweep found.** These were gated on
+                  `leaveLocked` / `adminUnlocked` alone — on the LEAVE state, never on the course's lifecycle —
+                  so a `DROPPED` (or ended) course still offered ปลดล็อก. `updateCourse` runs through
+                  `assertCourseWritable` (`scheduler.service.ts:3224`) and refuses it, which makes this the same
+                  defect as AC-A wearing a different button: **a control offered for a call the server rejects.**
+                  Same predicate as the plan modal's, so the two cannot drift apart. */}
+              {isCourseWritable(c.status) &&
+                (c.leaveLocked ? (
                   <Button
                     size="xs"
-                    color="gray"
+                    color="orange"
                     variant="light"
                     fullWidth
-                    leftSection={<Lock size={15} />}
+                    leftSection={<LockKeyholeOpen size={15} />}
                     loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
-                    onClick={() => setPending({ course: c, unlock: false })}
+                    onClick={() => setPending({ course: c, unlock: true })}
                   >
-                    {t("course.relockBtn")}
+                    {t("course.unlockBtn")}
                   </Button>
-                )
-              )}
+                ) : (
+                  c.adminUnlocked && (
+                    <Button
+                      size="xs"
+                      color="gray"
+                      variant="light"
+                      fullWidth
+                      leftSection={<Lock size={15} />}
+                      loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
+                      onClick={() => setPending({ course: c, unlock: false })}
+                    >
+                      {t("course.relockBtn")}
+                    </Button>
+                  )
+                ))}
             </Stack>
           </Card>
         );
@@ -304,6 +331,9 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
       </Modal>
 
       <CourseHistoryModal courseId={historyId} onClose={() => setHistoryId(null)} />
+
+      {/* REQ-082 AC-1 — reachable for every course the filter can show, DROPPED included (see the control). */}
+      <EditExpiryDialog course={expiryTarget} onClose={() => setExpiryTarget(null)} />
     </Stack>
   );
 }

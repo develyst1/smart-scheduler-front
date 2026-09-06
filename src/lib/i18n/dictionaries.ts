@@ -98,6 +98,8 @@ const en = {
     resumeTitle: "Resume this course?",
     resumeLine: "{program} for {student} returns on its usual slot. Choose the new expiry date — the pause has eaten into the old one.",
     resumeExpiry: "New expiry date",
+    // TASK-265 §3 — shown only when the server asked for one, so it says WHY it suddenly appeared.
+    resumeExpiryWhy: "Some sessions this resume creates fall past the current expiry, so a new date is needed.",
     resumeConfirm: "Resume the course",
     resumeDone: "Course resumed",
     action: "Cancel course",
@@ -180,6 +182,21 @@ const en = {
     saveFailed: "Could not save",
     resetConfirmTitle: "Reset to default?",
     resetConfirmMsg: "Reset {label} to its default of {value} {unit}? Any override is cleared.",
+  },
+
+  // ── SPEC-076 / REQ-082 (TASK-265) — the expiry control and THE one warning ──
+  expiry: {
+    edit: "Change expiry date",
+    title: "Expiry date — {student}",
+    current: "Current expiry: {date}",
+    newDate: "New expiry date",
+    save: "Save",
+    savedTitle: "Expiry updated",
+    warnTitle: "Some sessions now fall past the expiry",
+    warnBody: "{n} session(s) are scheduled after {date}.",
+    warnMore: "…and {n} more",
+    // 🔴 AC-4 in one sentence: this is a warning about a save that ALREADY happened, never a refusal.
+    warnStillSaves: "The date has been saved. This is a warning, not a refusal — move the expiry again or reschedule those sessions.",
   },
 
   badges: {
@@ -1172,6 +1189,8 @@ const th: typeof en = {
     resumeTitle: "ให้คอร์สนี้กลับมาเรียน?",
     resumeLine: "{program} ของ {student} จะกลับมาที่ช่วงเวลาเดิม กรุณาเลือกวันหมดอายุใหม่ เพราะช่วงที่พักไปกินเวลาของเดิมไปแล้ว",
     resumeExpiry: "วันหมดอายุใหม่",
+    // TASK-265 §3 — จะโผล่มาเฉพาะตอนที่เซิร์ฟเวอร์ขอ จึงต้องบอกด้วยว่าทำไมถึงโผล่มา
+    resumeExpiryWhy: "มีคาบที่จะสร้างใหม่เลยวันหมดอายุเดิม จึงต้องระบุวันหมดอายุใหม่",
     resumeConfirm: "กลับมาเรียน",
     resumeDone: "กลับมาเรียนแล้ว",
     action: "ยกเลิกคอร์ส",
@@ -1250,6 +1269,21 @@ const th: typeof en = {
     saveFailed: "บันทึกไม่สำเร็จ",
     resetConfirmTitle: "คืนค่าเริ่มต้น?",
     resetConfirmMsg: "คืนค่า {label} เป็นค่าเริ่มต้น {value} {unit} หรือไม่? ค่าที่แก้ไว้จะถูกล้าง",
+  },
+
+  // ── SPEC-076 / REQ-082 (TASK-265) — ปุ่มแก้วันหมดอายุ และคำเตือน "ชุดเดียว" ที่ใช้ร่วมกันสองที่ ──
+  expiry: {
+    edit: "แก้วันหมดอายุ",
+    title: "วันหมดอายุ — {student}",
+    current: "วันหมดอายุปัจจุบัน: {date}",
+    newDate: "วันหมดอายุใหม่",
+    save: "บันทึก",
+    savedTitle: "แก้วันหมดอายุแล้ว",
+    warnTitle: "มีคาบที่เลยวันหมดอายุ",
+    warnBody: "มี {n} คาบ ที่อยู่หลังวันที่ {date}",
+    warnMore: "…และอีก {n} คาบ",
+    // 🔴 AC-4 ในประโยคเดียว: นี่คือคำเตือนของสิ่งที่ "บันทึกไปแล้ว" ไม่ใช่การปฏิเสธ
+    warnStillSaves: "บันทึกวันที่ใหม่เรียบร้อยแล้ว นี่เป็นคำเตือน ไม่ใช่การปฏิเสธ — จะแก้วันหมดอายุอีกครั้งหรือย้ายคาบเหล่านั้นก็ได้",
   },
 
   badges: {

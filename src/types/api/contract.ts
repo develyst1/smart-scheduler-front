@@ -215,6 +215,48 @@ export interface BookingDTO {
 }
 
 /**
+ * SPEC-076 / TASK-264 (REQ-082 · REQ-084) — what moving a course's expiry would leave outside it.
+ *
+ * 🔑 **The SAME shape comes back from `PATCH /courses/:id/expiry` and from `POST /courses/:id/resume`** — which
+ * is what lets one warning component serve both requirements. The owner's *"one rule across both"* is then true
+ * in the code, not only in the REQ text.
+ *
+ * 🚫 **Never recomputed on this side.** The BE derives it from one `expiryImpact`; a second derivation on the
+ * screen is how the warning and the truth come apart (the same rule as TASK-261's clash message).
+ */
+export interface ExpiryWarningSession {
+  /** Absent for sessions that do not exist yet — a resume asks about dates before it writes them. */
+  id?: string;
+  date: IsoDate;
+  status?: string | null;
+  startTime?: HhMm | null;
+}
+
+export interface ExpiryWarning {
+  /** The expiry the question was asked about — echoed, so a caller cannot report one and have decided another. */
+  expiryDate: IsoDate;
+  /** 🔴 The single fact the prompt turns on: does the warning fire? */
+  warn: boolean;
+  /** WHICH sessions fall outside. AC-4 asks for the list, not a count — both are rendered. */
+  outside: ExpiryWarningSession[];
+  outsideCount: number;
+}
+
+export interface UpdateCourseExpiryResponse {
+  course: CourseListItem;
+  expiryWarning: ExpiryWarning;
+  previousExpiryDate: IsoDate | null;
+}
+
+export interface ResumeCourseResponse {
+  resumed: boolean;
+  createdSessions: number;
+  dates: IsoDate[];
+  course: CourseSummary;
+  expiryWarning: ExpiryWarning;
+}
+
+/**
  * SPEC-070 / TASK-229 — a backoffice INCOME item an อื่นๆ booking may be charged to.
  * `GET /catalog-items` → `{ items: CatalogItem[] }`.
  *

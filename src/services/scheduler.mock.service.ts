@@ -27,6 +27,7 @@ import type {
   TeacherView,
 } from "@/types/app/scheduler";
 import type { BulkConfirmResult, CatalogItem, PostedSale } from "@/types/api/contract";
+import { ApiClientError } from "@/lib/api/client";
 
 const delay = <T>(value: T, ms = 200) =>
   new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
@@ -943,14 +944,67 @@ export const dropCourse = (courseId: string, input: { reason?: string }) => {
   return delay({ id: courseId, dropped: true, reason: input.reason ?? null });
 };
 
-export const resumeCourse = (courseId: string, input: { expiryDate: string }) => {
+/**
+ * SPEC-076 / TASK-265 — offline resume + expiry edit.
+ *
+ * 🔴 The mock reproduces the branch that matters: `expiryDate` is optional, and **whether a date is demanded
+ * depends on the sessions**, not on the caller. Here that is stubbed as "a course whose id ends in an odd digit
+ * has sessions outside" — enough to reach both the plain-confirm path and the `EXPIRY_REQUIRED` prompt offline,
+ * which are the two shapes Q2 is about. The real decision is the server's `expiryImpact`.
+ */
+const mockOutsideSessions = (courseId: string) =>
+  /[13579]$/.test(courseId)
+    ? [
+        { id: `${courseId}-s9`, date: "2026-12-20", startTime: "10:00", status: "CONFIRMED" },
+        { id: `${courseId}-s10`, date: "2026-12-27", startTime: "10:00", status: "CONFIRMED" },
+      ]
+    : [];
+
+const mockWarning = (courseId: string, expiryDate: string) => {
+  const outside = mockOutsideSessions(courseId);
+  return { expiryDate, warn: outside.length > 0, outside, outsideCount: outside.length };
+};
+
+export const resumeCourse = (courseId: string, input: { expiryDate?: string } = {}) => {
   const c = coursePackages.find((x) => x.id === courseId) as any;
+  const effective = input.expiryDate ?? c?.expiryDate ?? "";
+  const warning = mockWarning(courseId, effective);
+  // (ข) — a date is required ONLY when the warning fires and none was given. Same rejection code and the same
+  // sentence shape as the server, so the FE's prompt-and-retry path is exercisable offline.
+  if (!input.expiryDate && warning.warn) {
+    return Promise.reject(
+      new ApiClientError(
+        "EXPIRY_REQUIRED",
+        `ต้องระบุวันหมดอายุใหม่ — มี ${warning.outsideCount} คาบที่จะเลยวันหมดอายุเดิม (${effective})`,
+        400,
+      ),
+    );
+  }
   if (c) {
     c.droppedAt = null;
     c.dropReason = null;
-    c.expiryDate = input.expiryDate;
+    c.status = "ACTIVE";
+    if (input.expiryDate) c.expiryDate = input.expiryDate;
   }
-  return delay({ id: courseId, dropped: false, expiryDate: input.expiryDate });
+  return delay({
+    resumed: true,
+    createdSessions: warning.outsideCount,
+    dates: warning.outside.map((s) => s.date),
+    course: clone(c),
+    expiryWarning: warning,
+  });
+};
+
+/** REQ-082 AC-4 — the save ALWAYS happens; the warning describes what it left outside. Never a refusal. */
+export const updateCourseExpiry = (courseId: string, expiryDate: string) => {
+  const c = coursePackages.find((x) => x.id === courseId) as any;
+  const previousExpiryDate = c?.expiryDate ?? null;
+  if (c) c.expiryDate = expiryDate;
+  return delay({
+    course: clone(c),
+    expiryWarning: mockWarning(courseId, expiryDate),
+    previousExpiryDate,
+  });
 };
 
 /** TASK-202 — offline stand-in; mirrors the real shape incl. a skip so the skip path is exercisable. */

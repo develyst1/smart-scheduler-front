@@ -51,6 +51,8 @@ import type {
   CatalogItemsResponse,
   PostedSale,
   PostedSaleResponse,
+  ResumeCourseResponse,
+  UpdateCourseExpiryResponse,
   SetTeacherWorkDaysResponse,
   TeacherDTO,
   TeachersResponse,
@@ -968,11 +970,50 @@ export const dropCourse = async (courseId: string, input: { reason?: string }) =
   return data;
 };
 
-/** `expiryDate` is **required** by the server: a pause eats into the old window, so resuming without a new one
- *  would silently leave the family short. The form asks for it rather than defaulting one. */
-export const resumeCourse = async (courseId: string, input: { expiryDate: string }) => {
+/**
+ * SPEC-076 / TASK-264 (REQ-084) — resume a paused course.
+ *
+ * 🔴 **`expiryDate` is now OPTIONAL, and omitting it is the NORMAL case.** It used to be required on the
+ * reasoning that a pause eats into the old window — true when it has, **not true when it has not**, and
+ * demanding a date on a resume where nothing is wrong is the blocking shape the owner rejected (*warn, do not
+ * act*). The requirement did not disappear: the server still throws `EXPIRY_REQUIRED`, but **only when the
+ * sessions the resume would create fall outside the existing expiry** — the same `expiryImpact` the warning
+ * uses. So the screen asks for a date only when told to (TASK-265 §3).
+ *
+ * The response carries `expiryWarning` in the shape the expiry edit returns, so one component renders both.
+ */
+export const resumeCourse = async (
+  courseId: string,
+  input: { expiryDate?: string } = {},
+): Promise<ResumeCourseResponse> => {
   if (useMock) return mock.resumeCourse(courseId, input);
-  const { data } = await api.post(`/courses/${courseId}/resume`, { expiryDate: input.expiryDate });
+  // Sent only when we have one — an explicit `undefined` would still serialise the key on some clients, and
+  // the point of (ข) is that a resume can legitimately carry no date at all.
+  const { data } = await api.post<ResumeCourseResponse>(
+    `/courses/${courseId}/resume`,
+    input.expiryDate ? { expiryDate: input.expiryDate } : {},
+  );
+  return data;
+};
+
+/**
+ * SPEC-076 / TASK-264 (REQ-082 AC-1/AC-4) — move a course's expiry.
+ *
+ * 🔴 **Editable on ANY course, and deliberately NOT lifecycle-gated** — the BE does not gate it either
+ * (TASK-264), because REQ-084's resume warning points at this control on a course that is `DROPPED` at that
+ * moment. A gate here would aim the warning at a control that refuses.
+ *
+ * 🚫 The response's `expiryWarning` is a **warning, not a refusal**: the save has already happened when it
+ * arrives (AC-4 — *warn, and still save*).
+ */
+export const updateCourseExpiry = async (
+  courseId: string,
+  expiryDate: string,
+): Promise<UpdateCourseExpiryResponse> => {
+  if (useMock) return mock.updateCourseExpiry(courseId, expiryDate);
+  const { data } = await api.patch<UpdateCourseExpiryResponse>(`/courses/${courseId}/expiry`, {
+    expiryDate,
+  });
   return data;
 };
 

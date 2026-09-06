@@ -42,6 +42,7 @@ import {
   TIME_SLOTS,
   isDeliveredStatus,
   type BookingStatus,
+  type CourseStatus,
   type EntitlementPlan,
   type PlanChange,
   type PlanPreview,
@@ -51,6 +52,7 @@ import StickyScrollArea from "@/components/common/StickyScrollArea";
 import EndCourseDialog from "./EndCourseDialog";
 import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
+import { canResumeCourse, isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
 
 /** PENDING / CONFIRMED / EXTENDED — a live session that can be plainly cancelled (re-owes, no reason). */
@@ -178,13 +180,26 @@ export default function PlanModal({
     }
   };
   const insertable = plan?.insertable !== false; // undefined (voucher/create) → allow; explicit false → disable
+  /**
+   * 🔴 REQ-084 / TASK-262 — **this is where the defect lived, and it was the INPUT, not the condition.**
+   *
+   * The payload's course summary used to omit `status`, so this was `undefined` on **every** course:
+   * `courseWritable` was `true` on every course, a `DROPPED` one kept offering `พักคอร์ส`, and the resume
+   * button below — in this file since `32474d7` — **rendered on nothing**. One omission, both halves of the
+   * owner's report.
+   *
+   * ✅ **TASK-263 fixed it at the source** (the whole summary goes in, never a projection), so the hand-down
+   * prop TASK-262 added as a stand-in is **deleted here**, exactly as planned when it was written.
+   * 🚫 Nothing re-derives lifecycle from `endedAt` or dates: TASK-189's rule stands.
+   */
   const courseStatus = plan?.summary.kind === "course" ? plan.summary.status : undefined;
   // TASK-199 — a PAUSED course is as unwritable as a cancelled one, but it is not over: it gets a resume action
-  // instead of nothing. Both read the server's status; neither re-derives "is it over" (TASK-189's rule).
-  const courseDropped = courseStatus === "DROPPED";
-  const courseEnded =
-    courseStatus === "CANCELLED" || (plan?.summary.kind === "course" && !!plan.summary.endedAt);
-  const courseWritable = !courseEnded && !courseDropped;
+  // instead of nothing.
+  const courseDropped = canResumeCourse(courseStatus);
+  const courseWritable = isCourseWritable(courseStatus);
+  // Over: neither running nor paused. Stated in terms of the same two predicates rather than as a third list
+  // of statuses, so a new course status cannot land in "ended" and "writable" at once.
+  const courseEnded = !courseWritable && !courseDropped;
   const pendingCount = sessions.filter((s) => s.status === "PENDING").length;
 
   return (

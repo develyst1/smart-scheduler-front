@@ -58,6 +58,7 @@ import {
   endCourse,
   dropCourse,
   resumeCourse,
+  updateCourseExpiry,
   confirmCourse,
   type CreateBookingInput,
   type CreateCourseInput,
@@ -303,11 +304,29 @@ export const useDropCourse = () => {
 };
 
 /** TASK-199 — bring it back on its own slot under a NEW expiry (the server requires the date). */
+/**
+ * REQ-084 — resume a paused course. 🔴 `expiryDate` is **optional** since TASK-264: omitting it is the normal
+ * case, and the server asks for one (`EXPIRY_REQUIRED`) only when the sessions it would create fall outside the
+ * existing window.
+ */
 export const useResumeCourse = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ courseId, expiryDate }: { courseId: string; expiryDate: string }) =>
+    mutationFn: ({ courseId, expiryDate }: { courseId: string; expiryDate?: string }) =>
       resumeCourse(courseId, { expiryDate }),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/**
+ * REQ-082 AC-1/AC-4 — move a course's expiry. 🚫 The `expiryWarning` on the response is a **warning about a
+ * save that already happened**, never a refusal: nothing here or at the call site may use it to block.
+ */
+export const useUpdateCourseExpiry = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, expiryDate }: { courseId: string; expiryDate: string }) =>
+      updateCourseExpiry(courseId, expiryDate),
     onSuccess: () => invalidateAll(qc),
   });
 };
