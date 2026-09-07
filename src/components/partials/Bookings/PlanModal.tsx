@@ -55,6 +55,29 @@ import DropResumeDialog from "./DropResumeDialog";
 import { canResumeCourse, isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
 
+/**
+ * 🔴 TASK-285 (2026-09-08) — **the COURSE pause/resume control is switched OFF for tonight's release.**
+ *
+ * **Cause:** DEF-2 — resume RELOCATES a course into the wrong week (a November course came back as September,
+ * with its sessions on this week's live calendar). **TASK-282 fixes that; this hides the door until it does.**
+ *
+ * 🔴 **Both halves, together.** `พักคอร์ส` and its resume are two faces of one dialog, and hiding only the
+ * resume would let an admin pause a course and then be unable to bring it back — **a stranded course with no
+ * control that touches it, which is worse than shipping the defect.**
+ *
+ * 🚫 **Nothing is deleted:** the dialog, the endpoints and REQ-084's `canPauseCourse` guard all stay in the
+ * build. The guard is dormant — it guards a control that is now hidden — and taking it out tonight would be a
+ * second edit to these components on deploy night.
+ *
+ * 🚫 **This is NOT the BOOKING pause tray (REQ-076).** Different feature, different predicate
+ * (`lib/scheduler/pause-booking.ts`), different components — tested, passed, and shipping tonight. The two
+ * share a word and nothing else.
+ *
+ * ✅ **TO RE-ENABLE: set this to `true`. One line, this line.** It is TASK-282's Definition of Done, not a note
+ * somebody remembers.
+ */
+const COURSE_PAUSE_RESUME_ENABLED = false;
+
 /** PENDING / CONFIRMED / EXTENDED — a live session that can be plainly cancelled (re-owes, no reason). */
 const isLiveStatus = (s: string) => s === "PENDING" || s === "CONFIRMED" || s === "EXTENDED";
 
@@ -317,23 +340,29 @@ export default function PlanModal({
           {/* A paused course offers exactly one action: bring it back. Everything that would write to the
               schedule stays hidden — the server refuses it anyway (COURSE_DROPPED), so offering it would only
               hand staff a button that 409s. */}
+          {/* ⚠️ TASK-285 — the gate is on the BUTTON, not on `courseDropped`. Gating the flag itself would make
+              a paused course compute as *ended* (`courseEnded = !writable && !dropped`) and show "this course
+              has ended", which is a different and wrong claim. The sentence explaining that a paused course
+              takes no writes still shows; only the way back is withdrawn. */}
           {isCourse && !isCreate && courseDropped && (
             <Group justify="space-between" wrap="wrap" gap="xs">
               <Text fz="sm" c="dimmed">
                 {t("course.droppedNoWrites")}
               </Text>
-              <Button
-                variant="light"
-                color="green"
-                size="xs"
-                leftSection={<PlayCircle size={14} />}
-                onClick={() => {
-                  setError(null);
-                  setDropMode("resume");
-                }}
-              >
-                {t("endCourse.resume")}
-              </Button>
+              {COURSE_PAUSE_RESUME_ENABLED && (
+                <Button
+                  variant="light"
+                  color="green"
+                  size="xs"
+                  leftSection={<PlayCircle size={14} />}
+                  onClick={() => {
+                    setError(null);
+                    setDropMode("resume");
+                  }}
+                >
+                  {t("endCourse.resume")}
+                </Button>
+              )}
             </Group>
           )}
 
@@ -373,19 +402,23 @@ export default function PlanModal({
                   </Button>
                 )}
                 {/* TASK-199 — a PAUSE sits beside the cancel but is visibly not it: amber, not red, because it
-                    keeps the course, its slot and its size and can be undone. Cancel stays the grave one. */}
-                <Button
-                  variant="light"
-                  color="yellow"
-                  size="xs"
-                  leftSection={<PauseCircle size={14} />}
-                  onClick={() => {
-                    setError(null);
-                    setDropMode("drop");
-                  }}
-                >
-                  {t("endCourse.drop")}
-                </Button>
+                    keeps the course, its slot and its size and can be undone. Cancel stays the grave one.
+                    🔴 TASK-285 — off tonight, with its resume, from the one flag above. Hiding this half alone
+                    would strand any course an admin paused. */}
+                {COURSE_PAUSE_RESUME_ENABLED && (
+                  <Button
+                    variant="light"
+                    color="yellow"
+                    size="xs"
+                    leftSection={<PauseCircle size={14} />}
+                    onClick={() => {
+                      setError(null);
+                      setDropMode("drop");
+                    }}
+                  >
+                    {t("endCourse.drop")}
+                  </Button>
+                )}
                 <Button
                   variant="light"
                   color="red"

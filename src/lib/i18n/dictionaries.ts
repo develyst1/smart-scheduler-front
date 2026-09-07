@@ -2,6 +2,8 @@
 // shape exactly (enforced by `const th: typeof en`). Keys are grouped by feature
 // and resolved via dotted paths in t() (e.g. t("login.submit")).
 
+import type { BookingStatus } from "@/types/app/scheduler";
+
 export type Lang = "en" | "th";
 
 const en = {
@@ -274,6 +276,19 @@ const en = {
     OTHER: "Other",
   },
 
+  /**
+   * 🔴 TASK-274 — **complete by CONSTRUCTION, not by care.** `satisfies Record<BookingStatus, string>` makes a
+   * status without a label a **build failure**, which is the control `BOOKING_STATUS_COLOR` has had all along
+   * (`types/app/scheduler`) and this map next door did not.
+   *
+   * ⚠️ **Not hypothetical:** the backend fixed this exact shape three times on 2026-09-07 — the LINE status
+   * label, the teacher's phone calendar, the attention cards. **This is the one on a screen staff use every
+   * day**, so an unlabelled tenth status would show as a raw key to an admin, in two languages, on a green build.
+   *
+   * 🔑 `satisfies`, not a type annotation, on purpose: an annotation would widen the value to
+   * `Record<BookingStatus, string>` and **`th: typeof en` would then stop requiring the same nine keys** — the
+   * check would be traded for the other one. `satisfies` keeps the literal type *and* demands completeness.
+   */
   bookingStatus: {
     PENDING: "Pending",
     CONFIRMED: "Confirmed",
@@ -284,7 +299,7 @@ const en = {
     PENDING_RESCHEDULE: "Awaiting reschedule",
     CANCELLED: "Cancelled",
     PAUSED: "Paused",
-  },
+  } satisfies Record<BookingStatus, string>,
 
   calendar: {
     daily: "Daily",
