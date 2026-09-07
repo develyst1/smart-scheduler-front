@@ -945,12 +945,14 @@ export const dropCourse = (courseId: string, input: { reason?: string }) => {
 };
 
 /**
- * SPEC-076 / TASK-265 — offline resume + expiry edit.
+ * SPEC-076 / TASK-265 — the offline expiry EDIT's warning.
  *
- * 🔴 The mock reproduces the branch that matters: `expiryDate` is optional, and **whether a date is demanded
- * depends on the sessions**, not on the caller. Here that is stubbed as "a course whose id ends in an odd digit
- * has sessions outside" — enough to reach both the plain-confirm path and the `EXPIRY_REQUIRED` prompt offline,
- * which are the two shapes Q2 is about. The real decision is the server's `expiryImpact`.
+ * 🔴 The branch that matters is *"the date the admin chose leaves sessions outside"*, stubbed here as "a course
+ * whose id ends in an odd digit has sessions outside", so the warned and unwarned paths are both reachable with
+ * no backend. The real decision is the server's `expiryImpact`.
+ *
+ * ⚠️ **This serves the EDIT only.** TASK-287 removed the resume's warning — its expiry is derived from its own
+ * sessions, so the condition cannot occur there — and this comment used to describe that path too.
  */
 const mockOutsideSessions = (courseId: string) =>
   /[13579]$/.test(courseId)
@@ -965,33 +967,36 @@ const mockWarning = (courseId: string, expiryDate: string) => {
   return { expiryDate, warn: outside.length > 0, outside, outsideCount: outside.length };
 };
 
-export const resumeCourse = (courseId: string, input: { expiryDate?: string } = {}) => {
+/**
+ * TASK-287 — resume is a **RE-PLAN**: weekly sessions from `startDate`, and the expiry derived to cover the
+ * last of them. The mock mirrors the two rules that matter offline: **it never shrinks the expiry**, and it
+ * reports `expiryExtended` from an actual comparison rather than always claiming a move.
+ */
+export const resumeCourse = (courseId: string, input: { startDate: string; startTime: string }) => {
   const c = coursePackages.find((x) => x.id === courseId) as any;
-  const effective = input.expiryDate ?? c?.expiryDate ?? "";
-  const warning = mockWarning(courseId, effective);
-  // (ข) — a date is required ONLY when the warning fires and none was given. Same rejection code and the same
-  // sentence shape as the server, so the FE's prompt-and-retry path is exercisable offline.
-  if (!input.expiryDate && warning.warn) {
-    return Promise.reject(
-      new ApiClientError(
-        "EXPIRY_REQUIRED",
-        `ต้องระบุวันหมดอายุใหม่ — มี ${warning.outsideCount} คาบที่จะเลยวันหมดอายุเดิม (${effective})`,
-        400,
-      ),
-    );
-  }
+  const owed = Math.max(0, (c?.size ?? 0) - (c?.usedSessions ?? 0));
+  const dates = Array.from({ length: owed }, (_, i) =>
+    dayjs(input.startDate).add(i, "week").format("YYYY-MM-DD"),
+  );
+  const lastSession = dates[dates.length - 1] ?? null;
+  const previous = c?.expiryDate ?? "";
+  // Never shrinks: a re-plan that finishes before the old expiry leaves it exactly where it was.
+  const expiryDate = lastSession && lastSession > previous ? lastSession : previous;
   if (c) {
     c.droppedAt = null;
     c.dropReason = null;
     c.status = "ACTIVE";
-    if (input.expiryDate) c.expiryDate = input.expiryDate;
+    c.startTime = input.startTime;
+    c.expiryDate = expiryDate;
   }
   return delay({
     resumed: true,
-    createdSessions: warning.outsideCount,
-    dates: warning.outside.map((s) => s.date),
+    createdSessions: dates.length,
+    dates,
     course: clone(c),
-    expiryWarning: warning,
+    lastSession,
+    expiryDate,
+    expiryExtended: expiryDate !== previous,
   });
 };
 

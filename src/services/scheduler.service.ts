@@ -971,28 +971,34 @@ export const dropCourse = async (courseId: string, input: { reason?: string }) =
 };
 
 /**
- * SPEC-076 / TASK-264 (REQ-084) — resume a paused course.
+ * SPEC-076 / TASK-282+287 (REQ-084) — resume a paused course, as a **RE-PLAN**.
  *
- * 🔴 **`expiryDate` is now OPTIONAL, and omitting it is the NORMAL case.** It used to be required on the
- * reasoning that a pause eats into the old window — true when it has, **not true when it has not**, and
- * demanding a date on a resume where nothing is wrong is the blocking shape the owner rejected (*warn, do not
- * act*). The requirement did not disappear: the server still throws `EXPIRY_REQUIRED`, but **only when the
- * sessions the resume would create fall outside the existing expiry** — the same `expiryImpact` the warning
- * uses. So the screen asks for a date only when told to (TASK-265 §3).
+ * 🔴 **It asks course creation's question and nothing else** (owner: *"เอาเหมือนตอนสร้างคอร์สเลย"*): a start
+ * date and a start time, and the remaining sessions are laid down weekly from there.
  *
- * The response carries `expiryWarning` in the shape the expiry edit returns, so one component renders both.
+ * 🚫 **No `expiryDate` on the way in, and its absence is structural** — the expiry is now DERIVED to cover the
+ * last planned session, so there is no expiry request left to be wrong. (`EXPIRY_REQUIRED` is gone from the
+ * backend entirely; the FE handler for it was deleted with it.) The EDIT verb keeps its required date, because
+ * that one has nothing to infer from.
+ *
+ * The response says what the re-plan DID — `lastSession`, `expiryDate`, `expiryExtended` — and the screen
+ * states them. 🚫 It computes none of them.
  */
 export const resumeCourse = async (
   courseId: string,
-  input: { expiryDate?: string } = {},
+  input: { startDate: string; startTime: string },
 ): Promise<ResumeCourseResponse> => {
   if (useMock) return mock.resumeCourse(courseId, input);
-  // Sent only when we have one — an explicit `undefined` would still serialise the key on some clients, and
-  // the point of (ข) is that a resume can legitimately carry no date at all.
-  const { data } = await api.post<ResumeCourseResponse>(
-    `/courses/${courseId}/resume`,
-    input.expiryDate ? { expiryDate: input.expiryDate } : {},
-  );
+  // 🔴 EXACTLY these two fields, and the body is never empty (TASK-287 §8). `POST …/resume` with `{}` is now
+  // refused: the empty path is what produced DEF-2's non-determinism, and removing it removed the defect.
+  //
+  // 🚫 **No `weekday`, deliberately.** The server derives it with `weekdayOf(startDate)` — the same line course
+  // creation uses — and zod would **strip an unknown `weekday` silently**: the form would look right, send
+  // three fields, and lose one with no error at all. Two fields cannot contradict each other; three can.
+  const { data } = await api.post<ResumeCourseResponse>(`/courses/${courseId}/resume`, {
+    startDate: input.startDate,
+    startTime: input.startTime,
+  });
   return data;
 };
 

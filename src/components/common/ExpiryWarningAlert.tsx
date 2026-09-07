@@ -10,11 +10,17 @@ import type { ExpiryWarning } from "@/types/api/contract";
 const MAX_LISTED = 5;
 
 /**
- * SPEC-076 / TASK-265 — **the ONE expiry warning**, shared by REQ-082's expiry edit and REQ-084's resume.
+ * SPEC-076 / TASK-265 — the expiry warning for **REQ-082's expiry EDIT**.
  *
- * 🔑 Both endpoints return the identical `expiryWarning` shape, and that is the whole reason this is one
- * component: it makes the owner's *"one rule across both"* true **in the code**, not only in the REQ text. A
- * second warning built beside the other is how the two come to say different things about the same fact.
+ * ⚠️ **It served the resume too, until TASK-287 (2026-09-08). It no longer can, and the reason is worth
+ * keeping:** the resume warned that its sessions might fall past the expiry — and the expiry is now **derived
+ * from** those sessions, so the condition cannot occur. The BE dropped `expiryWarning` from that response
+ * entirely. ⇒ **one caller now, deliberately, not by neglect.**
+ *
+ * 🔑 It stays a shared component rather than being folded into `EditExpiryDialog`, because the EDIT verb is the
+ * one that genuinely still has a question to answer: it takes a date the admin chose and has nothing to infer
+ * from, so it can still leave sessions outside. If a second caller ever needs this warning again, the reason
+ * to have exactly one of these is unchanged.
  *
  * 🚫 **It computes nothing.** `warn`, `outside` and `outsideCount` are the server's; this renders them. The BE
  * derives all three from one `expiryImpact` used by both paths, so re-deriving here would be a second opinion

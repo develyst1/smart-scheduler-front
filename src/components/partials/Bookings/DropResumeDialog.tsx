@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Alert, Button, Group, Modal, Stack, Text, Textarea } from "@mantine/core";
+import { Alert, Button, Group, Modal, Select, Stack, Text, Textarea } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { AlertTriangle } from "lucide-react";
 import dayjs from "dayjs";
@@ -9,8 +9,9 @@ import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { useDropCourse, useResumeCourse } from "@/hooks/scheduler";
-import ExpiryWarningAlert from "@/components/common/ExpiryWarningAlert";
-import type { ExpiryWarning } from "@/types/api/contract";
+import { formatDateDisplay } from "@/lib/ui/format";
+import { TIME_SLOTS } from "@/types/app/scheduler";
+import type { ResumeCourseResponse } from "@/types/api/contract";
 
 interface Props {
   opened: boolean;
@@ -52,23 +53,25 @@ export default function DropResumeDialog({
   const resume = useResumeCourse();
 
   const [reason, setReason] = useState("");
-  const [expiry, setExpiry] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // 🔴 TASK-265 §3 / Q2 — the resume is a plain confirm by default. The date field appears **only** when the
-  // server has answered `EXPIRY_REQUIRED`, which is the owner's *"warn, do not act"* applied to his own prompt.
-  const [needsExpiry, setNeedsExpiry] = useState(false);
-  // The warning about a resume that has already succeeded (never a gate — see `ExpiryWarningAlert`).
-  const [warning, setWarning] = useState<ExpiryWarning | null>(null);
-  const [done, setDone] = useState(false);
+  /**
+   * 🔴 TASK-287 — resume is a **RE-PLAN**, so it asks the scheduling question course creation asks
+   * (owner: *"เอาเหมือนตอนสร้างคอร์สเลย"*). Same two fields, same defaults as `CreateCourseModal`.
+   * 🚫 **No weekday input** — the server derives it from the date (`weekdayOf(startDate)`), exactly as course
+   * creation does, and sending one would be silently stripped by zod.
+   */
+  const [startDate, setStartDate] = useState(dayjs().add(7, "day").format("YYYY-MM-DD"));
+  const [startTime, setStartTime] = useState("10:00");
+  /** What the re-plan actually did — read from the response, never computed (TASK-287 §7). */
+  const [result, setResult] = useState<ResumeCourseResponse | null>(null);
 
   useEffect(() => {
     if (!opened) {
       setReason("");
-      setExpiry(null);
       setError(null);
-      setNeedsExpiry(false);
-      setWarning(null);
-      setDone(false);
+      setStartDate(dayjs().add(7, "day").format("YYYY-MM-DD"));
+      setStartTime("10:00");
+      setResult(null);
     }
   }, [opened]);
 
@@ -80,30 +83,24 @@ export default function DropResumeDialog({
         await drop.mutateAsync({ courseId, reason: reason.trim() || undefined });
         notify({ title: t("endCourse.dropDone"), color: "success" });
       } else {
-        // 🔴 SPEC-076 / TASK-265 §3 — resume **without** a date is the normal case now. A date is sent only
-        // after the server has said it needs one; asking up front is the blocking shape the owner rejected.
-        const res = await resume.mutateAsync({ courseId, expiryDate: expiry ?? undefined });
+        // 🔴 TASK-287 — the schedule is ALWAYS sent. `{}` is refused server-side now, deliberately: that empty
+        // path is what produced DEF-2's non-determinism.
+        const res = await resume.mutateAsync({ courseId, startDate, startTime });
         notify({ title: t("endCourse.resumeDone"), color: "success" });
-        // The resume has ALREADY happened. If it left sessions outside the window, hold the dialog open to
-        // show the warning rather than closing over it — closing would make it a toast nobody reads.
-        if (res.expiryWarning?.warn) {
-          setWarning(res.expiryWarning);
-          setDone(true);
-          onDone?.();
-          return;
-        }
+        // 🔑 The re-plan MOVED things — where the course now ends, and possibly its expiry. The dialog holds
+        // open to state both, because an expiry that shifts silently is exactly what REQ-082's audit trail
+        // exists to make answerable. ⚠️ Nothing here is a gate; the only control left is Close.
+        setResult(res);
+        onDone?.();
+        return;
       }
       onDone?.();
       onClose();
     } catch (e) {
-      // ⚠️ `EXPIRY_REQUIRED` is a PROMPT, not an error. It means *"this resume needs a date"*, and its message
-      // names how many sessions fall outside and the old expiry. Reveal the field and let the admin retry — an
-      // error banner would read as a refusal of something they can simply answer.
-      if (e instanceof ApiClientError && e.code === "EXPIRY_REQUIRED") {
-        setNeedsExpiry(true);
-        setError(e.message);
-        return;
-      }
+      // 🧹 TASK-287 §6 — the `EXPIRY_REQUIRED` prompt-and-retry handler that used to live here is DELETED: the
+      // code is gone from the backend entirely (the expiry is derived now, so there is no expiry request left
+      // to be wrong). A handler for a code that can never arrive is a path nobody can test.
+      //
       // A resume regenerates real sessions, so it can clash (SLOT_TAKEN) or be refused (COURSE_ENDED / already
       // dropped). Those are the server's words — it knows which slot and why, and this dialog does not.
       setError(e instanceof ApiClientError ? e.message : t("plan.genericError"));
@@ -144,38 +141,64 @@ export default function DropResumeDialog({
             minRows={2}
             maxRows={4}
           />
+        ) : result ? (
+          /* 🔑 TASK-287 §2 — what the re-plan DID, stated from the response. 🚫 Neither number is computed
+             here: `lastSession` and `expiryDate` are the server's, and `expiryExtended` is what separates
+             *"the expiry moved because the course moved"* from a number that changed on its own. */
+          <Stack gap={4}>
+            <Text fz="sm">{t("endCourse.resumeCreated", { n: result.createdSessions })}</Text>
+            {result.lastSession && (
+              <Text fz="sm">
+                {t("endCourse.resumeLastSession", { date: formatDateDisplay(result.lastSession) })}
+              </Text>
+            )}
+            <Text fz="sm" fw={result.expiryExtended ? 600 : 400}>
+              {t(result.expiryExtended ? "endCourse.resumeExpiryMoved" : "endCourse.resumeExpirySame", {
+                date: formatDateDisplay(result.expiryDate),
+              })}
+            </Text>
+          </Stack>
         ) : (
-          // 🔴 Q2 / §3 — shown ONLY after the server asked for it. Most resumes never see this field: the
-          // dialog is a plain confirm, and becomes a date prompt in the one case that needs one.
-          needsExpiry && (
+          /* 🔴 TASK-287 §1 — the scheduling question, and it is course creation's question.
+             ⚠️ These two inputs are COPIED from `CreateCourseModal` (same labels `course.firstDate` /
+             `course.time`, same `TIME_SLOTS`, same `valueFormat`, same defaults) rather than extracted into a
+             shared component: there they sit inline in a 400-line form whose teacher filter and preview both
+             depend on `startDate`, so lifting them out is a refactor of the enrolment flow, not an import.
+             **Deploy night is not when to untangle that** — see the Question in TASK-287. Staff see identical
+             controls either way, which is what *"เอาเหมือนตอนสร้างคอร์สเลย"* is actually about.
+             🚫 **No weekday input** — the server derives it from the date, exactly as course creation does. */
+          <Group grow align="flex-start">
             <DatePickerInput
-              label={t("endCourse.resumeExpiry")}
-              description={t("endCourse.resumeExpiryWhy")}
-              value={expiry ? dayjs(expiry).toDate() : null}
-              onChange={(v) => setExpiry(v ? dayjs(v).format("YYYY-MM-DD") : null)}
+              label={t("course.firstDate")}
+              value={startDate}
+              onChange={(v) => v && setStartDate(v)}
               valueFormat="D MMM YYYY"
-              minDate={dayjs().toDate()}
+              minDate={new Date()}
               required
               popoverProps={{ withinPortal: true }}
             />
-          )
+            <Select
+              label={t("course.time")}
+              value={startTime}
+              onChange={(v) => v && setStartTime(v)}
+              data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
+              allowDeselect={false}
+              searchable
+            />
+          </Group>
         )}
-
-        {/* One component, the same one the expiry control uses (TASK-265 §1). It never blocks anything. */}
-        <ExpiryWarningAlert warning={warning} />
 
         <Group justify="flex-end" gap="sm">
           <Button variant="subtle" color="gray" onClick={onClose}>
-            {t(done ? "common.close" : "common.cancel")}
+            {t(result ? "common.close" : "common.cancel")}
           </Button>
-          {/* Once the resume has happened there is nothing left to submit — only the warning to read. */}
-          {!done && (
+          {/* Once the re-plan has happened there is nothing left to submit — only what it did, to read. */}
+          {!result && (
             <Button
               color={isDrop ? "yellow" : "green"}
               loading={busy}
-              // 🚫 Never disabled by the WARNING — only by the server's explicit "I need a date" prompt, and
-              // then only until one is picked. AC-4's rule is warn-and-still-save.
-              disabled={!courseId || (!isDrop && needsExpiry && !expiry)}
+              // Both fields are required by the API, so both gate the button — and nothing else does.
+              disabled={!courseId || (!isDrop && (!startDate || !startTime))}
               onClick={submit}
             >
               {t(isDrop ? "endCourse.dropConfirm" : "endCourse.resumeConfirm")}

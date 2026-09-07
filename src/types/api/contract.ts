@@ -248,12 +248,26 @@ export interface UpdateCourseExpiryResponse {
   previousExpiryDate: IsoDate | null;
 }
 
+/**
+ * SPEC-076 / TASK-282+287 — resuming a course is now a **RE-PLAN**, not a restoration (owner:
+ * *"เอาเหมือนตอนสร้างคอร์สเลย"*), so the response says where the course now ENDS and what that did to the expiry.
+ *
+ * 🚫 **`expiryWarning` is gone from this path, and its absence is structural.** It warned that the resumed
+ * sessions might fall outside the expiry — and the expiry is now *derived from* those sessions, so the
+ * condition it reported cannot occur. (It still serves REQ-082's expiry EDIT, which has nothing to infer from.)
+ */
 export interface ResumeCourseResponse {
   resumed: boolean;
   createdSessions: number;
   dates: IsoDate[];
   course: CourseSummary;
-  expiryWarning: ExpiryWarning;
+  /** The last session the re-plan laid down — `null` when the course owed nothing. 🚫 Never computed here. */
+  lastSession: IsoDate | null;
+  /** The expiry AFTER the re-plan. Derived server-side to cover `lastSession`, and it never shrinks. */
+  expiryDate: IsoDate;
+  /** Whether it actually moved — the difference between *"it moved because the course moved"* and a number
+   *  that changed on its own. That distinction is what REQ-082's audit exists to keep answerable. */
+  expiryExtended: boolean;
 }
 
 /**

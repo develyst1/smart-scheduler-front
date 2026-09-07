@@ -309,11 +309,22 @@ export const useDropCourse = () => {
  * case, and the server asks for one (`EXPIRY_REQUIRED`) only when the sessions it would create fall outside the
  * existing window.
  */
+/**
+ * REQ-084 / TASK-287 — resume a paused course as a **RE-PLAN**. 🔴 The schedule is REQUIRED: the empty body is
+ * refused server-side, because that untested second path is what produced DEF-2.
+ */
 export const useResumeCourse = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ courseId, expiryDate }: { courseId: string; expiryDate?: string }) =>
-      resumeCourse(courseId, { expiryDate }),
+    mutationFn: ({
+      courseId,
+      startDate,
+      startTime,
+    }: {
+      courseId: string;
+      startDate: string;
+      startTime: string;
+    }) => resumeCourse(courseId, { startDate, startTime }),
     onSuccess: () => invalidateAll(qc),
   });
 };

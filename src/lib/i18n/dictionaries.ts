@@ -98,11 +98,17 @@ const en = {
     dropDone: "Course paused",
     resume: "Resume course",
     resumeTitle: "Resume this course?",
-    resumeLine: "{program} for {student} returns on its usual slot. Choose the new expiry date — the pause has eaten into the old one.",
-    resumeExpiry: "New expiry date",
-    // TASK-265 §3 — shown only when the server asked for one, so it says WHY it suddenly appeared.
-    resumeExpiryWhy: "Some sessions this resume creates fall past the current expiry, so a new date is needed.",
+    // 🔴 TASK-287 — resume is a RE-PLAN now, not a return to the old slot: the sentence had to change with the
+    // behaviour, or it would describe a product that no longer exists.
+    resumeLine: "{program} for {student} is re-planned from a date you choose — the remaining sessions are laid out weekly from there, as when the course was created.",
     resumeConfirm: "Resume the course",
+    // What the re-plan DID. 🚫 Every number here comes from the response; the screen computes none of them.
+    resumeCreated: "{n} session(s) put back on the schedule.",
+    resumeLastSession: "The course now ends on {date}.",
+    // The expiry MOVED — said plainly, because an expiry that shifts silently is what REQ-082's audit exists
+    // to make answerable. The two cases are separate strings so neither has to hedge.
+    resumeExpiryMoved: "The expiry moved to {date} to cover the new last session.",
+    resumeExpirySame: "The expiry is unchanged: {date}.",
     resumeDone: "Course resumed",
     action: "Cancel course",
     title: "Cancel this course?",
@@ -1202,11 +1208,15 @@ const th: typeof en = {
     dropDone: "พักคอร์สแล้ว",
     resume: "กลับมาเรียน",
     resumeTitle: "ให้คอร์สนี้กลับมาเรียน?",
-    resumeLine: "{program} ของ {student} จะกลับมาที่ช่วงเวลาเดิม กรุณาเลือกวันหมดอายุใหม่ เพราะช่วงที่พักไปกินเวลาของเดิมไปแล้ว",
-    resumeExpiry: "วันหมดอายุใหม่",
-    // TASK-265 §3 — จะโผล่มาเฉพาะตอนที่เซิร์ฟเวอร์ขอ จึงต้องบอกด้วยว่าทำไมถึงโผล่มา
-    resumeExpiryWhy: "มีคาบที่จะสร้างใหม่เลยวันหมดอายุเดิม จึงต้องระบุวันหมดอายุใหม่",
+    // 🔴 TASK-287 — resume คือการ "วางแผนใหม่" ไม่ใช่กลับไปช่องเดิม (เจ้าของ: "เอาเหมือนตอนสร้างคอร์สเลย")
+    resumeLine: "{program} ของ {student} จะถูกวางแผนใหม่จากวันที่เลือก แล้วเรียงคาบที่เหลือรายสัปดาห์ต่อไป เหมือนตอนสร้างคอร์ส",
     resumeConfirm: "กลับมาเรียน",
+    // ผลลัพธ์ที่เกิดขึ้นจริง 🚫 ทุกตัวเลขมาจาก response ไม่มีการคำนวณที่ฝั่งหน้าจอ
+    resumeCreated: "นำคาบกลับเข้าตาราง {n} คาบ",
+    resumeLastSession: "คอร์สนี้จะจบวันที่ {date}",
+    // วันหมดอายุ "ขยับ" — ต้องบอกให้ชัด เพราะวันหมดอายุที่ขยับเงียบๆ คือสิ่งที่ REQ-082 ทำ audit ไว้ตอบ
+    resumeExpiryMoved: "วันหมดอายุขยับเป็น {date} เพื่อให้ครอบคลุมคาบสุดท้ายใหม่",
+    resumeExpirySame: "วันหมดอายุเท่าเดิม: {date}",
     resumeDone: "กลับมาเรียนแล้ว",
     action: "ยกเลิกคอร์ส",
     title: "ยกเลิกคอร์สนี้?",

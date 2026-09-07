@@ -23,7 +23,8 @@ import type { CoursePackageView } from "@/types/app/scheduler";
  *
  * 🚫 There is no confirm the admin cannot pass, and no pre-check. The owner's rule is *warn, do not act*, and a
  * dialog you cannot get past is acting. 🚫 Nothing here computes the warning — it is rendered from the response
- * by the same `ExpiryWarningAlert` the resume path uses.
+ * by `ExpiryWarningAlert` — which since TASK-287 serves this path ALONE (the resume derives its expiry, so it
+ * has nothing left to warn about).
  */
 export default function EditExpiryDialog({
   course,
@@ -97,7 +98,7 @@ export default function EditExpiryDialog({
           />
         )}
 
-        {/* The one warning component — the same one the resume path renders. */}
+        {/* The warning — this is now its ONLY caller (TASK-287). */}
         <ExpiryWarningAlert warning={warning} />
 
         <Group justify="flex-end" gap="sm">

@@ -56,27 +56,22 @@ import { canResumeCourse, isCourseWritable } from "@/lib/scheduler/course-lifecy
 import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
 
 /**
- * 🔴 TASK-285 (2026-09-08) — **the COURSE pause/resume control is switched OFF for tonight's release.**
+ * The COURSE pause/resume control. **Both faces read this one flag**, so they can never come back by halves —
+ * which was the point when TASK-285 turned it off: hiding only the resume would let an admin pause a course and
+ * then be unable to bring it back, **a stranded course with no control that touches it.**
  *
- * **Cause:** DEF-2 — resume RELOCATES a course into the wrong week (a November course came back as September,
- * with its sessions on this week's live calendar). **TASK-282 fixes that; this hides the door until it does.**
+ * ✅ **RE-ENABLED 2026-09-08 by TASK-287 — in the SAME commit as the re-plan form that makes it work.**
+ * TASK-282 deliberately did not flip it: the backend now refuses the old empty body, so switching this on
+ * before the form existed would have turned a hidden feature into a visibly broken one. **A feature comes back
+ * beside the screen that serves it, not on the commit that fixed the server.**
  *
- * 🔴 **Both halves, together.** `พักคอร์ส` and its resume are two faces of one dialog, and hiding only the
- * resume would let an admin pause a course and then be unable to bring it back — **a stranded course with no
- * control that touches it, which is worse than shipping the defect.**
- *
- * 🚫 **Nothing is deleted:** the dialog, the endpoints and REQ-084's `canPauseCourse` guard all stay in the
- * build. The guard is dormant — it guards a control that is now hidden — and taking it out tonight would be a
- * second edit to these components on deploy night.
+ * 📌 It stays, and stays named. If DEF-2's class ever recurs this is the switch, and it is one line.
+ * *(History: off 2026-09-08 for DEF-2 — resume relocated a course into the wrong week.)*
  *
  * 🚫 **This is NOT the BOOKING pause tray (REQ-076).** Different feature, different predicate
- * (`lib/scheduler/pause-booking.ts`), different components — tested, passed, and shipping tonight. The two
- * share a word and nothing else.
- *
- * ✅ **TO RE-ENABLE: set this to `true`. One line, this line.** It is TASK-282's Definition of Done, not a note
- * somebody remembers.
+ * (`lib/scheduler/pause-booking.ts`), different components. The two share a word and nothing else.
  */
-const COURSE_PAUSE_RESUME_ENABLED = false;
+const COURSE_PAUSE_RESUME_ENABLED = true;
 
 /** PENDING / CONFIRMED / EXTENDED — a live session that can be plainly cancelled (re-owes, no reason). */
 const isLiveStatus = (s: string) => s === "PENDING" || s === "CONFIRMED" || s === "EXTENDED";
