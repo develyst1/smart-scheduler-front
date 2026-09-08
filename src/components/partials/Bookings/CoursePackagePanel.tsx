@@ -14,6 +14,8 @@ import PagerBar from "@/components/common/PagerBar";
 import CourseHistoryModal from "./CourseHistoryModal";
 import EditExpiryDialog from "./EditExpiryDialog";
 import { useT } from "@/lib/i18n";
+import { useLoadPhase } from "@/lib/ui/load-phase";
+import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import type { CoursePackageView } from "@/types/app/scheduler";
 
 /** One place mapping lifecycle → colour, so the four states can't drift apart across screens. */
@@ -53,6 +55,11 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   const counts = data?.counts;
   /** Either there is nothing yet, or what we hold answers a question staff have already moved on from. */
   const busy = isLoading || isPlaceholderData;
+  // 🔴 One shared rule for the wait (`lib/ui/load-phase.ts`): under ~200ms nothing is drawn at all, because a
+  // skeleton that appears and vanishes inside the window a person reads as *instant* is a flash, not a signal.
+  // `data !== undefined` — NOT `courses.length` — is what keeps a first load `quiet` instead of flashing the
+  // empty state before the first page arrives.
+  const phase = useLoadPhase(busy, data !== undefined);
   const setUnlock = useSetCourseAdminUnlock();
 
   // คอร์ส + ทิศทาง (unlock/relock) ที่รอการยืนยันใน modal
@@ -137,9 +144,9 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
           ⚠️ So `keepPreviousData` no longer changes anything visible on this screen; it is left in the hook
           because the cached page still spares a refetch when staff switch back — and because `courses.length`
           is what lets the skeleton match the height that is on screen right now. */}
-      {busy ? (
+      {phase === "skeleton" ? (
         <CourseCardSkeletons count={courses.length || PAGE_SIZE} />
-      ) : courses.length === 0 ? (
+      ) : phase === "quiet" ? null : courses.length === 0 ? (
         <Card padding="xl">
           <Group justify="center" c="dimmed" gap="xs">
             <GraduationCap size={18} />
@@ -318,9 +325,9 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
         </div>
       )}
 
-      {/* Hidden with the list. Paging is one of the switches that triggers `busy`, and a pager that keeps
-          saying "page 2 of 4" over a spinner is describing the result that just went away. */}
-      {!busy && <PagerBar total={total} page={page} limit={PAGE_SIZE} onPage={setPage} />}
+      {/* Hidden with the list. Paging is one of the switches that triggers the wait, and a pager that keeps
+          saying "page 2 of 4" over a skeleton is describing the result that just went away. */}
+      {phase === "content" && <PagerBar total={total} page={page} limit={PAGE_SIZE} onPage={setPage} />}
 
       <Modal
         opened={pending !== null}
@@ -384,22 +391,22 @@ function CourseCardSkeletons({ count }: { count: number }) {
           <Stack gap="md">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1">
-                <Skeleton height={16} width="55%" radius="sm" />
-                <Skeleton height={10} width="80%" mt={8} radius="sm" />
+                <Skeleton height={SKEL.title} width="55%" radius={SKEL_RADIUS} />
+                <Skeleton height={SKEL.meta} width="80%" mt={8} radius={SKEL_RADIUS} />
               </div>
-              <Skeleton height={20} width={70} radius="sm" />
+              <Skeleton height={SKEL.badge} width={70} radius={SKEL_RADIUS} />
             </div>
             <Group gap="lg" wrap="nowrap">
               <Skeleton height={92} width={92} circle />
               <div className="flex-1">
-                <Skeleton height={10} width="45%" radius="sm" />
-                <Skeleton height={10} mt={8} radius="xl" />
-                <Skeleton height={9} width="70%" mt={8} radius="sm" />
+                <Skeleton height={SKEL.meta} width="45%" radius={SKEL_RADIUS} />
+                <Skeleton height={SKEL.meta} mt={8} radius="xl" />
+                <Skeleton height={SKEL.meta} width="70%" mt={8} radius={SKEL_RADIUS} />
               </div>
             </Group>
             <Group gap="xs" grow>
-              <Skeleton height={30} radius="sm" />
-              <Skeleton height={30} radius="sm" />
+              <Skeleton height={SKEL.button} radius={SKEL_RADIUS} />
+              <Skeleton height={SKEL.button} radius={SKEL_RADIUS} />
             </Group>
           </Stack>
         </Card>

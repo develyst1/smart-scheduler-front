@@ -9,6 +9,8 @@ import { useVouchers } from "@/hooks/scheduler";
 import { formatDateDisplay } from "@/lib/ui/format";
 import PagerBar from "@/components/common/PagerBar";
 import { useT } from "@/lib/i18n";
+import { useLoadPhase } from "@/lib/ui/load-phase";
+import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 
 const PAGE_SIZE = 20;
@@ -44,6 +46,7 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
   const vouchers = data?.items ?? [];
   const total = data?.total ?? 0;
   const busy = isLoading || isPlaceholderData;
+  const phase = useLoadPhase(busy, data !== undefined);
 
   return (
     <Stack gap="md">
@@ -60,7 +63,7 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
           the only thing waiting on the request, so the loading state lives in the `Tbody` (below).
           ⚠️ `!busy &&` guards the empty state: while a search is in flight `vouchers` is the PREVIOUS result,
           and an empty previous page would flash "no vouchers" over a query that has not answered yet. */}
-      {!busy && vouchers.length === 0 ? (
+      {phase === "content" && vouchers.length === 0 ? (
         <Card padding="xl">
           <Group justify="center" c="dimmed" gap="xs">
             <Ticket size={18} />
@@ -84,14 +87,16 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {busy
+              {phase === "quiet"
+                ? null
+                : phase === "skeleton"
                 ? /* `PAGE_SIZE` skeleton rows in the real table — the head and the column widths stay, so the
                      data lands in place. Six cells: student · total · usage · expiry · status · action. */
                   Array.from({ length: PAGE_SIZE }, (_, i) => (
                     <Table.Tr key={`sk-${i}`} aria-hidden>
                       {Array.from({ length: 6 }, (_, c) => (
                         <Table.Td key={c}>
-                          <Skeleton height={12} radius="sm" />
+                          <Skeleton height={SKEL.line} radius={SKEL_RADIUS} />
                         </Table.Td>
                       ))}
                     </Table.Tr>

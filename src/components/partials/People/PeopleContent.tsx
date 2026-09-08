@@ -22,6 +22,8 @@ import { Search, UserPlus, Pencil, Ban, CircleCheck, Baby, Phone, MapPin, Link2O
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
+import { useLoadPhase } from "@/lib/ui/load-phase";
+import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import {
   useClearParentLineLink,
   useParent,
@@ -52,6 +54,7 @@ export default function PeopleContent() {
   const parents = data?.parents ?? [];
   const total = data?.total ?? 0;
   const busy = isLoading || isPlaceholderData;
+  const phase = useLoadPhase(busy, data !== undefined);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const suspend = useSetParentSuspended();
@@ -136,9 +139,9 @@ export default function PeopleContent() {
           🔴 `parents.length || PAGE_SIZE` — `keepPreviousData` still holds the page being replaced, so asking
           for that many matches the height already on screen exactly. `PAGE_SIZE` covers the first load, where
           there is nothing to match. */}
-      {busy ? (
+      {phase === "skeleton" ? (
         <ParentCardSkeletons count={parents.length || PAGE_SIZE} />
-      ) : parents.length === 0 ? (
+      ) : phase === "quiet" ? null : parents.length === 0 ? (
         <Card padding="xl">
           <Text ta="center" c="dimmed" size="sm">
             {debounced.trim() ? t("people.noMatch") : t("people.empty")}
@@ -442,16 +445,16 @@ function ParentCardSkeletons({ count }: { count: number }) {
         <Card key={i} padding="lg" withBorder>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <Skeleton height={16} width="35%" radius="sm" />
-              <Skeleton height={10} width="55%" mt={8} radius="sm" />
+              <Skeleton height={SKEL.title} width="35%" radius={SKEL_RADIUS} />
+              <Skeleton height={SKEL.meta} width="55%" mt={8} radius={SKEL_RADIUS} />
             </div>
             <Group gap="xs">
-              <Skeleton height={26} width={72} radius="sm" />
-              <Skeleton height={26} width={72} radius="sm" />
+              <Skeleton height={SKEL.button} width={72} radius={SKEL_RADIUS} />
+              <Skeleton height={SKEL.button} width={72} radius={SKEL_RADIUS} />
             </Group>
           </div>
           <div className="mt-3 border-t border-muted-100 pt-3">
-            <Skeleton height={12} width="45%" radius="sm" />
+            <Skeleton height={SKEL.line} width="45%" radius={SKEL_RADIUS} />
           </div>
         </Card>
       ))}

@@ -35,6 +35,8 @@ import type { BulkConfirmResult } from "@/types/api/contract";
 import { BOOKING_TYPE_OPTIONS } from "@/components/partials/Calendar/Calendar.config";
 import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
+import { useLoadPhase } from "@/lib/ui/load-phase";
+import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 
 type DateRange = "ALL" | "TODAY" | "WEEK" | "MONTH" | "CUSTOM";
 
@@ -111,6 +113,7 @@ export default function BookingsTable() {
   const rows = data?.items ?? [];
   const total = data?.total ?? 0;
   const busy = isLoading || isPlaceholderData;
+  const phase = useLoadPhase(busy, data !== undefined);
 
   const teacherName = (id: string) => teachers.find((tc) => tc.id === id)?.nickname ?? "-";
 
@@ -323,7 +326,7 @@ export default function BookingsTable() {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {busy ? (
+          {phase === "quiet" ? null : phase === "skeleton" ? (
             /* Skeleton ROWS, inside the real table: the head, the column widths and the horizontal scroll all
                stay put, so the arriving data lands in place instead of reflowing the page. `pageSize` of them,
                because that is how many are about to appear. */
@@ -331,7 +334,7 @@ export default function BookingsTable() {
               <Table.Tr key={`sk-${i}`} aria-hidden>
                 {Array.from({ length: 8 }, (_, c) => (
                   <Table.Td key={c}>
-                    <Skeleton height={12} radius="sm" />
+                    <Skeleton height={SKEL.line} radius={SKEL_RADIUS} />
                   </Table.Td>
                 ))}
               </Table.Tr>
