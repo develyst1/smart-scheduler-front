@@ -875,7 +875,14 @@ const en = {
     addParentTitle: "Add parent",
     editParentTitle: "Edit parent",
     parentName: "Parent name",
+    // 🔴 Owner's call (2026-09-08): these say what the field WANTS, in plain formal wording — **never a sample
+    // person or a sample number**. A placeholder that reads like real data is a made-up record sitting in a
+    // form staff fill with real ones, and on a screenshot or a demo it is indistinguishable from an entry.
+    // ⚠️ The phone one still carries the FORMAT (10 digits): the field is free text with no pattern check, so
+    // this line is the only thing that says so before an admin types a dash.
+    parentNamePlaceholder: "Full name",
     phone: "Phone",
+    phonePlaceholder: "10-digit phone number",
     province: "Parent's province (home address)",
     provincePlaceholder: "Select a province",
     parentNote: "Note",
@@ -1952,7 +1959,9 @@ const th: typeof en = {
     addParentTitle: "เพิ่มผู้ปกครอง",
     editParentTitle: "แก้ไขผู้ปกครอง",
     parentName: "ชื่อผู้ปกครอง",
+    parentNamePlaceholder: "ชื่อและนามสกุล",
     phone: "เบอร์โทร",
+    phonePlaceholder: "หมายเลขโทรศัพท์ 10 หลัก",
     province: "จังหวัดของผู้ปกครอง (ที่อยู่)",
     provincePlaceholder: "เลือกจังหวัด",
     parentNote: "หมายเหตุ",

@@ -76,13 +76,18 @@ export default function ParentFormModal({ opened, parent, onClose }: Props) {
     >
       <Stack gap="md">
         <Group grow>
+          {/* The province and note fields already carried placeholders; these two did not, so half the form
+              said what it wanted and half showed an empty box. The phone one doubles as the format hint — the
+              field takes free text, so nothing else tells staff it is stored as bare digits. */}
           <TextInput
             label={t("people.parentName")}
+            placeholder={t("people.parentNamePlaceholder")}
             value={name}
             onChange={(e) => setName(e.currentTarget.value)}
           />
           <TextInput
             label={t("people.phone")}
+            placeholder={t("people.phonePlaceholder")}
             value={phone}
             onChange={(e) => setPhone(e.currentTarget.value)}
             required
