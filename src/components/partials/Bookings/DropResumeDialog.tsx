@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Alert, Button, Group, Modal, Select, Stack, Text, Textarea } from "@mantine/core";
+import { Alert, Button, Group, Loader, Modal, ScrollArea, Select, Stack, Text, Textarea } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { AlertTriangle } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
-import { useDropCourse, useResumeCourse } from "@/hooks/scheduler";
+import { useDropCourse, usePreviewEndCourse, useResumeCourse } from "@/hooks/scheduler";
 import { formatDateDisplay } from "@/lib/ui/format";
-import { TIME_SLOTS } from "@/types/app/scheduler";
+import { TIME_SLOTS, type EndCoursePreview } from "@/types/app/scheduler";
 import type { ResumeCourseResponse } from "@/types/api/contract";
 import { defaultResumeDate, resumeDefaultTime } from "@/lib/scheduler/resume-defaults";
 
@@ -21,8 +21,6 @@ interface Props {
   /** For the sentence — the same facts the plan already has, so nothing is re-counted or invented. */
   program: string | null;
   student: string | null;
-  /** Live sessions currently on the schedule; only meaningful for `drop`. */
-  remaining: number;
   /**
    * 🔴 TASK-288 §1 — **this course's OWN slot**, from its own session rows. The re-plan form opens on it, so
    * *"the same slot, later"* is the one-click answer and moving the lesson is a deliberate act.
@@ -48,8 +46,12 @@ interface Props {
  * comment used to say otherwise. What it does now is open the re-plan on the course's own slot as a *default*
  * (TASK-288 §1), which is a different promise and a weaker one.
  *
- * 🔴 There is **no `/drop/preview`** on the server. Rather than invent a count, the pause sentence uses the
- * number of live sessions the caller already has on screen — and says nothing the server hasn't.
+ * 🔴 **The number in the pause sentence is the SERVER's** (TASK-291). It used to be the caller's live-session
+ * count, and this comment used to justify that with *"there is no `/drop/preview` on the server"* — **true about
+ * the route and wrong about the fact.** There is no `/drop/preview`, but `POST /courses/:id/cancel/preview`
+ * answers exactly this question, because **a pause and an early ending cancel the same set**: both call
+ * `endableSessions` (`course-plan.ts`), one definition of *"still ahead of the family"*.
+ * ⚠️ **The route is NAMED for cancel and that is not a mistake here** — see the call site below.
  */
 export default function DropResumeDialog({
   opened,
@@ -57,7 +59,6 @@ export default function DropResumeDialog({
   courseId,
   program,
   student,
-  remaining,
   courseStartTime,
   courseWeekday,
   onClose,
@@ -66,6 +67,7 @@ export default function DropResumeDialog({
   const t = useT();
   const drop = useDropCourse();
   const resume = useResumeCourse();
+  const previewPause = usePreviewEndCourse();
 
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +81,19 @@ export default function DropResumeDialog({
   const [startTime, setStartTime] = useState(resumeDefaultTime(courseStartTime));
   /** What the re-plan actually did — read from the response, never computed (TASK-287 §7). */
   const [result, setResult] = useState<ResumeCourseResponse | null>(null);
+  /**
+   * 🔴 TASK-291 — **what the pause will actually remove, in the server's own number.**
+   *
+   * The sentence used to say `remaining`, the caller's `sessions.filter(x => x.status !== "SICK_LEAVE")`.
+   * On @Tanya's course that read **9** where the pause cancels **4**: an EXCLUSION list on the screen against
+   * the server's INCLUSION list (`PENDING · CONFIRMED · EXTENDED`). **They agreed while every row was live and
+   * diverged the moment anything was cancelled** — so the number was wrong about the ACT, not merely about the
+   * list under it, in the one sentence the admin acts on.
+   *
+   * 🚫 **The fix is NOT to copy those three statuses here.** There is no live-status list anywhere on the front
+   * end today, and a second copy of it is the drift this would be repeating rather than fixing.
+   */
+  const [pausePreview, setPausePreview] = useState<EndCoursePreview | null>(null);
 
   // 🔴 TASK-288 §1 — seeded on OPEN, not once at mount: the plan (and therefore the course's own slot) may not
   // have loaded when this component first mounted, and a default that arrives too late is the same defect.
@@ -92,6 +107,29 @@ export default function DropResumeDialog({
     setError(null);
     setResult(null);
   }, [opened, courseStartTime, courseWeekday]);
+
+  /**
+   * 🔴 TASK-291 — ask the server what the pause will remove, **every time the pause face opens.**
+   *
+   * ⚠️ **The route is named `/cancel/preview` and it is the right one anyway.** A pause and an early ending
+   * cancel the same set — `previewCourseEnd` and `dropCourse` both call `endableSessions`, so this is the same
+   * question, not a coincidence to be exploited. **The name is under-descriptive, not wrong**, and renaming a
+   * route is a contract change (@Sober, TASK-291 §1). 🚫 It writes nothing.
+   *
+   * Re-asked on every open rather than cached: a count from a previous open can describe a plan that has since
+   * changed, and this one is read immediately before an act that cancels sessions.
+   */
+  useEffect(() => {
+    if (!opened || mode !== "drop" || !courseId) {
+      setPausePreview(null);
+      return;
+    }
+    previewPause
+      .mutateAsync(courseId)
+      .then(setPausePreview)
+      .catch((e) => setError(e instanceof ApiClientError ? e.message : t("plan.genericError")));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, mode, courseId]);
 
   /**
    * 🔴 TASK-288 §2 — the act happened; the admin has now read what it did. **This is the ONLY place `onDone`
@@ -148,6 +186,19 @@ export default function DropResumeDialog({
       // this dialog keeps showing the pre-resume schedule.
       onClose={result ? finish : onClose}
       centered
+      /**
+       * 🔴 TASK-291 §2 — **the body scrolls, so the primary action can always be reached.**
+       *
+       * @Sober's reason is not the viewport: *"a dialog whose primary action can be unreachable is a dialog that
+       * cannot be VERIFIED"* — and this one GREW when the resume summary panel was added, which is the state
+       * @Tanya could not complete a check on.
+       *
+       * ⚠️ **Correction worth having: Mantine v9 already caps `.mantine-Modal-content` at
+       * `calc(100dvh - 2 * 5dvh)` with `overflow-y: auto`, so this dialog was never unscrollable.** This makes
+       * the body its own scroll region instead of the whole content, which is the documented answer and, more
+       * to the point, states the intent where the next person edits the dialog. 🚫 Nothing restructured.
+       */
+      scrollAreaComponent={ScrollArea.Autosize}
       radius="lg"
       title={t(isDrop ? "endCourse.dropTitle" : "endCourse.resumeTitle")}
     >
@@ -158,11 +209,29 @@ export default function DropResumeDialog({
           </Alert>
         )}
 
-        <Text fz="sm" className="tabular-nums">
-          {isDrop
-            ? t("endCourse.dropLine", { program: program ?? "—", student: student ?? "—", n: remaining })
-            : t("endCourse.resumeLine", { program: program ?? "—", student: student ?? "—" })}
-        </Text>
+        {/* 🔴 TASK-291 — the pause sentence waits for the server's number and has **no fallback of its own**.
+            A count that appears and then corrects itself is the same defect wearing a delay, and a `?? 0` here
+            would be a client-invented figure in the sentence this whole task exists to make true. If the
+            preview fails, the Alert above carries the server's words and the confirm button stays disabled. */}
+        {isDrop ? (
+          pausePreview ? (
+            <Text fz="sm" className="tabular-nums">
+              {t("endCourse.dropLine", {
+                program: program ?? "—",
+                student: student ?? "—",
+                n: pausePreview.removedSessions,
+              })}
+            </Text>
+          ) : previewPause.isPending ? (
+            <Group justify="center" py="md">
+              <Loader size="sm" />
+            </Group>
+          ) : null
+        ) : (
+          <Text fz="sm" className="tabular-nums">
+            {t("endCourse.resumeLine", { program: program ?? "—", student: student ?? "—" })}
+          </Text>
+        )}
 
         {isDrop ? (
           // Free text, and optional — the BE keeps it that way on purpose: a pause has no closed set of causes.
@@ -231,7 +300,9 @@ export default function DropResumeDialog({
               color={isDrop ? "yellow" : "green"}
               loading={busy}
               // Both fields are required by the API, so both gate the button — and nothing else does.
-              disabled={!courseId || (!isDrop && (!startDate || !startTime))}
+              // 🔴 TASK-291 — plus: **a pause cannot be confirmed before the server has said how many.** The
+              // admin is agreeing to a number; there must be one, and it must not be ours.
+              disabled={!courseId || (isDrop ? !pausePreview : !startDate || !startTime)}
               onClick={submit}
             >
               {t(isDrop ? "endCourse.dropConfirm" : "endCourse.resumeConfirm")}

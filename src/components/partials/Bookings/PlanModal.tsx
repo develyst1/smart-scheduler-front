@@ -553,8 +553,10 @@ export default function PlanModal({
         onEnded={onClose}
       />
 
-      {/* The sentence uses the plan's OWN live-session count — there is no `/drop/preview`, and inventing a
-          number here would be worse than using the one already on screen. */}
+      {/* 🔴 TASK-291 — **no count is passed any more.** This used to send `remaining={liveSessions.length}`,
+          and on @Tanya's course that said **9** where the pause cancels **4**: `!== SICK_LEAVE` here against
+          the server's `PENDING · CONFIRMED · EXTENDED`. The dialog asks the server itself now.
+          🚫 Do not reintroduce a count prop — **the number belongs to whoever performs the act.** */}
       {/* 🔴 TASK-288 §2 — mounted ONLY while a mode is chosen. It used to render always, with
           `mode={dropMode ?? "drop"}`, so on close it fell back to the PAUSE face and re-rendered with a plan
           that was already gone: *"Pause — for — — the remaining 0 sessions"*. **That empty flash was the
@@ -566,7 +568,6 @@ export default function PlanModal({
           courseId={isCourse && !isCreate ? (plan?.id ?? null) : null}
           program={plan?.sessions[0]?.subject?.name ?? null}
           student={plan?.student?.nickname || plan?.student?.name || null}
-          remaining={liveSessions.length}
           // TASK-288 §1 — the course's OWN slot, read off its own session rows (the server's data, not a guess),
           // so the re-plan form opens on the lesson the family already has.
           courseStartTime={courseSlot?.startTime ?? null}

@@ -960,9 +960,15 @@ export const endCourse = async (courseId: string, input: { reason: EndCourseReas
  * TASK-198/199 — **pause** a course, and bring it back.
  *
  * Drop is not a cancel: the sessions come off the schedule but the course keeps its `size`, its slot
- * (`weekday`/`startTime`) and its history, and `resume` rebuilds on that same slot. There is deliberately **no
- * `/drop/preview`** on the BE, so the dialog states what will happen from the plan it already has rather than
- * inventing a count of its own.
+ * (`weekday`/`startTime`) and its history.
+ *
+ * 🔻 **Two stale sentences removed here (TASK-291), both of the class we keep paying for:**
+ * 1. *"`resume` rebuilds on that same slot"* — **false since TASK-287 made resume a RE-PLAN.** The same
+ *    sentence was corrected in `DropResumeDialog`'s header last night and survived down here.
+ * 2. *"there is deliberately no `/drop/preview`, so the dialog states what will happen from the plan it already
+ *    has"* — **true about the route and wrong about the fact, which made it worse than a plain error.** There
+ *    is no `/drop/preview`, but `POST /courses/:id/cancel/preview` answers exactly this question: a pause and
+ *    an early ending both cancel `endableSessions`, so the count is the same count. The dialog reads it.
  */
 export const dropCourse = async (courseId: string, input: { reason?: string }) => {
   if (useMock) return mock.dropCourse(courseId, input);
