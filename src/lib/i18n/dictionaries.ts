@@ -628,6 +628,13 @@ const en = {
     confirmCourseDone: "Confirmed {n} sessions",
     confirmCourseSkipped: "{n} skipped",
     noLiveEnd: "no live sessions",
+    // 🟡 TASK-293 §2 — a PAUSED course has no end date because it has no live plan, and that is correct
+    // (`deriveLiveEndDate` returns null, and it must keep doing so). It was being rendered into the
+    // `Ends {date}` slot as *"Ends no live sessions"* — **a category error: the answer does not fit the
+    // question the label asks.** So while paused the header states what IS true instead of answering `Ends`.
+    // 🚫 Not a fallback to the expiry: the expiry is a ceiling, not an end (TASK-282 §7).
+    // 📌 Vocabulary reused from `course.DROPPED` / `course.droppedNoWrites` rather than phrased a third way.
+    pausedNoEnd: "Paused — no dates until it resumes",
     noSessions: "No sessions yet",
     voucherNote: "Voucher sessions can be moved one at a time (no make-up chain).",
     colDate: "Date",
@@ -1702,6 +1709,9 @@ const th: typeof en = {
     confirmCourseDone: "ยืนยันแล้ว {n} คาบ",
     confirmCourseSkipped: "ข้ามไป {n} คาบ",
     noLiveEnd: "ยังไม่มีคาบ",
+    // 🟡 TASK-293 §2 — คอร์สที่พักอยู่ไม่มีวันสิ้นสุด เพราะไม่มีแผนที่ยังใช้งานอยู่ (ถูกแล้ว) การเอาคำนี้ไปใส่ในช่อง
+    // "สิ้นสุด {date}" ทำให้กลายเป็น "สิ้นสุด ยังไม่มีคาบ" — คำถามกับคำตอบคนละชนิดกัน 🚫 ห้ามใช้วันหมดอายุแทน
+    pausedNoEnd: "พักอยู่ — ยังไม่มีวันเรียนจนกว่าจะกลับมาเรียน",
     noSessions: "ยังไม่มีคาบ",
     voucherNote: "คาบวอยเชอร์ย้ายได้ทีละคาบ (ไม่มีการต่อคาบชดเชย)",
     colDate: "วันที่",

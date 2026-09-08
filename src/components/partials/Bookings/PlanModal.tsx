@@ -586,6 +586,16 @@ function SummaryBar({ plan }: { plan: EntitlementPlan }) {
   // (never started). That is the opposite of the truth: the sessions were forfeited on purpose. Say so.
   const ended = plan.summary.kind === "course" ? plan.summary.endedAt : null;
   const endedReason = plan.summary.kind === "course" ? plan.summary.endReason : null;
+  /**
+   * 🟡 TASK-293 §2 — **a paused course has no `Ends` to answer**, and the header used to answer it anyway:
+   * *"Ends no live sessions"*. The VALUE is right — `deriveLiveEndDate` returns nothing because there is no
+   * live plan, and that must not change — **the LABEL is what outlived it.** So the paused course gets its own
+   * sentence instead of a non-date poured into a date slot.
+   *
+   * 🚫 Not computed and not substituted: the expiry is a ceiling, not an end (TASK-282 §7). This reads the
+   * server's `status`, the same field the badge reads (TASK-188/189).
+   */
+  const paused = plan.summary.kind === "course" && plan.summary.status === "DROPPED";
   const end = plan.liveEndDate ? dayjs(plan.liveEndDate).format("D MMM YY") : t("plan.noLiveEnd");
   return (
     <div className="rounded-xl border border-muted-200 bg-muted-50/40 p-3">
@@ -617,6 +627,10 @@ function SummaryBar({ plan }: { plan: EntitlementPlan }) {
             {endedReason
               ? t("course.endedPlanHeader", { reason: t(`endCourse.${endedReason}`) })
               : t("course.ended")}
+          </Text>
+        ) : paused ? (
+          <Text fz="sm" c="dimmed">
+            {t("plan.pausedNoEnd")}
           </Text>
         ) : (
           <Text fz="sm" c="dimmed">

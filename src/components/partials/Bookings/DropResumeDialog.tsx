@@ -200,7 +200,22 @@ export default function DropResumeDialog({
        */
       scrollAreaComponent={ScrollArea.Autosize}
       radius="lg"
-      title={t(isDrop ? "endCourse.dropTitle" : "endCourse.resumeTitle")}
+      /**
+       * 🔴 TASK-293 §1 — @Porter's defect, in his words: *"the one dialog whose whole job is to say 'here is
+       * what I DID' opens by sounding like 'may I?'"* — **"Resume this course?"** over a body in the past tense
+       * with only a `Close` button. The plan behind the dialog is already updated; the title was the last thing
+       * on screen still claiming otherwise.
+       *
+       * ✅ **`endCourse.resumeDone` already IS his replacement, word for word** — it is the toast fired the
+       * moment the re-plan lands. 🚫 **So it is reused, not copied.** Two strings saying one thing is the drift
+       * class this week has been spent on, and the toast and the title are the same sentence about the same
+       * fact. *(The Thai says it too: `กลับมาเรียนแล้ว`.)*
+       *
+       * ⚠️ **`isDrop` is tested FIRST on purpose.** `result` is only ever set on the resume face today, but the
+       * pause face's title is asked BEFORE its act and must stay a question — writing the branch this way makes
+       * that structural rather than incidental.
+       */
+      title={t(isDrop ? "endCourse.dropTitle" : result ? "endCourse.resumeDone" : "endCourse.resumeTitle")}
     >
       <Stack gap="md">
         {error && (
