@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge, Button, Card, Group, Loader, Stack, Text } from "@mantine/core";
-import { ChevronDown, PauseCircle } from "lucide-react";
+import { ChevronDown, ChevronLeft, PauseCircle } from "lucide-react";
 import { BookingTypeChip } from "@/components/common/BookingBadges";
 import { formatDateDisplay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
@@ -29,10 +29,15 @@ import type { Booking } from "@/types/app/scheduler";
  * apart without opening either. The date/time is the slot it came from (the booking keeps them while paused);
  * `pausedOriginalSlot` labels it `เดิม:` so it never reads as a *new* scheduled time.
  *
- * 🔴 **Collapsing hides the LIST — never the tray.** The card, its title and its count stay on screen in both
- * states, because those are what AC-9 (noticed without opening anything) and AC-11 (present when empty) are
- * actually about. A collapse that removed the card would let a paused booking end up nowhere at all: it is off
- * the calendar by design, so this is the only place it exists.
+ * 🔴 **Collapsing gives the GRID back its width — it does not hide the tray.** The first cut hid only the list
+ * and left the `17rem` column standing, so the calendar gained nothing and the control had no point. Collapsed,
+ * the rail becomes a **`w-10` spine** on the right edge carrying the same three things the header has: the pause
+ * icon, the count, and the name (set vertically). ⚠️ The spine is what keeps AC-9 true at 40px wide — a paused
+ * booking is off the calendar by design, so if it left the screen entirely it would be nowhere at all. That is
+ * the line this collapse does not cross, and it is why the count rides the spine rather than the list.
+ *
+ * The `w-10 ↔ w-[17rem]` swap belongs to `CalendarContent`, which owns the `<aside>`; it reads the same store,
+ * so the two cannot disagree.
  *
  * The collapsed flag lives in `lib/scheduler/paused-tray.ts` rather than in this component, because
  * `CalendarContent` mounts this **twice** — `rail` and `strip`, switched by CSS — and per-instance state would
@@ -53,6 +58,38 @@ export default function PausedTray({
   const t = useT();
   const isStrip = layout === "strip";
   const { collapsed, toggle } = usePausedTrayCollapsed();
+
+  /**
+   * The collapsed RAIL — the spine. 🔴 Only the rail gets one: the strip band is already a single row on a
+   * narrow screen, where the scarce axis is vertical and a vertical spine would waste the width it just freed.
+   * There, collapsed keeps the header row and drops the list (below).
+   *
+   * Same three facts as the header, stacked: icon · count · name. The name is `vertical-rl` because at 40px
+   * there is no horizontal room for it, and dropping it would leave an icon staff have to recognise rather
+   * than read. 🚫 Not a Mantine `Card` — a `Card`'s padding fights a 40px column; this is the same border and
+   * surface expressed directly.
+   */
+  if (!isStrip && collapsed) {
+    return (
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={false}
+        aria-label={t("calendar.pausedTrayExpand")}
+        className="sticky top-4 flex w-10 flex-col items-center gap-2 rounded-xl border border-muted-200 bg-content1 py-3 shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+      >
+        <PauseCircle size={16} className="shrink-0 text-muted-500" />
+        <Badge size="sm" variant="light" color={bookings.length ? "grape" : "gray"}>
+          {bookings.length}
+        </Badge>
+        <Text size="xs" c="dimmed" style={{ writingMode: "vertical-rl" }}>
+          {t("calendar.pausedTray")}
+        </Text>
+        {/* Points the way the panel will come back, so the control says which direction it opens. */}
+        <ChevronLeft size={14} aria-hidden className="shrink-0 text-muted-500" />
+      </button>
+    );
+  }
 
   return (
     <Card padding="md" withBorder className={isStrip ? undefined : "sticky top-4"}>

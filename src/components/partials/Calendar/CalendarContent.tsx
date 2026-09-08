@@ -6,6 +6,7 @@ import { Loader } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { calendarDayBookings, calendarToBookings } from "@/lib/api/mappers";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
+import { usePausedTrayCollapsed } from "@/lib/scheduler/paused-tray";
 import { useT } from "@/lib/i18n";
 import { useBadges, useCalendar, usePausedBookings, useTeachers } from "@/hooks/scheduler";
 import type { Booking } from "@/types/app/scheduler";
@@ -37,6 +38,8 @@ export default function CalendarContent() {
   // nowhere at all. It is the whole set, always.
   const { data: pausedPage, isLoading: loadingPaused } = usePausedBookings();
   const pausedBookings = pausedPage?.items ?? [];
+  // Read only — the toggle itself lives on the tray. This page needs it for the rail's WIDTH (see the `<aside>`).
+  const { collapsed: trayCollapsed } = usePausedTrayCollapsed();
 
   // Badge filter (OR): keep bookings carrying at least one selected badge value.
   const byBadge = (list: Booking[]) =>
@@ -167,7 +170,12 @@ export default function CalendarContent() {
           )}
         </div>
 
-        <aside className="hidden w-[17rem] shrink-0 2xl:block">
+        {/* 🔴 The WIDTH is the point of the collapse. Hiding the tray's list while this stayed at `17rem` gave
+            the grid nothing back, which is a control with no reason to exist. Collapsed, the column is a `w-10`
+            spine and those ~14rem go to the schedule.
+            The flag comes from the same store `PausedTray` reads, so the column and its contents cannot end up
+            in different states. */}
+        <aside className={`hidden shrink-0 2xl:block ${trayCollapsed ? "w-10" : "w-[17rem]"}`}>
           <PausedTray bookings={pausedBookings} loading={loadingPaused} onSelect={openView} layout="rail" />
         </aside>
       </div>

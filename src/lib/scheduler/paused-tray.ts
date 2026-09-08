@@ -17,8 +17,12 @@ import { useCallback, useSyncExternalStore } from "react";
  * ordinary booking work *notices* it; a tray that ships collapsed hands that back. Staff opt OUT of the list,
  * the way they opt out of cell fields — they never have to go looking for it first.
  *
- * ⚠️ **Collapsed hides the LIST, never the tray.** AC-11 (present even when empty) and AC-9 (noticeable) are
- * about the card and its count, which stay on screen in both states — see `PausedTray`.
+ * ⚠️ **Collapsed gives the grid back its width; it never removes the tray.** On the rail the card becomes a
+ * `w-10` spine still carrying the icon, the count and the name — AC-9 and AC-11 hold at 40px. A collapse that
+ * took the tray off screen would put a paused booking nowhere at all, since it is already off the calendar.
+ *
+ * 🔴 Two components read this: `PausedTray` (what it draws) and `CalendarContent` (the `<aside>`'s width). Both
+ * read the SAME value, which is the other half of why this is a store and not component state.
  */
 
 const STORAGE_KEY = "ss.pausedTrayCollapsed";
