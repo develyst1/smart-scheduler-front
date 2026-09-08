@@ -219,7 +219,9 @@ export default function BookingsTable() {
           allowDeselect={false}
           searchable
           data={[{ value: "ALL", label: t("bookings.allTeachers") }, ...teacherSelectData(teachers)]}
-          renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+          renderOption={({ option, checked }) => (
+            <TeacherOption option={option} checked={checked} teachers={teachers} />
+          )}
         />
         <Select
           label={t("bookings.type")}

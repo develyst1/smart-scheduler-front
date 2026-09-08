@@ -306,7 +306,9 @@ export default function ImportBalanceModal({ opened, onClose }: Props) {
               value={teacherId}
               onChange={(v) => v && setTeacherId(v)}
               data={teacherSelectData(bookableTeachers)}
-              renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+              renderOption={({ option, checked }) => (
+            <TeacherOption option={option} checked={checked} teachers={teachers} />
+          )}
               allowDeselect={false}
               searchable
               required

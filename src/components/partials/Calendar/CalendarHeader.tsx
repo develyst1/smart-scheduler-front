@@ -170,7 +170,9 @@ export default function CalendarHeader({
                 return available && (selectedTypes.length === 0 || selectedTypes.includes(t.type));
               }),
             )}
-            renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+            renderOption={({ option, checked }) => (
+            <TeacherOption option={option} checked={checked} teachers={teachers} />
+          )}
             leftSection={<UserSearch size={15} />}
             size="sm"
             radius="md"

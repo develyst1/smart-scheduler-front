@@ -781,7 +781,9 @@ function MoveBookingForm({
         allowDeselect={false}
         searchable
         data={teacherSelectData(bookableTeachers)}
-        renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+        renderOption={({ option, checked }) => (
+            <TeacherOption option={option} checked={checked} teachers={teachers} />
+          )}
         error={!teacherId ? t("booking.moveTeacherOff") : undefined}
       />
       <div className="grid grid-cols-2 gap-3">
@@ -1229,7 +1231,9 @@ function CreateForm({
             onChange={(v) => setOther((p) => ({ ...p, teacherIds: v }))}
             searchable
             required
-            renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+            renderOption={({ option, checked }) => (
+            <TeacherOption option={option} checked={checked} teachers={teachers} />
+          )}
           />
 
           <StudentSelect value={student} onChange={setStudent} label={t("booking.otherStudentOptional")} />
@@ -1384,7 +1388,9 @@ function CreateForm({
             data={teacherSelectData(teachers.filter((tc) => bookableOnDate(tc, createSlot.date)))}
             allowDeselect={false}
             searchable
-            renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+            renderOption={({ option, checked }) => (
+            <TeacherOption option={option} checked={checked} teachers={teachers} />
+          )}
           />
           <div className="grid grid-cols-2 gap-3">
             <Select

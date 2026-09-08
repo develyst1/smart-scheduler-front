@@ -84,7 +84,9 @@ export default function ReportsContent() {
           className="max-w-64"
           leftSection={<User size={16} />}
           data={[{ value: "ALL", label: t("reports.allTeachers") }, ...teacherSelectData(teachers)]}
-          renderOption={({ option }) => <TeacherOption option={option} teachers={teachers} />}
+          renderOption={({ option, checked }) => (
+            <TeacherOption option={option} checked={checked} teachers={teachers} />
+          )}
         />
       </div>
 

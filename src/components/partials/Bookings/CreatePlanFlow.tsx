@@ -289,7 +289,9 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
           value={teacherId}
           onChange={(v) => v && setTeacherId(v)}
           data={teacherSelectData(bookableTeachers)}
-          renderOption={({ option }) => <TeacherOption option={option} teachers={bookableTeachers} />}
+          renderOption={({ option, checked }) => (
+            <TeacherOption option={option} checked={checked} teachers={bookableTeachers} />
+          )}
           allowDeselect={false}
           searchable
           required
