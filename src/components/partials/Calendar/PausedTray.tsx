@@ -1,7 +1,20 @@
 "use client";
 
 import { Badge, Button, Card, Group, Loader, Stack, Text } from "@mantine/core";
-import { ChevronDown, ChevronLeft, PauseCircle } from "lucide-react";
+/**
+ * 🔴 The toggle's glyph names the SHAPE of the thing that moves, and the two layouts move differently.
+ *
+ * The rail is a right-hand panel, so it gets `PanelRight{Close,Open}` — a frame with its right edge lit and an
+ * arrow into or out of it. It says *"the panel on the right closes"* where a chevron says only *"something
+ * goes that way"*, and a bare chevron beside a count reads as "sort" or "next" at least as easily.
+ *
+ * The strip is a band that folds upward, so it keeps chevrons — but `Up` / `Down` picked explicitly rather than
+ * one glyph under a `rotate` class. A rotated icon means the DOM says "down" while the screen says "left", which
+ * every screen-reader and every future reader has to reconcile.
+ *
+ * ⚠️ Both point at what pressing WILL do, never at the current state — the same rule as the aria-labels.
+ */
+import { ChevronDown, ChevronUp, PanelRightClose, PanelRightOpen, PauseCircle } from "lucide-react";
 import { BookingTypeChip } from "@/components/common/BookingBadges";
 import { formatDateDisplay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
@@ -85,8 +98,7 @@ export default function PausedTray({
         <Text size="xs" c="dimmed" style={{ writingMode: "vertical-rl" }}>
           {t("calendar.pausedTray")}
         </Text>
-        {/* Points the way the panel will come back, so the control says which direction it opens. */}
-        <ChevronLeft size={14} aria-hidden className="shrink-0 text-muted-500" />
+        <PanelRightOpen size={14} aria-hidden className="shrink-0 text-muted-500" />
       </button>
     );
   }
@@ -120,11 +132,15 @@ export default function PausedTray({
           <Badge size="sm" variant="light" color={bookings.length ? "grape" : "gray"}>
             {bookings.length}
           </Badge>
-          <ChevronDown
-            size={16}
-            aria-hidden
-            className={`shrink-0 text-muted-500 transition-transform ${collapsed ? "-rotate-90" : ""}`}
-          />
+          {/* The rail never reaches here collapsed — that state returns the spine above — so its glyph is
+              always the closing one. The strip is the only layout that renders this header both ways. */}
+          {!isStrip ? (
+            <PanelRightClose size={16} aria-hidden className="shrink-0 text-muted-500" />
+          ) : collapsed ? (
+            <ChevronDown size={16} aria-hidden className="shrink-0 text-muted-500" />
+          ) : (
+            <ChevronUp size={16} aria-hidden className="shrink-0 text-muted-500" />
+          )}
         </Group>
       </button>
 
