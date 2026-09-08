@@ -9,6 +9,7 @@ import {
   Group,
   Stack,
   Loader,
+  Skeleton,
   Pagination,
   Badge,
   Text,
@@ -45,9 +46,12 @@ export default function PeopleContent() {
     () => ({ q: debounced.trim() || undefined, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
     [debounced, page],
   );
-  const { data, isLoading } = useParents(query);
+  // `useParents` sets `keepPreviousData`, so `isLoading` is true on the first load ONLY — a search or a page
+  // change after that left the previous families on screen with nothing saying they were being replaced.
+  const { data, isLoading, isPlaceholderData } = useParents(query);
   const parents = data?.parents ?? [];
   const total = data?.total ?? 0;
+  const busy = isLoading || isPlaceholderData;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const suspend = useSetParentSuspended();
@@ -126,11 +130,14 @@ export default function PeopleContent() {
         className="max-w-xl"
       />
 
-      {isLoading ? (
-        <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-muted-500">
-          <Loader size="md" />
-          {t("common.loading")}
-        </div>
+      {/* Placeholder CARDS, not a centred spinner: this is a stack of family cards, so the loading state is
+          card-shaped too and the height it holds is the height the results will take. A spinner in an `h-40`
+          box collapses a 20-card list and springs it back, taking the scroll position with it.
+          🔴 `parents.length || PAGE_SIZE` — `keepPreviousData` still holds the page being replaced, so asking
+          for that many matches the height already on screen exactly. `PAGE_SIZE` covers the first load, where
+          there is nothing to match. */}
+      {busy ? (
+        <ParentCardSkeletons count={parents.length || PAGE_SIZE} />
       ) : parents.length === 0 ? (
         <Card padding="xl">
           <Text ta="center" c="dimmed" size="sm">
@@ -415,5 +422,39 @@ function LineLinkDialog({ parent, onClose }: { parent: Parent | null; onClose: (
         </Group>
       </Stack>
     </Modal>
+  );
+}
+
+/**
+ * The loading state for the family list — placeholder cards, one per family that is about to appear.
+ *
+ * 🔴 It mirrors the real card: the name line with its badge, the phone/province meta row, the action buttons,
+ * and the bordered students section underneath. Matching the SHAPE is the whole point — a plain grey block of
+ * the wrong height reintroduces the reflow this exists to remove.
+ *
+ * 🚫 Not exported, and not shared with `CourseCardSkeletons`: the two cards look nothing alike, and one
+ * skeleton stretched over both would fit neither.
+ */
+function ParentCardSkeletons({ count }: { count: number }) {
+  return (
+    <Stack gap="sm" aria-busy aria-live="polite">
+      {Array.from({ length: count }, (_, i) => (
+        <Card key={i} padding="lg" withBorder>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <Skeleton height={16} width="35%" radius="sm" />
+              <Skeleton height={10} width="55%" mt={8} radius="sm" />
+            </div>
+            <Group gap="xs">
+              <Skeleton height={26} width={72} radius="sm" />
+              <Skeleton height={26} width={72} radius="sm" />
+            </Group>
+          </div>
+          <div className="mt-3 border-t border-muted-100 pt-3">
+            <Skeleton height={12} width="45%" radius="sm" />
+          </div>
+        </Card>
+      ))}
+    </Stack>
   );
 }

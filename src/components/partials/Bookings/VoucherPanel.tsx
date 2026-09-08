@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Card, Table, Progress, Text, Badge, Group, Loader, Stack, TextInput } from "@mantine/core";
+import { Button, Card, Table, Progress, Text, Badge, Group, Skeleton, Stack, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { Ticket, Search, GraduationCap } from "lucide-react";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
@@ -34,9 +34,16 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
   const [debounced] = useDebouncedValue(search, 300);
   const [page, setPage] = useState(1);
   useEffect(() => setPage(1), [debounced]);
-  const { data, isLoading } = useVouchers({ q: debounced.trim() || undefined, page, limit: PAGE_SIZE });
+  // `useVouchers` sets `keepPreviousData`, so `isLoading` is true on the first load ONLY — a search or a page
+  // change after that left the previous rows on screen with nothing saying they were being replaced.
+  const { data, isLoading, isPlaceholderData } = useVouchers({
+    q: debounced.trim() || undefined,
+    page,
+    limit: PAGE_SIZE,
+  });
   const vouchers = data?.items ?? [];
   const total = data?.total ?? 0;
+  const busy = isLoading || isPlaceholderData;
 
   return (
     <Stack gap="md">
@@ -48,14 +55,12 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
         className="max-w-md"
       />
 
-      {isLoading ? (
-        <Card padding="xl">
-          <Group justify="center" c="dimmed" gap="xs">
-            <Loader size="sm" />
-            <Text size="sm">{t("voucher.panelLoading")}</Text>
-          </Group>
-        </Card>
-      ) : vouchers.length === 0 ? (
+      {/* 🔴 The spinner card that used to stand in for the whole table is gone. It replaced the table — head,
+          column widths and all — so the arriving rows reflowed the page instead of landing in it. The rows are
+          the only thing waiting on the request, so the loading state lives in the `Tbody` (below).
+          ⚠️ `!busy &&` guards the empty state: while a search is in flight `vouchers` is the PREVIOUS result,
+          and an empty previous page would flash "no vouchers" over a query that has not answered yet. */}
+      {!busy && vouchers.length === 0 ? (
         <Card padding="xl">
           <Group justify="center" c="dimmed" gap="xs">
             <Ticket size={18} />
@@ -79,7 +84,19 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {vouchers.map((v) => {
+              {busy
+                ? /* `PAGE_SIZE` skeleton rows in the real table — the head and the column widths stay, so the
+                     data lands in place. Six cells: student · total · usage · expiry · status · action. */
+                  Array.from({ length: PAGE_SIZE }, (_, i) => (
+                    <Table.Tr key={`sk-${i}`} aria-hidden>
+                      {Array.from({ length: 6 }, (_, c) => (
+                        <Table.Td key={c}>
+                          <Skeleton height={12} radius="sm" />
+                        </Table.Td>
+                      ))}
+                    </Table.Tr>
+                  ))
+                : vouchers.map((v) => {
                 const usedPct = v.totalHours > 0 ? (v.usedHours / v.totalHours) * 100 : 0;
                 return (
                   <Table.Tr key={v.id}>
@@ -123,9 +140,9 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
                         {t("plan.manage")}
                       </Button>
                     </Table.Td>
-                  </Table.Tr>
-                );
-              })}
+                    </Table.Tr>
+                  );
+                })}
             </Table.Tbody>
           </Table>
           </StickyScrollArea>

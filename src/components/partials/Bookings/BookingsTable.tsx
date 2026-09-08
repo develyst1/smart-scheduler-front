@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import {
   Table,
   Select,
-  Loader,
+  Skeleton,
   TextInput,
   Card,
   Group,
@@ -104,9 +104,13 @@ export default function BookingsTable() {
     };
   }, [debouncedSearch, typeFilter, statusFilter, teacherFilter, dateRange, customFrom, customTo, sort, page, pageSize]);
 
-  const { data, isLoading } = useAllBookings(query);
+  // `isPlaceholderData` = `data` still answers the PREVIOUS query key. `useAllBookings` sets
+  // `keepPreviousData`, so `isLoading` is true on the first load ONLY — every filter, sort, page-size and page
+  // change after that left the old rows sitting there with nothing on screen saying so.
+  const { data, isLoading, isPlaceholderData } = useAllBookings(query);
   const rows = data?.items ?? [];
   const total = data?.total ?? 0;
+  const busy = isLoading || isPlaceholderData;
 
   const teacherName = (id: string) => teachers.find((tc) => tc.id === id)?.nickname ?? "-";
 
@@ -164,16 +168,10 @@ export default function BookingsTable() {
     skipped: "orange",
   };
 
-  if (isLoading) {
-    return (
-      <Card padding="lg">
-        <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-muted-500">
-          <Loader size="md" />
-          {t("common.loading")}
-        </div>
-      </Card>
-    );
-  }
+  // 🔴 The early `if (isLoading) return <spinner card/>` that used to sit here is GONE, and its removal is the
+  // larger half of this fix: it replaced the WHOLE card — every filter, the sort, the page size — so on a slow
+  // first load staff could not begin setting up their query, and the controls arrived under their cursor. The
+  // filters are not waiting on the request; only the rows are, so only the rows show a loading state (below).
 
   return (
     <Card padding="lg" className="space-y-3">
@@ -325,7 +323,20 @@ export default function BookingsTable() {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {rows.length === 0 ? (
+          {busy ? (
+            /* Skeleton ROWS, inside the real table: the head, the column widths and the horizontal scroll all
+               stay put, so the arriving data lands in place instead of reflowing the page. `pageSize` of them,
+               because that is how many are about to appear. */
+            Array.from({ length: pageSize }, (_, i) => (
+              <Table.Tr key={`sk-${i}`} aria-hidden>
+                {Array.from({ length: 8 }, (_, c) => (
+                  <Table.Td key={c}>
+                    <Skeleton height={12} radius="sm" />
+                  </Table.Td>
+                ))}
+              </Table.Tr>
+            ))
+          ) : rows.length === 0 ? (
             <Table.Tr>
               <Table.Td colSpan={8} className="text-center text-sm text-muted-400">
                 {t("bookings.noMatch")}
