@@ -293,6 +293,10 @@ export default function DropResumeDialog({
               minDate={new Date()}
               required
               popoverProps={{ withinPortal: true }}
+              // The theme right-aligns every `DatePickerInput` app-wide, which pushed this date away from its
+              // own label and out of line with the `Time` Select sitting beside it in the same `Group`. Local
+              // override only — the same one the booking-resume dialog uses; the app-wide rule is untouched.
+              styles={{ input: { textAlign: "left" } }}
             />
             {/* 🔴 TASK-295 §4(c) — `required`, which `First session date` beside it has always had. **Both are
                 mandatory to the API** (`validation.ts:697`), and while this field was rendering EMPTY the form
