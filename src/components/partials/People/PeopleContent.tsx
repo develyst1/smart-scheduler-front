@@ -195,18 +195,19 @@ export default function PeopleContent() {
                       >
                         {t("people.addStudent")}
                       </Button>
-                      {/* SPEC-071 / TASK-243 — the admin end of *"contact an admin"*. This screen said nothing
-                          about LINE at all until now, so that refusal pointed at someone with neither the
-                          information nor the button. The dialog reads the family's real binding first. */}
-                      <Button
-                        size="compact-sm"
-                        variant="light"
-                        color="gray"
-                        leftSection={<Link2Off size={13} />}
-                        onClick={() => setLineTarget(p)}
-                      >
-                        {t("people.lineClear")}
-                      </Button>
+                      {/* The list response already carries `lineUserId`, so the destructive action exists only
+                          when this row has a link to clear. The value itself is never rendered. */}
+                      {p.lineUserId !== null && (
+                        <Button
+                          size="compact-sm"
+                          variant="light"
+                          color="gray"
+                          leftSection={<Link2Off size={13} />}
+                          onClick={() => setLineTarget(p)}
+                        >
+                          {t("people.lineClear")}
+                        </Button>
+                      )}
                       {suspended ? (
                         <Button
                           size="compact-sm"
@@ -329,10 +330,8 @@ export default function PeopleContent() {
 /**
  * SPEC-071 / TASK-243 — the admin's end of *"this LINE account belongs to another family — contact an admin"*.
  *
- * 🔴 **It reads the family's real binding BEFORE offering to clear it.** `GET /parents/:id` is fetched only
- * when this opens, never per row: the BE counts accounts through the family-link accessor (one query each), so
- * a badge on all 20 cards would be N+1. A per-row indicator is a **batched** BE read — named in TASK-243
- * §Questions, deliberately not built here.
+ * The list row's `lineUserId` decides whether this dialog is reachable. `GET /parents/:id` is fetched only when
+ * it opens to retrieve the account count and current confirmation details, never once per list row.
  *
  * Three states, and the middle one matters most: **not linked** is what an admin sees for most families, and it
  * must read as an answer rather than as a failed load. `Clear` only exists when there is something to clear —

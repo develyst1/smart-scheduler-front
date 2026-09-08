@@ -19,6 +19,8 @@ export interface Parent {
   id: string;
   phone: string;
   name: string | null;
+  /** LINE account currently bound to this parent; null means the row has nothing to unlink. */
+  lineUserId: string | null;
   /** Household address province (≠ the per-booking `จังหวัด` badge). */
   province: string | null;
   /** Free-text staff note about the household (max 500). Reachable since TASK-050. */
@@ -28,15 +30,7 @@ export interface Parent {
   students: Student[];
 }
 
-/**
- * SPEC-071 / TASK-243 — what `GET /parents/:id` adds over a list row: whether this family has a LINE account
- * bound, and how many.
- *
- * 🔴 **Detail only, deliberately.** `GET /parents` does NOT carry these — the BE counts them through the
- * family-link accessor, one query per parent, so a badge on every list row would be N+1 on a screen that loads
- * 20 at a time. Making it a list field is a **batched** BE read (one `inArray` over the page's ids), which is a
- * BE task and not this one — see TASK-243 §Questions.
- */
+/** SPEC-071 / TASK-243 — detail adds the account count used in the confirmation copy. */
 export interface ParentDetail extends Parent {
   /** True when at least one LINE account is bound to this family. */
   lineLinked: boolean;

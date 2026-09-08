@@ -14,6 +14,7 @@ const parents: Parent[] = [
     id: "p1",
     phone: "0811111111",
     name: "สมชาย ใจดี",
+    lineUserId: "mock-line-p1",
     province: "กรุงเทพมหานคร",
     note: "แพ้ถั่ว — แจ้งครูทุกครั้ง",
     suspendedAt: null,
@@ -26,6 +27,7 @@ const parents: Parent[] = [
     id: "p2",
     phone: "0822222222",
     name: "Jane Smith",
+    lineUserId: null,
     province: "ภูเก็ต",
     note: null,
     suspendedAt: null,
@@ -37,6 +39,7 @@ const parents: Parent[] = [
     id: "p3",
     phone: "0833333333",
     name: "สุดา รักเรียน",
+    lineUserId: null,
     province: null,
     note: null,
     suspendedAt: "2026-07-30T09:00:00.000Z",
@@ -66,6 +69,7 @@ export const createParent = (input: ParentInput): Promise<Parent> => {
     id: nextId(),
     phone: input.phone,
     name: input.name ?? null,
+    lineUserId: null,
     province: input.province ?? null,
     note: input.note ?? null,
     suspendedAt: null,
@@ -143,6 +147,8 @@ export const clearParentLineLink = (id: string): Promise<{ cleared: number }> =>
   seedLineAccounts();
   const cleared = mockLineAccounts.get(id) ?? 0;
   mockLineAccounts.set(id, 0);
+  const parent = parents.find((p) => p.id === id);
+  if (parent) parent.lineUserId = null;
   // 🚫 Nothing else is touched — the same absence the BE asserts. A mock that also dropped the students would
   // rehearse exactly the misreading ("unlink" = "remove the family") the confirm copy exists to prevent.
   return delay({ cleared });

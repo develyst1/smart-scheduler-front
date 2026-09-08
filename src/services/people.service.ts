@@ -19,9 +19,8 @@ export const listParents = async (query: ParentsQuery = {}): Promise<ParentsResp
 /**
  * SPEC-071 / TASK-243 — one family's detail, including whether a LINE account is bound to it.
  *
- * The People screen loads this **on demand** (when an admin opens the LINE dialog for one row), never per row:
- * the BE resolves `lineAccounts` through the family-link accessor, so a call per card would be N+1 on a page
- * of 20.
+ * The People screen loads this **on demand** for the account count and confirmation copy. The list row already
+ * carries `lineUserId`, which is sufficient to decide whether the clear action should be visible.
  */
 export const getParent = async (id: string): Promise<ParentDetail> => {
   if (useMockData) return mock.getParent(id);

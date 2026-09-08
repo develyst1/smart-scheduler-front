@@ -26,11 +26,8 @@ export const useParents = (query: ParentsQuery = {}) =>
   });
 
 /**
- * SPEC-071 / TASK-243 — one family's detail, incl. its LINE binding. `enabled` is the dialog's own `opened`,
- * so a screen full of parent cards issues **no** extra request until an admin opens one.
- *
- * 🚫 Never call this per row. The BE resolves `lineAccounts` through the family-link accessor (one query each);
- * a badge on every card is a **batched** BE read, not 20 of these.
+ * SPEC-071 / TASK-243 — one family's detail, including the account count used by the confirmation dialog.
+ * `enabled` is the dialog's own `opened`, so the list still issues no per-row detail requests.
  */
 export const useParent = (id: string | null, enabled: boolean) =>
   useQuery({
