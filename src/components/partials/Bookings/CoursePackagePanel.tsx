@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Loader, Modal, SegmentedControl, TextInput, ActionIcon } from "@mantine/core";
+import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Skeleton, Modal, SegmentedControl, TextInput, ActionIcon } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban, CalendarClock } from "lucide-react";
 import { useSetCourseAdminUnlock, useCoursePackages } from "@/hooks/scheduler";
@@ -127,17 +127,18 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
 
           🔴 The list is REMOVED while busy, not dimmed. Rows from the status you just left are the wrong
           answer to the question on screen, and a wrong answer at 40% opacity is still a wrong answer being
-          read — worse, it is one that looks deliberate. The one honest thing to show is that we are fetching.
+          read — worse, it is one that looks deliberate.
+
+          🔴 A SKELETON rather than a centred spinner, and the difference is the two costs a spinner has here.
+          (1) A spinner in a fixed box collapses a grid of nine cards to `h-64` and springs it back, taking the
+          scroll position with it. (2) On a fast reply it appears and vanishes inside ~100ms — a flash, which is
+          more distracting than either alternative. Placeholder cards in the SAME grid keep the height and read
+          as "this shape, arriving" instead of as an event.
           ⚠️ So `keepPreviousData` no longer changes anything visible on this screen; it is left in the hook
-          because the cached page still spares a refetch when staff switch back. */}
+          because the cached page still spares a refetch when staff switch back — and because `courses.length`
+          is what lets the skeleton match the height that is on screen right now. */}
       {busy ? (
-        <div
-          className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500"
-          aria-busy
-        >
-          <Loader size="md" />
-          {t("common.loading")}
-        </div>
+        <CourseCardSkeletons count={courses.length || PAGE_SIZE} />
       ) : courses.length === 0 ? (
         <Card padding="xl">
           <Group justify="center" c="dimmed" gap="xs">
@@ -358,5 +359,51 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
       {/* REQ-082 AC-1 — reachable for every course the filter can show, DROPPED included (see the control). */}
       <EditExpiryDialog course={expiryTarget} onClose={() => setExpiryTarget(null)} />
     </Stack>
+  );
+}
+
+/**
+ * The loading state for the course grid — placeholder cards, not a spinner.
+ *
+ * 🔴 It mirrors the REAL card's boxes, at their real sizes: the two header lines, the badge, the `size={92}`
+ * ring, the leave bar, the two footer buttons. That is what makes the swap to real data land in place instead
+ * of reflowing — a generic grey rectangle would keep the flicker it exists to remove.
+ *
+ * ⚠️ **`count` is the caller's current row count**, not `PAGE_SIZE`: `keepPreviousData` still holds the page
+ * being replaced, so asking for that many keeps the exact height already on screen and the scroll position with
+ * it. `PAGE_SIZE` is the fallback for the first load, where there is nothing on screen to match.
+ *
+ * 🚫 Not exported. If a second list ever needs one it needs its OWN shape — a skeleton shared between two
+ * different card layouts is a skeleton that fits neither.
+ */
+function CourseCardSkeletons({ count }: { count: number }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy aria-live="polite">
+      {Array.from({ length: count }, (_, i) => (
+        <Card key={i} padding="lg">
+          <Stack gap="md">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1">
+                <Skeleton height={16} width="55%" radius="sm" />
+                <Skeleton height={10} width="80%" mt={8} radius="sm" />
+              </div>
+              <Skeleton height={20} width={70} radius="sm" />
+            </div>
+            <Group gap="lg" wrap="nowrap">
+              <Skeleton height={92} width={92} circle />
+              <div className="flex-1">
+                <Skeleton height={10} width="45%" radius="sm" />
+                <Skeleton height={10} mt={8} radius="xl" />
+                <Skeleton height={9} width="70%" mt={8} radius="sm" />
+              </div>
+            </Group>
+            <Group gap="xs" grow>
+              <Skeleton height={30} radius="sm" />
+              <Skeleton height={30} radius="sm" />
+            </Group>
+          </Stack>
+        </Card>
+      ))}
+    </div>
   );
 }
