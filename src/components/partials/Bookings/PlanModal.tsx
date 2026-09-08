@@ -54,6 +54,7 @@ import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
 import { canResumeCourse, isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import { visiblePlanRows } from "@/lib/scheduler/plan-rows";
+import { toTimeSlot } from "@/lib/scheduler/time-slot";
 import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
 
 /**
@@ -825,7 +826,17 @@ function SessionEditor({
   const [attendeeNote, setAttendeeNote] = useState(seed?.attendeeNote ?? "");
   const [noteSaving, setNoteSaving] = useState(false);
   const [date, setDate] = useState<string>(seed?.date ?? dayjs().format("YYYY-MM-DD"));
-  const [startTime, setStartTime] = useState<string>(seed?.startTime ?? TIME_SLOTS[0]);
+  /**
+   * 🔴 TASK-295 §3 — **the SECOND call site, and it had the same defect.** `seed` is a plan row from the same
+   * DTO, so `seed.startTime` is `"17:00:00"` and this feeds the same `TIME_SLOTS` `Select` below: **the MOVE
+   * dialog's `Time` opened EMPTY too, every time, on the everyday path.**
+   *
+   * 🔑 **Why nobody ever reported it, where the resume cost the owner his night:** on a MOVE you came to change
+   * the time, so an empty field reads as *"pick one"*. On a RESUME the whole promise is *"the same slot, later"*
+   * — there, empty reads as broken. **Same mechanism, opposite intent, and only one of them looked wrong.**
+   * ⚠️ It also handed `"17:00:00"` to `useSlotAvailability` below and would have submitted it at `:912`.
+   */
+  const [startTime, setStartTime] = useState<string>(toTimeSlot(seed?.startTime, TIME_SLOTS[0]));
   const [teacherId, setTeacherId] = useState<string | null>(seed?.teacher?.id ?? null);
   const [subjectId, setSubjectId] = useState<string | null>(seed?.subject?.id ?? null);
 

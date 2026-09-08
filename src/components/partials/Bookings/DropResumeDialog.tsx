@@ -294,13 +294,29 @@ export default function DropResumeDialog({
               required
               popoverProps={{ withinPortal: true }}
             />
+            {/* 🔴 TASK-295 §4(c) — `required`, which `First session date` beside it has always had. **Both are
+                mandatory to the API** (`validation.ts:697`), and while this field was rendering EMPTY the form
+                was saying the opposite. @Porter: *"the form told them they could."*
+
+                🔴 **`searchable` REMOVED — @Tanya's Round 13, and it is the other half of DEF-5.** She reported
+                *"a HIDDEN third input still carrying `10:00:00`, so the field the admin edits is not the field
+                submitted"*, and *"it fails on a hand-typed value too"*. There is no third input — **there is
+                exactly one resume submitter in this repo** — but a `searchable` Select renders **a search box
+                whose text is NOT the value**: type `13:00`, do not pick the filtered option, and the search box
+                reverts on blur while `startTime` stays what it was. ⇒ **her sentence is exactly right about the
+                symptom and the DOM she read; only the cause was the control rather than a stray field.**
+                🔑 **Nine options do not need a search box, and with the field rendering EMPTY it read as one
+                that had to be typed into.** ⚠️ After the value fix this would no longer error — **it would
+                submit the wrong time silently**, which is worse.
+                📌 `CreateCourseModal`'s copy keeps it, ruled by @Sober: **a new course has no server value to
+                mismatch, so the mechanism is absent there.** */}
             <Select
               label={t("course.time")}
               value={startTime}
               onChange={(v) => v && setStartTime(v)}
               data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
               allowDeselect={false}
-              searchable
+              required
             />
           </Group>
         )}

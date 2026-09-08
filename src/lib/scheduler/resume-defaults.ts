@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { toTimeSlot } from "./time-slot";
 
 /**
  * TASK-288 §1 — **what the resume form opens on.**
@@ -17,12 +18,24 @@ import dayjs from "dayjs";
  */
 
 /** The creation form's defaults, kept as the fallback for a course whose own slot cannot be read. */
-export const FALLBACK_TIME = "10:00";
+export { FALLBACK_TIME } from "./time-slot";
 export const FALLBACK_LEAD_DAYS = 7;
 
-/** The time the re-plan opens on: the course's own, whenever we have it. */
+/**
+ * The time the re-plan opens on: the course's own, whenever we have it.
+ *
+ * 🔴 **TASK-295 / DEF-5 — it used to return that value VERBATIM, and that was the defect.** The DTO ships
+ * `"17:00:00"`; the form's `Select` offers `"09:00" … "17:00"`; **a `Select` given a value it has no option for
+ * renders EMPTY.** ⇒ the owner met a blank `Time` on `uat` and — because `startTime` was truthy — **could still
+ * submit it**, to a server whose `TIME` regex refuses it.
+ * 📌 **@Tanya saw the `10:00:00` and the owner saw the empty field: ONE cause, and neither could see the other
+ * half of it.** ⚠️ **It worked for whoever overrode the default and failed for whoever accepted it.**
+ *
+ * ⇒ the value is now landed on a real slot by `toTimeSlot` — a rule about a control and its options, not about
+ * resuming, which is why it lives in its own module and is shared with the MOVE dialog.
+ */
 export const resumeDefaultTime = (courseStartTime: string | null | undefined): string =>
-  courseStartTime || FALLBACK_TIME;
+  toTimeSlot(courseStartTime);
 
 /**
  * The date the re-plan opens on: the first `weekday` on or after `today + 7`.
