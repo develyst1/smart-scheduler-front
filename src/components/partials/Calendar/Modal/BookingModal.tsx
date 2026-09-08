@@ -669,14 +669,25 @@ function ViewBooking({
               time: booking.startTime,
             })}
           </Text>
+          {/* 🔴 Both fields open EMPTY and stay empty until staff choose (AC-13 — the slot is a free choice, so
+              nothing is pre-filled the way the COURSE re-plan pre-fills its own). An empty control with no
+              placeholder says nothing about what it wants, which is the "the form told them nothing was needed"
+              shape of TASK-295 — here the disabled submit stops it becoming a bad save, but the field still has
+              to ASK. Reuses the existing pickers' words rather than minting a third way to say "choose a date". */}
           <DatePickerInput
             label={t("calendar.resumeDate")}
+            placeholder={t("calendar.pickDate")}
             value={resumeDate ? new Date(resumeDate) : null}
             onChange={(d) => setResumeDate(d ? dayjs(d).format("YYYY-MM-DD") : null)}
             valueFormat="DD/MM/YYYY"
+            // The theme right-aligns every `DatePickerInput` app-wide; here that put `Select date` at the far
+            // edge, away from its own label and out of line with the `Time` Select directly beneath it. Local
+            // override only — same shape the MOVE dialog above already uses, and it changes no other screen.
+            styles={{ input: { textAlign: "left" } }}
           />
           <Select
             label={t("calendar.resumeTime")}
+            placeholder={t("booking.pickTime")}
             value={resumeTime}
             onChange={setResumeTime}
             data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
