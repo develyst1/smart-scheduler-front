@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import dayjs from "dayjs";
-import { Loader } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { calendarDayBookings, calendarToBookings } from "@/lib/api/mappers";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { usePausedTrayCollapsed } from "@/lib/scheduler/paused-tray";
+import { useLoadPhase } from "@/lib/ui/load-phase";
 import { useT } from "@/lib/i18n";
 import { useBadges, useCalendar, usePausedBookings, useTeachers } from "@/hooks/scheduler";
 import type { Booking } from "@/types/app/scheduler";
@@ -15,6 +15,7 @@ import CalendarGrid from "./CalendarGrid";
 import CalendarWeekGrid from "./CalendarWeekGrid";
 import BookingModal from "./Modal/BookingModal";
 import PausedTray from "./PausedTray";
+import CalendarGridSkeleton from "./CalendarGridSkeleton";
 
 export default function CalendarContent() {
   const t = useT();
@@ -99,6 +100,8 @@ export default function CalendarContent() {
   };
 
   const loading = loadingTeachers || loadingCalendar;
+  // `calendar !== undefined` keeps the FIRST load quiet instead of drawing an empty grid before the week lands.
+  const calPhase = useLoadPhase(loading, calendar !== undefined);
 
   return (
     <div className="space-y-5">
@@ -147,12 +150,15 @@ export default function CalendarContent() {
 
       <div className="flex flex-col gap-5 2xl:flex-row 2xl:items-start">
         <div className="min-w-0 flex-1">
-          {loading ? (
-            <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500">
-              <Loader size="md" />
-              {t("calendar.loading")}
-            </div>
-          ) : view === "day" ? (
+          {/* 🔴 `useCalendar(date, view)` takes a NEW key on every week or day staff step through, and carries
+              no `keepPreviousData` — so this branch runs on every arrow press, not just the first load. It used
+              to swap the whole grid for a spinner in an `h-64` box: the most-used screen in the product flashed
+              on every click and lost its horizontal scroll position with it.
+              Now the frame stays and only the contents are bars, and `useLoadPhase` holds even that back for
+              ~200ms — most steps answer inside the window, so most steps now show nothing at all. */}
+          {calPhase === "skeleton" ? (
+            <CalendarGridSkeleton view={view === "day" ? "day" : "week"} teacherCount={filteredTeachers.length} />
+          ) : calPhase === "quiet" ? null : view === "day" ? (
             <CalendarGrid
               teachers={filteredTeachers}
               bookings={dayBookings}

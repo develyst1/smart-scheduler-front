@@ -4,7 +4,7 @@ import { useState } from "react";
 import dayjs from "dayjs";
 import {
   Card,
-  Loader,
+  Skeleton,
   ThemeIcon,
   Paper,
   Text,
@@ -28,6 +28,8 @@ import { BookingTypeChip, TeacherTypeChip } from "@/components/common/BookingBad
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { useDailyReport, useTeachers } from "@/hooks/scheduler";
 import { useT } from "@/lib/i18n";
+import { useLoadPhase } from "@/lib/ui/load-phase";
+import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 
 const STAT_CARDS = [
   { key: "totalBooked", labelKey: "reports.statTotalBooked", icon: Users, color: "blue" },
@@ -48,6 +50,8 @@ export default function ReportsContent() {
     date,
     teacherId === "ALL" ? undefined : teacherId,
   );
+
+  const phase = useLoadPhase(isLoading, report !== undefined);
 
   const teacherName = (id: string) => teachers.find((tc) => tc.id === id)?.nickname ?? id;
   const teacherType = (id: string) => teachers.find((tc) => tc.id === id)?.type;
@@ -90,12 +94,13 @@ export default function ReportsContent() {
         />
       </div>
 
-      {isLoading || !report ? (
-        <div className="flex h-48 flex-col items-center justify-center gap-3 text-sm text-muted-500">
-          <Loader size="md" />
-          {t("reports.summarizing")}
-        </div>
-      ) : (
+      {/* `useDailyReport(date, teacherId)` takes a new key on every date and teacher change, so this branch runs
+          on every filter press — not just the first load. It used to swap the whole report for a spinner in an
+          `h-48` box; the ring and the stat cards are a fixed, known shape, so they get a frame instead.
+          `!report` stays in `busy`: a resolved query with no report is still nothing to render. */}
+      {phase === "skeleton" ? (
+        <ReportSkeleton />
+      ) : phase === "quiet" || !report ? null : (
         <>
           {/* อัตราการมาเรียน + stat ครบสถานะ */}
           <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
@@ -202,6 +207,37 @@ export default function ReportsContent() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * The daily report's loading frame — the attendance ring and the stat cards, empty.
+ *
+ * The report's shape is fixed and known before the request answers (one ring, then `STAT_CARDS.length` tiles),
+ * which is exactly the case a skeleton is for: it can be honest about the layout without claiming a number.
+ * 🚫 No bar stands in for the ring's percentage and none for a stat's value — a placeholder is a shape, never a
+ * figure. Only the boxes those figures will land in.
+ */
+function ReportSkeleton() {
+  return (
+    <div className="grid gap-4 lg:grid-cols-[auto_1fr]" aria-busy aria-live="polite">
+      <Card padding="lg" className="flex items-center justify-center">
+        <Skeleton height={150} width={150} circle />
+      </Card>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {STAT_CARDS.map((s) => (
+          <Card key={s.key} padding="md">
+            <div className="flex items-center gap-3">
+              <Skeleton height={42} width={42} radius="md" />
+              <div className="flex-1">
+                <Skeleton height={SKEL.title} width="40%" radius={SKEL_RADIUS} />
+                <Skeleton height={SKEL.meta} width="65%" mt={8} radius={SKEL_RADIUS} />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

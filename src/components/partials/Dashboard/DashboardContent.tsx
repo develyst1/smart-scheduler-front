@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import dayjs from "dayjs";
-import { Card, Loader, Group, Table } from "@mantine/core";
+import { Card, Skeleton, Group, Table } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { useT } from "@/lib/i18n";
+import { useLoadPhase } from "@/lib/ui/load-phase";
+import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
 import { useBadgeReport } from "@/hooks/scheduler";
 
@@ -14,6 +16,7 @@ export default function DashboardContent() {
   const [to, setTo] = useState(dayjs().endOf("month").format("YYYY-MM-DD"));
 
   const { data, isLoading } = useBadgeReport(from, to);
+  const phase = useLoadPhase(isLoading, data !== undefined);
   const byValue = data?.byValue ?? [];
   const byTeacher = data?.byTeacher ?? [];
   const maxCount = byValue.reduce((m, v) => Math.max(m, v.count), 0) || 1;
@@ -45,12 +48,26 @@ export default function DashboardContent() {
         </Group>
       </div>
 
-      {isLoading ? (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500">
-          <Loader size="md" />
-          {t("common.loading")}
+      {/* `useBadgeReport(from, to)` re-keys on every date-range change, so this branch ran on every filter
+          press. The report is two bordered panels of labelled bars — a known shape, so it keeps its frame
+          instead of collapsing to an `h-64` spinner box. */}
+      {phase === "skeleton" ? (
+        <div className="grid gap-5 lg:grid-cols-2" aria-busy aria-live="polite">
+          {[0, 1].map((panel) => (
+            <Card key={panel} withBorder radius="lg" p="md">
+              <Skeleton height={SKEL.line} width="35%" radius={SKEL_RADIUS} mb={16} />
+              <div className="space-y-2.5">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton height={SKEL.meta} width={112} radius={SKEL_RADIUS} />
+                    <Skeleton height={SKEL.badge} className="grow" radius={SKEL_RADIUS} />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ))}
         </div>
-      ) : byValue.length === 0 ? (
+      ) : phase === "quiet" ? null : byValue.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-400">{t("dashboard.noData")}</p>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
