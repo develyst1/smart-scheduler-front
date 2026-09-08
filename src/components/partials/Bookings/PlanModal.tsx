@@ -53,6 +53,7 @@ import EndCourseDialog from "./EndCourseDialog";
 import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
 import { canResumeCourse, isCourseWritable } from "@/lib/scheduler/course-lifecycle";
+import { visiblePlanRows } from "@/lib/scheduler/plan-rows";
 import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
 
 /**
@@ -165,7 +166,32 @@ export default function PlanModal({
   };
   // What the BE says this plan now is — the preview headline (AC-1). Live = everything that isn't a declared
   // absence; the end date is the plan's own last live row, never FE-computed from the absence count.
+  /**
+   * 🔴 TASK-289 — **what the PLAN shows.** A session a pause cancelled is not part of the current plan; it is
+   * what the course used to be. Before this, a re-planned 4-session course showed **eight rows** — its new plan
+   * beside the sessions the pause had cancelled — and no admin could read that.
+   *
+   * 🔑 **The VIEW is filtered, not `sessions`.** @Sober's ruling was *"the row does not move, the VIEW does"*,
+   * and here that is also load-bearing: after a pause **every** row is pause-cancelled, and those rows are the
+   * only ones still carrying the course's own `date`/`startTime` — which is exactly what `courseSlot` below
+   * reads for TASK-288's default. Filtering `sessions` itself would have re-broken last night's fix in this
+   * same file. Counts, `weekIndexOf` and `liveSessions` all keep reading the whole plan.
+   *
+   * 🚫 **Only `cancelledByPause`** — a server-derived fact (TASK-290), never a string or a date heuristic.
+   * ⚠️ **A HAND-cancelled session has it `false` and still shows.** That is deliberate: it is a different fact
+   * from one a pause swept, and hiding every cancelled row was the shortcut @Sober explicitly did not take.
+   */
+  const planRows = visiblePlanRows(sessions);
   const liveSessions = sessions.filter((x) => x.status !== "SICK_LEAVE");
+  /**
+   * TASK-288 §1 — **this course's own slot**, taken from its own session rows rather than assumed.
+   *
+   * A pause cancels the sessions but leaves their `date`/`startTime` intact, so the slot survives the pause —
+   * which is exactly the case that needs it. 🚫 Extras are excluded: a soft-linked `SINGLE_SESSION` (SPEC-033)
+   * can sit at any hour, and letting one of those set the default would move the whole course to it.
+   */
+  const courseSlot =
+    sessions.find((s) => s.bookingType !== "SINGLE_SESSION") ?? sessions[0] ?? null;
   const createPreviewLine = t("plan.createPreview", {
     n: liveSessions.length,
     d: absentWeeks.length,
@@ -262,7 +288,7 @@ export default function PlanModal({
           )}
 
           <SessionTable
-            sessions={sessions}
+            sessions={planRows}
             onEdit={
               !courseWritable
                 ? undefined
@@ -529,16 +555,26 @@ export default function PlanModal({
 
       {/* The sentence uses the plan's OWN live-session count — there is no `/drop/preview`, and inventing a
           number here would be worse than using the one already on screen. */}
-      <DropResumeDialog
-        opened={dropMode !== null}
-        mode={dropMode ?? "drop"}
-        courseId={isCourse && !isCreate ? (plan?.id ?? null) : null}
-        program={plan?.sessions[0]?.subject?.name ?? null}
-        student={plan?.student?.nickname || plan?.student?.name || null}
-        remaining={liveSessions.length}
-        onClose={() => setDropMode(null)}
-        onDone={onClose}
-      />
+      {/* 🔴 TASK-288 §2 — mounted ONLY while a mode is chosen. It used to render always, with
+          `mode={dropMode ?? "drop"}`, so on close it fell back to the PAUSE face and re-rendered with a plan
+          that was already gone: *"Pause — for — — the remaining 0 sessions"*. **That empty flash was the
+          fallback, not a slow dialog**, and it followed a pause for the same reason. No fallback, no flash. */}
+      {dropMode && (
+        <DropResumeDialog
+          opened
+          mode={dropMode}
+          courseId={isCourse && !isCreate ? (plan?.id ?? null) : null}
+          program={plan?.sessions[0]?.subject?.name ?? null}
+          student={plan?.student?.nickname || plan?.student?.name || null}
+          remaining={liveSessions.length}
+          // TASK-288 §1 — the course's OWN slot, read off its own session rows (the server's data, not a guess),
+          // so the re-plan form opens on the lesson the family already has.
+          courseStartTime={courseSlot?.startTime ?? null}
+          courseWeekday={courseSlot ? dayjs(courseSlot.date).day() : null}
+          onClose={() => setDropMode(null)}
+          onDone={onClose}
+        />
+      )}
     </Modal>
   );
 }

@@ -303,15 +303,13 @@ export const useDropCourse = () => {
   });
 };
 
-/** TASK-199 — bring it back on its own slot under a NEW expiry (the server requires the date). */
-/**
- * REQ-084 — resume a paused course. 🔴 `expiryDate` is **optional** since TASK-264: omitting it is the normal
- * case, and the server asks for one (`EXPIRY_REQUIRED`) only when the sessions it would create fall outside the
- * existing window.
- */
 /**
  * REQ-084 / TASK-287 — resume a paused course as a **RE-PLAN**. 🔴 The schedule is REQUIRED: the empty body is
  * refused server-side, because that untested second path is what produced DEF-2.
+ *
+ * 🧹 Two dead comment blocks stood above this one and were removed with it: TASK-199's *"back on its own slot
+ * under a NEW expiry"* (resume no longer returns to the old slot) and TASK-264's *"`expiryDate` is optional …
+ * `EXPIRY_REQUIRED`"* (both the field and the code are gone). **Neither described anything the code did.**
  */
 export const useResumeCourse = () => {
   const qc = useQueryClient();

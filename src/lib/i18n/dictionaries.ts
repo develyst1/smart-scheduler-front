@@ -92,7 +92,10 @@ const en = {
     // TASK-199 — pause / resume. A pause keeps the course, its slot and its size; only the schedule stops.
     drop: "Pause course",
     dropTitle: "Pause this course?",
-    dropLine: "Pause {program} for {student} — the remaining {n} sessions come off the schedule. The course keeps its slot and can be resumed.",
+    // 🔴 TASK-288 §3 — @Porter's own correction, VERBATIM. *"The course keeps its slot"* became false the hour
+    // the owner ruled resume to be a re-plan, and this sentence is read at the exact moment an admin decides to
+    // pause. 🚫 Do not reword: he wrote it, he owns it, and he caught it himself.
+    dropLine: "Pause {program} for {student} — the remaining {n} sessions come off the schedule. Resuming re-plans the course from a date you choose — the time and the expiry date can move.",
     dropReason: "Reason (optional)",
     dropConfirm: "Pause the course",
     dropDone: "Course paused",
@@ -1202,7 +1205,9 @@ const th: typeof en = {
   endCourse: {
     drop: "พักคอร์ส",
     dropTitle: "พักคอร์สนี้?",
-    dropLine: "พักคอร์ส {program} ของ {student} — คาบที่เหลือ {n} คาบจะถูกนำออกจากตาราง คอร์สยังเก็บช่วงเวลาเดิมไว้ และกลับมาเรียนได้",
+    // 🔴 TASK-288 §3 — คำแก้ของ @Porter เอง ห้ามแก้ถ้อยคำ: "คอร์สยังเก็บช่วงเวลาเดิมไว้" กลายเป็นเท็จตั้งแต่
+    // เจ้าของสั่งให้ resume เป็นการวางแผนใหม่ และประโยคนี้ถูกอ่านตอนที่แอดมินกำลังตัดสินใจพักพอดี
+    dropLine: "พักคอร์ส {program} ของ {student} — คาบที่เหลือ {n} คาบจะถูกนำออกจากตาราง การกลับมาเรียนจะเป็นการวางแผนใหม่จากวันที่เลือก เวลาเรียนและวันหมดอายุอาจเปลี่ยนได้",
     dropReason: "เหตุผล (ไม่บังคับ)",
     dropConfirm: "พักคอร์ส",
     dropDone: "พักคอร์สแล้ว",

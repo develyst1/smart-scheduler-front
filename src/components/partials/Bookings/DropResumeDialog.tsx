@@ -12,6 +12,7 @@ import { useDropCourse, useResumeCourse } from "@/hooks/scheduler";
 import { formatDateDisplay } from "@/lib/ui/format";
 import { TIME_SLOTS } from "@/types/app/scheduler";
 import type { ResumeCourseResponse } from "@/types/api/contract";
+import { defaultResumeDate, resumeDefaultTime } from "@/lib/scheduler/resume-defaults";
 
 interface Props {
   opened: boolean;
@@ -22,21 +23,33 @@ interface Props {
   student: string | null;
   /** Live sessions currently on the schedule; only meaningful for `drop`. */
   remaining: number;
+  /**
+   * 🔴 TASK-288 §1 — **this course's OWN slot**, from its own session rows. The re-plan form opens on it, so
+   * *"the same slot, later"* is the one-click answer and moving the lesson is a deliberate act.
+   * ⚠️ A `17:00` course resumed on the creation form's `10:00` default came back at `10:00`, silently — the
+   * defaults were right for CREATION and wrong for a RE-PLAN, where the course already has a slot.
+   */
+  courseStartTime?: string | null;
+  /** 0–6, from the course's own session dates. Used to land the default date on the same weekday. */
+  courseWeekday?: number | null;
   onClose: () => void;
+  /** Called once the act has happened AND the admin has read the outcome — never before (TASK-288 §2). */
   onDone?: () => void;
 }
 
 /**
  * TASK-199 — **pause** a course, and bring it back.
  *
- * A pause is deliberately *not* a cancel: the sessions leave the schedule but the course keeps its `size`, its
- * slot and its history, and resume rebuilds on that same slot. So this dialog is reassuring where
- * `EndCourseDialog` is grave — it says the course **can** be resumed, and it does not demand a reason from a
- * closed list, because a pause has no closed set of causes the way an early ending does.
+ * A pause is deliberately *not* a cancel: the sessions leave the schedule but the course keeps its `size` and
+ * its history. So this dialog is reassuring where `EndCourseDialog` is grave, and it does not demand a reason
+ * from a closed list, because a pause has no closed set of causes the way an early ending does.
  *
- * 🔴 There is **no `/drop/preview`** on the server. Rather than invent a count, the sentence uses the number of
- * live sessions the caller already has on screen — and says nothing the server hasn't. If the two ever needed to
- * agree exactly, that would be a preview endpoint, not cleverer arithmetic here.
+ * ⚠️ **It no longer "resumes onto the same slot"** — TASK-287 made resume a RE-PLAN, and this component's own
+ * comment used to say otherwise. What it does now is open the re-plan on the course's own slot as a *default*
+ * (TASK-288 §1), which is a different promise and a weaker one.
+ *
+ * 🔴 There is **no `/drop/preview`** on the server. Rather than invent a count, the pause sentence uses the
+ * number of live sessions the caller already has on screen — and says nothing the server hasn't.
  */
 export default function DropResumeDialog({
   opened,
@@ -45,6 +58,8 @@ export default function DropResumeDialog({
   program,
   student,
   remaining,
+  courseStartTime,
+  courseWeekday,
   onClose,
   onDone,
 }: Props) {
@@ -60,20 +75,33 @@ export default function DropResumeDialog({
    * 🚫 **No weekday input** — the server derives it from the date (`weekdayOf(startDate)`), exactly as course
    * creation does, and sending one would be silently stripped by zod.
    */
-  const [startDate, setStartDate] = useState(dayjs().add(7, "day").format("YYYY-MM-DD"));
-  const [startTime, setStartTime] = useState("10:00");
+  const [startDate, setStartDate] = useState(() => defaultResumeDate(courseWeekday));
+  const [startTime, setStartTime] = useState(resumeDefaultTime(courseStartTime));
   /** What the re-plan actually did — read from the response, never computed (TASK-287 §7). */
   const [result, setResult] = useState<ResumeCourseResponse | null>(null);
 
+  // 🔴 TASK-288 §1 — seeded on OPEN, not once at mount: the plan (and therefore the course's own slot) may not
+  // have loaded when this component first mounted, and a default that arrives too late is the same defect.
   useEffect(() => {
-    if (!opened) {
-      setReason("");
-      setError(null);
-      setStartDate(dayjs().add(7, "day").format("YYYY-MM-DD"));
-      setStartTime("10:00");
-      setResult(null);
+    if (opened) {
+      setStartDate(defaultResumeDate(courseWeekday));
+      setStartTime(resumeDefaultTime(courseStartTime));
+      return;
     }
-  }, [opened]);
+    setReason("");
+    setError(null);
+    setResult(null);
+  }, [opened, courseStartTime, courseWeekday]);
+
+  /**
+   * 🔴 TASK-288 §2 — the act happened; the admin has now read what it did. **This is the ONLY place `onDone`
+   * is called**, and that is the fix: it used to fire the moment the mutation returned, and `onDone` closes the
+   * PLAN modal, which unmounted this dialog before its summary could render.
+   */
+  const finish = () => {
+    onDone?.();
+    onClose();
+  };
 
   const submit = async () => {
     if (!courseId) return;
@@ -82,6 +110,8 @@ export default function DropResumeDialog({
       if (mode === "drop") {
         await drop.mutateAsync({ courseId, reason: reason.trim() || undefined });
         notify({ title: t("endCourse.dropDone"), color: "success" });
+        finish();
+        return;
       } else {
         // 🔴 TASK-287 — the schedule is ALWAYS sent. `{}` is refused server-side now, deliberately: that empty
         // path is what produced DEF-2's non-determinism.
@@ -90,12 +120,13 @@ export default function DropResumeDialog({
         // 🔑 The re-plan MOVED things — where the course now ends, and possibly its expiry. The dialog holds
         // open to state both, because an expiry that shifts silently is exactly what REQ-082's audit trail
         // exists to make answerable. ⚠️ Nothing here is a gate; the only control left is Close.
+        //
+        // 🔴 TASK-288 §2 — `onDone` is NOT called here. It closes the plan modal, which unmounts this dialog:
+        // calling it beside `setResult` meant the summary was set on a component that was already going away,
+        // and what @Tanya saw was the unmount, not a short-lived dialog. `finish()` runs on Close instead.
         setResult(res);
-        onDone?.();
         return;
       }
-      onDone?.();
-      onClose();
     } catch (e) {
       // 🧹 TASK-287 §6 — the `EXPIRY_REQUIRED` prompt-and-retry handler that used to live here is DELETED: the
       // code is gone from the backend entirely (the expiry is derived now, so there is no expiry request left
@@ -113,7 +144,9 @@ export default function DropResumeDialog({
   return (
     <Modal
       opened={opened}
-      onClose={onClose}
+      // TASK-288 §2 — dismissing AFTER the act still has to tell the caller it happened, or the plan behind
+      // this dialog keeps showing the pre-resume schedule.
+      onClose={result ? finish : onClose}
       centered
       radius="lg"
       title={t(isDrop ? "endCourse.dropTitle" : "endCourse.resumeTitle")}
@@ -189,7 +222,7 @@ export default function DropResumeDialog({
         )}
 
         <Group justify="flex-end" gap="sm">
-          <Button variant="subtle" color="gray" onClick={onClose}>
+          <Button variant="subtle" color="gray" onClick={result ? finish : onClose}>
             {t(result ? "common.close" : "common.cancel")}
           </Button>
           {/* Once the re-plan has happened there is nothing left to submit — only what it did, to read. */}

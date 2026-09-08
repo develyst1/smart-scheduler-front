@@ -375,6 +375,18 @@ export interface PlanSession {
   /** REQ-068 / TASK-184 — this session's attendee note. Required so a future mapper can't drop it silently
    *  (the fourth time that shape bit us was TASK-183). */
   attendeeNote?: string | null;
+  /**
+   * 🔴 TASK-289/290 — was this session cancelled **by a course pause**, as opposed to by a person?
+   *
+   * Derived server-side from the pause note, so **the Thai sentence never crosses the wire** and the FE has no
+   * string to match. ⚠️ **Narrow on purpose:** three other paths also leave a `CANCELLED` row carrying text —
+   * the reconciler's trim, an early course ending, and a hand cancel with the admin's own reason — and the BE
+   * asserts `false` for them. 🚫 **Read it; never widen it, and never add a second condition beside it.**
+   *
+   * ⚠️ Not `attendeeNote`, which is REQ-068's *"who is bringing the child"* — a different question, one
+   * keystroke away in a grep.
+   */
+  cancelledByPause?: boolean;
 }
 
 /** REQ-036 — the three reasons a course may be ended early. **The contract; there is no fourth.** */
