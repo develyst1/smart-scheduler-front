@@ -40,7 +40,8 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   // client-side, which miscounted across pages; that predicate is deleted, not left to rot.
   const [status, setStatus] = useState<CourseStatus>("ACTIVE");
   useEffect(() => setPage(1), [status]);
-  const { data, isLoading } = useCoursePackages({
+  // `isPlaceholderData` = the rows on screen belong to the PREVIOUS query key. See the spinner below.
+  const { data, isLoading, isPlaceholderData } = useCoursePackages({
     q: debounced.trim() || undefined,
     status,
     page,
@@ -112,6 +113,30 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
           }))}
         />
       </Group>
+
+      {/* 🔴 `isLoading` fires on the FIRST load only. Every switch after that — a status tab, a search, a page —
+          is a new query key served by `keepPreviousData`, so `isLoading` stays false and the PREVIOUS status's
+          courses sit on screen, unchanged, while the new ones are fetched. Nothing on the page moved: staff
+          pressed `ยกเลิก (34)` and were shown 9 active courses with no sign that anything was happening.
+
+          ⇒ the signal is `isPlaceholderData` — "what you are looking at is not what you asked for" — and it is
+          the exact condition, not a proxy: a background refetch of the SAME key leaves it false, and that one
+          genuinely needs no spinner.
+
+          🚫 The old rows are NOT swapped for a spinner. Keeping them is the whole point of `keepPreviousData`
+          (no collapse to an empty box, no scroll jump); they are dimmed and made unclickable so they read as
+          on their way out rather than as the answer. `aria-busy` says the same thing to a screen reader. */}
+      <div className="relative" aria-busy={isPlaceholderData}>
+        {isPlaceholderData && (
+          <div className="absolute inset-x-0 top-0 z-10 flex justify-center pt-20">
+            <Loader size="md" />
+          </div>
+        )}
+        <div
+          className={
+            isPlaceholderData ? "pointer-events-none opacity-40 transition-opacity" : "transition-opacity"
+          }
+        >
       {isLoading ? (
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500">
           <Loader size="md" />
@@ -296,7 +321,11 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
         </div>
       )}
 
+      {/* Inside the dimmed region: paging is one of the switches that triggers it, so the pager must not stay
+          live while the page it belongs to is being replaced. */}
       <PagerBar total={total} page={page} limit={PAGE_SIZE} onPage={setPage} />
+        </div>
+      </div>
 
       <Modal
         opened={pending !== null}
