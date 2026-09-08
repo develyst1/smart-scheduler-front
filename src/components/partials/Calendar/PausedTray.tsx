@@ -1,10 +1,11 @@
 "use client";
 
 import { Badge, Button, Card, Group, Loader, Stack, Text } from "@mantine/core";
-import { PauseCircle } from "lucide-react";
+import { ChevronDown, PauseCircle } from "lucide-react";
 import { BookingTypeChip } from "@/components/common/BookingBadges";
 import { formatDateDisplay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
+import { usePausedTrayCollapsed } from "@/lib/scheduler/paused-tray";
 import type { Booking } from "@/types/app/scheduler";
 
 /**
@@ -27,6 +28,15 @@ import type { Booking } from "@/types/app/scheduler";
  * 🔴 **AC-12 — each row names student · type · the ORIGINAL date and time**, so two paused bookings can be told
  * apart without opening either. The date/time is the slot it came from (the booking keeps them while paused);
  * `pausedOriginalSlot` labels it `เดิม:` so it never reads as a *new* scheduled time.
+ *
+ * 🔴 **Collapsing hides the LIST — never the tray.** The card, its title and its count stay on screen in both
+ * states, because those are what AC-9 (noticed without opening anything) and AC-11 (present when empty) are
+ * actually about. A collapse that removed the card would let a paused booking end up nowhere at all: it is off
+ * the calendar by design, so this is the only place it exists.
+ *
+ * The collapsed flag lives in `lib/scheduler/paused-tray.ts` rather than in this component, because
+ * `CalendarContent` mounts this **twice** — `rail` and `strip`, switched by CSS — and per-instance state would
+ * let the two disagree across a resize. Same reason, same shape as the cell-display toggle.
  */
 export default function PausedTray({
   bookings,
@@ -42,24 +52,47 @@ export default function PausedTray({
 }) {
   const t = useT();
   const isStrip = layout === "strip";
+  const { collapsed, toggle } = usePausedTrayCollapsed();
 
   return (
     <Card padding="md" withBorder className={isStrip ? undefined : "sticky top-4"}>
-      <Group gap="xs" justify="space-between" wrap="nowrap" mb="sm">
+      {/* The WHOLE header is the control, not a small chevron beside it: the target is the row staff already
+          look at, and there is nothing else in the header to click by mistake. `mb` collapses with the body so
+          a closed tray is a header, not a header with a gap under it.
+          ⚠️ The label is two literal `t("…")` calls rather than one `t(cond ? a : b)`: `keys.test.ts` scans for
+          the literal form, so writing it this way is what puts both keys under the missing-key guard. */}
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={!collapsed}
+        aria-label={collapsed ? t("calendar.pausedTrayExpand") : t("calendar.pausedTrayCollapse")}
+        className={`-m-1 flex w-full items-center justify-between gap-2 rounded-md p-1 text-left transition-colors hover:bg-muted-50 ${
+          collapsed ? "" : "mb-2"
+        }`}
+      >
         <Group gap={6} wrap="nowrap">
           <PauseCircle size={16} className="shrink-0 text-muted-500" />
           <Text fw={600} size="sm">
             {t("calendar.pausedTray")}
           </Text>
         </Group>
-        {/* The count is what makes it noticeable from across the page (AC-9) — and it is `light gray` at zero
-            so an empty tray reads as calm rather than as an alert about nothing. */}
-        <Badge size="sm" variant="light" color={bookings.length ? "grape" : "gray"}>
-          {bookings.length}
-        </Badge>
-      </Group>
+        <Group gap={6} wrap="nowrap">
+          {/* The count is what makes it noticeable from across the page (AC-9) — and it is `light gray` at zero
+              so an empty tray reads as calm rather than as an alert about nothing. 🔴 It stays visible while
+              collapsed: that is what keeps a closed tray honest about holding three bookings. */}
+          <Badge size="sm" variant="light" color={bookings.length ? "grape" : "gray"}>
+            {bookings.length}
+          </Badge>
+          <ChevronDown
+            size={16}
+            aria-hidden
+            className={`shrink-0 text-muted-500 transition-transform ${collapsed ? "-rotate-90" : ""}`}
+          />
+        </Group>
+      </button>
 
-      {loading ? (
+      {!collapsed &&
+        (loading ? (
         <Group gap="xs">
           <Loader size="xs" />
           <Text size="xs" c="dimmed">
@@ -100,7 +133,7 @@ export default function PausedTray({
             ))}
           </Stack>
         </div>
-      )}
+        ))}
     </Card>
   );
 }

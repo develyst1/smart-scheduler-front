@@ -347,6 +347,10 @@ const en = {
     // 🔴 AC-11 — the empty line exists so the tray reads as deliberately empty rather than missing. A control
     // that vanishes when it has nothing in it teaches staff it is not there, and then they stop looking.
     pausedCount: "{n} paused",
+    // The header button's accessible name. It says what the CLICK does, not what the state is — a control
+    // labelled "Collapsed" leaves a screen-reader user guessing which way pressing it goes.
+    pausedTrayCollapse: "Collapse paused bookings",
+    pausedTrayExpand: "Expand paused bookings",
     pausedOriginalSlot: "Was: {date} {time}",
     pauseAction: "Pause",
     pauseTitle: "Pause this booking?",
@@ -1440,6 +1444,8 @@ const th: typeof en = {
     pausedTray: "รายการที่พักไว้",
     pausedTrayEmpty: "ไม่มีรายการที่พักไว้",
     pausedCount: "พักไว้ {n} รายการ",
+    pausedTrayCollapse: "ย่อรายการที่พักไว้",
+    pausedTrayExpand: "ขยายรายการที่พักไว้",
     pausedOriginalSlot: "เดิม: {date} {time}",
     pauseAction: "พัก",
     pauseTitle: "พักคาบนี้ไว้?",
