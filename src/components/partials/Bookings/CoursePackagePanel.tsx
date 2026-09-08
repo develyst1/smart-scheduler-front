@@ -40,7 +40,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   // client-side, which miscounted across pages; that predicate is deleted, not left to rot.
   const [status, setStatus] = useState<CourseStatus>("ACTIVE");
   useEffect(() => setPage(1), [status]);
-  // `isPlaceholderData` = the rows on screen belong to the PREVIOUS query key. See the spinner below.
+  // `isPlaceholderData` = the rows in `data` belong to the PREVIOUS query key. See `busy` below.
   const { data, isLoading, isPlaceholderData } = useCoursePackages({
     q: debounced.trim() || undefined,
     status,
@@ -51,6 +51,8 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   const total = data?.total ?? 0;
   // AC-B6 — the server's counts, over the search-filtered set before paging; they partition the unfiltered total.
   const counts = data?.counts;
+  /** Either there is nothing yet, or what we hold answers a question staff have already moved on from. */
+  const busy = isLoading || isPlaceholderData;
   const setUnlock = useSetCourseAdminUnlock();
 
   // คอร์ส + ทิศทาง (unlock/relock) ที่รอการยืนยันใน modal
@@ -116,29 +118,23 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
 
       {/* 🔴 `isLoading` fires on the FIRST load only. Every switch after that — a status tab, a search, a page —
           is a new query key served by `keepPreviousData`, so `isLoading` stays false and the PREVIOUS status's
-          courses sit on screen, unchanged, while the new ones are fetched. Nothing on the page moved: staff
+          courses sat on screen, unchanged, while the new ones were fetched. Nothing on the page moved: staff
           pressed `ยกเลิก (34)` and were shown 9 active courses with no sign that anything was happening.
 
-          ⇒ the signal is `isPlaceholderData` — "what you are looking at is not what you asked for" — and it is
-          the exact condition, not a proxy: a background refetch of the SAME key leaves it false, and that one
+          ⇒ `busy` adds `isPlaceholderData` — "what you are looking at is not what you asked for". It is the
+          exact condition, not a proxy: a background refetch of the SAME key leaves it false, and that one
           genuinely needs no spinner.
 
-          🚫 The old rows are NOT swapped for a spinner. Keeping them is the whole point of `keepPreviousData`
-          (no collapse to an empty box, no scroll jump); they are dimmed and made unclickable so they read as
-          on their way out rather than as the answer. `aria-busy` says the same thing to a screen reader. */}
-      <div className="relative" aria-busy={isPlaceholderData}>
-        {isPlaceholderData && (
-          <div className="absolute inset-x-0 top-0 z-10 flex justify-center pt-20">
-            <Loader size="md" />
-          </div>
-        )}
+          🔴 The list is REMOVED while busy, not dimmed. Rows from the status you just left are the wrong
+          answer to the question on screen, and a wrong answer at 40% opacity is still a wrong answer being
+          read — worse, it is one that looks deliberate. The one honest thing to show is that we are fetching.
+          ⚠️ So `keepPreviousData` no longer changes anything visible on this screen; it is left in the hook
+          because the cached page still spares a refetch when staff switch back. */}
+      {busy ? (
         <div
-          className={
-            isPlaceholderData ? "pointer-events-none opacity-40 transition-opacity" : "transition-opacity"
-          }
+          className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500"
+          aria-busy
         >
-      {isLoading ? (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-500">
           <Loader size="md" />
           {t("common.loading")}
         </div>
@@ -321,11 +317,9 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
         </div>
       )}
 
-      {/* Inside the dimmed region: paging is one of the switches that triggers it, so the pager must not stay
-          live while the page it belongs to is being replaced. */}
-      <PagerBar total={total} page={page} limit={PAGE_SIZE} onPage={setPage} />
-        </div>
-      </div>
+      {/* Hidden with the list. Paging is one of the switches that triggers `busy`, and a pager that keeps
+          saying "page 2 of 4" over a spinner is describing the result that just went away. */}
+      {!busy && <PagerBar total={total} page={page} limit={PAGE_SIZE} onPage={setPage} />}
 
       <Modal
         opened={pending !== null}
