@@ -66,6 +66,7 @@ import type {
   CourseStatus,
   EndCoursePreview,
   EndCourseReason,
+  ExpiryPreview,
   PackageSize,
 } from "@/types/app/scheduler";
 import { ApiClientError } from "@/lib/api/client";
@@ -1026,6 +1027,20 @@ export const updateCourseExpiry = async (
   const { data } = await api.patch<UpdateCourseExpiryResponse>(`/courses/${courseId}/expiry`, {
     expiryDate,
   });
+  return data;
+};
+
+/**
+ * TASK-311 §1 / `REQ-085 §11.3` — **ask what a date would do BEFORE saving it.** `POST /courses/:id/expiry/preview`
+ * (TASK-298) answers from the same `expiryDecision` the PATCH writes with, and writes nothing.
+ *
+ * 🔑 This dialog used to be commit-then-show — the warning only existed after the save. The route exists so the
+ * client never has to compute what an earlier date cuts: 🚫 nothing here or at the call site derives it.
+ * 🚫 Still not a gate: the admin may save whatever this says. *They may not save it blind.*
+ */
+export const previewCourseExpiry = async (courseId: string, expiryDate: string): Promise<ExpiryPreview> => {
+  if (useMock) return mock.previewCourseExpiry(courseId, expiryDate);
+  const { data } = await api.post<ExpiryPreview>(`/courses/${courseId}/expiry/preview`, { expiryDate });
   return data;
 };
 

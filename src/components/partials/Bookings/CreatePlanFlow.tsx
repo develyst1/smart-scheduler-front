@@ -58,7 +58,10 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
   // free of quota; the same action later in the plan editor still consumes it (REQ-030 unchanged). The BE owns
   // both that rule and the make-up placement — this state only says WHICH weeks.
   const [absentWeeks, setAbsentWeeks] = useState<number[]>([]);
-  const [ceiling, setCeiling] = useState(false);
+  // 🧹 TASK-311 §2 — `ceiling` state and the `exceedsCeiling` gate it fed are GONE. `REQ-085 §12` deleted the
+  // MAX_WEEK rule and TASK-309 made the DTO field false by construction, so the gate could never fire again and
+  // could only tell the next reader that a ceiling still refuses. The field itself stays on the contract for
+  // now — the FE stops reading it FIRST, the contract drops it later, never both at once.
   // REQ-063 — the sale's discount. FE math is display only; the BE re-validates and is the source of truth.
   const [discount, setDiscount] = useState<DiscountDraft>(emptyDiscount());
   const [discountProblems, setDiscountProblems] = useState<string[]>([]);
@@ -95,7 +98,6 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
       setPlan(null);
       setError(null);
       setAbsentWeeks([]);
-      setCeiling(false);
       setDiscount(emptyDiscount());
       setDiscountProblems([]);
     }
@@ -131,7 +133,6 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
         startTime,
         absentWeeks: weeks.length ? weeks : undefined,
       });
-      setCeiling(!!p.exceedsCeiling);
       setAbsentWeeks(p.absentWeeks ?? weeks);
       setPlan({
         kind: "course",
@@ -174,7 +175,6 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
   const generate = async () => {
     if (!valid) return;
     setAbsentWeeks([]);
-    setCeiling(false);
     await runPreview([]);
   };
 
@@ -247,11 +247,10 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
         initialPlan={plan}
         onConfirm={confirmCreate}
         // SPEC-049 — create-mode planned absences. The modal only reports WHICH week was toggled; every number
-        // it displays (live count, end date, ceiling) comes back from the BE preview above.
+        // it displays (live count, end date) comes back from the BE preview above.
         absentWeeks={absentWeeks}
         onToggleAbsent={toggleAbsent}
         previewPending={preview.isPending}
-        exceedsCeiling={ceiling}
       />
     );
   }

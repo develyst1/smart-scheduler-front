@@ -208,6 +208,16 @@ const en = {
     warnMore: "…and {n} more",
     // 🔴 AC-4 in one sentence: this is a warning about a save that ALREADY happened, never a refusal.
     warnStillSaves: "The date has been saved. This is a warning, not a refusal — move the expiry again or reschedule those sessions.",
+    // 🔴 TASK-311 / `REQ-085 §11.3` — BEFORE saving: what this date would cut. Every number is the server's
+    // (`POST /courses/:id/expiry/preview`); the screen only writes the sentence. 🚫 Not a gate — `previewNotSaved`
+    // says so in words, because a warning that reads like a refusal is a refusal to whoever reads it.
+    previewTitle: "Before you save — what this date would change",
+    previewChecking: "Checking what this date would change…",
+    previewCuts: "{n} scheduled session(s) would fall after {date}:",
+    previewClear: "No scheduled session falls after {date}.",
+    previewLeaveOk: "Leave: all {remaining} remaining leave day(s) still fit before this date.",
+    previewLeaveTight: "Leave: only {room} of {remaining} remaining leave day(s) would fit — a make-up for every one needs the expiry to reach {needed}.",
+    previewNotSaved: "Nothing is saved yet. You can still save this date — it will not be refused.",
   },
 
   badges: {
@@ -568,7 +578,10 @@ const en = {
     unlockConfirmMsg: "Allow {student} to reschedule beyond the leave quota? Use only for special cases.",
     relockConfirmTitle: "Lock again?",
     relockConfirmMsg: "Lock {student}'s rescheduling back to the quota limit?",
-    summary: "{size}-session course · expires {expiry}",
+    // TASK-311 §1 (`REQ-085 §12.1`) — split from one `summary` string so the EXPIRY half can be a control on its
+    // own: the owner wants the date itself clickable, and a label cannot be half a button.
+    sizeLine: "{size}-session course",
+    expiresOn: "expires {expiry}",
     locked: "Locked",
     specialUnlock: "Special unlock",
     normal: "Normal",
@@ -654,8 +667,6 @@ const en = {
     plannedAbsence: "Planned absence",
     plannedAbsenceUndo: "Remove planned absence",
     createPreview: "New plan: {n} sessions · absent {d} · ends {date}",
-    ceilingRefusal:
-      "This course can only extend to week {max} — reduce the planned absences or pick a different start date.",
     insert: "Insert make-up",
     editSession: "Edit session",
     insertSession: "Insert make-up session",
@@ -1332,6 +1343,14 @@ const th: typeof en = {
     warnMore: "…และอีก {n} คาบ",
     // 🔴 AC-4 ในประโยคเดียว: นี่คือคำเตือนของสิ่งที่ "บันทึกไปแล้ว" ไม่ใช่การปฏิเสธ
     warnStillSaves: "บันทึกวันที่ใหม่เรียบร้อยแล้ว นี่เป็นคำเตือน ไม่ใช่การปฏิเสธ — จะแก้วันหมดอายุอีกครั้งหรือย้ายคาบเหล่านั้นก็ได้",
+    // 🔴 TASK-311 / REQ-085 §11.3 — ก่อนบันทึก: วันที่นี้จะตัดอะไรออกบ้าง ตัวเลขทั้งหมดมาจากเซิร์ฟเวอร์ 🚫 ไม่ใช่การปฏิเสธ
+    previewTitle: "ก่อนบันทึก — วันที่นี้จะเปลี่ยนอะไรบ้าง",
+    previewChecking: "กำลังตรวจสอบว่าวันที่นี้จะเปลี่ยนอะไรบ้าง…",
+    previewCuts: "จะมี {n} คาบที่อยู่หลังวันที่ {date}:",
+    previewClear: "ไม่มีคาบใดอยู่หลังวันที่ {date}",
+    previewLeaveOk: "วันลา: วันลาที่เหลือทั้ง {remaining} วันยังชดเชยได้ทันก่อนวันที่นี้",
+    previewLeaveTight: "วันลา: จะชดเชยได้ทันเพียง {room} จาก {remaining} วันที่เหลือ — ถ้าจะให้ชดเชยได้ครบ วันหมดอายุต้องถึง {needed}",
+    previewNotSaved: "ยังไม่ได้บันทึก — ยังบันทึกวันที่นี้ได้ ระบบจะไม่ปฏิเสธ",
   },
 
   badges: {
@@ -1660,7 +1679,8 @@ const th: typeof en = {
     unlockConfirmMsg: "อนุญาตให้ {student} เลื่อนตารางเกินโควตาการลา? ใช้เฉพาะกรณีพิเศษ",
     relockConfirmTitle: "ล็อกกลับ?",
     relockConfirmMsg: "ล็อกการเลื่อนตารางของ {student} กลับไปที่โควตาเดิม?",
-    summary: "คอร์ส {size} ครั้ง · หมดอายุ {expiry}",
+    sizeLine: "คอร์ส {size} ครั้ง",
+    expiresOn: "หมดอายุ {expiry}",
     locked: "ล็อก",
     specialUnlock: "ปลดล็อกพิเศษ",
     normal: "ปกติ",
@@ -1739,7 +1759,6 @@ const th: typeof en = {
     plannedAbsence: "ไม่มาแน่นอน (ลาล่วงหน้า)",
     plannedAbsenceUndo: "ยกเลิกการลาล่วงหน้า",
     createPreview: "แผนใหม่: {n} คาบ · ไม่มา {d} · สิ้นสุด {date}",
-    ceilingRefusal: "เลื่อนได้ถึงสัปดาห์ที่ {max} เท่านั้น — ลดจำนวนวันที่ลาล่วงหน้า หรือเลือกวันเริ่มใหม่",
     insert: "แทรกคาบชดเชย",
     editSession: "แก้ไขคาบ",
     insertSession: "แทรกคาบชดเชย",

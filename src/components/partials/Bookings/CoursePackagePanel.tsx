@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Skeleton, Modal, SegmentedControl, TextInput, ActionIcon } from "@mantine/core";
+import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Skeleton, Modal, SegmentedControl, TextInput, UnstyledButton } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban, CalendarClock } from "lucide-react";
 import { useSetCourseAdminUnlock, useCoursePackages } from "@/hooks/scheduler";
@@ -177,23 +177,29 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                 <div>
                   <p className="font-semibold">{c.studentName}</p>
                   <p className="text-xs text-muted-400">
-                    {t("course.summary", { size: c.size, expiry: c.expiryDate })}
+                    {t("course.sizeLine", { size: c.size })} ·{" "}
                     {/* 🔴 SPEC-076 / REQ-082 AC-1 (TASK-265) — editable on ANY course, and deliberately NOT
                         lifecycle-gated. TASK-264 left the endpoint ungated for the same reason: REQ-084's
                         resume warning points the admin at THIS control on a course that is `DROPPED` at that
                         moment, so a gate would aim the warning at a control that refuses.
                         ⚠️ This is the one place today where TASK-262's *"gate the control on lifecycle"*
-                        instinct does NOT apply, and it is deliberate. */}
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      size="sm"
-                      ml={6}
-                      aria-label={t("expiry.edit")}
+                        instinct does NOT apply, and it is deliberate.
+
+                        🔴 TASK-311 §1 (`REQ-085 §12.1`, the owner: *"ขวาบน ควรแก้ได้"*) — **the DATE is the
+                        control now, not a 14px icon beside it.** Before this, `expires 12 Oct 26` was a label
+                        and the only clickable thing was a subtle grey icon after it — the capability existed
+                        and the screen did not say so. The dialog is unchanged; this is its same entry point,
+                        grown to cover the words the owner reads. 🚫 Not moved: the icon stays, inside the
+                        button, so it is one control and not two adjacent ones doing the same thing. */}
+                    <UnstyledButton
                       onClick={() => setExpiryTarget(c)}
+                      aria-label={t("expiry.edit")}
+                      title={t("expiry.edit")}
+                      className="inline-flex items-center gap-1 align-baseline text-xs text-muted-400 underline decoration-dotted underline-offset-2 hover:text-muted-600"
                     >
+                      {t("course.expiresOn", { expiry: c.expiryDate })}
                       <CalendarClock size={14} />
-                    </ActionIcon>
+                    </UnstyledButton>
                   </p>
                   {c.subject?.name && (
                     <p className="mt-0.5 text-xs text-muted-400">

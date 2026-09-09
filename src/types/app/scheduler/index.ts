@@ -1,3 +1,5 @@
+import type { ExpiryWarning } from "@/types/api/contract";
+
 // ───────────────────────────── Teachers ─────────────────────────────
 
 export type TeacherType = "FULL_TIME" | "PART_TIME" | "FREELANCE";
@@ -401,6 +403,33 @@ export interface EndCoursePreview {
   sessions: { date: string; time: string; teacher: string | null }[];
   student: { id: string; name: string; nickname: string | null } | null;
   program: string | null;
+}
+
+/**
+ * `POST /courses/:id/expiry/preview` (TASK-298, read by TASK-311) — **what an expiry date WOULD do, before it
+ * is saved.** `REQ-085 §11.3`: an earlier date must say what it cuts off *before* the admin commits to it.
+ *
+ * 🔑 The server answers from the SAME `expiryDecision` the PATCH writes with, so the preview and the save
+ * cannot disagree about one date. 🚫 The screen writes the sentence from these numbers and computes none of
+ * them — `roomFor` / `roomForAll` are the server's verdict, not a client comparison of dates.
+ *
+ * Lives beside `EndCoursePreview` rather than in `contract.ts`, which TASK-311 leaves untouched by instruction.
+ */
+export interface ExpiryLeaveRoom {
+  /** Leave days the family still has. `0` ⇒ the date takes nothing away and no leave line should render. */
+  remainingLeave: number;
+  /** The last still-owed session, or `null` when nothing is owed (then no make-up can be appended). */
+  planEnd: string | null;
+  /** The expiry that would fit EVERY remaining leave's make-up; `null` when nothing is owed. */
+  neededFor: string | null;
+  /** How many of `remainingLeave` still fit under this date. */
+  roomFor: number;
+  roomForAll: boolean;
+}
+
+export interface ExpiryPreview {
+  expiryWarning: ExpiryWarning;
+  leaveRoom: ExpiryLeaveRoom;
 }
 
 export interface CoursePlanSummary {

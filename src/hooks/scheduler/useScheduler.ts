@@ -59,6 +59,7 @@ import {
   dropCourse,
   resumeCourse,
   updateCourseExpiry,
+  previewCourseExpiry,
   confirmCourse,
   type CreateBookingInput,
   type CreateCourseInput,
@@ -339,6 +340,16 @@ export const useUpdateCourseExpiry = () => {
     onSuccess: () => invalidateAll(qc),
   });
 };
+
+/**
+ * TASK-311 / `REQ-085 §11.3` — what a new expiry WOULD cut, before saving. Reads only, so it invalidates
+ * nothing: a preview that refetched the world would make the dialog jump under the admin's pointer.
+ */
+export const usePreviewCourseExpiry = () =>
+  useMutation({
+    mutationFn: ({ courseId, expiryDate }: { courseId: string; expiryDate: string }) =>
+      previewCourseExpiry(courseId, expiryDate),
+  });
 
 /** TASK-202 — confirm a whole course. Invalidates everything: statuses, the calendar and the counts all move. */
 export const useConfirmCourse = () => {

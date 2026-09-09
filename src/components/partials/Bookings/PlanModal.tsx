@@ -94,8 +94,10 @@ interface Props {
   onToggleAbsent?: (weekIndex: number) => void | Promise<void>;
   /** True while that preview is in flight — the plan on screen is stale until it lands. */
   previewPending?: boolean;
-  /** AC-3 — the BE says this plan runs past MAX_WEEK; refuse before the user commits. */
-  exceedsCeiling?: boolean;
+  // 🧹 TASK-311 §2 — `exceedsCeiling` is gone from here. `REQ-085 §12` deleted the MAX_WEEK rule; the field is
+  // false by construction on the server (TASK-309), so the refusal it drove could never fire again. Its message
+  // — *"reduce the planned absences or pick a different start date"* — was the owner's own screenshot: he was
+  // told to change what he wanted because a date could not move. That sentence no longer exists.
 }
 
 type EditTarget =
@@ -114,7 +116,6 @@ export default function PlanModal({
   absentWeeks = [],
   onToggleAbsent,
   previewPending = false,
-  exceedsCeiling = false,
 }: Props) {
   const t = useT();
   const isCreate = mode === "create";
@@ -340,14 +341,6 @@ export default function PlanModal({
                 </Text>
                 {previewPending && <Loader size="xs" />}
               </Group>
-              {/* AC-3 — the ceiling is a refusal with its reason, never a silent trim. */}
-              {exceedsCeiling && (
-                <Alert color="orange" icon={<AlertTriangle size={16} />} variant="light">
-                  {t("plan.ceilingRefusal", {
-                    max: plan.summary.kind === "course" ? plan.summary.maxWeek : 0,
-                  })}
-                </Alert>
-              )}
             </Stack>
           )}
 
@@ -531,14 +524,8 @@ export default function PlanModal({
                 onConfirm={onConfirm}
                 onError={setError}
                 onDone={onClose}
-                disabled={exceedsCeiling || previewPending}
-                disabledHint={
-                  exceedsCeiling
-                    ? t("plan.ceilingRefusal", {
-                        max: plan.summary.kind === "course" ? plan.summary.maxWeek : 0,
-                      })
-                    : undefined
-                }
+                // Only while the BE preview is in flight — the rows on screen are stale until it lands.
+                disabled={previewPending}
               />
             </Group>
           )}
@@ -1071,15 +1058,15 @@ function ConfirmCreateButton({
   onError,
   onDone,
   disabled = false,
-  disabledHint,
 }: {
   sessions: PlanSession[];
   onConfirm?: (sessions: PlanSession[]) => Promise<void>;
   onError: (msg: string | null) => void;
   onDone: () => void;
-  /** AC-3 — a plan past MAX_WEEK can't be saved; the reason is already on screen above the button. */
+  /** While the BE preview is in flight. 🧹 TASK-311 §2 — the MAX_WEEK refusal that used to sit here, with its
+   *  tooltip, is gone with the rule; `disabledHint` went with it because the ceiling was its only source and a
+   *  tooltip branch nothing can reach is the same dead gate one level down. */
   disabled?: boolean;
-  disabledHint?: string;
 }) {
   const t = useT();
   const [busy, setBusy] = useState(false);
@@ -1096,19 +1083,10 @@ function ConfirmCreateButton({
       setBusy(false);
     }
   };
-  const button = (
+  return (
     <Button color="green" loading={busy} disabled={disabled} onClick={submit}>
       {t("plan.confirmCreate")}
     </Button>
-  );
-  // A disabled button with no stated reason is the anti-pattern; the ceiling Alert says why, and the tooltip
-  // repeats it where the pointer actually is.
-  return disabled && disabledHint ? (
-    <Tooltip label={disabledHint} withArrow multiline w={260}>
-      <span>{button}</span>
-    </Tooltip>
-  ) : (
-    button
   );
 }
 

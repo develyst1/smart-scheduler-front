@@ -1012,6 +1012,23 @@ export const updateCourseExpiry = (courseId: string, expiryDate: string) => {
   });
 };
 
+/**
+ * TASK-311 — the preview, offline. The SAME warning the save would report (one `mockWarning`, so the two cannot
+ * disagree here either) plus the leave room, and it writes nothing. A date before the fixture's plan end
+ * reports a tight room so the "eats the leave" sentence is exercisable without a server.
+ */
+export const previewCourseExpiry = (courseId: string, expiryDate: string) => {
+  const c = coursePackages.find((x) => x.id === courseId) as any;
+  const remainingLeave = Math.max(0, (c?.leaveQuota ?? 2) - (c?.leaveUsed ?? 0));
+  const planEnd = "2026-12-13";
+  const tight = expiryDate < "2026-12-27";
+  const roomFor = tight ? 0 : remainingLeave;
+  return delay({
+    expiryWarning: mockWarning(courseId, expiryDate),
+    leaveRoom: { remainingLeave, planEnd, neededFor: "2026-12-27", roomFor, roomForAll: roomFor >= remainingLeave },
+  });
+};
+
 /** TASK-202 — offline stand-in; mirrors the real shape incl. a skip so the skip path is exercisable. */
 export const confirmCourse = (courseId: string) =>
   delay({ confirmed: 3, skipped: 0, alreadyConfirmed: 1, results: [] });
