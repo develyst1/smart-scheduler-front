@@ -48,6 +48,12 @@ describe("🔴 TASK-287 — the request body is EXACTLY { startDate, startTime }
 
     const dialog = read(RESUME_DIALOG);
     const call = dialog.slice(dialog.indexOf("resume.mutateAsync"), dialog.indexOf("notify({ title: t(\"endCourse.resumeDone\")"));
+    // 🔑 TASK-341 — a POSITIVE over `call` ITSELF, not over `dialog`. Without it, either anchor moving empties
+    // the slice and `not.toContain("weekday")` passes on `""` — the assertion reporting success for having
+    // looked nowhere. ⚠️ Deliberately the two fields the call must SEND rather than `length > 0`: that also
+    // proves this is the RIGHT region, so a slice landing on other code fails too.
+    expect(call).toContain("startDate");
+    expect(call).toContain("startTime");
     expect(call).not.toContain("weekday");
     // And no day picker was built: the DATE carries the weekday.
     expect(dialog).not.toContain("course.weekday");
@@ -68,7 +74,23 @@ describe("🔑 TASK-287 §2 — the confirmation STATES what the re-plan did, an
   });
 
   it("🚫 derives neither date — no arithmetic on the response", () => {
-    const panel = src.slice(src.indexOf("result ? ("), src.indexOf("TASK-287 §1"));
+    /**
+     * 🔴 TASK-341 §3 — **this region used to END at `src.indexOf("TASK-287 §1")`: a task reference in PROSE.**
+     *
+     * ⇒ a tidy-up removing a stale comment would have **silently emptied the slice**, and with only negatives
+     * inside it the test would have stayed green. ⚠️ **That is the exact failure this positive guards against,
+     * arriving through the door three tasks have proved is open** — a comment not surviving.
+     *
+     * ✅ **Re-anchored to CODE, which is strictly better than arguing to keep the comment:** the panel is the
+     * JSX branch from `result ? (` to the `) : (` that closes it, so the boundary is the *structure* the rule
+     * is about. 📌 The end is searched FROM the start — `) : (` also appears earlier at the drop/reason
+     * branch, so a bare `indexOf` would have silently taken the wrong one.
+     */
+    const panelStart = src.indexOf("result ? (");
+    const panel = src.slice(panelStart, src.indexOf(") : (", panelStart));
+    // 🔑 The positive is over `panel` itself and names what the panel IS — the re-plan summary — so an empty
+    // or misplaced slice fails here rather than passing quietly below.
+    expect(panel).toContain("endCourse.resumeCreated");
     // The screen may FORMAT a date; it must not compute one. `dayjs(...).add(...)` here would be a second
     // opinion about where the course ends, and the server already has the answer.
     expect(panel).not.toContain(".add(");

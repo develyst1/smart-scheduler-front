@@ -124,6 +124,10 @@ describe("🔴 TASK-319 — `Ends` named neither of the modal's two end-ish date
     expect(modal).toContain('t("plan.noUpcomingSession")');
     // The header's fallback is a SENTENCE, never the old fragment.
     const header = modal.slice(modal.indexOf("function SummaryBar"), modal.indexOf("function SessionTable"));
+    // 🔑 TASK-341 — a positive over `header` ITSELF. ⚠️ The three assertions above are on `modal`, the whole
+    // file: they are green whatever this slice contains, which is exactly what made this look guarded when it
+    // was not. **The guard must be over the same region as the negative.**
+    expect(header).toContain('t("plan.endsOn", { date: lastSession })');
     expect(header).not.toContain("noLiveEnd");
   });
 
@@ -141,6 +145,9 @@ describe("🔴 TASK-319 — `Ends` named neither of the modal's two end-ish date
     // `plan?.liveEndDate ?? liveSessions.at(-1)?.date` in CREATE mode, where every row is live by construction.
     // A file-wide ban would have forbidden a fallback that is correct — the same over-reach as forbidding a
     // string that a comment has to mention.
+    // 🔑 TASK-341 — its own positive: this is a SECOND `it`, so it re-slices and cannot borrow the guard added
+    // to the one above. Each region needs the guard where it is used.
+    expect(header).toContain('t("plan.endsOn", { date: lastSession })');
     expect(header).not.toMatch(/liveEndDate\s*\?\?/);
     expect(header).not.toContain("onClick");
     expect(header).not.toContain("UnstyledButton");
