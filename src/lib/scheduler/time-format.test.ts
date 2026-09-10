@@ -74,7 +74,10 @@ describe("🚫 the contract is untouched — the FE is still the formatter, by a
     // TASK-324 both cite "contract.ts:155" for a line that exists only on the other side. Reported, not fixed.
     // ⚠️ Asserted on THIS repo only: a test reaching into a sibling checkout by relative path breaks for
     // anyone whose layout differs, which is a worse trade than the coverage it buys.
-    const contract = readFileSync("src/types/api/contract.ts", "utf8");
+    // ⚠️ **COMMENT-STRIPPED, and it is the sixth time this week.** Written against the raw file, this failed
+    // when TASK-329 §2 added a doc comment that NAMES `formatTimeDisplay` while explaining that the contract
+    // does not use it. **The rule is about the CODE; the prose is allowed to discuss it.**
+    const contract = codeOf("src/types/api/contract.ts");
     expect(contract).toContain("startTime: HhMm;");
     expect(contract).not.toContain("formatTimeDisplay");
   });
@@ -126,5 +129,70 @@ describe("🔻 TASK-326 §2 — the lockstep sentence now exists in this repo", 
     // The field is still a plain `string`, exactly as before; only the prose above it is new.
     expect(planSession).toContain("  startTime: string;");
     expect(planSession).not.toMatch(/^\s*startTime: string; \/\/ HH:mm$/m);
+  });
+});
+
+describe("🔵 TASK-329 §3 — the last three sites, and NOTHING renders differently", () => {
+  const sites: Array<[string, string]> = [
+    ["src/components/partials/Calendar/Modal/BookingModal.tsx", "formatTimeDisplay(booking.startTime)"],
+    ["src/components/partials/Calendar/PausedTray.tsx", "formatTimeDisplay(b.startTime)"],
+  ];
+
+  for (const [file, call] of sites) {
+    it(file.split("/").pop()!, () => {
+      expect(codeOf(file)).toContain(call);
+    });
+  }
+
+  it("🔴 the adjacent-lines finding is closed — date AND time both formatted, in the same call", () => {
+    // Before: `date: formatDateDisplay(b.date)` and `time: b.startTime`, one line apart. The whole of TASK-324
+    // visible in two lines, in a call no grep for a render shape could find.
+    for (const f of sites.map(([file]) => codeOf(file))) {
+      expect(f).toMatch(/date: formatDateDisplay\([\w.]+\.date\),\s*\n\s*time: formatTimeDisplay\(/);
+      expect(f).not.toMatch(/time: (booking|b)\.startTime,/);
+    }
+  });
+
+  it("🔑 nothing renders differently — the property that makes this safe to land mid-test", () => {
+    // Every site touched here receives `toBookingDTO`'s `hhmm()` output, and `formatTimeDisplay` is a
+    // `slice(0, 5)` ⇒ on an `HH:mm` input it is the IDENTITY. So the pixels are unchanged and @Tanya has
+    // nothing to re-check. ⚠️ This is the assertion, not the claim.
+    for (const v of ["09:00", "17:30", "23:59", "00:00"]) expect(formatTimeDisplay(v)).toBe(v);
+  });
+});
+
+describe("🔻 TASK-329 §1/§2 — the header stops promising, and the type stops claiming", () => {
+  const raw = readFileSync("src/types/api/contract.ts", "utf8");
+
+  it("§1 the header no longer promises lockstep, and says what a type here IS", () => {
+    // ⚠️ **The FIRST LINE, not the file — and this is the SEVENTH instance of the trap this week, the second
+    // inside this one task.** A file-wide `not.toContain("keep in lockstep")` failed because the new header
+    // QUOTES the old promise while explaining that it was false. 🔑 **The claim a file makes is its opening
+    // line; the prose below is allowed to quote what it replaced.**
+    const firstLine = raw.split("\n")[0];
+    expect(firstLine).not.toContain("Synced from");
+    expect(firstLine).toContain("The shapes this FE expects from the API");
+    expect(raw).toContain("this repo's CLAIM about the wire, not the BE's declaration");
+    // It also names the two facts that made the old claim false, so the next reader does not re-derive them.
+    expect(raw).toContain("17 of");
+    expect(raw).toContain("PlanSessionRow");
+  });
+
+  it("§2 `ExpiryWarningSession.startTime` matches what the BE actually declares", () => {
+    const block = raw.slice(raw.indexOf("export interface ExpiryWarningSession {"));
+    const iface = block.slice(0, block.indexOf("\n}"));
+    expect(iface).toContain("startTime?: string | null;");
+    expect(iface).not.toMatch(/^\s*startTime\?: HhMm \| null;$/m);
+  });
+
+  it("🚫 §1 is COMMENT ONLY — no type was moved, renamed or deleted", () => {
+    // The 17 FE-only exports and the three verified-TRUE `// HH:mm` annotations all stay untouched (§4).
+    const code = codeOf("src/types/api/contract.ts");
+    // ⚠️ `interface` OR `type` — `CourseListItem` and `CourseStatusCounts` are type aliases, and a loop that
+    // assumed `interface` failed on the first of them. The rule is that the EXPORT survives, not its keyword.
+    for (const name of ["ExpiryWarning", "ResumeCourseResponse", "PostedSale", "Paged", "CourseListItem"]) {
+      expect(code).toMatch(new RegExp(`export (interface|type) ${name}\\b`));
+    }
+    expect(code).toContain("export type HhMm = string;");
   });
 });

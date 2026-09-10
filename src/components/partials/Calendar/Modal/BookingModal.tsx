@@ -61,7 +61,7 @@ import {
   type OtherPriceSource,
 } from "@/lib/scheduler/other-booking";
 import { formatPriceMinor } from "@/types/app/pricing";
-import { formatDateDisplay } from "@/lib/ui/format";
+import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import {
   canPauseBooking,
   canResumeBooking,
@@ -424,7 +424,15 @@ function ViewBooking({
             field with nothing in it reads as information that went missing (TASK-219's lesson). */}
         {booking.subject && <Field label={t("booking.subject")} value={booking.subject} />}
         <Field label={t("booking.date")} value={booking.date} />
-        <Field label={t("booking.time")} value={`${booking.startTime} - ${booking.endTime}`} />
+        {/* 🔴 TASK-329 §3 — one of the three that no grep for a render shape could find: the time is inside a
+            `value=` PROP, not a JSX interpolation. Routed for the reason TASK-324 settled — a renderer that is
+            correct only because a mapper in another repo is correct breaks silently the day that mapper moves.
+            ⚠️ `booking.date` beside it is still raw; that is the date-side instance named in TASK-324 §Reported
+            and it is not this task's. */}
+        <Field
+          label={t("booking.time")}
+          value={`${formatTimeDisplay(booking.startTime)} - ${formatTimeDisplay(booking.endTime)}`}
+        />
       </dl>
       {/* REQ-063 req 8 / AC-10 — a discount that lives only in the DB doesn't make "what and why" answerable.
           Shown on the record wherever staff look at the booking. `value` is the human number (a percentage, or
@@ -664,9 +672,11 @@ function ViewBooking({
           </Text>
           {/* The slot it came from, so staff can put it back where it was without remembering it. */}
           <Text fz="xs" c="dimmed">
+            {/* 🔴 TASK-329 §3 — the same adjacent-lines finding as `PausedTray`: the DATE was formatted and
+                the TIME was not, in one call, because dates had a helper and times did not. */}
             {t("calendar.pausedOriginalSlot", {
               date: formatDateDisplay(booking.date),
-              time: booking.startTime,
+              time: formatTimeDisplay(booking.startTime),
             })}
           </Text>
           {/* 🔴 Both fields open EMPTY and stay empty until staff choose (AC-13 — the slot is a free choice, so

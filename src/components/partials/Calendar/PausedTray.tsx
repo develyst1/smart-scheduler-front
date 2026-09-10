@@ -16,7 +16,7 @@ import { Badge, Button, Card, Group, Loader, Stack, Text } from "@mantine/core";
  */
 import { ChevronDown, ChevronUp, PanelRightClose, PanelRightOpen, PauseCircle } from "lucide-react";
 import { BookingTypeChip } from "@/components/common/BookingBadges";
-import { formatDateDisplay } from "@/lib/ui/format";
+import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
 import { usePausedTrayCollapsed } from "@/lib/scheduler/paused-tray";
 import type { Booking } from "@/types/app/scheduler";
@@ -177,9 +177,13 @@ export default function PausedTray({
                   <BookingTypeChip type={b.bookingType} />
                 </Group>
                 <Text size="xs" c="dimmed" mt={4}>
+                  {/* 🔴 TASK-329 §3 — **the whole of TASK-324 in two adjacent lines.** The DATE went through
+                      `formatDateDisplay` and the TIME went raw, **in the same call**, because dates had a
+                      formatter and times never did. No grep found it either: the time is a key in an i18n
+                      ARGUMENT OBJECT, not a render. */}
                   {t("calendar.pausedOriginalSlot", {
                     date: formatDateDisplay(b.date),
-                    time: b.startTime,
+                    time: formatTimeDisplay(b.startTime),
                   })}
                 </Text>
               </button>

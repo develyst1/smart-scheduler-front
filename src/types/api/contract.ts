@@ -1,4 +1,17 @@
-// Synced from smart-scheduler-back/src/types/contract.ts — keep in lockstep.
+// The shapes this FE expects from the API. Mirrors `smart-scheduler-back/src/types/contract.ts` where a type
+// exists there, and declares FE-only response shapes where it does not.
+//
+// 🔑 **A type here is this repo's CLAIM about the wire, not the BE's declaration.**
+//
+// 🔻 TASK-329 §1 — this header used to read *"Synced from … keep in lockstep"*, and it was not true: **17 of
+// the exports below have no BE counterpart at all** (`ExpiryWarning`, `ResumeCourseResponse`, `PostedSale`,
+// `Paged`, `CourseListItem`, the badge family …), while **9 BE exports are absent here** — including
+// `PlanSessionRow`, whose own doc comment was cited FROM this file **twice** (TASK-295, TASK-324) for a line
+// that only ever existed in the other repo.
+// ⚠️ **A header claiming to be generated invites everyone to cite the file as a source of truth**, and nobody
+// opens the thing it says it mirrors. **That is exactly how the citation happened, twice** — which is why the
+// claim is gone rather than the drift merely patched.
+// 🚫 Nothing here is generated. Keeping it in step with the BE is a HUMAN job and no test enforces it.
 
 export type TeacherType = "FULL_TIME" | "PART_TIME" | "FREELANCE";
 export type BookingType =
@@ -229,7 +242,23 @@ export interface ExpiryWarningSession {
   id?: string;
   date: IsoDate;
   status?: string | null;
-  startTime?: HhMm | null;
+  /**
+   * 🔻 TASK-329 §2 — **was `HhMm | null`, and that was a claim this repo had no right to make.**
+   *
+   * The BE has no `ExpiryWarningSession`; its equivalent is `ExpiryCandidate`
+   * (`lib/course-expiry-impact.ts:39`), which declares **`startTime?: string | null`** — honestly, because
+   * `expiryDecision`'s `candidates` map passes `r.startTime` straight off the column. ⇒ **the payload is
+   * `HH:mm:ss`, the VALUE was never wrong, and the TYPE was.**
+   *
+   * ⚠️ **This does not loosen a guarantee — it removes a false one.** `HhMm` is `type HhMm = string`, so the
+   * compiler saw no difference either way: **the alias was a LABEL, and it was the wrong label.** Nothing
+   * tightens, nothing widens, no call site changes.
+   *
+   * ✅ The render is already correct wherever this is shown — `formatTimeDisplay` trims it (TASK-324/326).
+   * 🚫 **The alternative was asking the BE for `hhmm()` in that map. Deliberately not done:** that is a CHOICE
+   * about what the wire carries, not a correction of anything broken (@Sober, TASK-329 §2).
+   */
+  startTime?: string | null;
 }
 
 export interface ExpiryWarning {
