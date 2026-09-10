@@ -2,7 +2,7 @@
 
 import { Alert, List, Text } from "@mantine/core";
 import { AlertTriangle } from "lucide-react";
-import { formatDateDisplay } from "@/lib/ui/format";
+import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
 import type { ExpiryWarning } from "@/types/api/contract";
 
@@ -51,7 +51,10 @@ export default function ExpiryWarningAlert({ warning }: { warning: ExpiryWarning
         {listed.map((s, i) => (
           <List.Item key={s.id ?? `${s.date}-${i}`}>
             {formatDateDisplay(s.date)}
-            {s.startTime ? ` · ${s.startTime}` : ""}
+            {/* 🔴 TASK-324 — one of only TWO sites that could actually show `15:00:00`: the expiry DTO ships
+                `startTime` RAW (`expiryDecision`'s `candidates` map applies no `hhmm()`), unlike the booking
+                DTO. The separator stays local — the helper formats one time, not a range. */}
+            {s.startTime ? ` · ${formatTimeDisplay(s.startTime)}` : ""}
           </List.Item>
         ))}
       </List>

@@ -10,7 +10,7 @@ import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { usePreviewCourseExpiry, useUpdateCourseExpiry } from "@/hooks/scheduler";
 import ExpiryWarningAlert from "@/components/common/ExpiryWarningAlert";
-import { formatDateDisplay } from "@/lib/ui/format";
+import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import type { ExpiryWarning } from "@/types/api/contract";
 import type { CoursePackageView, ExpiryPreview } from "@/types/app/scheduler";
 
@@ -202,7 +202,9 @@ function ExpiryPreviewBlock({ preview }: { preview: ExpiryPreview }) {
             {listed.map((s, i) => (
               <List.Item key={s.id ?? `${s.date}-${i}`}>
                 {formatDateDisplay(s.date)}
-                {s.startTime ? ` · ${s.startTime}` : ""}
+                {/* 🔴 TASK-324 — the pre-save twin of `ExpiryWarningAlert`'s list, and the SAME raw payload:
+                    one DTO, two renderers, which is why the owner met it twice. */}
+                {s.startTime ? ` · ${formatTimeDisplay(s.startTime)}` : ""}
               </List.Item>
             ))}
           </List>

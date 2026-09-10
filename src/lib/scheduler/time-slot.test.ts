@@ -74,10 +74,17 @@ describe("🔴 §3 — the SECOND call site, which nobody had reported", () => {
     expect(modal).toContain("toTimeSlot(seed?.startTime, TIME_SLOTS[0])");
   });
 
-  it("🚫 the three DISPLAY sites are untouched — the contract's promise is kept where it was already kept", () => {
+  it("⚠️ UPDATED by TASK-324 — the three DISPLAY sites still format, now through the shared helper", () => {
+    // 🔻 This pin read `startTime.slice(0, 5)` × 3. TASK-324 gave times the formatter dates have had since
+    // TASK-129, and these three route through it. **Updated because the mechanism moved, not deleted because
+    // it failed** — the property it protects is unchanged and is asserted two ways:
+    //   1. the count is still three, so none was lost;
+    //   2. `formatTimeDisplay` is a `slice(0, 5)`, so the OUTPUT is byte-identical (asserted in
+    //      `time-format.test.ts` against the exact expression this line used to hold).
     // ⚠️ The defect was never that the value has seconds. Changing the DTO would have broken these three and a
     // documented contract to fix one place that forgot to call the rule.
-    expect(modal.match(/startTime\.slice\(0, 5\)/g)?.length).toBe(3);
+    expect(modal.match(/formatTimeDisplay\((?:s|session)\.startTime\)/g)?.length).toBe(3);
+    expect(modal).not.toContain("startTime.slice(0, 5)");
   });
 });
 

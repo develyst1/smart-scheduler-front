@@ -21,7 +21,7 @@ import { Textarea, Tooltip } from "@mantine/core";
 import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Ticket, UserMinus, X } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
-import { formatDateDisplay } from "@/lib/ui/format";
+import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
 import { ApiClientError } from "@/lib/api/client";
 import { StatusChip } from "@/components/common/BookingBadges";
@@ -688,7 +688,7 @@ function SessionTable({
             return (
               <Table.Tr key={s.id} className={locked ? "opacity-60" : ""}>
                 <Table.Td className="tabular-nums">{formatDateDisplay(s.date)}</Table.Td>
-                <Table.Td className="tabular-nums">{s.startTime.slice(0, 5)}</Table.Td>
+                <Table.Td className="tabular-nums">{formatTimeDisplay(s.startTime)}</Table.Td>
                 <Table.Td>{s.teacher?.nickname ?? "—"}</Table.Td>
                 <Table.Td>{s.subject?.name ?? "—"}</Table.Td>
                 <Table.Td>
@@ -1143,7 +1143,7 @@ function CancelSessionDialog({
     <Modal opened onClose={onClose} title={t("plan.cancelTitle")} centered radius="lg">
       <Stack gap="md">
         <Text fz="sm">
-          {dayjs(session.date).format("D MMM")} {session.startTime.slice(0, 5)} ·{" "}
+          {dayjs(session.date).format("D MMM")} {formatTimeDisplay(session.startTime)} ·{" "}
           {session.teacher?.nickname ?? "—"} · {session.subject?.name ?? "—"}
         </Text>
         <Text fz="xs" c="dimmed">
@@ -1223,7 +1223,7 @@ function PlanDiffConfirm({
             {preview.resultingSessions.map((s) => (
               <Table.Tr key={s.id}>
                 <Table.Td className="tabular-nums">{formatDateDisplay(s.date)}</Table.Td>
-                <Table.Td className="tabular-nums">{s.startTime.slice(0, 5)}</Table.Td>
+                <Table.Td className="tabular-nums">{formatTimeDisplay(s.startTime)}</Table.Td>
                 <Table.Td>{s.teacher?.nickname ?? "—"}</Table.Td>
                 <Table.Td>
                   <StatusChip status={s.status as BookingStatus} />

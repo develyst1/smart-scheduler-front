@@ -27,7 +27,7 @@ import StickyScrollArea from "@/components/common/StickyScrollArea";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { useAllBookings, useBulkConfirm, useTeachers } from "@/hooks/scheduler";
 import { useConfirm } from "@/components/common/useConfirm";
-import { formatDateDisplay } from "@/lib/ui/format";
+import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import type { BookingSort } from "@/services/scheduler.service";
 import type { BookingStatus, BookingType } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR } from "@/types/app/scheduler";
@@ -366,7 +366,11 @@ export default function BookingsTable() {
                 <Table.Td>{b.teachers.map((tc) => tc.nickname || tc.name).join(", ")}</Table.Td>
                 <Table.Td>{formatDateDisplay(b.date)}</Table.Td>
                 <Table.Td>
-                  {b.startTime}-{b.endTime}
+                  {/* 🔴 TASK-324 — routed through the helper although `toBookingDTO` already applies `hhmm()`,
+                      so this site was NOT showing seconds. It goes through anyway: one place to change, and a
+                      renderer that is correct only because a mapper elsewhere is correct is one that breaks
+                      silently the day that mapper moves. The dash stays local. */}
+                  {formatTimeDisplay(b.startTime)}-{formatTimeDisplay(b.endTime)}
                 </Table.Td>
                 <Table.Td>
                   <BookingTypeChip type={b.bookingType} />

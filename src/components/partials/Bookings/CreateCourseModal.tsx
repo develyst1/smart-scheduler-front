@@ -16,6 +16,7 @@ import {
 import { DatePickerInput } from "@mantine/dates";
 import { CalendarPlus, Info, AlertTriangle } from "lucide-react";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
+import { formatTimeDisplay } from "@/lib/ui/format";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
@@ -171,7 +172,11 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
                 <List.Item key={b.id}>
                   {/* A course session always HAS a program (validation refuses one without) — `subject` became
                       nullable on the DTO only because อื่นๆ exists, and an อื่นๆ never reaches this list. */}
-                  {b.date} {b.startTime}–{b.endTime} · {b.teacher.nickname} · {b.subject?.name ?? "—"}
+                  {/* 🔴 TASK-324 — same treatment, and two things NAMED rather than fixed: this component has
+                      no renderer at all (TASK-322 §3), and its `{b.date}` is raw where every other list uses
+                      `formatDateDisplay`. The date is a different call and a different task. */}
+                  {b.date} {formatTimeDisplay(b.startTime)}–{formatTimeDisplay(b.endTime)} · {b.teacher.nickname}{" "}
+                  · {b.subject?.name ?? "—"}
                 </List.Item>
               ))}
             </List>
