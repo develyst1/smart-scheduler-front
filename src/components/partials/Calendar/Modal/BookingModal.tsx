@@ -115,7 +115,12 @@ export default function BookingModal({
       centered
       title={
         isCreate ? (
-          <span className="font-semibold">{t("booking.addTitle", { date: createSlot?.date ?? "" })}</span>
+          /* 🔴 TASK-340 §1 — a raw ISO date in the modal's TITLE. ⚠️ @Sober asked whether `createSlot.date` is
+             a slot VALUE rather than a date a human reads: it is read — this is the heading of the create
+             dialog — and it is ISO (`CalendarContent` sets it from `b.date`, the grid from its own day key).
+             ⇒ formatted. 📌 `formatDateDisplay(undefined)` is `""`, which is what `?? ""` did, so the absent
+             case is unchanged. */
+          <span className="font-semibold">{t("booking.addTitle", { date: formatDateDisplay(createSlot?.date) })}</span>
         ) : booking ? (
           <div className="flex flex-col gap-1">
             {/* AC-10 — the booking's own name, from the BE's one `displayName`. No local fallback. */}
@@ -333,7 +338,8 @@ function ViewBooking({
       } else if (res.extended) {
         notify({
           title: t("booking.leaveSavedTitle"),
-          description: t("booking.leaveExtendedDesc", { date: res.extended.date }),
+          // 🔴 TASK-340 §1 — the make-up's date, straight off the response and into a toast a human reads.
+          description: t("booking.leaveExtendedDesc", { date: formatDateDisplay(res.extended.date) }),
           color: "success",
         });
       } else {

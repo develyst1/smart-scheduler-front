@@ -6,7 +6,7 @@ import { AlertTriangle, Wallet } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
-import { formatDateDisplay } from "@/lib/ui/format";
+import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { formatPriceMinor } from "@/types/app/pricing";
 import { useCancelBooking, usePostedSale } from "@/hooks/scheduler";
 import { END_COURSE_REASONS, type Booking, type EndCourseReason } from "@/types/app/scheduler";
@@ -76,8 +76,23 @@ export default function CancelBookingDialog({ opened, booking, onClose, onCancel
             // have (or an em dash) is how staff cancel the wrong thing. `displayName` is never blank by contract,
             // so the `"—"` remains only for the no-booking render.
             student: booking?.displayName || "—",
-            date: booking?.date ?? "—",
-            time: booking?.startTime ?? "—",
+            /**
+             * 🔴 TASK-340 §1 — the date was a RAW ISO string in the sentence staff read before cancelling.
+             *
+             * ⚠️ **The em dash cannot go through the formatter.** `formatDateDisplay` returns `""` only for a
+             * FALSY input; `"—"` is truthy, so `formatDateDisplay(booking?.date ?? "—")` would hand `dayjs` an
+             * em dash and render **`Invalid Date`** — a worse string than the one being fixed. ⇒ the
+             * no-booking case is branched BEFORE the call, not folded into it.
+             *
+             * 🔑 **`time` is fixed here too, and TASK-340 §5 invited the argument:** it is the SAME `t()` call.
+             * Formatting the date and leaving the time raw would recreate — deliberately — the exact
+             * adjacent-lines defect TASK-329 §3 found in `pausedOriginalSlot`: one formatted field beside one
+             * raw field in a single sentence. **Leaving `:80` would not have been "out of scope"; it would
+             * have been the defect, freshly authored.** *(`BookingModal:1140`, the other known-open time, is
+             * untouched — a different call in a different component.)*
+             */
+            date: booking ? formatDateDisplay(booking.date) : "—",
+            time: booking ? formatTimeDisplay(booking.startTime) : "—",
           })}
         </Text>
 

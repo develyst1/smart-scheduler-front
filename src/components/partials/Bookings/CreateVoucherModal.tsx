@@ -13,6 +13,7 @@ import {
 } from "@mantine/core";
 import { Ticket, Info, AlertTriangle } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
+import { formatDateDisplay } from "@/lib/ui/format";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { useCreateVoucher, useSellablePackages } from "@/hooks/scheduler";
 import { ApiClientError, errorProblems } from "@/lib/api/client";
@@ -118,7 +119,8 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
               })}
             </Text>
             <Text size="xs" c="dimmed" mt={2}>
-              {t("voucher.provisionalExpiry", { date: result.voucher.expiryDate })}
+              {/* 🔴 TASK-340 §1 — a raw ISO expiry in the line staff read after issuing a voucher. */}
+              {t("voucher.provisionalExpiry", { date: formatDateDisplay(result.voucher.expiryDate) })}
             </Text>
             <Text size="xs" c="dimmed" mt={2}>
               {t("voucher.setValidity", { months: expiryMonths })}

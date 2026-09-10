@@ -12,6 +12,14 @@
 // opens the thing it says it mirrors. **That is exactly how the citation happened, twice** — which is why the
 // claim is gone rather than the drift merely patched.
 // 🚫 Nothing here is generated. Keeping it in step with the BE is a HUMAN job and no test enforces it.
+//
+// ⚠️ **Nothing enforces this — keeping it in step with the BE is a human job.**
+//
+// 🔑 TASK-340 §4 — the sentence above already said so; this repeats it **at the END**, which is the whole
+// point: a reader who stops early still meets it. The header this replaced said *"synced … keep in lockstep"*
+// and let a reader stop — which is exactly how it was cited twice, from the wrong repo, without anyone opening
+// the file it named. 📌 A claim that names its enforcer (`dictionaries.ts`: *"enforced by `const th: typeof
+// en`"*) is the only kind that survives contact; this one has none, and now says so last.
 
 export type TeacherType = "FULL_TIME" | "PART_TIME" | "FREELANCE";
 export type BookingType =
