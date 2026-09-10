@@ -554,7 +554,27 @@ export default function PlanModal({
           opened
           mode={dropMode}
           courseId={isCourse && !isCreate ? (plan?.id ?? null) : null}
-          program={plan?.sessions[0]?.subject?.name ?? null}
+          /**
+           * 🔴 TASK-292 §2 — **was `plan.sessions[0]?.subject?.name`, an ARBITRARY row.** A soft-linked
+           * `SINGLE_SESSION` extra (SPEC-033) sorts into the plan by date and carries its OWN subject, so the
+           * pause dialog could name a programme the course is not — in the same sentence TASK-291 made true.
+           *
+           * ✅ `courseSlot` is already *"the first row that is not an extra"* (TASK-288 §1), which is **exactly
+           * the set the server names from**: `previewCourseEnd` returns `rows[0]?.subject?.name` over
+           * `loadCourseForEnd`'s rows, and those are filtered `bookingType = COURSE_PACKAGE`. ⇒ same row, same
+           * answer, **and no second predicate introduced** — this reuses the one the line below already uses.
+           *
+           * ⚠️ **Not taken from the pause preview, and the reason is that it would fix half a dialog.** The
+           * preview's `program` is `rows[0].subject` server-side — **not privileged knowledge, just row zero of
+           * the right set** — and it exists ONLY on the drop face. The resume face has no preview, so routing
+           * through it would leave *"{program} for {student} is re-planned…"* still naming an extra.
+           * 📌 `?? sessions[0]` survives inside `courseSlot`: a plan holding only extras has no course row to
+           * name, and falling back to one is better than an em dash.
+           *
+           * 🔻 `student` was NEVER `sessions[0]` — it already reads `plan.student`, the plan's own. The task
+           * called it *"the same shape"*; it is not, and it needed no change.
+           */
+          program={courseSlot?.subject?.name ?? null}
           student={plan?.student?.nickname || plan?.student?.name || null}
           // TASK-288 §1 — the course's OWN slot, read off its own session rows (the server's data, not a guess),
           // so the re-plan form opens on the lesson the family already has.

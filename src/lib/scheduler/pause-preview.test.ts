@@ -108,3 +108,37 @@ describe("🧹 the comments that outlived their mechanism", () => {
     expect(dialog).toContain("scrollAreaComponent={ScrollArea.Autosize}");
   });
 });
+
+describe("🔵 TASK-292 §2 — the pause sentence names the COURSE's programme, not an arbitrary row's", () => {
+  const modal = codeOf("src/components/partials/Bookings/PlanModal.tsx");
+
+  it("🔴 `sessions[0]` no longer feeds the programme", () => {
+    // A soft-linked SINGLE_SESSION extra (SPEC-033) sorts into the plan by date and carries its own subject, so
+    // `sessions[0].subject` could name a programme the course is not — in the sentence TASK-291 made true.
+    expect(modal).not.toContain("program={plan?.sessions[0]?.subject?.name");
+    expect(modal).toContain("program={courseSlot?.subject?.name ?? null}");
+  });
+
+  it("🔑 it reuses `courseSlot` — the same row the SERVER names from, and no second predicate", () => {
+    // `previewCourseEnd` returns `rows[0]?.subject?.name` over `loadCourseForEnd`'s rows, which are filtered
+    // `bookingType = COURSE_PACKAGE`. `courseSlot` is "the first row that is not an extra" ⇒ the same row.
+    // ⚠️ A SINGLE-LINE substring: this file is CRLF, so a `\n` inside an expectation can never match.
+    expect(modal).toContain('sessions.find((s) => s.bookingType !== "SINGLE_SESSION")');
+  });
+
+  it("⚠️ `student` was never `sessions[0]` — it reads the plan's own, and still does", () => {
+    // The task called it "the same shape". It is not: this has always been `plan.student`.
+    expect(modal).toContain("student={plan?.student?.nickname || plan?.student?.name || null}");
+    expect(modal).not.toContain("plan?.sessions[0]?.student");
+  });
+
+  it("🚫 §4 — this task added no live-status list; the pinned sweep above is what proves it", () => {
+    // 🔻 I first wrote `expect(modal).not.toContain('"CONFIRMED"')` here and it failed — **correctly**:
+    // `PlanModal` is one of the TWO files the pinned sweep already names (`isLiveStatus`, 28 lines above the
+    // TASK-291 defect). A ban on the string would forbid what the sweep deliberately allows.
+    // ⇒ 🔑 The right assertion is the one that already exists; this one only records WHY nothing new is needed:
+    // `bookingType !== "SINGLE_SESSION"` is a TYPE predicate, not a status list, so it cannot become a third
+    // copy of `COURSE_LIVE` — and the sweep would fail if it had.
+    expect(modal).toContain('s.bookingType !== "SINGLE_SESSION"');
+  });
+});
