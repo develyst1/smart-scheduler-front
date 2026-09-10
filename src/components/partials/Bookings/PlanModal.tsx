@@ -584,7 +584,17 @@ function SummaryBar({ plan }: { plan: EntitlementPlan }) {
    * server's `status`, the same field the badge reads (TASK-188/189).
    */
   const paused = plan.summary.kind === "course" && plan.summary.status === "DROPPED";
-  const end = plan.liveEndDate ? dayjs(plan.liveEndDate).format("D MMM YY") : t("plan.noLiveEnd");
+  /**
+   * 🔴 TASK-319 §2 — **the date, or `null`. A non-date never enters the `Last session` slot again.**
+   *
+   * This used to fall back to `noLiveEnd` — *"no live sessions"* — poured into `{date}`, so the header read
+   * `Ends no live sessions`; renaming the label alone would have made it `Last session no live sessions`,
+   * which repeats a word and reads like a broken template. **TASK-293 §2 solved this shape for the PAUSED
+   * course by giving it its own sentence; this is the same answer for the cases that ruling left out.**
+   * 🚫 `liveEndDate` and `deriveLiveEndDate` are untouched — TASK-293 established the VALUE is right and the
+   * LABEL is what outlived it, and that still holds.
+   */
+  const lastSession = plan.liveEndDate ? dayjs(plan.liveEndDate).format("D MMM YY") : null;
   return (
     <div className="rounded-xl border border-muted-200 bg-muted-50/40 p-3">
       <Group justify="space-between" gap="xs">
@@ -620,9 +630,13 @@ function SummaryBar({ plan }: { plan: EntitlementPlan }) {
           <Text fz="sm" c="dimmed">
             {t("plan.pausedNoEnd")}
           </Text>
+        ) : lastSession ? (
+          <Text fz="sm" c="dimmed">
+            {t("plan.endsOn", { date: lastSession })}
+          </Text>
         ) : (
           <Text fz="sm" c="dimmed">
-            {t("plan.endsOn", { date: end })}
+            {t("plan.noUpcomingSession")}
           </Text>
         )}
       </Group>
@@ -1177,18 +1191,31 @@ function PlanDiffConfirm({
   busy: boolean;
 }) {
   const t = useT();
-  const end = preview.liveEndDate ? dayjs(preview.liveEndDate).format("D MMM YY") : t("plan.noLiveEnd");
+  /**
+   * 🔴 TASK-321 — **the date, or `null`**, exactly as TASK-319 did for the header. This line used to fall back
+   * to `noLiveEnd` and read *"… · ends no live sessions"* — **the third instance of a non-date poured into a
+   * date slot, and the last one.** 🔑 Structural rather than wording: `{end}` can no longer receive anything
+   * but a date, so that class of bug cannot come back to this slot.
+   */
+  const lastSession = preview.liveEndDate ? dayjs(preview.liveEndDate).format("D MMM YY") : null;
   return (
     <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-3">
       <Text fw={600} fz="sm" mb={4}>
         {t("plan.diffTitle")}
       </Text>
+      {/* ⚠️ NOT `noUpcomingSession`: the header says what the course IS, this says what the change WOULD DO —
+          and it is read while the admin can still cancel. Different statement, its own sentence. */}
       <Text fz="xs" c="dimmed" mb="xs">
-        {t("plan.diffSummary", {
-          appended: preview.moves.appended.length,
-          cancelled: preview.moves.cancelled.length,
-          end,
-        })}
+        {lastSession
+          ? t("plan.diffSummary", {
+              appended: preview.moves.appended.length,
+              cancelled: preview.moves.cancelled.length,
+              end: lastSession,
+            })
+          : t("plan.diffSummaryNoEnd", {
+              appended: preview.moves.appended.length,
+              cancelled: preview.moves.cancelled.length,
+            })}
       </Text>
       <div className="max-h-[200px] overflow-auto rounded-md border border-muted-100">
         <Table fz="xs" verticalSpacing={4}>

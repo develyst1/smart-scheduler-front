@@ -517,6 +517,10 @@ export const createCoursePackage = (input: {
   startDate: string;
   startTime: string;
   note?: string;
+  /** 🔴 TASK-320 — REQ-068's note, seeded onto EVERY generated session exactly as the BE does. The mock did not
+   *  accept this field at all, so the offline path could not show the defect OR the fix: a mock that stops one
+   *  field short of the contract is a mock that agrees with whatever the client sends. */
+  attendeeNote?: string;
 }) => {
   const teacher = teachers.find((t) => t.id === input.teacherId);
   const subjectName =
@@ -551,6 +555,9 @@ export const createCoursePackage = (input: {
       status: "CONFIRMED" as const,
       courseId,
       note: input.note,
+      // 🔴 TASK-320 — onto EVERY session, which is the whole of REQ-068's creation half and is what the plan
+      // editor's `Session note` reads back.
+      attendeeNote: input.attendeeNote ?? null,
     }),
   );
   bookings.push(...generated);

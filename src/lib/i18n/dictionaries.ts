@@ -622,7 +622,10 @@ const en = {
     courseSize: "Course size",
     firstDate: "First session date",
     time: "Time",
-    noteField: "Note (optional)",
+    // 🔴 TASK-320 §4 — this box and the plan editor's `Session note` are now THE SAME FIELD (`attendeeNote`),
+    // so they must not read as two things. It says "every session" because that is the one way it differs from
+    // the per-session editor: here it seeds all of them at once.
+    noteField: "Session note (optional) — added to every session",
     submitBtn: "Register + create sessions",
     successTitle: "Course registered",
     successDesc: "Created {count} weekly sessions",
@@ -640,7 +643,16 @@ const en = {
     owed: "{n} owed",
     owedHint: "{n} session(s) still owed",
     hoursLeft: "{remaining} / {total} h left",
-    endsOn: "Ends {date}",
+    // 🔴 TASK-319 — was `Ends {date}`. A course has TWO end-ish dates in this modal — the last SESSION and the
+    // EXPIRY, which is a CEILING (TASK-282 §7) — and `Ends` named neither unambiguously. ⇒ a disambiguation,
+    // not a wording preference, which is also why the Thai moves: this is a STAFF screen worked in Thai.
+    endsOn: "Last session {date}",
+    // 🔑 TASK-319 §2 option 2 — the same slot used to receive `noLiveEnd`, so it read `Ends no live sessions`
+    // and after the rename would have read `Last session no live sessions`: a repeated word and a broken
+    // template, in the name of clarity. This is TASK-293 §2's pattern — its own sentence rather than a non-date
+    // in a date slot. Worded to be true of every remaining case (completed, expired, nothing scheduled yet, a
+    // voucher with no live rows) rather than claiming which one it is.
+    noUpcomingSession: "No upcoming sessions",
     confirmCourse: "Confirm whole course ({n})",
     confirmCourseDone: "Confirmed {n} sessions",
     confirmCourseSkipped: "{n} skipped",
@@ -702,7 +714,16 @@ const en = {
     insertHint: "Reschedule an owed session into the plan (uses quota — no charge).",
     insertDisabled: "No session to reschedule right now.",
     diffTitle: "Your plan will become:",
-    diffSummary: "{appended} added · {cancelled} removed · ends {end}",
+    // 🔴 TASK-321 — was `… · ends {end}`, in the same modal whose header TASK-319 renamed to `Last session`.
+    // **A modal that names one fact two ways is what that rename existed to stop**, and this line was the odd
+    // one out an hour after it shipped. ⇒ same vocabulary as the header.
+    diffSummary: "{appended} added · {cancelled} removed · last session {end}",
+    // 🔑 TASK-321 §2 — a SEPARATE sentence, not `noUpcomingSession` reused, because it is a different
+    // statement: the header reports the course's state NOW; this reports what the proposed change WOULD leave.
+    // *"Nothing left on the schedule"* is a consequence the admin is about to cause, and it is read while they
+    // can still cancel. 📌 Two whole strings rather than one hedged one — the same call TASK-287 made for
+    // `resumeExpiryMoved` / `resumeExpirySame`, so neither has to hedge.
+    diffSummaryNoEnd: "{appended} added · {cancelled} removed · nothing left on the schedule",
     diffConfirm: "Apply this plan",
   },
 
@@ -1719,7 +1740,7 @@ const th: typeof en = {
     courseSize: "ขนาดคอร์ส",
     firstDate: "วันเริ่มคาบแรก",
     time: "เวลา",
-    noteField: "หมายเหตุ (ถ้ามี)",
+    noteField: "โน้ตของคาบ (ถ้ามี) — ใส่ให้ทุกคาบ",
     submitBtn: "สมัคร + สร้างคาบ",
     successTitle: "สมัครคอร์สสำเร็จ",
     successDesc: "สร้าง {count} คาบรายสัปดาห์แล้ว",
@@ -1737,7 +1758,10 @@ const th: typeof en = {
     owed: "ค้าง {n}",
     owedHint: "ยังค้างอีก {n} คาบ",
     hoursLeft: "เหลือ {remaining} / {total} ชม.",
-    endsOn: "สิ้นสุด {date}",
+    // 🔴 TASK-319 §3 — `สิ้นสุด` against `วันหมดอายุ` carried the identical ambiguity, and leaving it would have
+    // fixed the language that needed it least.
+    endsOn: "คาบสุดท้าย {date}",
+    noUpcomingSession: "ไม่มีคาบที่กำลังจะถึง",
     confirmCourse: "ยืนยันคอร์สทั้งคอร์ส ({n})",
     confirmCourseDone: "ยืนยันแล้ว {n} คาบ",
     confirmCourseSkipped: "ข้ามไป {n} คาบ",
@@ -1794,7 +1818,9 @@ const th: typeof en = {
     insertHint: "เลื่อนคาบที่ค้างเข้ามาในแผน (ใช้โควตา — ไม่คิดเงิน)",
     insertDisabled: "ตอนนี้ไม่มีคาบที่ต้องเลื่อน",
     diffTitle: "แผนจะเปลี่ยนเป็น:",
-    diffSummary: "เพิ่ม {appended} · เอาออก {cancelled} · จบ {end}",
+    // 🔴 TASK-321 — `จบ` moves to the header's `คาบสุดท้าย` for the same reason the header moved.
+    diffSummary: "เพิ่ม {appended} · เอาออก {cancelled} · คาบสุดท้าย {end}",
+    diffSummaryNoEnd: "เพิ่ม {appended} · เอาออก {cancelled} · ไม่เหลือคาบในตาราง",
     diffConfirm: "ใช้แผนนี้",
   },
 

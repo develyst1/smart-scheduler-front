@@ -69,10 +69,17 @@ describe("🟡 §2 a paused course is not asked for an end date", () => {
     expect(modal).not.toMatch(/liveEndDate\s*\?\?\s*[a-zA-Z]*[eE]xpiry/);
   });
 
-  it("⚠️ `noLiveEnd` is untouched — it still answers the OTHER causes of an absent end", () => {
-    // Only the paused case was ruled on. A completed or never-started plan still reads "Ends no live sessions",
-    // which is the same category error for a different reason — named in the task, deliberately not changed.
+  it("⚠️ UPDATED TWICE — `noLiveEnd` now has NO renderer at all, and stays only because TASK-294 is open", () => {
+    // 🔻 History, because the REASON has changed under this pin twice in two days and that is the whole point:
+    //   TASK-293 — *"a completed or never-started plan still reads `Ends no live sessions`; not changed."*
+    //   TASK-319 — the header stopped using it; the pin then said the string stays because `diffSummary` does.
+    //   TASK-321 — **`diffSummary` stopped too. `noLiveEnd` is now rendered by NOTHING.**
+    // ⚠️ It stays in the dictionary anyway, deliberately: **deleting it would pre-empt TASK-294**, which is an
+    // open ruling on it, `noSessions` and their shared Thai string. 🔑 A dead string kept ON PURPOSE, with the
+    // purpose written down — which is the opposite of the label-outliving-its-value class, not an instance.
     expect(en.plan.noLiveEnd).toBe("no live sessions");
+    expect(en.plan.noUpcomingSession).toBe("No upcoming sessions");
+    expect(modal).not.toContain("plan.noLiveEnd");
   });
 });
 
@@ -95,5 +102,88 @@ describe("🚫 §4 the body sentences the owner READ are byte-identical", () => 
   it("🔴 @Porter's pause line, still his — TASK-288 §3", () => {
     expect(en.endCourse.dropLine).toContain("the time and the expiry date can move.");
     expect(th.endCourse.dropLine).toContain("เวลาเรียนและวันหมดอายุอาจเปลี่ยนได้");
+  });
+});
+
+describe("🔴 TASK-319 — `Ends` named neither of the modal's two end-ish dates", () => {
+  it("the label is the SESSION word, both languages", () => {
+    // A course has a last SESSION and an EXPIRY, which is a CEILING (TASK-282 §7). `Ends` named neither
+    // unambiguously and sat in a modal showing both ⇒ a disambiguation, not a preference.
+    expect(en.plan.endsOn).toBe("Last session {date}");
+    expect(th.plan.endsOn).toBe("คาบสุดท้าย {date}");
+    // 🚫 The Thai moved too: `สิ้นสุด` vs `วันหมดอายุ` is the same ambiguity, and this is a STAFF screen worked
+    // in Thai. Leaving it would have fixed the language that needed it least.
+    expect(th.plan.endsOn).not.toContain("สิ้นสุด");
+  });
+
+  it("🔑 §2 option 2 — a non-date can no longer enter the `{date}` slot", () => {
+    // `Last session no live sessions` would repeat a word and read like a broken template — worse than the
+    // clumsy string it replaced, in the name of clarity.
+    expect(modal).toContain("const lastSession = plan.liveEndDate ? dayjs(plan.liveEndDate)");
+    expect(modal).toContain('t("plan.endsOn", { date: lastSession })');
+    expect(modal).toContain('t("plan.noUpcomingSession")');
+    // The header's fallback is a SENTENCE, never the old fragment.
+    const header = modal.slice(modal.indexOf("function SummaryBar"), modal.indexOf("function SessionTable"));
+    expect(header).not.toContain("noLiveEnd");
+  });
+
+  it("🚫 the PAUSED branch is byte-identical — this rename cannot re-open TASK-293", () => {
+    expect(en.plan.pausedNoEnd).toBe("Paused — no dates until it resumes");
+    expect(th.plan.pausedNoEnd).toBe("พักอยู่ — ยังไม่มีวันเรียนจนกว่าจะกลับมาเรียน");
+    expect(modal).toContain('t("plan.pausedNoEnd")');
+  });
+
+  it("🚫 the VALUE is untouched — a rename, not a re-derivation, and not a control", () => {
+    // `deriveLiveEndDate` is the server's and stays so; and it must NOT become clickable — editing it would
+    // mean editing a derivation, which is what TASK-282 exists to protect.
+    const header = modal.slice(modal.indexOf("function SummaryBar"), modal.indexOf("function SessionTable"));
+    // ⚠️ Scoped to the HEADER, not the file: `createPreviewLine` legitimately uses
+    // `plan?.liveEndDate ?? liveSessions.at(-1)?.date` in CREATE mode, where every row is live by construction.
+    // A file-wide ban would have forbidden a fallback that is correct — the same over-reach as forbidding a
+    // string that a comment has to mention.
+    expect(header).not.toMatch(/liveEndDate\s*\?\?/);
+    expect(header).not.toContain("onClick");
+    expect(header).not.toContain("UnstyledButton");
+  });
+});
+
+describe("🔵 TASK-321 — the diff line and the header name one fact ONE way", () => {
+  it("both say the session word, both languages", () => {
+    // The rename existed to stop a modal naming one fact two ways; an hour later this line was the odd one out,
+    // and we made it that way. `ends` / `จบ` are gone from it.
+    expect(en.plan.diffSummary).toContain("last session {end}");
+    expect(th.plan.diffSummary).toContain("คาบสุดท้าย {end}");
+    expect(en.plan.diffSummary).not.toContain("ends {end}");
+    expect(th.plan.diffSummary).not.toContain("จบ {end}");
+  });
+
+  it("🔑 a non-date cannot reach `{end}` — the header's treatment, applied here", () => {
+    const diff = modal.slice(modal.indexOf("function PlanDiffConfirm"));
+    expect(diff).toContain("const lastSession = preview.liveEndDate ? dayjs(preview.liveEndDate)");
+    expect(diff).toContain('t("plan.diffSummaryNoEnd"');
+    expect(diff).not.toContain("noLiveEnd");
+  });
+
+  it("§2 — its own sentence, NOT `noUpcomingSession` reused", () => {
+    // The header reports what the course IS; this reports what the proposed change WOULD LEAVE, and it is read
+    // while the admin can still cancel. Different statement ⇒ different string.
+    expect(en.plan.diffSummaryNoEnd).toBe("{appended} added · {cancelled} removed · nothing left on the schedule");
+    expect(th.plan.diffSummaryNoEnd).toBe("เพิ่ม {appended} · เอาออก {cancelled} · ไม่เหลือคาบในตาราง");
+    expect(en.plan.diffSummaryNoEnd).not.toContain(en.plan.noUpcomingSession);
+  });
+
+  it("🚫 TASK-294's three strings are untouched — this cannot pre-empt an open ruling", () => {
+    // `noLiveEnd` now has no renderer at all, and is kept ON PURPOSE until TASK-294 rules on it and `noSessions`
+    // and their shared Thai string. Changing any of them here would decide that ruling by accident.
+    expect(en.plan.noLiveEnd).toBe("no live sessions");
+    expect(en.plan.noSessions).toBe("No sessions yet");
+    expect(th.plan.noLiveEnd).toBe("ยังไม่มีคาบ");
+    expect(th.plan.noSessions).toBe("ยังไม่มีคาบ");
+  });
+
+  it("🚫 the counts and TASK-319's header are unchanged", () => {
+    expect(en.plan.diffSummary).toContain("{appended} added · {cancelled} removed");
+    expect(en.plan.endsOn).toBe("Last session {date}");
+    expect(en.plan.pausedNoEnd).toBe("Paused — no dates until it resumes");
   });
 });

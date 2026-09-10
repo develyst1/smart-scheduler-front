@@ -211,7 +211,29 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
       size,
       startDate,
       startTime,
-      note: note.trim() || undefined,
+      /**
+       * 🔴 TASK-320 (`TASK-284` reopened) — **this was `note:`, and one word was the whole defect.**
+       *
+       * `note` is the STATUS-FLOW column — where machine text like *"ยกเลิกโดยแอดมิน"* lands, rendered in
+       * exactly one place (`BookingModal.tsx:462`). **`attendeeNote` is REQ-068/TASK-178's field: what the plan
+       * editor's `Session note` reads and writes, and the only note any LINE message renders.** ⇒ the owner
+       * typed a note at creation, every `Session note` was honestly blank, and no `Remark` could appear.
+       *
+       * 🔑 **Nothing else needed changing: `CreateCourseInput.attendeeNote` and the service's request body have
+       * carried this field since TASK-178, and the BE and schema were already wired.** ⇒ *"one note at
+       * creation, carried onto every session" had never once been reachable from the UI* — a feature complete
+       * on three layers out of four, invisible to every test that asserts only its own side.
+       *
+       * 🚫 **`note` is NOT sent as well, deliberately** — one box must not write two columns. The status flows
+       * OWN `note` and overwrite it, so a second copy would diverge from this one the moment a session was
+       * cancelled, and that is the drift class this project keeps paying for. ⚠️ Nothing goes dark by dropping
+       * it: the value moves from `BookingModal`'s grey `note` line to its `attendeeNote` block above — the
+       * prominent one the teacher actually reads.
+       *
+       * 🔻 **Not retroactive.** Courses created before this keep their note in `note` and will never grow a
+       * `Remark`. 🚫 No migration — that is the owner's call through @Porter, not a thing to slip into a fix.
+       */
+      attendeeNote: note.trim() || undefined,
       absentWeeks: absentWeeks.length ? absentWeeks : undefined,
       // Untouched ⇒ `undefined` ⇒ the request is byte-identical to a pre-REQ-063 create (AC-7).
       discount: discountPayload(discount, chosen?.priceMinor ?? 0),
