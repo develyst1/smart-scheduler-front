@@ -79,3 +79,52 @@ describe("🚫 the contract is untouched — the FE is still the formatter, by a
     expect(contract).not.toContain("formatTimeDisplay");
   });
 });
+
+describe("🔵 TASK-326 §1 — the two sites the sweep missed", () => {
+  const sites: Array<[string, string]> = [
+    ["src/components/partials/Calendar/CalendarWeekGrid.tsx", "formatTimeDisplay(b.startTime)"],
+    ["src/components/partials/Checkin/CheckinContent.tsx", "formatTimeDisplay(b.startTime)"],
+  ];
+
+  for (const [file, call] of sites) {
+    it(file.split("/").pop()!, () => {
+      // Neither was showing seconds — both receive `toBookingDTO`'s `hhmm()` output. Routed anyway, for the
+      // reason TASK-324 settled: a renderer correct only because a mapper elsewhere is correct breaks silently
+      // the day that mapper moves. ⚠️ `CheckinContent` is a PUBLIC page with its own local type, fetched
+      // directly — the least protected of the nine.
+      expect(codeOf(file)).toContain(call);
+    });
+  }
+
+  it("🚫 `CheckinContent` no longer needs its own empty-guard for the end time", () => {
+    // `formatTimeDisplay` absorbs it: absent → "" is the helper's contract, the same one `formatDateDisplay`
+    // keeps. One fallback, in one place.
+    expect(codeOf("src/components/partials/Checkin/CheckinContent.tsx")).not.toContain("b.endTime ?? \"\"");
+  });
+});
+
+describe("🔻 TASK-326 §2 — the lockstep sentence now exists in this repo", () => {
+  it("is on the row it documents, not on the one it would be false about", () => {
+    // BE `contract.ts:156` documents `PlanSessionRow.startTime`. The FE's contract copy has no such type, and
+    // its only `startTime` is `BookingDTO`'s — which IS `hhmm()`-mapped, so the comment would be a lie there.
+    const appTypes = readFileSync("src/types/app/scheduler/index.ts", "utf8");
+    expect(appTypes).toContain("As stored (`HH:mm:ss`) — unchanged by TASK-184; the FE formats.");
+    expect(readFileSync("src/types/api/contract.ts", "utf8")).not.toContain("As stored");
+  });
+
+  it("🚫 comment only — no type was changed to carry it", () => {
+    const appTypes = readFileSync("src/types/app/scheduler/index.ts", "utf8");
+    // ⚠️ Scoped to `PlanSession`, twice over, and both narrowings were forced by running it:
+    //   1. LINE-ANCHORED — as a plain `not.toContain` it failed on the doc comment that EXPLAINS the removal,
+    //      which quotes the old declaration. **Fifth time this week; a ban must match the DECLARATION.**
+    //   2. SCOPED TO THIS INTERFACE — file-wide it then failed on `Booking`, `RescheduleTarget` and
+    //      `CoursePackage`, whose `// HH:mm` annotations are all TRUE (the first two are `hhmm()`-mapped, the
+    //      third is a client-side literal). 🔑 **The annotations were an accurate map of which payloads are
+    //      normalised — the plan row's was the one that lied, which is exactly the payload that is not mapped.**
+    const block = appTypes.slice(appTypes.indexOf("export interface PlanSession {"));
+    const planSession = block.slice(0, block.indexOf("\n}"));
+    // The field is still a plain `string`, exactly as before; only the prose above it is new.
+    expect(planSession).toContain("  startTime: string;");
+    expect(planSession).not.toMatch(/^\s*startTime: string; \/\/ HH:mm$/m);
+  });
+});

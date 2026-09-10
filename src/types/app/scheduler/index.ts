@@ -367,7 +367,23 @@ export interface PlanSessionRef {
 export interface PlanSession {
   id: string; // bookingId
   date: string; // YYYY-MM-DD
-  startTime: string; // HH:mm
+  /**
+   * 🔻 **As stored (`HH:mm:ss`) — unchanged by TASK-184; the FE formats.**
+   *
+   * TASK-326 §2 — **the sentence above is copied verbatim from `smart-scheduler-back/src/types/contract.ts:156`,
+   * where it documents `PlanSessionRow.startTime`, the row this type mirrors.** It is the agreement TASK-295
+   * refused to break and TASK-324 cited; ⚠️ **both cited it as "contract.ts:155", and it has never existed in
+   * this repo.**
+   *
+   * 🔴 **It is HERE and not in `types/api/contract.ts` because that file has no `PlanSessionRow` to hang it on**
+   * — the FE names this row `PlanSession` and keeps it in the app types. ⚠️ **The only `startTime` in the FE's
+   * contract copy is `BookingDTO`'s, and that one IS `hhmm()`-mapped (`db/mappers.ts:123`)** ⇒ pasting the
+   * comment there would have made it FALSE, which is the class this batch has spent the week removing.
+   *
+   * ⚠️ The trailing `// HH:mm` this replaced was wrong: the value arrives with seconds and is trimmed at every
+   * display site by `formatTimeDisplay` (TASK-324). 🚫 Not a `Select` value — that is `toTimeSlot` (TASK-295).
+   */
+  startTime: string;
   /** BookingStatus (may include NO_SHOW, which the FE enum omits) — kept as string. */
   status: string;
   /** SPEC-033 — a soft-linked SINGLE_SESSION "extra" reads distinctly from the COURSE_PACKAGE plan rows. */

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Button, Loader, Paper, Title } from "@mantine/core";
 import { CheckCircle2, Clock3, XCircle } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { formatTimeDisplay } from "@/lib/ui/format";
 
 // Public check-in flow (C.1) — no auth. The `token` query param is the credential,
 // so we call the backend directly (bypassing the axios client that attaches a JWT
@@ -105,7 +106,12 @@ function SuccessView({ result }: { result: CheckinResult }) {
           {(b.startTime || b.date) && (
             <BookingLine
               label={t("checkin.time")}
-              value={[b.date, b.startTime && `${b.startTime}–${b.endTime ?? ""}${t("checkin.timeSuffix")}`]
+              /* 🔴 TASK-326 §1 — **the site that matters most, and it is not one that was broken.** A PUBLIC
+                 page on a parent's phone, with its OWN local `BookingRef` type, fetched directly rather than
+                 through the shared DTO types ⇒ **the least protected by the mapper that currently makes it
+                 correct.** The separator stays local; the helper formats one time.
+                 📌 `formatTimeDisplay` also absorbs the `?? ""` — absent → `""` is its contract. */
+              value={[b.date, b.startTime && `${formatTimeDisplay(b.startTime)}–${formatTimeDisplay(b.endTime)}${t("checkin.timeSuffix")}`]
                 .filter(Boolean)
                 .join("  ")}
             />

@@ -7,6 +7,7 @@ import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
+import { formatTimeDisplay } from "@/lib/ui/format";
 import { BOOKING_STATUS_COLOR, OFF_CALENDAR_STATUSES, TIME_SLOTS } from "@/types/app/scheduler";
 import { useI18n } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
@@ -134,8 +135,12 @@ export default function CalendarWeekGrid({
                         <BookingTypeStripe type={b.bookingType} />
                         <span className="flex min-w-0 items-center gap-1.5">
                           <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${DOT_STYLE[accent]}`} />
+                          {/* 🔴 TASK-326 §1 — through the helper although `toBookingDTO` already applies
+                              `hhmm()`, so this cell was never showing seconds. Routed for the reason TASK-324
+                              settled on: **a renderer that is correct only because a mapper in another repo is
+                              correct breaks silently the day that mapper moves.** */}
                           <span className="shrink-0 text-[11px] font-medium tabular-nums text-muted-500">
-                            {b.startTime}
+                            {formatTimeDisplay(b.startTime)}
                           </span>
                           {/* AC-10 — ONE name field, computed on the BE. 🚫 No `|| studentName` fallback here:
                               that is exactly the per-call-site guessing `displayName` exists to delete. */}
