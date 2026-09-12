@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
+    "@line/liff": "^2.31.0",
     "@mantine/charts": "^9.3.2",
     "@mantine/core": "^9.3.2",
     "@mantine/dates": "^9.3.2",

@@ -1167,6 +1167,123 @@ const en = {
     statCancelled: "Cancelled",
   },
 
+  /**
+   * TASK-348 (`REQ-088`) — `/register`, registration by LINK. 📝 **COPY RULE (@Porter): every sentence the CHAT
+   * already had is reused VERBATIM from `§17c` — the customer approved those words, and a form label is the
+   * same sentence in a smaller box. Every sentence the chat did NOT have is marked `PLACEHOLDER` and is
+   * @Porter's to write and the owner's to take to the customer.** 🚫 Nothing here decides anything: the server
+   * returns a NAMED CODE and this block is the words for it (`register.code.*`, one per code, both languages).
+   */
+  register: {
+    // PLACEHOLDER — the chat had no page title
+    title: "Register",
+    // PLACEHOLDER — states the LIFF ID is not configured; the chat has no equivalent screen
+    liffMissing: "This page is not set up yet (LIFF ID missing). Please contact the school.",
+    // PLACEHOLDER
+    liffLoggingIn: "Connecting to LINE…",
+    // PLACEHOLDER — a LIFF init failure; rendered with the SDK's own detail beneath
+    liffFailed: "Couldn't connect to LINE. Please open this link from the LINE app.",
+    // PLACEHOLDER
+    loading: "Please wait…",
+    // §17c screen 3 — VERBATIM (EN half)
+    phoneLabel: "Please enter your phone number.",
+    // PLACEHOLDER — the chat had no button; `Next` was typed
+    phoneSubmit: "Next",
+    // `verify_parent_found` — VERBATIM (EN half); the chat lists the names after the dash
+    foundTitle: "Found your family",
+    // PLACEHOLDER — the chat asked for nothing here; on a page the bind is a tap
+    foundConfirm: "This is my family — link this LINE account",
+    // `twofa_prompt` — VERBATIM (EN)
+    twofaLabel: "Please type the 6-digit code to verify your identity.",
+    // PLACEHOLDER — the chat gated names behind the code silently; a page has to say why it is asking
+    twofaHint: "We sent a code to this LINE account. {n} child(ren) are on file.",
+    // §17c screen 4a — VERBATIM (EN half)
+    linkedTitle: "Registration completed ✅",
+    // §17c screen 4a — VERBATIM (EN half)
+    linkedPhone: "Phone: {phone}",
+    // PLACEHOLDER — a heading for the child list on the linked screen
+    childrenTitle: "Your children",
+    // PLACEHOLDER — the ADD action (§6.1: an action, never a forced form)
+    addChild: "Add a child",
+    // PLACEHOLDER — shown instead of the add action when `canAddMore` is false; the number is the server's
+    familyFull: "Your family has reached the limit for this number.",
+    // §17c screen 4b — VERBATIM (EN half)
+    nameLabel: 'Please enter the student\'s name, e.g. "Emily".',
+    // §17c screen 5 — VERBATIM (EN half)
+    birthDateLabel: "Please enter the date of birth in (DD-MM-YYYY)",
+    // PLACEHOLDER — the input's own hint; the chat's `ข้าม` is "leave it blank" on a page
+    birthDatePlaceholder: "DD-MM-YYYY (optional)",
+    // §17c screen 6 — VERBATIM (EN half, two lines joined with a space)
+    provinceLabel: "Please enter your address: District, Sub-district, Province Eg. Prakanueng Nuea, Wattana, BKK",
+    // PLACEHOLDER
+    provincePlaceholder: "(optional)",
+    // `add_dup_detail` — VERBATIM (EN); shown above the name field when re-asking (AC-9)
+    dupDetailHint: "There is already a child with that name. Please add a surname or nickname so they are not mixed up.",
+    // PLACEHOLDER — the chat typed the next step; a page needs a button
+    formNext: "Continue",
+    // §17c screen 7a — VERBATIM (EN half)
+    confirmTitle: "Please check your information before saving.",
+    // §17c screen 7b — VERBATIM (EN half, the question only — the "type Confirm" instruction is a button here)
+    confirmQuestion: "Is this information correct?",
+    // PLACEHOLDER — the chat's `ยืนยัน` was typed
+    confirmSave: "Confirm",
+    // PLACEHOLDER
+    confirmBack: "Edit",
+    // PLACEHOLDER — the review rows
+    reviewName: "Name",
+    reviewBirthDate: "Date of birth",
+    reviewProvince: "Address",
+    reviewSkipped: "(skipped)",
+    // §17c screen 8a — VERBATIM (EN half)
+    createdTitle: '"{name}" has been added successfully. ✅',
+    // `added_atmax_note` — VERBATIM (EN)
+    createdAtMax: " (reached {max})",
+    // PLACEHOLDER — screen 8b said "type Add Student"; on a page it is the same button as `addChild`
+    createdCount: "Now {count} child(ren) on file.",
+    // PLACEHOLDER — a close button; the chat's `ยกเลิก` cleared a session, a page just closes
+    close: "Close",
+    // borrowed from `checkin.closeHint` — the sibling page's approved sentence
+    closeHint: "You can close this page",
+    // borrowed from `checkin.connectFail`
+    connectFail: "Couldn't connect. Please try again.",
+    // PLACEHOLDER
+    retry: "Try again",
+    /**
+     * One rendering per NAMED CODE (§C0–§C3). 🚫 The server sends no `message`; these are the words. Where the
+     * chat already says this, the chat's sentence is reused verbatim; the rest are PLACEHOLDER.
+     */
+    code: {
+      // PLACEHOLDER ×4 — the token failures have no chat equivalent (the chat has no token)
+      TOKEN_MISSING: "Couldn't confirm your LINE account. Please reopen this link from LINE.",
+      TOKEN_WRONG_CHANNEL: "This page is not connected to the school's LINE account. Please contact the school.",
+      TOKEN_INVALID: "Couldn't confirm your LINE account. Please reopen this link from LINE.",
+      TOKEN_EXPIRED: "Your LINE session expired. Please try again.",
+      // `verify_parent_badphone` — VERBATIM
+      PHONE_INVALID: "Invalid phone. Please type the registered number (e.g. 0812345678)",
+      // `verify_parent_other` — VERBATIM
+      PHONE_BOUND_TO_OTHER_LINE: "This number is already linked to another LINE — contact admin",
+      // `verify_parent_other_family` — VERBATIM
+      LINE_BOUND_TO_OTHER_FAMILY: "This LINE account is already linked to another family. Please contact an admin if that is wrong.",
+      // PLACEHOLDER — the chat throws here; a page must say something
+      TWOFA_NOT_CONFIGURED: "Verification is switched on but not set up yet. Please contact the school.",
+      // `twofa_prompt` — VERBATIM
+      TWOFA_CODE_REQUIRED: "Please type the 6-digit code to verify your identity.",
+      // `twofa_bad` — VERBATIM
+      TWOFA_CODE_BAD: "That code is not correct. Please try again.",
+      // `add_no_parent` — ADAPTED: the chat said "type register to start over"; on a page you go back to the phone step
+      NOT_LINKED: "No parent account found. Please enter your phone number again.",
+      // §17c screen 4b — VERBATIM (the chat re-prompts with the same sentence)
+      NAME_REQUIRED: 'Please enter the student\'s name, e.g. "Emily".',
+      // `add_name_reserved` — VERBATIM
+      NAME_RESERVED: "「{word}」 is a system command. If that really is the child's name, please tell an admin and they will add them.",
+      // PLACEHOLDER (EN) — the server's own sentence exists in Thai only (`parent.service.ts`); `{max}` is the server's
+      FAMILY_FULL: "You can register up to {max} children per phone number.",
+      // `add_dup_detail` — VERBATIM
+      NAME_DUPLICATE_NEEDS_DETAIL: "There is already a child with that name. Please add a surname or nickname so they are not mixed up.",
+      // `add_birthdate_bad` — ADAPTED: "or type skip" becomes "or leave it blank" on a page
+      BIRTHDATE_INVALID: "That date format is not valid. Please use DD-MM-YYYY, e.g. 02-12-2024, or leave it blank.",
+    },
+  },
   checkin: {
     invalidLink: "Invalid check-in link (missing token)",
     cannotNow: "Can't check in right now. Please try again.",
@@ -2247,6 +2364,66 @@ const th: typeof en = {
     statCancelled: "ยกเลิก",
   },
 
+  // TASK-348 — see the `en` block for which sentences are §17c VERBATIM and which are PLACEHOLDER; the same
+  // marks apply line for line. `th: typeof en` is what keeps the two halves in step.
+  register: {
+    title: "ลงทะเบียน", // PLACEHOLDER
+    liffMissing: "หน้านี้ยังไม่ได้ตั้งค่า (ไม่พบ LIFF ID) กรุณาติดต่อโรงเรียนค่ะ", // PLACEHOLDER
+    liffLoggingIn: "กำลังเชื่อมต่อ LINE…", // PLACEHOLDER
+    liffFailed: "เชื่อมต่อ LINE ไม่ได้ กรุณาเปิดลิงก์นี้จากแอป LINE ค่ะ", // PLACEHOLDER
+    loading: "กรุณารอสักครู่…", // PLACEHOLDER
+    phoneLabel: "กรุณาระบุเบอร์โทรศัพท์ค่ะ", // §17c screen 3 — VERBATIM
+    phoneSubmit: "ถัดไป", // PLACEHOLDER
+    foundTitle: "พบข้อมูลของคุณแล้วค่ะ", // `verify_parent_found` — VERBATIM
+    foundConfirm: "ใช่ครอบครัวของฉัน — ผูกบัญชี LINE นี้", // PLACEHOLDER
+    twofaLabel: "กรุณาพิมพ์รหัส 6 หลักเพื่อยืนยันตัวตนค่ะ", // `twofa_prompt` — VERBATIM
+    twofaHint: "เราส่งรหัสไปที่บัญชี LINE นี้แล้วค่ะ มีนักเรียนในระบบ {n} คน", // PLACEHOLDER
+    linkedTitle: "ลงทะเบียนผู้ปกครองสำเร็จแล้วค่ะ ✅", // §17c screen 4a — VERBATIM
+    linkedPhone: "เบอร์โทรศัพท์: {phone}", // §17c screen 4a — VERBATIM
+    childrenTitle: "นักเรียนของคุณ", // PLACEHOLDER
+    addChild: "เพิ่มนักเรียน", // PLACEHOLDER (the chat's keyword, used as a button label)
+    familyFull: "ครอบครัวนี้มีนักเรียนครบตามจำนวนที่กำหนดแล้วค่ะ", // PLACEHOLDER
+    nameLabel: 'กรุณาระบุชื่อนักเรียน เช่น "ส้ม"', // §17c screen 4b — VERBATIM
+    birthDateLabel: "กรุณาระบุวันเกิดของนักเรียนค่ะ (วัน-เดือน-ปีค.ศ. )", // §17c screen 5 — VERBATIM
+    birthDatePlaceholder: "วว-ดด-ปปปป (ไม่บังคับ)", // PLACEHOLDER
+    provinceLabel: "กรุณาระบุ เขต แขวง จังหวัด เช่น พระโขนงเหนือ วัฒนา กทม", // §17c screen 6 — VERBATIM
+    provincePlaceholder: "(ไม่บังคับ)", // PLACEHOLDER
+    dupDetailHint: "มีน้องชื่อนี้อยู่แล้ว รบกวนใส่นามสกุลหรือชื่อเล่นเพิ่ม เพื่อไม่ให้สลับกันนะคะ", // `add_dup_detail` — VERBATIM
+    formNext: "ต่อไป", // PLACEHOLDER
+    confirmTitle: "กรุณาตรวจสอบข้อมูลก่อนบันทึกค่ะ", // §17c screen 7a — VERBATIM
+    confirmQuestion: "ข้อมูลถูกต้องหรือไม่คะ?", // §17c screen 7b — VERBATIM (the question only)
+    confirmSave: "ยืนยัน", // PLACEHOLDER (the chat's keyword, used as a button label)
+    confirmBack: "แก้ไข", // PLACEHOLDER
+    reviewName: "ชื่อ", // PLACEHOLDER
+    reviewBirthDate: "วันเกิด", // PLACEHOLDER
+    reviewProvince: "ที่อยู่", // PLACEHOLDER
+    reviewSkipped: "(ข้าม)", // PLACEHOLDER
+    createdTitle: 'เพิ่ม "{name}" สำเร็จแล้วค่ะ ✅', // §17c screen 8a — VERBATIM
+    createdAtMax: " (ครบ {max} คนแล้ว)", // `added_atmax_note` — VERBATIM
+    createdCount: "ตอนนี้มีนักเรียนในระบบ {count} คน", // PLACEHOLDER
+    close: "ปิด", // PLACEHOLDER
+    closeHint: "ปิดหน้านี้ได้เลยค่ะ", // borrowed from `checkin.closeHint`
+    connectFail: "เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง", // borrowed from `checkin.connectFail`
+    retry: "ลองใหม่", // PLACEHOLDER
+    code: {
+      TOKEN_MISSING: "ยืนยันบัญชี LINE ไม่ได้ กรุณาเปิดลิงก์นี้จาก LINE อีกครั้งค่ะ", // PLACEHOLDER
+      TOKEN_WRONG_CHANNEL: "หน้านี้ไม่ได้เชื่อมกับบัญชี LINE ของโรงเรียน กรุณาติดต่อโรงเรียนค่ะ", // PLACEHOLDER
+      TOKEN_INVALID: "ยืนยันบัญชี LINE ไม่ได้ กรุณาเปิดลิงก์นี้จาก LINE อีกครั้งค่ะ", // PLACEHOLDER
+      TOKEN_EXPIRED: "เซสชัน LINE หมดอายุ กรุณาลองใหม่อีกครั้งค่ะ", // PLACEHOLDER
+      PHONE_INVALID: "เบอร์โทรไม่ถูกต้อง กรุณาพิมพ์เบอร์ที่ลงทะเบียน (เช่น 0812345678)", // `verify_parent_badphone` — VERBATIM
+      PHONE_BOUND_TO_OTHER_LINE: "เบอร์นี้ผูกกับ LINE อื่นแล้ว ติดต่อแอดมิน", // `verify_parent_other` — VERBATIM
+      LINE_BOUND_TO_OTHER_FAMILY: "บัญชี LINE นี้ผูกกับอีกครอบครัวไว้แล้วค่ะ หากไม่ถูกต้องกรุณาติดต่อแอดมิน", // `verify_parent_other_family` — VERBATIM
+      TWOFA_NOT_CONFIGURED: "เปิดใช้การยืนยันตัวตนไว้แต่ยังตั้งค่าไม่เสร็จ กรุณาติดต่อโรงเรียนค่ะ", // PLACEHOLDER
+      TWOFA_CODE_REQUIRED: "กรุณาพิมพ์รหัส 6 หลักเพื่อยืนยันตัวตนค่ะ", // `twofa_prompt` — VERBATIM
+      TWOFA_CODE_BAD: "รหัสไม่ถูกต้องค่ะ กรุณาลองใหม่อีกครั้ง", // `twofa_bad` — VERBATIM
+      NOT_LINKED: "ไม่พบบัญชีผู้ปกครอง กรุณาระบุเบอร์โทรศัพท์อีกครั้งค่ะ", // `add_no_parent` — ADAPTED
+      NAME_REQUIRED: 'กรุณาระบุชื่อนักเรียน เช่น "ส้ม"', // §17c screen 4b — VERBATIM
+      NAME_RESERVED: "「{word}」 เป็นคำสั่งของระบบค่ะ ถ้าเป็นชื่อน้องจริง ๆ รบกวนแจ้งแอดมินนะคะ", // `add_name_reserved` — VERBATIM
+      FAMILY_FULL: "เพิ่มนักเรียนได้สูงสุด {max} คนต่อเบอร์", // the server's own sentence (`parent.service.ts`) — VERBATIM
+      NAME_DUPLICATE_NEEDS_DETAIL: "มีน้องชื่อนี้อยู่แล้ว รบกวนใส่นามสกุลหรือชื่อเล่นเพิ่ม เพื่อไม่ให้สลับกันนะคะ", // `add_dup_detail` — VERBATIM
+      BIRTHDATE_INVALID: "รูปแบบวันเกิดไม่ถูกต้องค่ะ กรุณาพิมพ์เป็น วัน-เดือน-ปี เช่น 02-12-2024 หรือเว้นว่างไว้", // `add_birthdate_bad` — ADAPTED ("หรือพิมพ์ ข้าม" → "หรือเว้นว่างไว้")
+    },
+  },
   checkin: {
     invalidLink: "ลิงก์เช็คอินไม่ถูกต้อง (ไม่พบโทเคน)",
     cannotNow: "ไม่สามารถเช็คอินได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง",
