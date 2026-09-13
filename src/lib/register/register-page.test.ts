@@ -300,6 +300,85 @@ describe("§5 / §6.1 — what the page does its own way", () => {
   });
 });
 
+describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle ABOVE the first field", () => {
+  const i18n = codeOf("src/lib/i18n/I18nProvider.tsx");
+  const toggle = codeOf("src/lib/i18n/LanguageToggle.tsx");
+  const locale = codeOf("src/lib/register/locale.ts");
+  const route = codeOf("src/app/register/page.tsx");
+
+  it("the toggle is the FIRST thing in the Paper — before the title, before any field, in every phase", () => {
+    const stack = page.indexOf('<Stack gap="md">');
+    const tog = page.indexOf('<LanguageToggle size="md" fullWidth />');
+    expect(stack).toBeGreaterThan(0);
+    expect(tog).toBeGreaterThan(stack);
+    expect(tog).toBeLessThan(page.indexOf('t("register.title")'));
+    expect(tog).toBeLessThan(page.indexOf('phase.kind === "liff"'));
+    // and it is the app's own toggle, unconditional (no `phase.kind` guard on that line)
+    expect(page.slice(page.lastIndexOf("\n", tog), tog)).not.toContain("phase");
+  });
+
+  it("toggling changes `lang` and NOTHING else — the toggle calls setLang; the page reads `lang` for the date locale only", () => {
+    expect(toggle).toContain("onChange={(v) => setLang(v as Lang)}");
+    expect(toggle).not.toMatch(/setPhase|localStorage|fetch|reload/);
+    // every `lang` on the page: the destructure and the DatesProvider locale — nothing keyed on it
+    expect((page.match(/\blang\b/g) ?? []).length).toBe(2);
+    expect(page).toContain("<DatesProvider settings={{ locale: lang, firstDayOfWeek: 0 }}>");
+    expect(page).not.toMatch(/\[lang\]|lang ===|lang !==/);
+  });
+
+  it("default = the LINE app's language on a FIRST visit only; a saved preference wins", () => {
+    // the read lives in locale.ts — liff.ts stays the credential module and never calls getLanguage
+    expect(locale).toContain("export const phoneLanguage");
+    expect(locale).toContain('liff.getLanguage() ?? "") ? "th" : "en"');
+    expect(liff).not.toContain(".getLanguage(");
+    expect(liff).toContain("export const loadLiff");
+    // applied through setLangIfUnset, after init (the token is in hand), and never through setLang
+    expect(page).toContain("setLangIfUnset(await phoneLanguage());");
+    expect(page).not.toMatch(/\bsetLang\(/);
+    const unset = i18n.slice(i18n.indexOf("const setLangIfUnset"), i18n.indexOf("const t = useCallback"));
+    expect(unset).toContain("window.localStorage.getItem(storageKey)");
+    expect(unset).toContain('if (saved === "en" || saved === "th") return;');
+    expect(unset).not.toContain("setItem"); // a device default is never SAVED — only a tap is
+  });
+
+  it("§6 — `/register` has its OWN saved preference: `ss.lang.register`, not the admin's `ss.lang`", () => {
+    expect(route).toContain('export const REGISTER_LANG_KEY = "ss.lang.register";');
+    expect(route).toContain("<I18nProvider storageKey={REGISTER_LANG_KEY}>");
+    expect(i18n).toContain('const STORAGE_KEY = "ss.lang";');
+    expect(i18n).toContain("window.localStorage.setItem(storageKey, next);");
+    expect(i18n).not.toMatch(/setItem\(STORAGE_KEY/);
+    // the admin header still mounts the toggle with no key of its own ⇒ still `ss.lang`
+    expect(codeOf("src/components/layout/AdminLayout/Header/Header.tsx")).toContain("<LanguageToggle />");
+  });
+
+  it("§3 — the tier words เขต/แขวง/อำเภอ/ตำบล stay THAI in both languages: no `t(` and no `lang` near them", () => {
+    const entry = codeOf("src/lib/register/entry.ts");
+    const tier = entry.slice(entry.indexOf("export const tierWordsFor"), entry.indexOf("const EVERYDAY_PROVINCE_NAME"));
+    expect(tier).toContain('{ district: "เขต", subDistrict: "แขวง" }');
+    expect(tier).toContain('{ district: "อำเภอ", subDistrict: "ตำบล" }');
+    expect(tier).not.toMatch(/\bt\(|\blang\b|Lang\b/);
+    expect(page).toContain("label={tier.district}");
+    expect(page).toContain("label={tier.subDistrict}");
+  });
+
+  it("§4 nit 1 — `Province` is `จังหวัด` in Thai mode (the same key, both halves)", () => {
+    expect(en.register.addrProvince).toBe("Province");
+    expect(th.register.addrProvince).toBe("จังหวัด");
+  });
+
+  it("§4 nit 2 — the typing instruction shows in TYPED mode only; in pick mode the tier labels ARE the instruction", () => {
+    const form = page.slice(page.indexOf('phase.kind === "form"'), page.indexOf('phase.kind === "confirm"'));
+    const pickStart = form.indexOf('addrMode === "pick" ? (');
+    const typedStart = form.indexOf('label={t("register.provinceLabel")}');
+    expect(pickStart).toBeGreaterThan(0);
+    expect(typedStart).toBeGreaterThan(pickStart);
+    const pickRegion = form.slice(pickStart, typedStart);
+    expect(pickRegion).toContain("onChange={pickSubDistrict}"); // the region is the picker
+    expect(pickRegion).not.toContain("provinceLabel");
+    expect((form.match(/register\.provinceLabel/g) ?? []).length).toBe(1); // exactly once: the typed field's label
+  });
+});
+
 describe("🚫 the sibling and the shared code are untouched", () => {
   it("/checkin is exactly as it was, and /register is outside the auth proxy like it", () => {
     const proxy = readFileSync("src/proxy.ts", "utf8");

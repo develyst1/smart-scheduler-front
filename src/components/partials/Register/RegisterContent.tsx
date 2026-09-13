@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Button, Loader, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
-import { DatePickerInput } from "@mantine/dates";
+import { DatePickerInput, DatesProvider } from "@mantine/dates";
 import { AlertTriangle, CheckCircle2, UserPlus, Users } from "lucide-react";
-import { useT } from "@/lib/i18n";
+import { LanguageToggle, useI18n, useT } from "@/lib/i18n";
 import { obtainIdToken } from "@/lib/register/liff";
+import { phoneLanguage } from "@/lib/register/locale";
 import {
   joinAddress,
   loadAddressBook,
@@ -45,6 +46,11 @@ import {
  * `DD-MM-YYYY` text and the same one-line address the chat stores. Each picker has a `พิมพ์เอง / Type it
  * instead` toggle to the plain field — a picker that cannot be bypassed on an old phone is the `สมัคร`
  * problem again. The pickers cannot produce nonsense; they do not pre-validate anything.
+ *
+ * TASK-350 (`§8`) — **ONE language at a time, a prominent TH/EN toggle ABOVE the first field.** A chat bubble can
+ * be tall; a form that doubles every label doubles the page. The toggle is the app's own `LanguageToggle` over the
+ * app's own dictionary (`th: typeof en`) — it calls `setLang` and nothing else; no field, pick or draft changes
+ * with it. Default on a FIRST visit = the LINE app's language (`locale.ts`); a saved choice always wins.
  */
 
 type Phase =
@@ -66,7 +72,7 @@ const isRefusal = (r: unknown): r is Refusal | Unreachable =>
   typeof r === "object" && r !== null && (r as { ok?: boolean }).ok === false;
 
 export default function RegisterContent() {
-  const t = useT();
+  const { t, lang, setLangIfUnset } = useI18n();
   const [phase, setPhase] = useState<Phase>({ kind: "liff" });
   const [failure, setFailure] = useState<Failure | null>(null);
   const [busy, setBusy] = useState(false);
@@ -102,11 +108,13 @@ export default function RegisterContent() {
     const s = await obtainIdToken();
     if (s.kind === "ready") {
       idToken.current = s.idToken;
+      // §8 — a first visit speaks the phone's language; a saved toggle wins (`setLangIfUnset` checks storage).
+      setLangIfUnset(await phoneLanguage());
       setPhase({ kind: "phone" });
     } else if (s.kind === "missing-id") setPhase({ kind: "liff-missing" });
     else if (s.kind === "not-logged-in") setPhase({ kind: "liff-login" });
     else setPhase({ kind: "liff-failed", detail: s.detail });
-  }, []);
+  }, [setLangIfUnset]);
 
   useEffect(() => {
     void initLiff();
@@ -244,9 +252,14 @@ export default function RegisterContent() {
   };
 
   return (
+    /* The page's own language scope also drives the date picker's month names (the root DatesProvider follows the
+       ADMIN's language, which this page deliberately does not share). */
+    <DatesProvider settings={{ locale: lang, firstDayOfWeek: 0 }}>
     <div className="flex min-h-screen items-center justify-center bg-paper p-4">
       <Paper withBorder shadow="sm" radius="lg" p="xl" className="w-full max-w-sm">
         <Stack gap="md">
+          {/* §8 — "ทำปุ่มเด่นๆ": the FIRST thing on the page, every phase, before any field. One language at a time. */}
+          <LanguageToggle size="md" fullWidth />
           {phase.kind !== "done" && <Title order={3}>{t("register.title")}</Title>}
 
           {failure && <FailureAlert failure={failure} />}
@@ -400,10 +413,9 @@ export default function RegisterContent() {
                 /* §7b — จังหวัด → เขต/อำเภอ → แขวง/ตำบล, each list read from the dataset by GEOCODE. The tier
                    words follow the province (Bangkok เขต/แขวง, elsewhere อำเภอ/ตำบล). The three picks JOIN into
                    the chat's one-line string — `พระโขนงเหนือ วัฒนา กทม`, that order, that abbreviation. */
+                /* §4 nit 2 — the typing instruction (`provinceLabel`) is NOT shown here: in pick mode the tier
+                   labels ARE the instruction. It stays on the typed field below. */
                 <Stack gap="xs">
-                  <Text fz="sm" fw={500}>
-                    {t("register.provinceLabel")}
-                  </Text>
                   <Select
                     label={t("register.addrProvince")}
                     placeholder={book ? t("register.addrPickPlaceholder") : t("register.addrLoading")}
@@ -510,6 +522,7 @@ export default function RegisterContent() {
         </Stack>
       </Paper>
     </div>
+    </DatesProvider>
   );
 }
 

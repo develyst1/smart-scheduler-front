@@ -4,12 +4,16 @@ import { SegmentedControl } from "@mantine/core";
 import { useI18n } from "./I18nProvider";
 import type { Lang } from "./dictionaries";
 
-/** Compact EN/TH switch for the header. */
-export default function LanguageToggle() {
+/**
+ * EN/TH switch. Compact in the admin header by default; `/register` renders it `size="md" fullWidth` at the head
+ * of the page (TASK-350 — *"ทำปุ่มเด่นๆ"*). Either way it does ONE thing: `setLang`.
+ */
+export default function LanguageToggle({ size = "xs", fullWidth = false }: { size?: "xs" | "sm" | "md"; fullWidth?: boolean }) {
   const { lang, setLang, t } = useI18n();
   return (
     <SegmentedControl
-      size="xs"
+      size={size}
+      fullWidth={fullWidth}
       radius="md"
       value={lang}
       onChange={(v) => setLang(v as Lang)}

@@ -24,16 +24,19 @@ export type LiffState =
   | { kind: "not-logged-in" }
   | { kind: "error"; detail: string };
 
-type LiffLike = {
+export type LiffLike = {
   init: (cfg: { liffId: string }) => Promise<void>;
   isLoggedIn: () => boolean;
   login: () => void;
   getIDToken: () => string | null;
+  /** TASK-350 — read by `locale.ts`, never here: this module's job is the credential, nothing else. */
+  getLanguage: () => string;
 };
 
 let cached: LiffLike | null = null;
 
-const loadLiff = async (): Promise<LiffLike> => {
+/** The SDK, loaded once. Exported for `locale.ts` so the SDK is one object, not two — the credential stays here. */
+export const loadLiff = async (): Promise<LiffLike> => {
   if (cached) return cached;
   const mod = await import("@line/liff");
   cached = (mod.default ?? mod) as unknown as LiffLike;

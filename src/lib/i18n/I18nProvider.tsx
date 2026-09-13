@@ -13,6 +13,11 @@ const DEFAULT_LANG: Lang = "en";
 interface I18nContextValue {
   lang: Lang;
   setLang: (lang: Lang) => void;
+  /**
+   * TASK-350 — set the language ONLY when this scope has no saved preference (a first visit). A device default
+   * (the LINE app's language on `/register`) goes through here, so a choice a person made earlier always wins.
+   */
+  setLangIfUnset: (lang: Lang) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
 }
 
@@ -34,24 +39,42 @@ function interpolate(template: string, vars?: Record<string, string | number>): 
   );
 }
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
+/**
+ * `storageKey` (TASK-350) — a nested provider with its own key gives a subtree its own saved preference.
+ * `localStorage` is per ORIGIN, so without it a parent's toggle on `/register` and an admin's choice in the
+ * back office would be the same `ss.lang` on the same browser; `/register` mounts one with `ss.lang.register`.
+ */
+export function I18nProvider({ children, storageKey = STORAGE_KEY }: { children: React.ReactNode; storageKey?: string }) {
   const [lang, setLangState] = useState<Lang>(DEFAULT_LANG);
 
   // Read the saved choice on mount (client only).
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
+    const saved = window.localStorage.getItem(storageKey);
     if (saved === "en" || saved === "th") setLangState(saved);
-  }, []);
+  }, [storageKey]);
 
   // Keep <html lang> in sync for a11y / correct font shaping.
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  const setLang = useCallback((next: Lang) => {
-    setLangState(next);
-    window.localStorage.setItem(STORAGE_KEY, next);
-  }, []);
+  const setLang = useCallback(
+    (next: Lang) => {
+      setLangState(next);
+      window.localStorage.setItem(storageKey, next);
+    },
+    [storageKey],
+  );
+
+  // Reads storage at CALL time, not mount time: the caller (LIFF init) answers well after the first render.
+  const setLangIfUnset = useCallback(
+    (next: Lang) => {
+      const saved = window.localStorage.getItem(storageKey);
+      if (saved === "en" || saved === "th") return;
+      setLangState(next);
+    },
+    [storageKey],
+  );
 
   const t = useCallback(
     (key: string, vars?: Record<string, string | number>) => {
@@ -61,7 +84,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [lang],
   );
 
-  const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
+  const value = useMemo(() => ({ lang, setLang, setLangIfUnset, t }), [lang, setLang, setLangIfUnset, t]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
