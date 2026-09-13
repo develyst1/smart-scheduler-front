@@ -1,10 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Button, Loader, Paper, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Button, Loader, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import { AlertTriangle, CheckCircle2, UserPlus, Users } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { obtainIdToken } from "@/lib/register/liff";
+import {
+  joinAddress,
+  loadAddressBook,
+  tierWordsFor,
+  toCustomerDate,
+  type AddressBook,
+  type AreaPick,
+} from "@/lib/register/entry";
 import {
   create,
   link,
@@ -30,6 +39,12 @@ import {
  * off the response (`children.length`, `canAddMore`, `twoFactor`) rather than derived.
  *
  * 🔑 **The ID TOKEN is the identity, on every call.** `userId` is never read and never sent.
+ *
+ * TASK-349 (`§7a`, `§7b`) — **every field that can be a tap is a tap, and the picker is ENTRY, not STORAGE.**
+ * The date is picked year-first and the address is three cascading picks, but what leaves the page is the same
+ * `DD-MM-YYYY` text and the same one-line address the chat stores. Each picker has a `พิมพ์เอง / Type it
+ * instead` toggle to the plain field — a picker that cannot be bypassed on an old phone is the `สมัคร`
+ * problem again. The pickers cannot produce nonsense; they do not pre-validate anything.
  */
 
 type Phase =
@@ -61,8 +76,25 @@ export default function RegisterContent() {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [province, setProvince] = useState("");
+  // §7a — two ways in, ONE value out. `birthDateTyped` is the plain field; `birthDatePicked` is what the picker
+  // emitted, already reordered to `DD-MM-YYYY`. `birthDate` is the stored value, whichever way is showing.
+  const [dobMode, setDobMode] = useState<"pick" | "type">("pick");
+  const [birthDateTyped, setBirthDateTyped] = useState("");
+  const [birthDatePicked, setBirthDatePicked] = useState<string | null>(null); // the widget's own `YYYY-MM-DD`
+  const birthDate = dobMode === "pick" ? toCustomerDate(birthDatePicked) : birthDateTyped.trim();
+  // §7b — same shape: three picks joined, or the plain field. `province` is the stored one-line string.
+  const [addrMode, setAddrMode] = useState<"pick" | "type">("pick");
+  const [provinceTyped, setProvinceTyped] = useState("");
+  const [book, setBook] = useState<AddressBook | null>(null);
+  const [provPick, setProvPick] = useState<AreaPick | null>(null);
+  const [distPick, setDistPick] = useState<AreaPick | null>(null);
+  const [subPick, setSubPick] = useState<AreaPick | null>(null);
+  const [districts, setDistricts] = useState<AreaPick[]>([]);
+  const [subDistricts, setSubDistricts] = useState<AreaPick[]>([]);
+  const province =
+    addrMode === "pick"
+      ? joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })
+      : provinceTyped.trim();
   /** AC-9 — set after `NAME_DUPLICATE_NEEDS_DETAIL`; the resubmit carries `detailProvided: true`. */
   const [detailProvided, setDetailProvided] = useState(false);
 
@@ -79,6 +111,38 @@ export default function RegisterContent() {
   useEffect(() => {
     void initLiff();
   }, [initLiff]);
+
+  // §7b — the dataset is loaded ONLY here, only when the form is on screen, only in pick mode. If the chunk
+  // cannot be fetched (an old phone, a bad signal) the plain field takes over — the escape hatch, automatically.
+  useEffect(() => {
+    if (phase.kind !== "form" || addrMode !== "pick" || book) return;
+    let alive = true;
+    loadAddressBook().then(
+      (b) => alive && setBook(b),
+      () => alive && setAddrMode("type"),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [phase.kind, addrMode, book]);
+
+  const pickProvince = async (code: string | null) => {
+    const p = book?.provinces.find((x) => x.code === code) ?? null;
+    setProvPick(p);
+    setDistPick(null);
+    setSubPick(null);
+    setSubDistricts([]);
+    setDistricts(p && book ? await book.districtsOf(p.code) : []);
+  };
+  const pickDistrict = async (code: string | null) => {
+    const d = districts.find((x) => x.code === code) ?? null;
+    setDistPick(d);
+    setSubPick(null);
+    setSubDistricts(d && book ? await book.subDistrictsOf(d.code) : []);
+  };
+  const pickSubDistrict = (code: string | null) => setSubPick(subDistricts.find((x) => x.code === code) ?? null);
+  const tier = tierWordsFor(provPick?.code ?? null);
+  const asOptions = (rows: AreaPick[]) => rows.map((r) => ({ value: r.code, label: r.nameTh }));
 
   /**
    * §C0 — `TOKEN_EXPIRED` ⇒ re-init LIFF and retry ONCE. Nothing else is retried: `TOKEN_WRONG_CHANNEL` is a
@@ -143,8 +207,8 @@ export default function RegisterContent() {
       create(tok, {
         name: name.trim(),
         // 🔴 A blank is the SKIP and is OMITTED — never sent as "" (TASK-347 §5.1). `api.ts` drops empty keys.
-        birthDate: birthDate.trim() || undefined,
-        province: province.trim() || undefined,
+        birthDate: birthDate || undefined,
+        province: province || undefined,
         detailProvided: detailProvided || undefined,
       }),
     );
@@ -166,8 +230,14 @@ export default function RegisterContent() {
 
   const startAnotherChild = () => {
     setName("");
-    setBirthDate("");
-    setProvince("");
+    setBirthDateTyped("");
+    setBirthDatePicked(null);
+    setProvinceTyped("");
+    setProvPick(null);
+    setDistPick(null);
+    setSubPick(null);
+    setDistricts([]);
+    setSubDistricts([]);
     setDetailProvided(false);
     setFailure(null);
     setPhase({ kind: "form" });
@@ -294,20 +364,93 @@ export default function RegisterContent() {
                 onChange={(e) => setName(e.currentTarget.value)}
                 required
               />
-              <TextInput
-                label={t("register.birthDateLabel")}
-                placeholder={t("register.birthDatePlaceholder")}
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.currentTarget.value)}
-                inputMode="numeric"
-                /* 🚫 No parsing on the page — an input MASK only. The server runs the chat's own parser. */
-                maxLength={10}
+              {dobMode === "pick" ? (
+                /* §7a — YEAR-FIRST: the popover opens on the decade grid, so a birth year 2–15 years back is one
+                   or two taps, then month, then day. The widget emits `YYYY-MM-DD`; `toCustomerDate` reorders it
+                   to the customer's `DD-MM-YYYY` and nothing parses it. `valueFormat` is DISPLAY only. */
+                <DatePickerInput
+                  label={t("register.birthDateLabel")}
+                  placeholder={t("register.dobPickPlaceholder")}
+                  value={birthDatePicked}
+                  onChange={setBirthDatePicked}
+                  valueFormat="DD-MM-YYYY"
+                  defaultLevel="decade"
+                  clearable
+                  popoverProps={{ withinPortal: true }}
+                />
+              ) : (
+                <TextInput
+                  label={t("register.birthDateLabel")}
+                  placeholder={t("register.birthDatePlaceholder")}
+                  value={birthDateTyped}
+                  onChange={(e) => setBirthDateTyped(e.currentTarget.value)}
+                  inputMode="numeric"
+                  /* 🚫 No parsing on the page — an input MASK only. The server runs the chat's own parser. */
+                  maxLength={10}
+                />
+              )}
+              <EntryToggle
+                mode={dobMode}
+                typeLabel={t("register.typeInstead")}
+                pickLabel={t("register.dobPickInstead")}
+                onToggle={() => setDobMode(dobMode === "pick" ? "type" : "pick")}
               />
-              <TextInput
-                label={t("register.provinceLabel")}
-                placeholder={t("register.provincePlaceholder")}
-                value={province}
-                onChange={(e) => setProvince(e.currentTarget.value)}
+
+              {addrMode === "pick" ? (
+                /* §7b — จังหวัด → เขต/อำเภอ → แขวง/ตำบล, each list read from the dataset by GEOCODE. The tier
+                   words follow the province (Bangkok เขต/แขวง, elsewhere อำเภอ/ตำบล). The three picks JOIN into
+                   the chat's one-line string — `พระโขนงเหนือ วัฒนา กทม`, that order, that abbreviation. */
+                <Stack gap="xs">
+                  <Text fz="sm" fw={500}>
+                    {t("register.provinceLabel")}
+                  </Text>
+                  <Select
+                    label={t("register.addrProvince")}
+                    placeholder={book ? t("register.addrPickPlaceholder") : t("register.addrLoading")}
+                    data={asOptions(book?.provinces ?? [])}
+                    value={provPick?.code ?? null}
+                    onChange={pickProvince}
+                    disabled={!book}
+                    searchable
+                    clearable
+                    comboboxProps={{ withinPortal: true }}
+                  />
+                  <Select
+                    label={tier.district}
+                    placeholder={t("register.addrPickPlaceholder")}
+                    data={asOptions(districts)}
+                    value={distPick?.code ?? null}
+                    onChange={pickDistrict}
+                    disabled={!provPick}
+                    searchable
+                    clearable
+                    comboboxProps={{ withinPortal: true }}
+                  />
+                  <Select
+                    label={tier.subDistrict}
+                    placeholder={t("register.addrPickPlaceholder")}
+                    data={asOptions(subDistricts)}
+                    value={subPick?.code ?? null}
+                    onChange={pickSubDistrict}
+                    disabled={!distPick}
+                    searchable
+                    clearable
+                    comboboxProps={{ withinPortal: true }}
+                  />
+                </Stack>
+              ) : (
+                <TextInput
+                  label={t("register.provinceLabel")}
+                  placeholder={t("register.provincePlaceholder")}
+                  value={provinceTyped}
+                  onChange={(e) => setProvinceTyped(e.currentTarget.value)}
+                />
+              )}
+              <EntryToggle
+                mode={addrMode}
+                typeLabel={t("register.typeInstead")}
+                pickLabel={t("register.addrPickInstead")}
+                onToggle={() => setAddrMode(addrMode === "pick" ? "type" : "pick")}
               />
               <Button disabled={!name.trim()} onClick={() => setPhase({ kind: "confirm" })}>
                 {t("register.formNext")}
@@ -323,8 +466,8 @@ export default function RegisterContent() {
               <Text fw={600}>{t("register.confirmTitle")}</Text>
               <div className="rounded-lg bg-muted-100 p-3 text-sm">
                 <ReviewRow label={t("register.reviewName")} value={name.trim()} />
-                <ReviewRow label={t("register.reviewBirthDate")} value={birthDate.trim() || t("register.reviewSkipped")} />
-                <ReviewRow label={t("register.reviewProvince")} value={province.trim() || t("register.reviewSkipped")} />
+                <ReviewRow label={t("register.reviewBirthDate")} value={birthDate || t("register.reviewSkipped")} />
+                <ReviewRow label={t("register.reviewProvince")} value={province || t("register.reviewSkipped")} />
               </div>
               <Text fz="sm">{t("register.confirmQuestion")}</Text>
               <Button loading={busy} onClick={submitCreate}>
@@ -389,10 +532,30 @@ function ChildList({ children }: { children: ChildRef[] }) {
     <ul className="rounded-lg bg-muted-100 p-3 text-sm">
       {children.map((c) => (
         <li key={c.id} className="py-0.5">
-          {c.nickname ? `${c.name} (${c.nickname})` : c.name}
+          {/* §4 — the chat's screen 4 lists `มิลล่า, มิลลิม, asda`: the nickname only when it DIFFERS. */}
+          {c.nickname && c.nickname !== c.name ? `${c.name} (${c.nickname})` : c.name}
         </li>
       ))}
     </ul>
+  );
+}
+
+/** The escape hatch (§7a/§7b): a picker is never the only way in. One line, under the widget it swaps. */
+function EntryToggle({
+  mode,
+  typeLabel,
+  pickLabel,
+  onToggle,
+}: {
+  mode: "pick" | "type";
+  typeLabel: string;
+  pickLabel: string;
+  onToggle: () => void;
+}) {
+  return (
+    <Button variant="subtle" size="compact-xs" color="gray" className="self-start" onClick={onToggle}>
+      {mode === "pick" ? typeLabel : pickLabel}
+    </Button>
   );
 }
 

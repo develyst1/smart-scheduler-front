@@ -34,6 +34,9 @@ describe("🔴 RULE 1 — the page holds NO rules; the server owns every decisio
   });
 
   it("🚫 no reserved-word list, no duplicate logic, no cap, no date parsing — on either file", () => {
+    // TASK-349 RE-SCOPE, on purpose: the page and the API module are STILL held to the full absence. The one
+    // `split("-")` the date picker needs lives in `entry.ts` — on the widget's own `YYYY-MM-DD`, never on typed
+    // text — and `entry.test.ts` holds THAT file to its own, narrower absence (no dayjs, no Date, no validation).
     for (const src of [page, api]) {
       expect(src).not.toMatch(/isReservedWord|RESERVED_WORDS|reservedWords/);
       expect(src).not.toMatch(/duplicate[A-Z]\w*\(|decideDuplicate|isDuplicate/);
@@ -158,17 +161,33 @@ describe("§17c — the approved sentences are reused VERBATIM where a field mat
 });
 
 describe("🔴 the date — DD-MM-YYYY text, echoed back before submit, omitted when blank", () => {
-  it("the widget is a text input with a mask, not a date picker emitting ISO", () => {
+  it("§7a — a YEAR-FIRST picker that emits the customer's text, beside the typed mask it does not replace", () => {
+    // TASK-349 RE-SCOPE, on purpose: TASK-348 forbade `DatePickerInput|valueFormat` here. The picker is now
+    // wanted — what stays forbidden is an ISO value LEAVING the page: `type="date"` (a native ISO input) and
+    // `dayjs`/`Date` on the page. The widget's `YYYY-MM-DD` is reordered by `toCustomerDate` and nothing else.
     const form = page.slice(page.indexOf('phase.kind === "form"'), page.indexOf('phase.kind === "confirm"'));
     expect(form).toContain('label={t("register.birthDateLabel")}');
-    expect(form).toContain("maxLength={10}");
-    expect(form).not.toMatch(/DatePickerInput|DateInput|type="date"|valueFormat/);
+    expect(form).toContain("<DatePickerInput");
+    expect(form).toContain('defaultLevel="decade"'); // year-first: the decade grid opens, not "previous month" ×100
+    expect(form).toContain('valueFormat="DD-MM-YYYY"'); // display only
+    expect(form).toContain("maxLength={10}"); // the typed path is still there, mask and all
+    expect(form).not.toMatch(/type="date"|DateInput\b|dayjs|new Date/);
+    expect(page).toContain("toCustomerDate(birthDatePicked)");
+  });
+
+  it("§7a — the picker is never the only way in: a `Type it instead` toggle swaps to the plain field", () => {
+    const form = page.slice(page.indexOf('phase.kind === "form"'), page.indexOf('phase.kind === "confirm"'));
+    expect(form).toContain('dobMode === "pick" ? (');
+    expect(form).toContain('onToggle={() => setDobMode(dobMode === "pick" ? "type" : "pick")}');
+    expect(en.register.typeInstead).toBe("Type it instead");
+    expect(th.register.typeInstead).toBe("พิมพ์เอง");
   });
 
   it("🔑 TASK-277 — the confirm screen shows the date back EXACTLY as typed before sending", () => {
     const confirm = page.slice(page.indexOf('phase.kind === "confirm"'), page.indexOf('phase.kind === "done"'));
     expect(confirm).toContain('t("register.reviewBirthDate")');
-    expect(confirm).toContain("birthDate.trim() || t(\"register.reviewSkipped\")");
+    expect(confirm).toContain("birthDate || t(\"register.reviewSkipped\")");
+    expect(confirm).toContain("province || t(\"register.reviewSkipped\")");
     expect(confirm).toContain("onClick={submitCreate}");
   });
 
@@ -176,7 +195,81 @@ describe("🔴 the date — DD-MM-YYYY text, echoed back before submit, omitted 
     const c = api.slice(api.indexOf("export const create"));
     expect(c).toContain("if (input.birthDate) body.birthDate = input.birthDate;");
     expect(c).toContain("if (input.province) body.province = input.province;");
-    expect(page).toContain("birthDate: birthDate.trim() || undefined,");
+    // `birthDate` / `province` are the ONE stored value each, whichever way in (picked or typed) — see §7a/§7b.
+    expect(page).toContain("birthDate: birthDate || undefined,");
+    expect(page).toContain("province: province || undefined,");
+    expect(page).toContain('const birthDate = dobMode === "pick" ? toCustomerDate(birthDatePicked) : birthDateTyped.trim();');
+  });
+});
+
+describe("§7b — the address is three cascading picks that JOIN into the chat's one-line string", () => {
+  const form = () => page.slice(page.indexOf('phase.kind === "form"'), page.indexOf('phase.kind === "confirm"'));
+
+  it("จังหวัด → เขต/อำเภอ → แขวง/ตำบล — three Selects, each gated on the one above", () => {
+    const f = form();
+    expect(f).toContain("onChange={pickProvince}");
+    expect(f).toContain("onChange={pickDistrict}");
+    expect(f).toContain("onChange={pickSubDistrict}");
+    expect(f).toContain("disabled={!provPick}");
+    expect(f).toContain("disabled={!distPick}");
+    expect((f.match(/<Select\b/g) ?? []).length).toBe(3);
+  });
+
+  it("the tier words follow the province — Bangkok เขต/แขวง, elsewhere อำเภอ/ตำบล — read off the geocode", () => {
+    expect(form()).toContain("label={tier.district}");
+    expect(form()).toContain("label={tier.subDistrict}");
+    expect(page).toContain("const tier = tierWordsFor(provPick?.code ?? null);");
+  });
+
+  it("the stored value is the JOINED string, sub-district first, province last — the chat's own shape", () => {
+    expect(page).toContain(
+      "joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })",
+    );
+    // and a pick is looked up by CODE, never by name — district names repeat across provinces
+    expect(page).toContain("book?.provinces.find((x) => x.code === code)");
+    expect(page).toContain("districts.find((x) => x.code === code)");
+  });
+
+  it("the escape hatch — `พิมพ์เอง / Type it instead` reveals the existing free-text field; a failed load falls back to it", () => {
+    const f = form();
+    expect(f).toContain('addrMode === "pick" ? (');
+    expect(f).toContain("onChange={(e) => setProvinceTyped(e.currentTarget.value)}");
+    expect(f).toContain('onToggle={() => setAddrMode(addrMode === "pick" ? "type" : "pick")}');
+    expect(page).toContain('() => alive && setAddrMode("type")');
+  });
+
+  it("🔑 the dataset is loaded DYNAMICALLY, from `entry.ts` only, and only while the form is on screen", () => {
+    expect(page).toContain('if (phase.kind !== "form" || addrMode !== "pick" || book) return;');
+    expect(page).not.toContain("thai-address-universal");
+    // the ONLY place in the app that names the package is the dynamic import in entry.ts
+    const entry = codeOf("src/lib/register/entry.ts");
+    expect(entry).toContain('await import("thai-address-universal")');
+    expect(entry).not.toMatch(/^import .*thai-address-universal/m);
+  });
+});
+
+describe("§4 — the family screen's two copy fixes", () => {
+  it("the nickname is shown ONLY when it differs from the name — `มิลล่า`, not `มิลล่า (มิลล่า)`", () => {
+    const list = page.slice(page.indexOf("function ChildList"), page.indexOf("function EntryToggle"));
+    expect(list).toContain("c.nickname && c.nickname !== c.name ? `${c.name} (${c.nickname})` : c.name");
+    expect(list).not.toContain("c.nickname ? `");
+  });
+
+  it("the primary button fits a phone — a LENGTH bound, not the bytes (the words are @Porter's, PLACEHOLDER)", () => {
+    // The truncated sentence was 43 characters. A Mantine `Button` inside this page's `max-w-sm` `Paper` with
+    // `p="xl"` has ~320px for its label; at the 14px body size that is ~28 characters before an ellipsis.
+    expect(en.register.foundConfirm.length).toBeLessThanOrEqual(28);
+    expect(th.register.foundConfirm.length).toBeLessThanOrEqual(28);
+    expect(en.register.foundConfirm.length).toBeGreaterThan(5);
+    expect(th.register.foundConfirm.length).toBeGreaterThan(5);
+  });
+});
+
+describe("⚠️ .env.example carries the two setup facts the owner's phone taught (§0)", () => {
+  it("the tapped link is liff.line.me/<LIFF_ID>, and scope must include openid", () => {
+    const env = readFileSync(".env.example", "utf8");
+    expect(env).toContain("https://liff.line.me/<LIFF_ID>");
+    expect(env).toContain("scope must include `openid`");
   });
 });
 

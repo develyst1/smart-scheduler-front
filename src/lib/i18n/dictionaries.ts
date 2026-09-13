@@ -1191,8 +1191,9 @@ const en = {
     phoneSubmit: "Next",
     // `verify_parent_found` — VERBATIM (EN half); the chat lists the names after the dash
     foundTitle: "Found your family",
-    // PLACEHOLDER — the chat asked for nothing here; on a page the bind is a tap
-    foundConfirm: "This is my family — link this LINE account",
+    // PLACEHOLDER — @Porter's words (TASK-349 §4): the heading already says "Found your family". Kept SHORT on
+    // purpose — the previous sentence truncated on a phone; the test pins a LENGTH bound, not these bytes.
+    foundConfirm: "Link this LINE account",
     // `twofa_prompt` — VERBATIM (EN)
     twofaLabel: "Please type the 6-digit code to verify your identity.",
     // PLACEHOLDER — the chat gated names behind the code silently; a page has to say why it is asking
@@ -1213,6 +1214,14 @@ const en = {
     birthDateLabel: "Please enter the date of birth in (DD-MM-YYYY)",
     // PLACEHOLDER — the input's own hint; the chat's `ข้าม` is "leave it blank" on a page
     birthDatePlaceholder: "DD-MM-YYYY (optional)",
+    // TASK-349 §7a/§7b — the pickers and their escape hatches. All PLACEHOLDER; `typeInstead` is @Sober's pair.
+    dobPickPlaceholder: "Tap to pick a date (optional)",
+    typeInstead: "Type it instead",
+    dobPickInstead: "Pick from a calendar instead",
+    addrPickInstead: "Pick from the list instead",
+    addrProvince: "Province",
+    addrPickPlaceholder: "Tap to pick",
+    addrLoading: "Loading the address list…",
     // §17c screen 6 — VERBATIM (EN half, two lines joined with a space)
     provinceLabel: "Please enter your address: District, Sub-district, Province Eg. Prakanueng Nuea, Wattana, BKK",
     // PLACEHOLDER
@@ -2375,7 +2384,7 @@ const th: typeof en = {
     phoneLabel: "กรุณาระบุเบอร์โทรศัพท์ค่ะ", // §17c screen 3 — VERBATIM
     phoneSubmit: "ถัดไป", // PLACEHOLDER
     foundTitle: "พบข้อมูลของคุณแล้วค่ะ", // `verify_parent_found` — VERBATIM
-    foundConfirm: "ใช่ครอบครัวของฉัน — ผูกบัญชี LINE นี้", // PLACEHOLDER
+    foundConfirm: "ผูกบัญชี LINE นี้", // PLACEHOLDER — short on purpose (TASK-349 §4); a length bound is pinned
     twofaLabel: "กรุณาพิมพ์รหัส 6 หลักเพื่อยืนยันตัวตนค่ะ", // `twofa_prompt` — VERBATIM
     twofaHint: "เราส่งรหัสไปที่บัญชี LINE นี้แล้วค่ะ มีนักเรียนในระบบ {n} คน", // PLACEHOLDER
     linkedTitle: "ลงทะเบียนผู้ปกครองสำเร็จแล้วค่ะ ✅", // §17c screen 4a — VERBATIM
@@ -2386,6 +2395,13 @@ const th: typeof en = {
     nameLabel: 'กรุณาระบุชื่อนักเรียน เช่น "ส้ม"', // §17c screen 4b — VERBATIM
     birthDateLabel: "กรุณาระบุวันเกิดของนักเรียนค่ะ (วัน-เดือน-ปีค.ศ. )", // §17c screen 5 — VERBATIM
     birthDatePlaceholder: "วว-ดด-ปปปป (ไม่บังคับ)", // PLACEHOLDER
+    dobPickPlaceholder: "แตะเพื่อเลือกวันเกิด (ไม่บังคับ)", // PLACEHOLDER — TASK-349 §7a
+    typeInstead: "พิมพ์เอง", // PLACEHOLDER — @Sober's pair, TASK-349 §3
+    dobPickInstead: "เลือกจากปฏิทินแทน", // PLACEHOLDER
+    addrPickInstead: "เลือกจากรายการแทน", // PLACEHOLDER
+    addrProvince: "จังหวัด", // PLACEHOLDER — the tier words เขต/อำเภอ, แขวง/ตำบล are the law's, not a dictionary's
+    addrPickPlaceholder: "แตะเพื่อเลือก", // PLACEHOLDER
+    addrLoading: "กำลังโหลดรายชื่อพื้นที่…", // PLACEHOLDER
     provinceLabel: "กรุณาระบุ เขต แขวง จังหวัด เช่น พระโขนงเหนือ วัฒนา กทม", // §17c screen 6 — VERBATIM
     provincePlaceholder: "(ไม่บังคับ)", // PLACEHOLDER
     dupDetailHint: "มีน้องชื่อนี้อยู่แล้ว รบกวนใส่นามสกุลหรือชื่อเล่นเพิ่ม เพื่อไม่ให้สลับกันนะคะ", // `add_dup_detail` — VERBATIM
