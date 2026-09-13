@@ -105,6 +105,7 @@ describe("🔑 every named CODE has a rendering, both languages", () => {
         "TWOFA_NOT_CONFIGURED", "TWOFA_CODE_REQUIRED", "TWOFA_CODE_BAD",
         "NOT_LINKED", "NAME_REQUIRED", "NAME_RESERVED", "FAMILY_FULL", "NAME_DUPLICATE_NEEDS_DETAIL",
         "BIRTHDATE_INVALID",
+        "PROVINCE_UNKNOWN", // TASK-352/353 (§9)
       ].sort(),
     );
   });
@@ -121,11 +122,13 @@ describe("🔑 every named CODE has a rendering, both languages", () => {
     });
   }
 
-  it("the three codes that carry a detail interpolate it", () => {
+  it("the four codes that carry a detail interpolate it", () => {
+    expect(en.register.code.PROVINCE_UNKNOWN).toContain("{province}");
+    expect(th.register.code.PROVINCE_UNKNOWN).toContain("{province}");
     expect(en.register.code.NAME_RESERVED).toContain("{word}");
     expect(en.register.code.FAMILY_FULL).toContain("{max}");
     expect(th.register.code.FAMILY_FULL).toContain("{max}");
-    expect(page).toContain("word: failure.word ?? \"\", max: failure.max ?? \"\", name: failure.name ?? \"\"");
+    expect(page).toContain('province: failure.province ?? "",');
   });
 
   it("🚫 no server `message` is ever rendered — the page owns the words", () => {
@@ -187,7 +190,7 @@ describe("🔴 the date — DD-MM-YYYY text, echoed back before submit, omitted 
     const confirm = page.slice(page.indexOf('phase.kind === "confirm"'), page.indexOf('phase.kind === "done"'));
     expect(confirm).toContain('t("register.reviewBirthDate")');
     expect(confirm).toContain("birthDate || t(\"register.reviewSkipped\")");
-    expect(confirm).toContain("province || t(\"register.reviewSkipped\")");
+    expect(confirm).toContain("addressLine || t(\"register.reviewSkipped\")"); // the LINE is what is echoed (TASK-353)
     expect(confirm).toContain("onClick={submitCreate}");
   });
 
@@ -197,7 +200,8 @@ describe("🔴 the date — DD-MM-YYYY text, echoed back before submit, omitted 
     expect(c).toContain("if (input.province) body.province = input.province;");
     // `birthDate` / `province` are the ONE stored value each, whichever way in (picked or typed) — see §7a/§7b.
     expect(page).toContain("birthDate: birthDate || undefined,");
-    expect(page).toContain("province: province || undefined,");
+    expect(page).toContain("province: pickedProvince || undefined,");
+    expect(page).toContain("address: addressLine || undefined,");
     expect(page).toContain('const birthDate = dobMode === "pick" ? toCustomerDate(birthDatePicked) : birthDateTyped.trim();');
   });
 });
@@ -418,6 +422,35 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
     expect(pickRegion).toContain("onChange={pickSubDistrict}"); // the region is the picker
     expect(pickRegion).not.toContain("provinceLabel");
     expect((form.match(/register\.provinceLabel/g) ?? []).length).toBe(1); // exactly once: the typed field's label
+  });
+});
+
+describe("§9 (TASK-353) — the PROVINCE travels as its own field, full name; the LINE goes to `address`", () => {
+  // Field names confirmed against TASK-352's `📜 THE FIELD NAMES` block and the live route (`routes/register.ts`
+  // lines 37–38: `province?` → parents.province, `address?` → parents.note APPENDED) on 2026-09-13.
+  it("PICKED ⇒ `province` = the picked FULL name and `address` = the joined line; TYPED ⇒ `address` only; blank ⇒ neither", () => {
+    expect(page).toContain('const pickedProvince = addrMode === "pick" ? provPick?.nameTh ?? "" : "";');
+    expect(page).toContain("province: pickedProvince || undefined,");
+    expect(page).toContain("address: addressLine || undefined,");
+    // the line is the join (`กทม` in the LINE); the province is `nameTh` (`กรุงเทพมหานคร` in the COLUMN) — two forms, two homes
+    expect(page).toContain(
+      "joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })",
+    );
+    expect(page).not.toMatch(/province:\s*addressLine|address:\s*pickedProvince|everydayProvinceName/);
+    // api.ts forwards both as-is and drops blanks — no rule, no join, no mapping
+    const c = api.slice(api.indexOf("export const create"));
+    expect(c).toContain("if (input.province) body.province = input.province;");
+    expect(c).toContain("if (input.address) body.address = input.address;");
+    expect(api).not.toMatch(/joinAddress|TH_PROVINCES|thai-address|includes\(/);
+  });
+
+  it("the confirm screen still echoes the LINE; `PROVINCE_UNKNOWN` goes back to the form like the other fixable codes", () => {
+    const confirm = page.slice(page.indexOf('phase.kind === "confirm"'), page.indexOf('phase.kind === "done"'));
+    expect(confirm).toContain("addressLine || t(\"register.reviewSkipped\")");
+    expect(confirm).not.toContain("pickedProvince");
+    const fixable = page.slice(page.indexOf('r.code === "NAME_REQUIRED"'), page.indexOf('r.code === "NOT_LINKED"'));
+    expect(fixable).toContain('r.code === "PROVINCE_UNKNOWN"');
+    expect(fixable).toContain('setPhase({ kind: "form" });');
   });
 });
 

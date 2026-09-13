@@ -66,7 +66,7 @@ type Phase =
   | { kind: "confirm" }
   | { kind: "done"; result: CreateResult };
 
-type Failure = { code: RegisterCode | "UNREACHABLE"; word?: string; max?: number; name?: string };
+type Failure = { code: RegisterCode | "UNREACHABLE"; word?: string; max?: number; name?: string; province?: string };
 
 const isRefusal = (r: unknown): r is Refusal | Unreachable =>
   typeof r === "object" && r !== null && (r as { ok?: boolean }).ok === false;
@@ -88,7 +88,8 @@ export default function RegisterContent() {
   const [birthDateTyped, setBirthDateTyped] = useState("");
   const [birthDatePicked, setBirthDatePicked] = useState<string | null>(null); // the widget's own `YYYY-MM-DD`
   const birthDate = dobMode === "pick" ? toCustomerDate(birthDatePicked) : birthDateTyped.trim();
-  // §7b — same shape: three picks joined, or the plain field. `province` is the stored one-line string.
+  // §7b — same shape: three picks joined, or the plain field. `addressLine` is the one-line string the customer
+  // stores (TASK-353: into `parents.note`); the PICKED province also travels on its own, full name, for the column.
   const [addrMode, setAddrMode] = useState<"pick" | "type">("pick");
   const [provinceTyped, setProvinceTyped] = useState("");
   const [book, setBook] = useState<AddressBook | null>(null);
@@ -97,10 +98,13 @@ export default function RegisterContent() {
   const [subPick, setSubPick] = useState<AreaPick | null>(null);
   const [districts, setDistricts] = useState<AreaPick[]>([]);
   const [subDistricts, setSubDistricts] = useState<AreaPick[]>([]);
-  const province =
+  const addressLine =
     addrMode === "pick"
       ? joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })
       : provinceTyped.trim();
+  // TASK-353 (§9) — PICKED ⇒ the province's FULL name for `parents.province`; TYPED ⇒ nothing (the server does not
+  // guess, and a wrong bucket is worse than an empty one). `กทม` stays in the LINE; `กรุงเทพมหานคร` goes to the column.
+  const pickedProvince = addrMode === "pick" ? provPick?.nameTh ?? "" : "";
   /** AC-9 — set after `NAME_DUPLICATE_NEEDS_DETAIL`; the resubmit carries `detailProvided: true`. */
   const [detailProvided, setDetailProvided] = useState(false);
 
@@ -176,7 +180,13 @@ export default function RegisterContent() {
   );
 
   const fail = (r: Refusal | Unreachable) =>
-    setFailure({ code: r.code, word: (r as Refusal).word, max: (r as Refusal).max, name: (r as Refusal).name });
+    setFailure({
+      code: r.code,
+      word: (r as Refusal).word,
+      max: (r as Refusal).max,
+      name: (r as Refusal).name,
+      province: (r as Refusal).province,
+    });
 
   /** After `/link`: the §6.1 decision, READ off the response — children ⇒ the list, none ⇒ add one. */
   const afterLink = (children: ChildRef[], canAddMore: boolean) => {
@@ -221,7 +231,8 @@ export default function RegisterContent() {
         name: name.trim(),
         // 🔴 A blank is the SKIP and is OMITTED — never sent as "" (TASK-347 §5.1). `api.ts` drops empty keys.
         birthDate: birthDate || undefined,
-        province: province || undefined,
+        province: pickedProvince || undefined,
+        address: addressLine || undefined,
         detailProvided: detailProvided || undefined,
       }),
     );
@@ -231,7 +242,12 @@ export default function RegisterContent() {
       if (r.code === "NAME_DUPLICATE_NEEDS_DETAIL") {
         setDetailProvided(true);
         setPhase({ kind: "form", dupName: (r as Refusal).name });
-      } else if (r.code === "NAME_REQUIRED" || r.code === "NAME_RESERVED" || r.code === "BIRTHDATE_INVALID") {
+      } else if (
+        r.code === "NAME_REQUIRED" ||
+        r.code === "NAME_RESERVED" ||
+        r.code === "BIRTHDATE_INVALID" ||
+        r.code === "PROVINCE_UNKNOWN"
+      ) {
         setPhase({ kind: "form" }); // fixable here — go back to the field
       } else if (r.code === "NOT_LINKED") {
         setPhase({ kind: "phone" }); // the family is not bound; start from the phone
@@ -484,7 +500,7 @@ export default function RegisterContent() {
               <div className="rounded-lg bg-muted-100 p-3 text-sm">
                 <ReviewRow label={t("register.reviewName")} value={name.trim()} />
                 <ReviewRow label={t("register.reviewBirthDate")} value={birthDate || t("register.reviewSkipped")} />
-                <ReviewRow label={t("register.reviewProvince")} value={province || t("register.reviewSkipped")} />
+                <ReviewRow label={t("register.reviewProvince")} value={addressLine || t("register.reviewSkipped")} />
               </div>
               <Text fz="sm">{t("register.confirmQuestion")}</Text>
               <Button loading={busy} onClick={submitCreate}>
@@ -537,7 +553,12 @@ function FailureAlert({ failure }: { failure: Failure }) {
   const text =
     failure.code === "UNREACHABLE"
       ? t("register.connectFail")
-      : t(`register.code.${failure.code}`, { word: failure.word ?? "", max: failure.max ?? "", name: failure.name ?? "" });
+      : t(`register.code.${failure.code}`, {
+          word: failure.word ?? "",
+          max: failure.max ?? "",
+          name: failure.name ?? "",
+          province: failure.province ?? "",
+        });
   return (
     <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
       {text}

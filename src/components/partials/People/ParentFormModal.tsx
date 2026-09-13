@@ -6,7 +6,7 @@ import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
 import { useCreateParent, useUpdateParent } from "@/hooks/scheduler";
 import { ApiClientError } from "@/lib/api/client";
-import { TH_PROVINCES } from "@/lib/people/th-provinces";
+import { provinceOptions } from "@/lib/people/th-provinces";
 import type { Parent } from "@/types/app/people";
 
 interface Props {
@@ -98,7 +98,8 @@ export default function ParentFormModal({ opened, parent, onClose }: Props) {
         <Select
           label={t("people.province")}
           placeholder={t("people.provincePlaceholder")}
-          data={TH_PROVINCES}
+          /* §9.1 (TASK-353) — a value not in the 77 is shown AS ITSELF, unselectable, so the admin sees what to fix. */
+          data={provinceOptions(province)}
           value={province}
           onChange={setProvince}
           searchable

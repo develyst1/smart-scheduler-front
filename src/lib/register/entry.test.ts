@@ -107,10 +107,15 @@ describe("§7b — the dataset: `thai-address-universal@2.2.0`, ISC, loaded by g
     expect(subs.map((s) => s.nameTh).sort()).toEqual(["คลองตันเหนือ", "คลองเตยเหนือ", "พระโขนงเหนือ"]);
   });
 
-  it("the dataset's 77 province names are EXACTLY the repo's `TH_PROVINCES` (the admin's parent form, SPEC-016)", async () => {
-    // Two lists of the same 77 names now live in this repo; this pins that they agree, so a report that groups
-    // `parents.province` cannot split one province across two spellings because of THIS side.
+  it("the dataset's 77 province names are EXACTLY the repo's `TH_PROVINCES` — this repo's CLAIM of the BE's 77", async () => {
+    // TASK-353 RE-POINT: the SOURCE of the 77 is now the BE's `src/lib/thai-provinces.ts` (TASK-352), which REFUSES
+    // any `province` outside it (`PROVINCE_UNKNOWN`). A test here cannot read another repo's file (paths are
+    // per-machine, `machine.local.md`), so the pin is: dataset == `TH_PROVINCES`, and `TH_PROVINCES` is this repo's
+    // claim of the BE list — checked equal by hand, 77 = 77, no diff, 2026-09-13. `contract.ts`'s rule applies:
+    // keeping the claim in step with the BE is a human job; this pin catches the dataset drifting from the claim.
     const { TH_PROVINCES } = await import("@/lib/people/th-provinces");
+    expect(TH_PROVINCES.length).toBe(77);
+    expect(new Set(TH_PROVINCES).size).toBe(77);
     const book = await loadAddressBook();
     expect([...book.provinces.map((p) => p.nameTh)].sort()).toEqual([...TH_PROVINCES].sort());
   });

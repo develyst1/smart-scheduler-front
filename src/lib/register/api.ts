@@ -37,6 +37,7 @@ export const REGISTER_CODES = [
   "FAMILY_FULL",
   "NAME_DUPLICATE_NEEDS_DETAIL",
   "BIRTHDATE_INVALID",
+  "PROVINCE_UNKNOWN", // TASK-352/353 (§9) — `province` was not one of the server's 77 full names
 ] as const;
 export type RegisterCode = (typeof REGISTER_CODES)[number];
 
@@ -77,6 +78,7 @@ export interface Refusal {
   word?: string; // NAME_RESERVED
   max?: number; // FAMILY_FULL
   name?: string; // NAME_DUPLICATE_NEEDS_DETAIL
+  province?: string; // PROVINCE_UNKNOWN
 }
 
 /** The one thing the page cannot get a code for: the network itself. Rendered as `register.connectFail`. */
@@ -114,7 +116,14 @@ export interface CreateInput {
    * omits the key rather than re-creating that trap from its side.
    */
   birthDate?: string;
+  /**
+   * TASK-353 (`REQ-088 §9`) — two fields, two homes. `province` is the PICKED province's FULL name (`กรุงเทพมหานคร`,
+   * never `กทม`) → `parents.province`, the column the report groups on; `address` is the joined LINE in the
+   * customer's format (`พระโขนงเหนือ วัฒนา กทม`) → APPENDED to `parents.note`. PICKED ⇒ both · TYPED ⇒ `address`
+   * only (the server will not guess a province) · blank ⇒ neither. Both are forwarded as-is; nothing here decides.
+   */
   province?: string;
+  address?: string;
   /** AC-9 — after `NAME_DUPLICATE_NEEDS_DETAIL`: the FULLER name, with this flag, never a rename. */
   detailProvided?: boolean;
 }
@@ -125,6 +134,7 @@ export const create = (idToken: string, input: CreateInput) => {
   // 🔑 Skips are OMITTED keys, not empty strings — see `CreateInput.birthDate`.
   if (input.birthDate) body.birthDate = input.birthDate;
   if (input.province) body.province = input.province;
+  if (input.address) body.address = input.address;
   if (input.detailProvided) body.detailProvided = true;
   return post<CreateResult>("create", body);
 };

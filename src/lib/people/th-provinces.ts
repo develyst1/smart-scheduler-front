@@ -79,3 +79,17 @@ export const TH_PROVINCES: string[] = [
   "อุทัยธานี",
   "อุบลราชธานี",
 ];
+
+/**
+ * TASK-353 (`REQ-088 §9.1`) — the options for the parent form's province `Select`, given the value it currently
+ * holds. The owner is LEAVING dirty values in `parents.province` on purpose (`"ปล่อยจังหวัดพัง ให้เขาเจอ dashboard
+ * พัง แล้วให้เขาไปไล่แก้เอง"`): the admin form is the REPAIR PATH, so a value that is not one of the 77 must be
+ * SEEN — Mantine's `Select` shows a value it cannot find in `data` as an EMPTY box, which reads as "nothing set".
+ * So the dirty value is put in front of the list as an option the admin can see but not re-pick (`disabled`); picking
+ * a real province replaces it and saves normally. 🚫 No repair button, no cleanup, no banner — the visible value is
+ * the warning, by his decision. The 77 themselves are untouched.
+ */
+export const provinceOptions = (current: string | null | undefined) =>
+  current && !TH_PROVINCES.includes(current)
+    ? [{ value: current, label: current, disabled: true }, ...TH_PROVINCES]
+    : TH_PROVINCES;

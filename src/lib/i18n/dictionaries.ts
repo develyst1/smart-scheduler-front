@@ -1295,6 +1295,8 @@ const en = {
       NAME_DUPLICATE_NEEDS_DETAIL: "There is already a child with that name. Please add a surname or nickname so they are not mixed up.",
       // `add_birthdate_bad` — ADAPTED: "or type skip" becomes "or leave it blank" on a page
       BIRTHDATE_INVALID: "That date format is not valid. Please use DD-MM-YYYY, e.g. 02-12-2024, or leave it blank.",
+      // PLACEHOLDER — TASK-353 (§9): the picked province was not one of the server's 77 names
+      PROVINCE_UNKNOWN: "\"{province}\" is not a province we know. Please pick the province again.",
     },
   },
   checkin: {
@@ -2445,6 +2447,7 @@ const th: typeof en = {
       FAMILY_FULL: "เพิ่มนักเรียนได้สูงสุด {max} คนต่อเบอร์", // the server's own sentence (`parent.service.ts`) — VERBATIM
       NAME_DUPLICATE_NEEDS_DETAIL: "มีน้องชื่อนี้อยู่แล้ว รบกวนใส่นามสกุลหรือชื่อเล่นเพิ่ม เพื่อไม่ให้สลับกันนะคะ", // `add_dup_detail` — VERBATIM
       BIRTHDATE_INVALID: "รูปแบบวันเกิดไม่ถูกต้องค่ะ กรุณาพิมพ์เป็น วัน-เดือน-ปี เช่น 02-12-2024 หรือเว้นว่างไว้", // `add_birthdate_bad` — ADAPTED ("หรือพิมพ์ ข้าม" → "หรือเว้นว่างไว้")
+      PROVINCE_UNKNOWN: "ไม่พบจังหวัด \"{province}\" ในระบบค่ะ กรุณาเลือกจังหวัดอีกครั้ง", // PLACEHOLDER — TASK-353
     },
   },
   checkin: {
