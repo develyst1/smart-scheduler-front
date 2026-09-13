@@ -218,7 +218,8 @@ describe("§7b — the address is three cascading picks that JOIN into the chat'
   it("the tier words follow the province — Bangkok เขต/แขวง, elsewhere อำเภอ/ตำบล — read off the geocode", () => {
     expect(form()).toContain("label={tier.district}");
     expect(form()).toContain("label={tier.subDistrict}");
-    expect(page).toContain("const tier = tierWordsFor(provPick?.code ?? null);");
+    // TASK-351: the Thai source is `tierTh`; `tier` is the label after the language choice (see §8b below)
+    expect(page).toContain("const tierTh = tierWordsFor(provPick?.code ?? null);");
   });
 
   it("the stored value is the JOINED string, sub-district first, province last — the chat's own shape", () => {
@@ -320,10 +321,12 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
   it("toggling changes `lang` and NOTHING else — the toggle calls setLang; the page reads `lang` for the date locale only", () => {
     expect(toggle).toContain("onChange={(v) => setLang(v as Lang)}");
     expect(toggle).not.toMatch(/setPhase|localStorage|fetch|reload/);
-    // every `lang` on the page: the destructure and the DatesProvider locale — nothing keyed on it
-    expect((page.match(/\blang\b/g) ?? []).length).toBe(2);
+    // every `lang` on the page: the destructure, the DatesProvider locale, and (TASK-351) the tier LABEL choice —
+    // all three are RENDERING; nothing keyed on it sets state (no `[lang]` effect, no setter on a `lang` branch)
+    expect((page.match(/\blang\b/g) ?? []).length).toBe(3);
     expect(page).toContain("<DatesProvider settings={{ locale: lang, firstDayOfWeek: 0 }}>");
-    expect(page).not.toMatch(/\[lang\]|lang ===|lang !==/);
+    expect(page).not.toMatch(/\[lang\]/);
+    expect(page).not.toMatch(/lang [!=]== "(th|en)"[^\n]*set[A-Z]/);
   });
 
   it("default = the LINE app's language on a FIRST visit only; a saved preference wins", () => {
@@ -351,14 +354,53 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
     expect(codeOf("src/components/layout/AdminLayout/Header/Header.tsx")).toContain("<LanguageToggle />");
   });
 
-  it("§3 — the tier words เขต/แขวง/อำเภอ/ตำบล stay THAI in both languages: no `t(` and no `lang` near them", () => {
+  // ── TASK-351 (§8b) — REVERSED, not deleted. TASK-350 §3 asserted "the tier words stay THAI in both languages: no
+  // `t(` and no `lang` near them". That ruling came from a sentence about VALUES (a proper noun on the parent's own
+  // mail) and was applied to LABELS; the owner's EN screen showed `Province · อำเภอ · ตำบล` — one English label over
+  // two Thai ones. What was right is kept (VALUES Thai in both); what was wrong is inverted (LABELS follow `lang`).
+  it("§3 (reversed by TASK-351) — tier LABELS follow the language: EN `District · Sub-district`, TH the four words", () => {
     const entry = codeOf("src/lib/register/entry.ts");
     const tier = entry.slice(entry.indexOf("export const tierWordsFor"), entry.indexOf("const EVERYDAY_PROVINCE_NAME"));
+    // the SOURCE is still the four Thai literals with the Bangkok flip, keyed off geocode 10, and lang-free
     expect(tier).toContain('{ district: "เขต", subDistrict: "แขวง" }');
     expect(tier).toContain('{ district: "อำเภอ", subDistrict: "ตำบล" }');
     expect(tier).not.toMatch(/\bt\(|\blang\b|Lang\b/);
+    // the page chooses by lang: Thai ⇒ the source; English ⇒ the dictionary (Porter's words, PLACEHOLDER by form)
+    expect(page).toContain("const tierTh = tierWordsFor(provPick?.code ?? null);");
+    expect(page).toContain(
+      'lang === "th" ? tierTh : { district: t("register.addrDistrict"), subDistrict: t("register.addrSubDistrict") }',
+    );
     expect(page).toContain("label={tier.district}");
     expect(page).toContain("label={tier.subDistrict}");
+    expect(en.register.addrDistrict).toMatch(/^[A-Za-z-]+$/);
+    expect(en.register.addrSubDistrict).toMatch(/^[A-Za-z-]+$/);
+  });
+
+  it("§8b — all four label combinations: EN/TH × Bangkok/elsewhere", () => {
+    const { tierWordsFor } = require("./entry") as typeof import("./entry");
+    const label = (code: string, lang: "en" | "th") =>
+      lang === "th"
+        ? tierWordsFor(code)
+        : { district: en.register.addrDistrict, subDistrict: en.register.addrSubDistrict };
+    expect(label("10", "th")).toEqual({ district: "เขต", subDistrict: "แขวง" });
+    expect(label("50", "th")).toEqual({ district: "อำเภอ", subDistrict: "ตำบล" });
+    expect(label("10", "en")).toEqual({ district: "District", subDistrict: "Sub-district" });
+    expect(label("50", "en")).toEqual({ district: "District", subDistrict: "Sub-district" });
+    expect(en.register.addrProvince).toBe("Province");
+    expect(th.register.addrProvince).toBe("จังหวัด");
+  });
+
+  it("§8b — VALUES stay Thai in BOTH languages (the half of the old ruling that was right)", () => {
+    // the option labels and the joined string are `nameTh`, never `nameEn`, and no `lang` reaches the join
+    expect(page).toContain("rows.map((r) => ({ value: r.code, label: r.nameTh }))");
+    expect(page).toContain(
+      "joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })",
+    );
+    expect(page).not.toContain("nameEn");
+    const entry = codeOf("src/lib/register/entry.ts");
+    const join = entry.slice(entry.indexOf("export const joinAddress"), entry.indexOf("export interface AddressBook"));
+    expect(join).toContain("everydayProvinceName(parts.province)");
+    expect(join).not.toMatch(/\blang\b/);
   });
 
   it("§4 nit 1 — `Province` is `จังหวัด` in Thai mode (the same key, both halves)", () => {

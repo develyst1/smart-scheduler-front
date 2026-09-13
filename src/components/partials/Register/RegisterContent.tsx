@@ -149,7 +149,12 @@ export default function RegisterContent() {
     setSubDistricts(d && book ? await book.subDistrictsOf(d.code) : []);
   };
   const pickSubDistrict = (code: string | null) => setSubPick(subDistricts.find((x) => x.code === code) ?? null);
-  const tier = tierWordsFor(provPick?.code ?? null);
+  // TASK-351 (§8b) — LABELS follow the language; VALUES stay Thai. Thai labels are `tierWordsFor`'s four words with
+  // the Bangkok flip (the SOURCE); English is @Porter's `District · Sub-district` from the dictionary — one word
+  // covers both เขต and อำเภอ. (TASK-350 §3 ruled "stay Thai" from a sentence about VALUES; the screen corrected it.)
+  const tierTh = tierWordsFor(provPick?.code ?? null);
+  const tier =
+    lang === "th" ? tierTh : { district: t("register.addrDistrict"), subDistrict: t("register.addrSubDistrict") };
   const asOptions = (rows: AreaPick[]) => rows.map((r) => ({ value: r.code, label: r.nameTh }));
 
   /**

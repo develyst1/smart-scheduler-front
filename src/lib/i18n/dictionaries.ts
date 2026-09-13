@@ -1220,6 +1220,10 @@ const en = {
     dobPickInstead: "Pick from a calendar instead",
     addrPickInstead: "Pick from the list instead",
     addrProvince: "Province",
+    // TASK-351 — LABELS follow the language (EN loses the เขต/อำเภอ distinction; "District" covers both). PLACEHOLDER,
+    // @Porter's words. VALUES stay Thai in both languages.
+    addrDistrict: "District",
+    addrSubDistrict: "Sub-district",
     addrPickPlaceholder: "Tap to pick",
     addrLoading: "Loading the address list…",
     // §17c screen 6 — VERBATIM (EN half, two lines joined with a space)
@@ -2399,7 +2403,10 @@ const th: typeof en = {
     typeInstead: "พิมพ์เอง", // PLACEHOLDER — @Sober's pair, TASK-349 §3
     dobPickInstead: "เลือกจากปฏิทินแทน", // PLACEHOLDER
     addrPickInstead: "เลือกจากรายการแทน", // PLACEHOLDER
-    addrProvince: "จังหวัด", // PLACEHOLDER — the tier words เขต/อำเภอ, แขวง/ตำบล are the law's, not a dictionary's
+    addrProvince: "จังหวัด", // PLACEHOLDER
+    // TASK-351 — key parity only: in Thai mode the label is `tierWordsFor`'s (เขต/แขวง in Bangkok, อำเภอ/ตำบล elsewhere).
+    addrDistrict: "อำเภอ",
+    addrSubDistrict: "ตำบล",
     addrPickPlaceholder: "แตะเพื่อเลือก", // PLACEHOLDER
     addrLoading: "กำลังโหลดรายชื่อพื้นที่…", // PLACEHOLDER
     provinceLabel: "กรุณาระบุ เขต แขวง จังหวัด เช่น พระโขนงเหนือ วัฒนา กทม", // §17c screen 6 — VERBATIM
