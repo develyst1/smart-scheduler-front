@@ -108,6 +108,27 @@ export const lookup = (idToken: string, phone: string) => post<LookupResult>("lo
 export const link = (idToken: string, phone: string, code?: string) =>
   post<LinkResult>("link", code ? { idToken, phone, code } : { idToken, phone });
 
+/**
+ * TASK-355 (`§10.3`) — `/status`: *"is this LINE account already someone's?"* The phone comes MASKED from the
+ * server (`08x-xxx-xxxx`); the page renders it and never holds a full number. A COUNT, never names (TASK-047).
+ */
+export type StatusResult =
+  | { ok: true; linked: false }
+  | { ok: true; linked: true; phone: string; childCount: number };
+
+/** `/unlink`: the family's LINE binding cleared — EVERY account the family holds. Not linked ⇒ `unlinked: false`, idempotent. */
+export interface UnlinkResult {
+  ok: true;
+  unlinked: boolean;
+  cleared?: number;
+}
+
+/** §10.3 — writes nothing. */
+export const status = (idToken: string) => post<StatusResult>("status", { idToken });
+
+/** §10.3 — the ONE writer's new door; the same clear the admin's button runs. */
+export const unlink = (idToken: string) => post<UnlinkResult>("unlink", { idToken });
+
 export interface CreateInput {
   name: string;
   /**

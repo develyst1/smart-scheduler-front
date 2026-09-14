@@ -1257,6 +1257,17 @@ const en = {
     close: "Close",
     // borrowed from `checkin.closeHint` — the sibling page's approved sentence
     closeHint: "You can close this page",
+    // TASK-355 §10.3 — the linked-account screen. All PLACEHOLDER (@Porter's to write); the MEANING of the unlink
+    // strings is the writer's, not placeholder: it clears the FAMILY's LINE connection, every linked account.
+    alreadyLinkedTitle: "This LINE account is already linked",
+    alreadyLinkedTo: "Linked to {phone} ({n} children). Nothing more to do here.", // PLACEHOLDER
+    unlinkButton: "Unlink this family's LINE connection", // PLACEHOLDER — the MEANING is the writer's: the whole family
+    // PLACEHOLDER
+    unlinkWarning:
+      "This removes the LINE connection for the WHOLE family — if another parent linked their LINE account too, theirs is removed as well. You can link again afterwards.",
+    unlinkConfirm: "Yes, unlink the family", // PLACEHOLDER
+    unlinkCancel: "Keep the link", // PLACEHOLDER
+    unlinkedNotice: "Unlinked. Enter a phone number to link again.", // PLACEHOLDER
     // borrowed from `checkin.connectFail`
     connectFail: "Couldn't connect. Please try again.",
     // PLACEHOLDER
@@ -2428,6 +2439,14 @@ const th: typeof en = {
     createdCount: "ตอนนี้มีนักเรียนในระบบ {count} คน", // PLACEHOLDER
     close: "ปิด", // PLACEHOLDER
     closeHint: "ปิดหน้านี้ได้เลยค่ะ", // borrowed from `checkin.closeHint`
+    alreadyLinkedTitle: "บัญชี LINE นี้ผูกกับครอบครัวไว้แล้วค่ะ", // PLACEHOLDER — TASK-355 §10.3
+    alreadyLinkedTo: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน) ไม่ต้องทำอะไรเพิ่มค่ะ", // PLACEHOLDER
+    unlinkButton: "ปลดการเชื่อมต่อ LINE ของครอบครัวนี้", // PLACEHOLDER — the MEANING is the writer's: the whole family
+    unlinkWarning:
+      "จะยกเลิกการเชื่อมต่อ LINE ของทั้งครอบครัว — ถ้าผู้ปกครองอีกท่านผูก LINE ไว้ด้วย จะถูกปลดไปพร้อมกันค่ะ สามารถผูกใหม่ได้ภายหลัง", // PLACEHOLDER
+    unlinkConfirm: "ยืนยัน ปลดการเชื่อมต่อ", // PLACEHOLDER
+    unlinkCancel: "เก็บการเชื่อมต่อไว้", // PLACEHOLDER
+    unlinkedNotice: "ปลดการเชื่อมต่อแล้วค่ะ กรอกเบอร์โทรศัพท์เพื่อผูกใหม่ได้เลย", // PLACEHOLDER
     connectFail: "เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง", // borrowed from `checkin.connectFail`
     retry: "ลองใหม่", // PLACEHOLDER
     code: {

@@ -27,6 +27,8 @@ export const toCustomerDate = (widgetValue: string | null): string =>
 export interface AreaPick {
   code: string;
   nameTh: string;
+  /** TASK-355 §10.2 — the dataset's English name, for the option LABEL in EN mode only. Never joined, never sent. */
+  nameEn: string;
 }
 
 /**
@@ -68,9 +70,9 @@ export interface AddressBook {
 }
 
 /** Rows come per postal code, so a sub-district with two codes appears twice — collapse on the geocode. */
-const uniqueByCode = (rows: { code: string; nameTh: string }[]): AreaPick[] => {
+const uniqueByCode = (rows: { code: string; nameTh: string; nameEn: string }[]): AreaPick[] => {
   const seen = new Map<string, AreaPick>();
-  for (const r of rows) if (!seen.has(r.code)) seen.set(r.code, { code: r.code, nameTh: r.nameTh });
+  for (const r of rows) if (!seen.has(r.code)) seen.set(r.code, { code: r.code, nameTh: r.nameTh, nameEn: r.nameEn });
   return [...seen.values()];
 };
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Button, Loader, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
 import { DatePickerInput, DatesProvider } from "@mantine/dates";
-import { AlertTriangle, CheckCircle2, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Link2Off, UserPlus, Users } from "lucide-react";
 import { LanguageToggle, useI18n, useT } from "@/lib/i18n";
 import { obtainIdToken } from "@/lib/register/liff";
 import { phoneLanguage } from "@/lib/register/locale";
@@ -19,6 +19,8 @@ import {
   create,
   link,
   lookup,
+  status,
+  unlink,
   type ChildRef,
   type CreateResult,
   type Refusal,
@@ -51,6 +53,12 @@ import {
  * be tall; a form that doubles every label doubles the page. The toggle is the app's own `LanguageToggle` over the
  * app's own dictionary (`th: typeof en`) — it calls `setLang` and nothing else; no field, pick or draft changes
  * with it. Default on a FIRST visit = the LINE app's language (`locale.ts`); a saved choice always wins.
+ *
+ * TASK-355 (`§10`) — (1) the document title is `SOM SCHEDULE` (page.tsx); (2) in EN mode the address OPTIONS show
+ * the dataset's English names — DISPLAY only: the join, the sent strings and the confirm line stay Thai, because
+ * that is what is stored; (3) a LINKED account is TOLD on open (`/status`, the server's masked phone, a count, no
+ * names) and offered UNLINK — a destructive act that clears the FAMILY's LINE connection, every account, so it is
+ * two taps and reads as the family's, not "my phone".
  */
 
 type Phase =
@@ -58,7 +66,9 @@ type Phase =
   | { kind: "liff-missing" }
   | { kind: "liff-login" }
   | { kind: "liff-failed"; detail: string }
-  | { kind: "phone" }
+  | { kind: "phone"; unlinked?: boolean }
+  /** §10.3 — the server said this account is bound: the MASKED phone and a count, as sent. `confirming` = second tap. */
+  | { kind: "already-linked"; phone: string; childCount: number; confirming: boolean }
   | { kind: "found"; phone: string; children: ChildRef[] }
   | { kind: "found-2fa"; phone: string; childCount: number }
   | { kind: "linked"; children: ChildRef[]; canAddMore: boolean }
@@ -114,7 +124,17 @@ export default function RegisterContent() {
       idToken.current = s.idToken;
       // §8 — a first visit speaks the phone's language; a saved toggle wins (`setLangIfUnset` checks storage).
       setLangIfUnset(await phoneLanguage());
-      setPhase({ kind: "phone" });
+      // §10.3 — before the phone field: is this account already someone's? The server says; the page renders.
+      // (A token obtained this instant cannot be EXPIRED, so this one call goes without the retry wrapper.)
+      const st = await status(s.idToken);
+      if (isRefusal(st)) {
+        fail(st);
+        setPhase({ kind: "phone" });
+      } else if (st.linked) {
+        setPhase({ kind: "already-linked", phone: st.phone, childCount: st.childCount, confirming: false });
+      } else {
+        setPhase({ kind: "phone" });
+      }
     } else if (s.kind === "missing-id") setPhase({ kind: "liff-missing" });
     else if (s.kind === "not-logged-in") setPhase({ kind: "liff-login" });
     else setPhase({ kind: "liff-failed", detail: s.detail });
@@ -159,7 +179,10 @@ export default function RegisterContent() {
   const tierTh = tierWordsFor(provPick?.code ?? null);
   const tier =
     lang === "th" ? tierTh : { district: t("register.addrDistrict"), subDistrict: t("register.addrSubDistrict") };
-  const asOptions = (rows: AreaPick[]) => rows.map((r) => ({ value: r.code, label: r.nameTh }));
+  // §10.2 — the option LABEL follows the language (DISPLAY); the option VALUE is the geocode either way, and what
+  // is picked, joined and sent is `nameTh` regardless — the stored strings are Thai.
+  const asOptions = (rows: AreaPick[]) =>
+    rows.map((r) => ({ value: r.code, label: lang === "th" ? r.nameTh : r.nameEn }));
 
   /**
    * §C0 — `TOKEN_EXPIRED` ⇒ re-init LIFF and retry ONCE. Nothing else is retried: `TOKEN_WRONG_CHANNEL` is a
@@ -211,6 +234,16 @@ export default function RegisterContent() {
     }
     if ("twoFactor" in r) return setPhase({ kind: "found-2fa", phone: r.phone, childCount: r.childCount });
     setPhase({ kind: "found", phone: r.phone, children: r.children });
+  };
+
+  /** §10.3 — UNLINK, after the second tap. Clears the FAMILY's binding (every account), then the normal flow. */
+  const submitUnlink = async () => {
+    setFailure(null);
+    setBusy(true);
+    const r = await withToken((tok) => unlink(tok));
+    setBusy(false);
+    if (isRefusal(r)) return fail(r);
+    setPhase({ kind: "phone", unlinked: true }); // `unlinked: false` (was not linked) proceeds the same way
   };
 
   /** The bind — a TAP, so a parent sees their family before anything is written (§C1's reason for `lookup`). */
@@ -307,8 +340,48 @@ export default function RegisterContent() {
             </Stack>
           )}
 
+          {phase.kind === "already-linked" && (
+            /* §10.3 — TOLD, not silent. The masked phone is the SERVER's; a count, no names (TASK-047). The close
+               path is the plain one; UNLINK is red, outlined, and takes a SECOND tap with the family-wide warning
+               in front of it — a parent who opened the link by accident must not unlink by accident. */
+            <Stack gap="sm">
+              <Text fw={600}>{t("register.alreadyLinkedTitle")}</Text>
+              <Text fz="sm">{t("register.alreadyLinkedTo", { phone: phase.phone, n: phase.childCount })}</Text>
+              <Text fz="xs" c="dimmed">
+                {t("register.closeHint")}
+              </Text>
+              {!phase.confirming ? (
+                <Button
+                  variant="outline"
+                  color="red"
+                  leftSection={<Link2Off size={16} />}
+                  onClick={() => setPhase({ ...phase, confirming: true })}
+                >
+                  {t("register.unlinkButton")}
+                </Button>
+              ) : (
+                <Stack gap="xs">
+                  <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
+                    {t("register.unlinkWarning")}
+                  </Alert>
+                  <Button color="red" loading={busy} leftSection={<Link2Off size={16} />} onClick={submitUnlink}>
+                    {t("register.unlinkConfirm")}
+                  </Button>
+                  <Button variant="default" disabled={busy} onClick={() => setPhase({ ...phase, confirming: false })}>
+                    {t("register.unlinkCancel")}
+                  </Button>
+                </Stack>
+              )}
+            </Stack>
+          )}
+
           {phase.kind === "phone" && (
             <Stack gap="sm">
+              {phase.unlinked && (
+                <Alert color="blue" variant="light">
+                  {t("register.unlinkedNotice")}
+                </Alert>
+              )}
               <TextInput
                 label={t("register.phoneLabel")}
                 value={phone}

@@ -325,9 +325,11 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
   it("toggling changes `lang` and NOTHING else — the toggle calls setLang; the page reads `lang` for the date locale only", () => {
     expect(toggle).toContain("onChange={(v) => setLang(v as Lang)}");
     expect(toggle).not.toMatch(/setPhase|localStorage|fetch|reload/);
-    // every `lang` on the page: the destructure, the DatesProvider locale, and (TASK-351) the tier LABEL choice —
-    // all three are RENDERING; nothing keyed on it sets state (no `[lang]` effect, no setter on a `lang` branch)
-    expect((page.match(/\blang\b/g) ?? []).length).toBe(3);
+    // every `lang` on the page: the destructure, the DatesProvider locale, (TASK-351) the tier LABEL choice, and
+    // (TASK-355) the option LABEL choice — all four are RENDERING; nothing keyed on it sets state (no `[lang]`
+    // effect, no setter on a `lang` branch)
+    expect((page.match(/\blang\b/g) ?? []).length).toBe(4);
+    expect(page).toContain('label: lang === "th" ? r.nameTh : r.nameEn');
     expect(page).toContain("<DatesProvider settings={{ locale: lang, firstDayOfWeek: 0 }}>");
     expect(page).not.toMatch(/\[lang\]/);
     expect(page).not.toMatch(/lang [!=]== "(th|en)"[^\n]*set[A-Z]/);
@@ -394,17 +396,29 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
     expect(th.register.addrProvince).toBe("จังหวัด");
   });
 
-  it("§8b — VALUES stay Thai in BOTH languages (the half of the old ruling that was right)", () => {
-    // the option labels and the joined string are `nameTh`, never `nameEn`, and no `lang` reaches the join
-    expect(page).toContain("rows.map((r) => ({ value: r.code, label: r.nameTh }))");
+  // ── TASK-355 §10.2 — REVERSED for the option LABELS, not deleted. TASK-351 asserted "VALUES stay Thai in both
+  // languages: the option labels and the joined string are `nameTh`, never `nameEn`". The owner's EN screen showed
+  // Thai inside the dropdowns ("ตัวเลือก … ข้างใน dropdown เป็นภาษาไทย แม้จะเปลี่ยนภาษาเป็นภาษาอังกฤษ") and he wants
+  // English there. What is DISPLAYED in the list follows `lang` (the dataset's `nameEn`, already loaded — no new
+  // bytes). What is STORED does not: the option VALUE is the geocode, the JOIN and the two SENT strings read `nameTh`
+  // — the `§9.1` repair path and the report depend on the Thai spelling. The right half is kept below.
+  it("§8b (reversed by TASK-355 §10.2) — option LABELS follow the language; the JOIN and the SEND stay `nameTh`", () => {
+    // labels: display only, keyed on `lang`; the value is the geocode either way
+    expect(page).toContain('rows.map((r) => ({ value: r.code, label: lang === "th" ? r.nameTh : r.nameEn }))');
+    // the right half, kept: nothing stored ever reads `nameEn`
     expect(page).toContain(
       "joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })",
     );
-    expect(page).not.toContain("nameEn");
+    expect(page).toContain('const pickedProvince = addrMode === "pick" ? provPick?.nameTh ?? "" : "";');
+    expect((page.match(/nameEn/g) ?? []).length).toBe(1); // the ONE occurrence is the label above
     const entry = codeOf("src/lib/register/entry.ts");
     const join = entry.slice(entry.indexOf("export const joinAddress"), entry.indexOf("export interface AddressBook"));
     expect(join).toContain("everydayProvinceName(parts.province)");
-    expect(join).not.toMatch(/\blang\b/);
+    expect(join).not.toMatch(/\blang\b|nameEn/);
+    // and the confirm screen shows the LINE — Thai in both modes — because it shows what will be stored
+    const confirm = page.slice(page.indexOf('phase.kind === "confirm"'), page.indexOf('phase.kind === "done"'));
+    expect(confirm).toContain("addressLine || t(\"register.reviewSkipped\")");
+    expect(confirm).not.toMatch(/nameEn|\blang\b/);
   });
 
   it("§4 nit 1 — `Province` is `จังหวัด` in Thai mode (the same key, both halves)", () => {
@@ -451,6 +465,91 @@ describe("§9 (TASK-353) — the PROVINCE travels as its own field, full name; t
     const fixable = page.slice(page.indexOf('r.code === "NAME_REQUIRED"'), page.indexOf('r.code === "NOT_LINKED"'));
     expect(fixable).toContain('r.code === "PROVINCE_UNKNOWN"');
     expect(fixable).toContain('setPhase({ kind: "form" });');
+  });
+});
+
+describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked account is TOLD, with UNLINK", () => {
+  const route = codeOf("src/app/register/page.tsx");
+
+  it("§10.1 — the document title of /register is `SOM SCHEDULE`; the app's name and /checkin are untouched", () => {
+    expect(route).toContain('export const metadata: Metadata = { title: "SOM SCHEDULE" };');
+    expect(codeOf("src/app/layout.tsx")).toContain('title: "Smart Scheduler"');
+    expect(codeOf("src/app/checkin/page.tsx")).not.toContain("metadata");
+  });
+
+  it("§10.2 — the dataset's English name rides the row (loaded with the Thai — no new bytes) and is never joined", () => {
+    const entry = codeOf("src/lib/register/entry.ts");
+    expect(entry).toContain("nameEn: r.nameEn");
+    expect(entry).not.toMatch(/import\("thai-address-universal"\)[\s\S]*nameEn[\s\S]*join\(/);
+  });
+
+  it("§10.3 — on open, after the token: `status`; linked ⇒ the warning with the SERVER's masked phone; else the phone field", () => {
+    const init = page.slice(page.indexOf("const initLiff"), page.indexOf("useEffect(() => {"));
+    expect(init).toContain("const st = await status(s.idToken);");
+    expect(init).toContain('setPhase({ kind: "already-linked", phone: st.phone, childCount: st.childCount, confirming: false });');
+    expect(init).toContain('setPhase({ kind: "phone" });');
+    // Rule 1: the page branches on the server's `linked`, and on nothing else
+    expect(init).toContain("} else if (st.linked) {");
+    expect(init).not.toMatch(/phone\.length|childCount\s*[<>]|lineUserId/);
+  });
+
+  it("§10.3 — the page never masks and never holds a full number; a count, no names", () => {
+    // no masking anywhere on the page or in api.ts — the `08x-xxx-xxxx` comes from the server as-is
+    for (const src of [page, api]) expect(src).not.toMatch(/replace\(\/\\d|padEnd|"x"\.repeat|x{3}|maskPhone|slice\(0, 2\)/);
+    expect(api).toContain('{ ok: true; linked: true; phone: string; childCount: number }');
+    const statusType = api.slice(api.indexOf("export type StatusResult"), api.indexOf("export interface UnlinkResult"));
+    expect(statusType).not.toMatch(/name|children|nickname|parentId/);
+    const screen = page.slice(page.indexOf('phase.kind === "already-linked"'), page.indexOf('phase.kind === "phone" &&'));
+    expect(screen).toContain('t("register.alreadyLinkedTo", { phone: phase.phone, n: phase.childCount })');
+    expect(screen).not.toMatch(/ChildList|\.name\b|nickname/);
+  });
+
+  it("§10.3 — UNLINK is two taps, reads as the FAMILY's connection, and leads to the normal flow", () => {
+    const screen = page.slice(page.indexOf('phase.kind === "already-linked"'), page.indexOf('phase.kind === "phone" &&'));
+    // first tap: a red OUTLINE button; second tap: the family-wide warning and a red CONFIRM beside a plain cancel
+    expect(screen).toContain('variant="outline"');
+    expect(screen).toContain("setPhase({ ...phase, confirming: true })");
+    expect(screen).toContain('t("register.unlinkWarning")');
+    expect(screen).toContain("onClick={submitUnlink}");
+    expect(screen).toContain('t("register.unlinkCancel")');
+    expect(screen).toContain('t("register.closeHint")'); // the plain close path, above the destructive one
+    expect(screen.indexOf('t("register.closeHint")')).toBeLessThan(screen.indexOf('variant="outline"'));
+    // unlink ⇒ the ONE writer's door ⇒ the phone field, whether `unlinked` was true or false (idempotent)
+    const un = page.slice(page.indexOf("const submitUnlink"), page.indexOf("const submitLink"));
+    expect(un).toContain("withToken((tok) => unlink(tok))");
+    expect(un).toContain('setPhase({ kind: "phone", unlinked: true });');
+    expect(un).not.toMatch(/r\.unlinked|r\.cleared/);
+    expect(api).toContain('post<UnlinkResult>("unlink", { idToken })');
+    expect(api).toContain('post<StatusResult>("status", { idToken })');
+  });
+
+  it("§10.3 — the copy says the FAMILY's connection, both languages, and every new string is PLACEHOLDER", () => {
+    for (const d of [en, th]) {
+      expect(d.register.unlinkButton.length).toBeGreaterThan(5);
+      expect(d.register.unlinkWarning.length).toBeGreaterThan(20);
+      expect(d.register.alreadyLinkedTo).toContain("{phone}");
+      expect(d.register.alreadyLinkedTo).toContain("{n}");
+    }
+    // the MEANING is the writer's: the whole family, a second linked parent too
+    expect(en.register.unlinkButton).toMatch(/family/i);
+    expect(en.register.unlinkWarning).toMatch(/whole family|another parent/i);
+    expect(th.register.unlinkButton).toContain("ครอบครัว");
+    expect(th.register.unlinkWarning).toContain("ทั้งครอบครัว");
+    expect(th.register.unlinkWarning).toContain("อีกท่าน");
+    // each key once per language INSIDE the `register` block (other blocks have their own `unlinkConfirm`), and the
+    // PLACEHOLDER tag on the line or the comment above it
+    const dict = readFileSync("src/lib/i18n/dictionaries.ts", "utf8");
+    const blocks = [...dict.matchAll(/\n  register: \{[\s\S]*?\n  checkin: \{/g)].map((m) => m[0]);
+    expect(blocks.length).toBe(2);
+    for (const k of ["alreadyLinkedTitle", "alreadyLinkedTo", "unlinkButton", "unlinkWarning", "unlinkConfirm", "unlinkCancel", "unlinkedNotice"]) {
+      for (const b of blocks) {
+        const lines = b.split(/\r?\n/);
+        const i = lines.findIndex((l) => new RegExp(`^\\s*${k}:`).test(l));
+        expect(i).toBeGreaterThan(0);
+        const around = lines.slice(Math.max(0, i - 3), i + 2).join("\n");
+        expect(around).toContain("PLACEHOLDER");
+      }
+    }
   });
 });
 
