@@ -471,10 +471,23 @@ describe("§9 (TASK-353) — the PROVINCE travels as its own field, full name; t
 describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked account is TOLD, with UNLINK", () => {
   const route = codeOf("src/app/register/page.tsx");
 
-  it("§10.1 — the document title of /register is `SOM SCHEDULE`; the app's name and /checkin are untouched", () => {
+  it("§10.1 (+ TASK-356) — the document title of /register AND /checkin is `SOM SCHEDULE`; the app's name stays for every other route", () => {
+    // TASK-355 named /checkin as "should follow, not changed"; TASK-356 changed it. The two parent-facing pages carry
+    // the school's name; the root layout's "Smart Scheduler" still covers every admin route.
     expect(route).toContain('export const metadata: Metadata = { title: "SOM SCHEDULE" };');
+    expect(codeOf("src/app/checkin/page.tsx")).toContain('export const metadata: Metadata = { title: "SOM SCHEDULE" };');
     expect(codeOf("src/app/layout.tsx")).toContain('title: "Smart Scheduler"');
-    expect(codeOf("src/app/checkin/page.tsx")).not.toContain("metadata");
+    // and no OTHER page sets a title of its own
+    const { readdirSync, statSync } = require("fs") as typeof import("fs");
+    const walk = (d: string): string[] =>
+      readdirSync(d).flatMap((n) => {
+        const q = `${d}/${n}`;
+        return statSync(q).isDirectory() ? walk(q) : [q];
+      });
+    const pages = walk("src/app").filter((f) => /\/page\.tsx$/.test(f));
+    expect(pages.length).toBeGreaterThan(5);
+    const titled = pages.filter((f) => /export const metadata/.test(readFileSync(f, "utf8")));
+    expect(titled.sort()).toEqual(["src/app/checkin/page.tsx", "src/app/register/page.tsx"]);
   });
 
   it("§10.2 — the dataset's English name rides the row (loaded with the Thai — no new bytes) and is never joined", () => {
