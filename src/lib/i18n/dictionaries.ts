@@ -258,7 +258,7 @@ const en = {
   },
 
   brand: {
-    appName: "Smart Scheduler",
+    appName: "SOM SCHEDULE", // TASK-357 (REQ-089 item 0) — the customer's name for the app
     tagline: "Back-office scheduling",
     footer: "v0.1 · Back-office team",
   },
@@ -1261,7 +1261,10 @@ const en = {
     // strings is the writer's, not placeholder: it clears the FAMILY's LINE connection, every linked account.
     alreadyLinkedTitle: "This LINE account is already linked",
     alreadyLinkedTo: "Linked to {phone} ({n} children). Nothing more to do here.", // PLACEHOLDER
-    unlinkButton: "Unlink this family's LINE connection", // PLACEHOLDER — the MEANING is the writer's: the whole family
+    alreadyLinkedToOne: "Linked to {phone} (1 child). Nothing more to do here.", // PLACEHOLDER — TASK-357 §3: n === 1
+    // TASK-357 §2 — SHORT on purpose: the previous label cut at "…LINE conn" on a 360-px phone. The test pins a
+    // LENGTH bound (≤ 26) and the button wraps; the MEANING stays the writer's: the whole family, every account.
+    unlinkButton: "Unlink this family's LINE", // PLACEHOLDER
     // PLACEHOLDER
     unlinkWarning:
       "This removes the LINE connection for the WHOLE family — if another parent linked their LINE account too, theirs is removed as well. You can link again afterwards.",
@@ -1555,7 +1558,7 @@ const th: typeof en = {
   },
 
   brand: {
-    appName: "Smart Scheduler",
+    appName: "SOM SCHEDULE", // TASK-357 (REQ-089 item 0)
     tagline: "จัดตารางเรียนหลังบ้าน",
     footer: "v0.1 · ทีมงานหลังบ้าน",
   },
@@ -2441,7 +2444,8 @@ const th: typeof en = {
     closeHint: "ปิดหน้านี้ได้เลยค่ะ", // borrowed from `checkin.closeHint`
     alreadyLinkedTitle: "บัญชี LINE นี้ผูกกับครอบครัวไว้แล้วค่ะ", // PLACEHOLDER — TASK-355 §10.3
     alreadyLinkedTo: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน) ไม่ต้องทำอะไรเพิ่มค่ะ", // PLACEHOLDER
-    unlinkButton: "ปลดการเชื่อมต่อ LINE ของครอบครัวนี้", // PLACEHOLDER — the MEANING is the writer's: the whole family
+    alreadyLinkedToOne: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน) ไม่ต้องทำอะไรเพิ่มค่ะ", // PLACEHOLDER — Thai has no plural; same sentence (key parity)
+    unlinkButton: "ปลด LINE ของครอบครัวนี้", // PLACEHOLDER — TASK-357 §2: short, wraps; the MEANING is still the whole family
     unlinkWarning:
       "จะยกเลิกการเชื่อมต่อ LINE ของทั้งครอบครัว — ถ้าผู้ปกครองอีกท่านผูก LINE ไว้ด้วย จะถูกปลดไปพร้อมกันค่ะ สามารถผูกใหม่ได้ภายหลัง", // PLACEHOLDER
     unlinkConfirm: "ยืนยัน ปลดการเชื่อมต่อ", // PLACEHOLDER

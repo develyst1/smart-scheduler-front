@@ -16,7 +16,8 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "Smart Scheduler",
+  // TASK-357 (REQ-089 item 0) — the customer's name for the app, everywhere a human reads it; the owner's spelling.
+  title: "SOM SCHEDULE",
   description: "Tutoring schedule & attendance management system",
 };
 

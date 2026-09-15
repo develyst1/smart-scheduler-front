@@ -49,7 +49,7 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
           {collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
         </ActionIcon>
         <h1 className="truncate text-lg font-semibold tracking-tight">
-          {current ? t(current.labelKey) : "Smart Scheduler"}
+          {current ? t(current.labelKey) : "SOM SCHEDULE"}
         </h1>
       </div>
 

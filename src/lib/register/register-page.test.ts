@@ -471,13 +471,14 @@ describe("§9 (TASK-353) — the PROVINCE travels as its own field, full name; t
 describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked account is TOLD, with UNLINK", () => {
   const route = codeOf("src/app/register/page.tsx");
 
-  it("§10.1 (+ TASK-356) — the document title of /register AND /checkin is `SOM SCHEDULE`; the app's name stays for every other route", () => {
-    // TASK-355 named /checkin as "should follow, not changed"; TASK-356 changed it. The two parent-facing pages carry
-    // the school's name; the root layout's "Smart Scheduler" still covers every admin route.
-    expect(route).toContain('export const metadata: Metadata = { title: "SOM SCHEDULE" };');
-    expect(codeOf("src/app/checkin/page.tsx")).toContain('export const metadata: Metadata = { title: "SOM SCHEDULE" };');
-    expect(codeOf("src/app/layout.tsx")).toContain('title: "Smart Scheduler"');
-    // and no OTHER page sets a title of its own
+  // ── TASK-357 (REQ-089 item 0) — FLIPPED, not deleted. TASK-355 gave /register the title `SOM SCHEDULE`, TASK-356
+  // gave /checkin the same, and this test asserted "exactly these two, the root stays Smart Scheduler". The customer
+  // then asked for the name EVERYWHERE the frontoffice reads it, so the root carries it and the two page-level titles
+  // are gone as redundant. The shape of the old pin is kept: NO page sets a title of its own, and the root's is the one.
+  it("§10.1 (flipped by TASK-357) — EVERY route's document title is `SOM SCHEDULE`, from the root; no page sets its own", () => {
+    expect(codeOf("src/app/layout.tsx")).toContain('title: "SOM SCHEDULE"');
+    expect(route).not.toContain("metadata");
+    expect(codeOf("src/app/checkin/page.tsx")).not.toContain("metadata");
     const { readdirSync, statSync } = require("fs") as typeof import("fs");
     const walk = (d: string): string[] =>
       readdirSync(d).flatMap((n) => {
@@ -486,8 +487,56 @@ describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked accoun
       });
     const pages = walk("src/app").filter((f) => /\/page\.tsx$/.test(f));
     expect(pages.length).toBeGreaterThan(5);
-    const titled = pages.filter((f) => /export const metadata/.test(readFileSync(f, "utf8")));
-    expect(titled.sort()).toEqual(["src/app/checkin/page.tsx", "src/app/register/page.tsx"]);
+    expect(pages.filter((f) => /export const metadata/.test(readFileSync(f, "utf8")))).toEqual([]);
+  });
+
+  it("TASK-357 §1 — `Smart Scheduler` is READ nowhere in src (tests and history comments excepted); the six sites say the customer's name", () => {
+    const { readdirSync, statSync } = require("fs") as typeof import("fs");
+    const walk = (d: string): string[] =>
+      readdirSync(d).flatMap((n) => {
+        const q = `${d}/${n}`;
+        return statSync(q).isDirectory() ? walk(q) : [q];
+      });
+    const files = walk("src").filter((f) => /\.(ts|tsx)$/.test(f) && !/\.test\.tsx?$/.test(f));
+    expect(files.length).toBeGreaterThan(100);
+    const hits = files.filter((f) => codeOf(f).includes("Smart Scheduler"));
+    expect(hits).toEqual([]);
+    // the six sites, positively
+    expect(codeOf("src/app/login/page.tsx")).toContain("<Title order={3}>SOM SCHEDULE</Title>");
+    expect(codeOf("src/components/layout/AdminLayout/AdminLayout.config.ts")).toContain('export const APP_NAME = "SOM SCHEDULE";');
+    expect(codeOf("src/components/layout/AdminLayout/Header/Header.tsx")).toContain('"SOM SCHEDULE"');
+    expect(en.brand.appName).toBe("SOM SCHEDULE");
+    expect(th.brand.appName).toBe("SOM SCHEDULE");
+    // 🚫 what is STORED or IDENTIFIES code keeps its name — the storage keys, the env var, the package
+    expect(readFileSync("src/app/register/page.tsx", "utf8")).toContain('"ss.lang.register"');
+    expect(readFileSync("package.json", "utf8")).not.toContain("SOM SCHEDULE");
+    // and the description line is not ours to write — left as it was, product name absent from it
+    expect(codeOf("src/app/layout.tsx")).toContain('description: "Tutoring schedule & attendance management system"');
+  });
+
+  it("TASK-357 §2 — the Unlink label fits a 360-px phone: a LENGTH bound in both languages, AND the button wraps", () => {
+    // How the bound was derived: 360 px − page p-4 (2×16) − Paper p="xl" (2×32) = 264 px for the button; minus its
+    // padding (2×18), the icon (16) and the gap (8) ⇒ ~204 px for the label at the 14 px button font ≈ 7 px/char
+    // ⇒ ~29 chars is the cliff; the old label was 35 and cut at "…LINE conn". ≤ 26 leaves a margin; the wrap below is
+    // the safety net for whatever words @Porter finally chooses.
+    expect(en.register.unlinkButton.length).toBeLessThanOrEqual(26);
+    expect(th.register.unlinkButton.length).toBeLessThanOrEqual(26);
+    expect(en.register.unlinkButton).toMatch(/family/i); // the writer's meaning survives the cut
+    expect(th.register.unlinkButton).toContain("ครอบครัว");
+    const screen = page.slice(page.indexOf('phase.kind === "already-linked"'), page.indexOf('phase.kind === "phone" &&'));
+    expect((screen.match(/styles=\{WRAP_LABEL\}/g) ?? []).length).toBe(2); // the outline tap and the red confirm
+    expect(page).toContain('label: { whiteSpace: "normal" as const');
+    expect(page).toContain('root: { height: "auto"');
+  });
+
+  it("TASK-357 §3 — `1 child`, `2 children`; Thai has no plural and is untouched", () => {
+    expect(en.register.alreadyLinkedToOne).toContain("(1 child)");
+    expect(en.register.alreadyLinkedTo).toContain("({n} children)");
+    expect(en.register.alreadyLinkedToOne).not.toContain("children");
+    expect(th.register.alreadyLinkedToOne).toBe(th.register.alreadyLinkedTo);
+    expect(th.register.alreadyLinkedTo).toBe("ผูกกับเบอร์ {phone} (นักเรียน {n} คน) ไม่ต้องทำอะไรเพิ่มค่ะ");
+    expect(page).toContain('phase.childCount === 1 ? "register.alreadyLinkedToOne" : "register.alreadyLinkedTo"');
+    expect((page.match(/childCount === 1/g) ?? []).length).toBe(1); // one ternary, one place
   });
 
   it("§10.2 — the dataset's English name rides the row (loaded with the Thai — no new bytes) and is never joined", () => {
@@ -513,7 +562,7 @@ describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked accoun
     const statusType = api.slice(api.indexOf("export type StatusResult"), api.indexOf("export interface UnlinkResult"));
     expect(statusType).not.toMatch(/name|children|nickname|parentId/);
     const screen = page.slice(page.indexOf('phase.kind === "already-linked"'), page.indexOf('phase.kind === "phone" &&'));
-    expect(screen).toContain('t("register.alreadyLinkedTo", { phone: phase.phone, n: phase.childCount })');
+    expect(screen).toContain('t(phase.childCount === 1 ? "register.alreadyLinkedToOne" : "register.alreadyLinkedTo", {');
     expect(screen).not.toMatch(/ChildList|\.name\b|nickname/);
   });
 

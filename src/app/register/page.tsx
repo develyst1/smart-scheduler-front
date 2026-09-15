@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Loader } from "@mantine/core";
 import { I18nProvider } from "@/lib/i18n";
@@ -11,9 +10,8 @@ import RegisterContent from "@/components/partials/Register/RegisterContent";
 // TH/EN toggle here must not be the admin's `ss.lang` on the same browser, and vice versa. Nested provider, own key.
 export const REGISTER_LANG_KEY = "ss.lang.register";
 
-// TASK-355 §10.1 — the LIFF header shows the document title; the owner's spelling, upper case. Page-level only:
-// the app is still "Smart Scheduler" everywhere else (root layout), and `/checkin` is deliberately not changed here.
-export const metadata: Metadata = { title: "SOM SCHEDULE" };
+// TASK-355 §10.1 put `SOM SCHEDULE` here as a page-level title; TASK-357 (REQ-089 item 0) made it the app's name in
+// the root layout, so this page carries none of its own — the LIFF header still reads it, from the root.
 
 export default function RegisterPage() {
   return (

@@ -78,6 +78,9 @@ type Phase =
 
 type Failure = { code: RegisterCode | "UNREACHABLE"; word?: string; max?: number; name?: string; province?: string };
 
+/** §2 (TASK-357) — a button whose label may wrap on a narrow phone instead of being cut. Height follows the text. */
+const WRAP_LABEL = { root: { height: "auto", minHeight: 36, paddingTop: 6, paddingBottom: 6 }, label: { whiteSpace: "normal" as const, textAlign: "center" as const } };
+
 const isRefusal = (r: unknown): r is Refusal | Unreachable =>
   typeof r === "object" && r !== null && (r as { ok?: boolean }).ok === false;
 
@@ -346,7 +349,13 @@ export default function RegisterContent() {
                in front of it — a parent who opened the link by accident must not unlink by accident. */
             <Stack gap="sm">
               <Text fw={600}>{t("register.alreadyLinkedTitle")}</Text>
-              <Text fz="sm">{t("register.alreadyLinkedTo", { phone: phase.phone, n: phase.childCount })}</Text>
+              {/* §3 (TASK-357) — `1 child`, `2 children`: one ternary, one place; Thai has no plural and uses the same sentence. */}
+              <Text fz="sm">
+                {t(phase.childCount === 1 ? "register.alreadyLinkedToOne" : "register.alreadyLinkedTo", {
+                  phone: phase.phone,
+                  n: phase.childCount,
+                })}
+              </Text>
               <Text fz="xs" c="dimmed">
                 {t("register.closeHint")}
               </Text>
@@ -355,6 +364,8 @@ export default function RegisterContent() {
                   variant="outline"
                   color="red"
                   leftSection={<Link2Off size={16} />}
+                  /* §2 (TASK-357) — the label WRAPS: a 360-px phone cut the old one at "…LINE conn". Short + wrap, both. */
+                  styles={WRAP_LABEL}
                   onClick={() => setPhase({ ...phase, confirming: true })}
                 >
                   {t("register.unlinkButton")}
@@ -364,7 +375,7 @@ export default function RegisterContent() {
                   <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
                     {t("register.unlinkWarning")}
                   </Alert>
-                  <Button color="red" loading={busy} leftSection={<Link2Off size={16} />} onClick={submitUnlink}>
+                  <Button color="red" loading={busy} leftSection={<Link2Off size={16} />} styles={WRAP_LABEL} onClick={submitUnlink}>
                     {t("register.unlinkConfirm")}
                   </Button>
                   <Button variant="default" disabled={busy} onClick={() => setPhase({ ...phase, confirming: false })}>

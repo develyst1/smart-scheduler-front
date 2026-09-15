@@ -40,4 +40,5 @@ export const HIDDEN_NAV_ITEMS: NavItem[] = [
   { key: "dashboard", labelKey: "nav.dashboard", href: "/scheduler/dashboard", icon: LayoutDashboard },
 ];
 
-export const APP_NAME = "Smart Scheduler";
+// TASK-357 (REQ-089 item 0) — the customer's name, the owner's spelling. Identifiers, keys and filenames keep the old name.
+export const APP_NAME = "SOM SCHEDULE";

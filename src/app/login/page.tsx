@@ -43,7 +43,7 @@ export default function LoginPage() {
           <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-blue-700 text-primary-foreground">
             <CalendarDays size={24} />
           </span>
-          <Title order={3}>Smart Scheduler</Title>
+          <Title order={3}>SOM SCHEDULE</Title>
           <p className="text-sm text-muted-500">{t("login.subtitle")}</p>
         </div>
 
