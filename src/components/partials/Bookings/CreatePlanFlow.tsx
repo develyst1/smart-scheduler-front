@@ -146,6 +146,8 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
         // make-up as EXTENDED — so the draft reads like the real plan and every existing chip/label works
         // unchanged. Order is load-bearing: the first `size` rows are the weekly chain, the rest are make-ups
         // (exactly how the BE builds and previews it) — `confirmCreate` relies on that.
+        // TASK-362 (REQ-089 item 1) — a ticked MAKE-UP comes back `absent: true, makeup: true`: ABSENT WINS, so it
+        // renders SICK_LEAVE, and the server's extra make-up for it is one more EXTENDED row at the end.
         sessions: p.sessions.map((s, i) => ({
           id: `new-${i}`,
           date: s.date,
@@ -178,7 +180,11 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
     await runPreview([]);
   };
 
-  /** Toggle one weekly row's planned-absence mark, then re-preview so the end date and make-ups come from the BE. */
+  /**
+   * Toggle one row's planned-absence mark, then re-preview so the end date and make-ups come from the BE.
+   * TASK-362 — `weekIndex` is the row's 1-based POSITION in the previewed plan, make-up rows included; whether
+   * that position exists, and the cap, are the server's — a refusal is its sentence, shown by `runPreview`.
+   */
   const toggleAbsent = async (weekIndex: number) => {
     const next = absentWeeks.includes(weekIndex)
       ? absentWeeks.filter((w) => w !== weekIndex)

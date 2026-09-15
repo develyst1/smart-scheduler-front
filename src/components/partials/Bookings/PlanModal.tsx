@@ -158,13 +158,18 @@ export default function PlanModal({
 
   const isCourse = plan?.kind === "course";
   const sessions = isCreate ? draft : (plan?.sessions ?? []);
-  // SPEC-049 — which weekly row is this? The BE builds (and previews) a course as the `size` weekly rows in
-  // order, then the appended make-ups, and `CreatePlanFlow` maps that order straight into the draft. So a row's
-  // 1-based week is its position, and anything past `size` is a make-up (→ 0 = "not a declarable week").
-  const courseSize = plan?.summary.kind === "course" ? plan.summary.size : 0;
+  // SPEC-049 — which row is this? The BE builds (and previews) a course as the `size` weekly rows in order, then
+  // the appended make-ups, and `CreatePlanFlow` maps that order straight into the draft. **A row's 1-based index
+  // is its position in the plan the server returned — make-up rows included** (TASK-362, REQ-089 item 1: a
+  // make-up can itself be an advance leave, and the server appends another make-up for it). 0 = not in the plan.
+  // 🔴 Whether a position EXISTS (`live rows before it < size`) and the cap (`distinct absences < size`) are the
+  // server's rules; this file holds neither — it sends the position and shows the server's sentence.
+  //
+  // TASK-148's `i < courseSize` lock lived here: it made make-up rows "not a declarable week". Reversed by
+  // requirement; the row order it relied on is unchanged.
   const weekIndexOf = (s: PlanSession) => {
     const i = sessions.findIndex((x) => x.id === s.id);
-    return i >= 0 && i < courseSize ? i + 1 : 0;
+    return i >= 0 ? i + 1 : 0;
   };
   // What the BE says this plan now is — the preview headline (AC-1). Live = everything that isn't a declared
   // absence; the end date is the plan's own last live row, never FE-computed from the absence count.
@@ -194,6 +199,9 @@ export default function PlanModal({
    */
   const courseSlot =
     sessions.find((s) => s.bookingType !== "SINGLE_SESSION") ?? sessions[0] ?? null;
+  /** TASK-362 §3 — the LAST non-extra row (the plan is in date order): the resume picker's default teacher. */
+  const courseLastRow =
+    [...sessions].reverse().find((s) => s.bookingType !== "SINGLE_SESSION") ?? sessions.at(-1) ?? null;
   const createPreviewLine = t("plan.createPreview", {
     n: liveSessions.length,
     d: absentWeeks.length,
@@ -313,8 +321,9 @@ export default function PlanModal({
             absenceLabelFor={
               isCourse && isCreate
                 ? (s) =>
-                    // Only the weekly chain can be declared absent — an appended make-up is the CONSEQUENCE of
-                    // one, and offering it there would let staff chase their own tail.
+                    // TASK-362 (REQ-089 item 1) — every previewed row offers the action, make-ups included: a
+                    // make-up ticked is an advance leave too, and the server appends another make-up for it.
+                    // (TASK-148 withheld it from make-ups — "staff chasing their own tail" — reversed by the owner.)
                     weekIndexOf(s) === 0
                       ? null
                       : absentWeeks.includes(weekIndexOf(s))
@@ -580,9 +589,12 @@ export default function PlanModal({
           // so the re-plan form opens on the lesson the family already has.
           courseStartTime={courseSlot?.startTime ?? null}
           courseWeekday={courseSlot ? dayjs(courseSlot.date).day() : null}
-          // TASK-360 — the same row's teacher and subject: the picker's default and its filter.
-          courseTeacherId={courseSlot?.teacher?.id ?? null}
+          // TASK-360 — the subject filters the picker: the course's, off the same row as the slot.
           courseSubject={courseSlot?.subject ?? null}
+          // TASK-362 §3 — the picker's DEFAULT is the LAST course row's teacher: TASK-361 moved the server's
+          // absent path to `rows.at(-1)`, and the default must be what the server writes when nothing is sent
+          // (TASK-360's Question). Same set as `courseSlot` — non-extra rows — read from the other end.
+          courseTeacherId={courseLastRow?.teacher?.id ?? null}
           onClose={() => setDropMode(null)}
           onDone={onClose}
         />
@@ -776,7 +788,22 @@ function SessionActions({
 
   return (
     <Group justify="flex-end" wrap="nowrap">
-      <Menu position="bottom-end" withArrow shadow="md" width={180}>
+      {/* TASK-362 §2 — @Tanya on `sid`: "portal overlaps the next row; two attempts toggled the WRONG row". The
+          cause is a Mantine default, not this table: `Menu` closes on a `mousedown`/`touchstart` OUTSIDE its
+          dropdown and does NOT consume that event — so a tap that lands beside the item, on the next row's own
+          `⋯` (40 px below, exactly where a `bottom-end` dropdown sits), closes THIS menu and, with the same
+          tap, opens THAT row's. The next tap then ticks the wrong row. `withOverlay` puts a click shield under
+          the dropdown (z 299: above the modal's 200, below the dropdown's 300): a tap outside closes the menu and
+          reaches nothing else. Faint on purpose — it is a shield, not a dialog. Every other `Menu` in a modal
+          shares the default; only this one stacks a row of targets under its dropdown, so it is fixed here. */}
+      <Menu
+        position="bottom-end"
+        withArrow
+        shadow="md"
+        width={180}
+        withOverlay
+        overlayProps={{ backgroundOpacity: 0.05, zIndex: 299 }}
+      >
         <Menu.Target>
           <ActionIcon variant="subtle" color="gray" aria-label={t("plan.actionsMenu")}>
             <MoreHorizontal size={16} />

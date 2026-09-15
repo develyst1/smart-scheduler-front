@@ -611,7 +611,7 @@ export interface CoursePreview {
   startDate: string;
   startTime: string;
   expiryDate: string; // the MAX_WEEK ceiling
-  /** SPEC-049 (TASK-148) — the 1-based weeks declared absent, echoed back. */
+  /** SPEC-049 (TASK-148) — the 1-based ROW positions declared absent, echoed back. TASK-362: make-up rows included. */
   absentWeeks?: number[];
   /** Sessions that will actually be taught (`size` by construction — absences are replaced by make-ups). */
   liveCount?: number;

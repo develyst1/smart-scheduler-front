@@ -667,7 +667,8 @@ export interface CreateCourseInput {
   note?: string;
   /** TASK-098 — per-session overrides from the purchase-time planner (len must === size). */
   sessions?: CoursePlanOverride[];
-  /** SPEC-049 — 1-based weeks declared absent at creation (free of quota; each appends a make-up). */
+  /** SPEC-049 — 1-based ROW positions declared absent at creation (free of quota; each appends a make-up).
+   *  TASK-362 (REQ-089 item 1): any row of the previewed plan, make-ups included; existence and the cap are the server's. */
   absentWeeks?: number[];
   /** REQ-063 — optional admin discount on the sale; the BE re-validates against the list price. */
   discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string };

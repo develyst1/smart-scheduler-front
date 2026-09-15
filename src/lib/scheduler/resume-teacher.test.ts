@@ -108,8 +108,15 @@ describe("both doors — pre-selected default, the shared options, `teacherId` o
     expect(course).toContain("resumeTeacherOptions(teachers, courseTeacherId, startDate, courseSubject)");
     expect(course).toContain("teacherId: resumeTeacherIdToSend(teacherId, courseTeacherId),");
     expect(course).toContain('label={t("booking.teacher")}');
-    // the plan hands over the SAME row's teacher and subject as the slot (courseSlot — first non-extra session)
-    expect(plan).toContain("courseTeacherId={courseSlot?.teacher?.id ?? null}");
+    // TASK-362 §3 — REWRITTEN: TASK-360 pinned the default to `courseSlot` (the FIRST non-extra row) because that
+    // was the server's absent path (`rows[0]`). TASK-361 moved the server to `rows.at(-1)`, so the default the admin
+    // SEES is now the LAST non-extra row's teacher — same set as the slot, read from the other end. The subject
+    // still comes off the slot row (one course, one subject).
+    expect(plan).toContain(
+      '[...sessions].reverse().find((s) => s.bookingType !== "SINGLE_SESSION") ?? sessions.at(-1) ?? null',
+    );
+    expect(plan).toContain("courseTeacherId={courseLastRow?.teacher?.id ?? null}");
+    expect(plan).not.toContain("courseTeacherId={courseSlot");
     expect(plan).toContain("courseSubject={courseSlot?.subject ?? null}");
   });
 
