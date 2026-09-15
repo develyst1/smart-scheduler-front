@@ -104,6 +104,14 @@ export const createStudentForParent = (parentId: string, input: CreateStudentInp
   return delay(clone(s));
 };
 
+export const deleteStudent = (id: string): Promise<{ deleted: true }> => {
+  for (const p of parents) {
+    const i = p.students.findIndex((s) => s.id === id);
+    if (i >= 0) p.students.splice(i, 1);
+  }
+  return delay({ deleted: true as const });
+};
+
 export const updateStudent = (id: string, input: UpdateStudentInput): Promise<Student> => {
   const p = parents.find((x) => x.students.some((s) => s.id === id))!;
   const s = p.students.find((x) => x.id === id)!;

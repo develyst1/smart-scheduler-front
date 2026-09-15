@@ -9,6 +9,7 @@ import {
   updateParent,
   createStudentForParent,
   updateStudent,
+  deleteStudent,
   setParentSuspended,
   type ParentsQuery,
   type ParentInput,
@@ -79,6 +80,15 @@ export const useUpdateStudent = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateStudentInput }) => updateStudent(id, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PARENTS_KEY }),
+  });
+};
+
+/** TASK-365 — after a delete the student leaves the list and the parent's count updates: the SAME invalidation as `useCreateStudent`. */
+export const useDeleteStudent = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteStudent(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: PARENTS_KEY }),
   });
 };

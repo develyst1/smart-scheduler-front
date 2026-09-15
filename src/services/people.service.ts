@@ -101,6 +101,19 @@ export const updateStudent = async (id: string, input: UpdateStudentInput): Prom
   return data;
 };
 
+/**
+ * TASK-365 (`REQ-089 item 3`) — HARD delete a student with NO history. 🔑 **The rule has ONE source — the server:**
+ * `200 { deleted: true }` · `409 STUDENT_HAS_HISTORY` (the app's usual `{ error: { code, message } }`, the Thai
+ * sentence carrying the counts) · `404`. This layer neither checks history nor hides anything; the dialog shows
+ * the server's sentence. Suspension is the PARENT's and plays no part here; a walk-in (`parentId = null`) is
+ * deletable the same way.
+ */
+export const deleteStudent = async (id: string): Promise<{ deleted: true }> => {
+  if (useMockData) return mock.deleteStudent(id);
+  const { data } = await api.delete<{ deleted: true }>(`/students/${id}`);
+  return data;
+};
+
 export const setParentSuspended = async (id: string, suspended: boolean): Promise<Parent> => {
   if (useMockData) return mock.setParentSuspended(id, suspended);
   const { data } = await api.post<Parent>(`/parents/${id}/${suspended ? "suspend" : "unsuspend"}`, {});

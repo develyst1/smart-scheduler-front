@@ -950,6 +950,13 @@ const en = {
     unsuspendBody: "This restores their LINE bot access and lets new bookings be made again.",
     suspendedOk: "Account suspended",
     unsuspendedOk: "Account un-suspended",
+    // ── TASK-365 (REQ-089 item 3) — hard delete of a history-free student; the 409 sentence is the server's ──
+    deleteStudent: "Delete",
+    deleteStudentTitle: "Delete {name} permanently?",
+    deleteStudentBody:
+      "Permanent — this cannot be undone. Only a student with no bookings or history can be deleted; the server will say if there is any.",
+    deleteStudentConfirm: "Yes, delete",
+    deletedOk: "{name} deleted",
     // ── SPEC-071 / TASK-243 — clearing a family's LINE binding ──
     lineLinkTitle: "LINE link — {family}",
     lineLinkChecking: "Checking this family's LINE link…",
@@ -2188,6 +2195,12 @@ const th: typeof en = {
     unsuspendBody: "จะเปิดการใช้งาน LINE บอท และสร้างการจองใหม่ได้อีกครั้ง",
     suspendedOk: "ระงับบัญชีแล้ว",
     unsuspendedOk: "ยกเลิกการระงับแล้ว",
+    // ── TASK-365 (REQ-089 item 3) — ลบนักเรียนที่ไม่มีประวัติ; ประโยค 409 เป็นของเซิร์ฟเวอร์ ──
+    deleteStudent: "ลบ",
+    deleteStudentTitle: "ลบ {name} ถาวร?",
+    deleteStudentBody: "ลบถาวร — ทำแล้วย้อนกลับไม่ได้ ลบได้เฉพาะนักเรียนที่ยังไม่มีการจองหรือประวัติ ถ้ามี ระบบจะแจ้งค่ะ",
+    deleteStudentConfirm: "ยืนยัน ลบ",
+    deletedOk: "ลบ {name} แล้ว",
     // ── SPEC-071 / TASK-243 — ล้างการเชื่อมไลน์ของครอบครัว ──
     lineLinkTitle: "การเชื่อมไลน์ — {family}",
     lineLinkChecking: "กำลังตรวจสอบการเชื่อมไลน์ของครอบครัวนี้…",

@@ -16,9 +16,10 @@ import {
   Modal,
   ActionIcon,
   Tooltip,
+  Alert,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { Search, UserPlus, Pencil, Ban, CircleCheck, Baby, Phone, MapPin, Link2Off } from "lucide-react";
+import { Search, UserPlus, Pencil, Ban, CircleCheck, Baby, Phone, MapPin, Link2Off, Trash2, AlertTriangle } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
@@ -26,6 +27,7 @@ import { useLoadPhase } from "@/lib/ui/load-phase";
 import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import {
   useClearParentLineLink,
+  useDeleteStudent,
   useParent,
   useParents,
   useSetParentSuspended,
@@ -69,6 +71,11 @@ export default function PeopleContent() {
     student: null,
   });
   const [suspendTarget, setSuspendTarget] = useState<{ parent: Parent; suspend: boolean } | null>(null);
+  // TASK-365 (REQ-089 item 3) — hard delete of a history-free student: the student under confirm, and the SERVER's
+  // refusal sentence (a 409 names the counts and points at suspend). 🚫 No client-side history check anywhere.
+  const deleteStudent = useDeleteStudent();
+  const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   // SPEC-071 / TASK-243 — which family's LINE link is open in the dialog. `null` = closed, so nothing is fetched.
   const [lineTarget, setLineTarget] = useState<Parent | null>(null);
 
@@ -91,6 +98,20 @@ export default function PeopleContent() {
     }
     if (s.nationality) parts.push(s.nationality === THAI_NATIONALITY ? t("people.natThai") : s.nationality);
     return parts.join(" · ");
+  };
+
+  /** TASK-365 — the second tap. `200` ⇒ the list refreshes (same invalidation as create); `409` ⇒ the server's words, dialog stays. */
+  const runDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    try {
+      await deleteStudent.mutateAsync(deleteTarget.id);
+      notify({ title: t("people.deletedOk", { name: deleteTarget.nickname || deleteTarget.name }), color: "success" });
+      setDeleteTarget(null);
+    } catch (e) {
+      // 🔴 The server's sentence, unchanged — it carries the counts and the pointer to suspend. Nothing invented.
+      setDeleteError(e instanceof ApiClientError ? e.message : (e as Error).message);
+    }
   };
 
   const runSuspend = async () => {
@@ -251,18 +272,34 @@ export default function PeopleContent() {
                                 )}
                                 {meta && <span className="ml-2 text-xs text-muted-400">· {meta}</span>}
                               </div>
-                              <Tooltip label={t("people.edit")} withinPortal>
-                                <ActionIcon
-                                  variant="subtle"
-                                  color="gray"
-                                  aria-label={t("people.edit")}
-                                  onClick={() =>
-                                    setStudentModal({ open: true, parentId: p.id, student: s })
-                                  }
-                                >
-                                  <Pencil size={15} />
-                                </ActionIcon>
-                              </Tooltip>
+                              <Group gap={2} wrap="nowrap">
+                                <Tooltip label={t("people.edit")} withinPortal>
+                                  <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    aria-label={t("people.edit")}
+                                    onClick={() =>
+                                      setStudentModal({ open: true, parentId: p.id, student: s })
+                                    }
+                                  >
+                                    <Pencil size={15} />
+                                  </ActionIcon>
+                                </Tooltip>
+                                {/* TASK-365 — offered on EVERY student; the server decides (409 ⇒ its sentence). First tap. */}
+                                <Tooltip label={t("people.deleteStudent")} withinPortal>
+                                  <ActionIcon
+                                    variant="subtle"
+                                    color="red"
+                                    aria-label={t("people.deleteStudent")}
+                                    onClick={() => {
+                                      setDeleteError(null);
+                                      setDeleteTarget(s);
+                                    }}
+                                  >
+                                    <Trash2 size={15} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              </Group>
                             </div>
                           );
                         })}
@@ -295,6 +332,39 @@ export default function PeopleContent() {
       />
 
       <LineLinkDialog parent={lineTarget} onClose={() => setLineTarget(null)} />
+
+      {/* TASK-365 — the second tap: names the student, says it is permanent, red confirm beside a plain cancel
+          (the TASK-355 unlink pattern). A 409 shows the server's sentence HERE and the dialog stays open. */}
+      <Modal
+        opened={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        centered
+        title={t("people.deleteStudentTitle", { name: deleteTarget?.nickname || deleteTarget?.name || "" })}
+      >
+        {deleteTarget && (
+          <Stack gap="lg">
+            {deleteError && (
+              <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
+                {deleteError}
+              </Alert>
+            )}
+            <Text size="sm">{t("people.deleteStudentBody")}</Text>
+            <Group justify="flex-end" gap="sm">
+              <Button variant="default" onClick={() => setDeleteTarget(null)}>
+                {t("common.cancel")}
+              </Button>
+              <Button
+                color="red"
+                leftSection={<Trash2 size={15} />}
+                loading={deleteStudent.isPending}
+                onClick={runDelete}
+              >
+                {t("people.deleteStudentConfirm")}
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
 
       <Modal
         opened={suspendTarget !== null}
