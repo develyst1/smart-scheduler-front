@@ -440,10 +440,16 @@ export const pauseBooking = async (id: string): Promise<Booking> => {
  */
 export const resumeBooking = async (
   id: string,
-  input: { date: string; startTime: string },
+  input: { date: string; startTime: string; teacherId?: string },
 ): Promise<Booking> => {
   if (useMock) return mock.resumeBooking(id, input);
-  const { data } = await api.post<UpdateBookingStatusResponse>(`/bookings/${id}/resume`, input);
+  // TASK-360 (REQ-089 item 8) — `teacherId` rides ONLY when the dialog chose a different teacher; otherwise the
+  // key is absent and the server keeps the booking's own teacher byte for byte (TASK-359's contract).
+  const { data } = await api.post<UpdateBookingStatusResponse>(`/bookings/${id}/resume`, {
+    date: input.date,
+    startTime: input.startTime,
+    ...(input.teacherId ? { teacherId: input.teacherId } : {}),
+  });
   return dtoToBooking(data.booking);
 };
 
@@ -993,7 +999,7 @@ export const dropCourse = async (courseId: string, input: { reason?: string }) =
  */
 export const resumeCourse = async (
   courseId: string,
-  input: { startDate: string; startTime: string },
+  input: { startDate: string; startTime: string; teacherId?: string },
 ): Promise<ResumeCourseResponse> => {
   if (useMock) return mock.resumeCourse(courseId, input);
   // 🔴 EXACTLY these two fields, and the body is never empty (TASK-287 §8). `POST …/resume` with `{}` is now
@@ -1002,9 +1008,14 @@ export const resumeCourse = async (
   // 🚫 **No `weekday`, deliberately.** The server derives it with `weekdayOf(startDate)` — the same line course
   // creation uses — and zod would **strip an unknown `weekday` silently**: the form would look right, send
   // three fields, and lose one with no error at all. Two fields cannot contradict each other; three can.
+  //
+  // TASK-360 (REQ-089 item 8) — a THIRD field, optional: `teacherId`, present ONLY when the dialog chose a
+  // different teacher. Absent ⇒ the first session's teacher, byte for byte (TASK-359). Two fields cannot
+  // contradict each other; this one cannot either — it names a teacher or it is not there.
   const { data } = await api.post<ResumeCourseResponse>(`/courses/${courseId}/resume`, {
     startDate: input.startDate,
     startTime: input.startTime,
+    ...(input.teacherId ? { teacherId: input.teacherId } : {}),
   });
   return data;
 };

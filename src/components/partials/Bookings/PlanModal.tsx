@@ -580,6 +580,9 @@ export default function PlanModal({
           // so the re-plan form opens on the lesson the family already has.
           courseStartTime={courseSlot?.startTime ?? null}
           courseWeekday={courseSlot ? dayjs(courseSlot.date).day() : null}
+          // TASK-360 — the same row's teacher and subject: the picker's default and its filter.
+          courseTeacherId={courseSlot?.teacher?.id ?? null}
+          courseSubject={courseSlot?.subject ?? null}
           onClose={() => setDropMode(null)}
           onDone={onClose}
         />

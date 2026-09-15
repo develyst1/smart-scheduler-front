@@ -29,6 +29,7 @@ import StudentSelect, { type StudentSelectValue } from "@/components/common/Stud
 import EligibleStudentSelect from "@/components/common/EligibleStudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
+import { resumeTeacherIdToSend, resumeTeacherOptions } from "@/lib/scheduler/resume-teacher";
 import { ApiClientError, errorProblems } from "@/lib/api/client";
 import DiscountSection from "@/components/common/DiscountSection";
 import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
@@ -180,6 +181,11 @@ function ViewBooking({
   const [resumeOpen, setResumeOpen] = useState(false);
   const [resumeDate, setResumeDate] = useState<string | null>(null);
   const [resumeTime, setResumeTime] = useState<string | null>(null);
+  // TASK-360 (REQ-089 item 8) — WHO teaches the resumed booking. Seeded to the booking's own teacher, so "keep" is
+  // the default and sends nothing; the options are the shared `resumeTeacherOptions` (bookable on the chosen date
+  // + teaches this booking's subject, by NAME — a booking carries the subject name), the current teacher always in.
+  const [resumeTeacher, setResumeTeacher] = useState<string | null>(booking.teacherId);
+  const resumeTeacherChoices = resumeTeacherOptions(teachers, booking.teacherId, resumeDate, { name: booking.subject });
   // 🔴 AC-14 — the BACKEND's clash sentence, held verbatim. It already names the teacher and the clashing
   // booking; composing a second one here would be two clash rules in the product that can disagree.
   const [resumeError, setResumeError] = useState<string | null>(null);
@@ -305,6 +311,8 @@ function ViewBooking({
         id: booking.id,
         date: resumeDate as string,
         startTime: resumeTime as string,
+        // TASK-360 — only when it differs from the booking's own teacher; unchanged ⇒ the key is absent.
+        teacherId: resumeTeacherIdToSend(resumeTeacher, booking.teacherId),
       });
       notify({ title: t("calendar.resumedOk"), description: booking.displayName, color: "success" });
       setResumeOpen(false);
@@ -630,7 +638,13 @@ function ViewBooking({
               </Menu.Item>
             )}
             {canResumeBooking(booking) && (
-              <Menu.Item leftSection={<PlayCircle size={16} />} onClick={() => setResumeOpen(true)}>
+              <Menu.Item
+                leftSection={<PlayCircle size={16} />}
+                onClick={() => {
+                  setResumeTeacher(booking.teacherId); // TASK-360 — re-seed on every open
+                  setResumeOpen(true);
+                }}
+              >
                 {t("calendar.resumeAction")}
               </Menu.Item>
             )}
@@ -708,6 +722,18 @@ function ViewBooking({
             onChange={setResumeTime}
             data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
             searchable
+          />
+          {/* TASK-360 — the teacher, pre-selected to the booking's own. 🔴 The server has no teacher↔subject rule;
+              this filtered list is the only guard, as on create. A refusal is the server's sentence, above. */}
+          <Select
+            label={t("booking.teacher")}
+            placeholder={t("course.pickTeacher")}
+            value={resumeTeacher}
+            onChange={setResumeTeacher}
+            data={teacherSelectData(resumeTeacherChoices)}
+            renderOption={({ option, checked }) => <TeacherOption option={option} checked={checked} teachers={teachers} />}
+            allowDeselect={false}
+            comboboxProps={{ withinPortal: true }}
           />
           <Group justify="flex-end" gap="sm">
             <Button variant="subtle" color="gray" onClick={() => setResumeOpen(false)}>

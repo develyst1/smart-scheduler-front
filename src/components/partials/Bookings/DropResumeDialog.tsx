@@ -8,7 +8,9 @@ import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
-import { useDropCourse, usePreviewEndCourse, useResumeCourse } from "@/hooks/scheduler";
+import { useDropCourse, usePreviewEndCourse, useResumeCourse, useTeachers } from "@/hooks/scheduler";
+import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
+import { resumeTeacherIdToSend, resumeTeacherOptions } from "@/lib/scheduler/resume-teacher";
 import { formatDateDisplay } from "@/lib/ui/format";
 import { TIME_SLOTS, type EndCoursePreview } from "@/types/app/scheduler";
 import type { ResumeCourseResponse } from "@/types/api/contract";
@@ -30,6 +32,13 @@ interface Props {
   courseStartTime?: string | null;
   /** 0–6, from the course's own session dates. Used to land the default date on the same weekday. */
   courseWeekday?: number | null;
+  /**
+   * TASK-360 (REQ-089 item 8) — the course's CURRENT teacher and subject, read off the same row as the slot
+   * (`courseSlot`, the first non-extra session). The teacher is the picker's DEFAULT (pre-selected, zero taps to
+   * keep — and what the server does when nothing is sent); the subject filters the options.
+   */
+  courseTeacherId?: string | null;
+  courseSubject?: { id: string; name: string } | null;
   onClose: () => void;
   /** Called once the act has happened AND the admin has read the outcome — never before (TASK-288 §2). */
   onDone?: () => void;
@@ -61,6 +70,8 @@ export default function DropResumeDialog({
   student,
   courseStartTime,
   courseWeekday,
+  courseTeacherId = null,
+  courseSubject = null,
   onClose,
   onDone,
 }: Props) {
@@ -68,6 +79,7 @@ export default function DropResumeDialog({
   const drop = useDropCourse();
   const resume = useResumeCourse();
   const previewPause = usePreviewEndCourse();
+  const { data: teachers = [] } = useTeachers();
 
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +91,9 @@ export default function DropResumeDialog({
    */
   const [startDate, setStartDate] = useState(() => defaultResumeDate(courseWeekday));
   const [startTime, setStartTime] = useState(resumeDefaultTime(courseStartTime));
+  /** TASK-360 — the picked teacher; seeded to the current one on open, so "keep" is the default and sends nothing. */
+  const [teacherId, setTeacherId] = useState<string | null>(courseTeacherId);
+  const teacherOptions = resumeTeacherOptions(teachers, courseTeacherId, startDate, courseSubject);
   /** What the re-plan actually did — read from the response, never computed (TASK-287 §7). */
   const [result, setResult] = useState<ResumeCourseResponse | null>(null);
   /**
@@ -101,12 +116,13 @@ export default function DropResumeDialog({
     if (opened) {
       setStartDate(defaultResumeDate(courseWeekday));
       setStartTime(resumeDefaultTime(courseStartTime));
+      setTeacherId(courseTeacherId);
       return;
     }
     setReason("");
     setError(null);
     setResult(null);
-  }, [opened, courseStartTime, courseWeekday]);
+  }, [opened, courseStartTime, courseWeekday, courseTeacherId]);
 
   /**
    * 🔴 TASK-291 — ask the server what the pause will remove, **every time the pause face opens.**
@@ -153,7 +169,13 @@ export default function DropResumeDialog({
       } else {
         // 🔴 TASK-287 — the schedule is ALWAYS sent. `{}` is refused server-side now, deliberately: that empty
         // path is what produced DEF-2's non-determinism.
-        const res = await resume.mutateAsync({ courseId, startDate, startTime });
+        // TASK-360 — `teacherId` only when it differs from the course's own; unchanged ⇒ the key is absent.
+        const res = await resume.mutateAsync({
+          courseId,
+          startDate,
+          startTime,
+          teacherId: resumeTeacherIdToSend(teacherId, courseTeacherId),
+        });
         notify({ title: t("endCourse.resumeDone"), color: "success" });
         // 🔑 The re-plan MOVED things — where the course now ends, and possibly its expiry. The dialog holds
         // open to state both, because an expiry that shifts silently is exactly what REQ-082's audit trail
@@ -323,6 +345,22 @@ export default function DropResumeDialog({
               required
             />
           </Group>
+        )}
+        {!isDrop && !result && (
+          /* TASK-360 (REQ-089 item 8) — WHO teaches the resumed course. Pre-selected = the current teacher; the
+             options are `resumeTeacherOptions` — the create picker's own parts (bookable on the date + teaches the
+             subject) — and the current teacher is always among them. 🔴 The server has no teacher↔subject rule;
+             this list is the only guard. A refusal (unknown/archived/no budget/clash) is the server's sentence. */
+          <Select
+            label={t("booking.teacher")}
+            placeholder={t("course.pickTeacher")}
+            value={teacherId}
+            onChange={setTeacherId}
+            data={teacherSelectData(teacherOptions)}
+            renderOption={({ option, checked }) => <TeacherOption option={option} checked={checked} teachers={teachers} />}
+            allowDeselect={false}
+            comboboxProps={{ withinPortal: true }}
+          />
         )}
 
         <Group justify="flex-end" gap="sm">

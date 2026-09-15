@@ -319,11 +319,14 @@ export const useResumeCourse = () => {
       courseId,
       startDate,
       startTime,
+      teacherId,
     }: {
       courseId: string;
       startDate: string;
       startTime: string;
-    }) => resumeCourse(courseId, { startDate, startTime }),
+      /** TASK-360 — only when the dialog chose a different teacher; `undefined` ⇒ the key is not sent. */
+      teacherId?: string;
+    }) => resumeCourse(courseId, { startDate, startTime, teacherId }),
     onSuccess: () => invalidateAll(qc),
   });
 };
@@ -449,8 +452,8 @@ export const usePauseBooking = () => {
 export const useResumeBooking = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, date, startTime }: { id: string; date: string; startTime: string }) =>
-      resumeBooking(id, { date, startTime }),
+    mutationFn: ({ id, date, startTime, teacherId }: { id: string; date: string; startTime: string; teacherId?: string }) =>
+      resumeBooking(id, { date, startTime, teacherId }),
     onSuccess: () => invalidateAll(qc),
   });
 };

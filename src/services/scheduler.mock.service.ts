@@ -175,7 +175,7 @@ export const pauseBooking = (id: string): Promise<Booking> => {
 
 export const resumeBooking = (
   id: string,
-  input: { date: string; startTime: string },
+  input: { date: string; startTime: string; teacherId?: string },
 ): Promise<Booking> => {
   const b = bookings.find((x) => x.id === id);
   if (!b) return delay(undefined as unknown as Booking);
@@ -979,7 +979,7 @@ const mockWarning = (courseId: string, expiryDate: string) => {
  * last of them. The mock mirrors the two rules that matter offline: **it never shrinks the expiry**, and it
  * reports `expiryExtended` from an actual comparison rather than always claiming a move.
  */
-export const resumeCourse = (courseId: string, input: { startDate: string; startTime: string }) => {
+export const resumeCourse = (courseId: string, input: { startDate: string; startTime: string; teacherId?: string }) => {
   const c = coursePackages.find((x) => x.id === courseId) as any;
   const owed = Math.max(0, (c?.size ?? 0) - (c?.usedSessions ?? 0));
   const dates = Array.from({ length: owed }, (_, i) =>
