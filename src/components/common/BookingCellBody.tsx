@@ -55,7 +55,7 @@ export function SharedTeachersMarker({
 
   return (
     <span
-      className="flex min-w-0 items-center gap-1 text-[10px] text-muted-500"
+      className="flex min-w-0 items-center gap-1 text-[10px] font-medium text-cal-ink"
       title={t("calendar.sharedTitle", {
         count: booking.teachers.length,
         teachers: booking.teachers.map(name).join(", "),
@@ -134,8 +134,13 @@ export default function BookingCellBody({ booking, display, fullProgram = false 
 
   return (
     <span className="flex min-w-0 flex-col gap-0.5">
+      {/* 🔴 `cal-ink` + `font-medium` (2026-09-16, owner review). Every line in a calendar cell now shares ONE
+          colour: the old three-tier grey put this line at `muted-600`, and once the status fill went to 34% a
+          mid grey was the first thing to sink into it. Hierarchy is carried by size and weight instead —
+          neither of which fades as the fill deepens. This file is imported by the two calendar grids only
+          (plus one test), so the change reaches nothing else. */}
       {(showType || showProgram) && (
-        <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-600">
+        <span className="flex min-w-0 items-center gap-1 text-[11px] font-medium text-cal-ink">
           {showType && (
             <>
               <Icon
@@ -148,7 +153,7 @@ export default function BookingCellBody({ booking, display, fullProgram = false 
               <span className="shrink-0 font-medium">{t(`bookingType.${booking.bookingType}`)}</span>
             </>
           )}
-          {showType && showProgram && <span className="shrink-0 text-muted-300">·</span>}
+          {showType && showProgram && <span className="shrink-0 text-cal-ink">·</span>}
           {showProgram && (
             <span className={fullProgram ? "min-w-0" : "min-w-0 truncate"}>{booking.subject}</span>
           )}
@@ -159,7 +164,7 @@ export default function BookingCellBody({ booking, display, fullProgram = false 
           nothing rendered at all (AC-5). */}
       {showNote && (
         <span
-          className="truncate border-l-2 border-muted-300 pl-1.5 text-[10px] text-muted-500"
+          className="truncate border-l-2 border-cal-ink pl-1.5 text-[10px] font-medium text-cal-ink"
           title={booking.attendeeNote ?? undefined}
         >
           {booking.attendeeNote}

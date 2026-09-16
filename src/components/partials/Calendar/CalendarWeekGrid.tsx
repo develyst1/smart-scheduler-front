@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
-import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
+import { badgeColorVar } from "@/lib/ui/badge-colors";
 import { formatTimeDisplay } from "@/lib/ui/format";
 import { BOOKING_STATUS_COLOR, OFF_CALENDAR_STATUSES, TIME_SLOTS } from "@/types/app/scheduler";
 import { useI18n } from "@/lib/i18n";
@@ -14,6 +14,7 @@ import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
 import BookingCellBody, { BookingTypeStripe, LastStamp, SharedTeachersMarker } from "@/components/common/BookingCellBody";
 import { useCellDisplay } from "@/lib/scheduler/cell-display";
+import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE } from "./calendar-status";
 
 interface Props {
   teachers: TeacherView[];
@@ -23,25 +24,9 @@ interface Props {
   onCreate: (teacherId: string, time: string, date: string) => void;
 }
 
-// สี dot สถานะ (จุดกลมหน้าเวลา) — แถบซ้าย chip = ประเภท, พื้น chip = สถานะ
-const DOT_STYLE: Record<string, string> = {
-  primary: "bg-primary",
-  success: "bg-success",
-  warning: "bg-warning",
-  secondary: "bg-secondary",
-  danger: "bg-danger",
-  default: "bg-muted-400",
-};
-
-// พื้น+ขอบ chip ตามสถานะ (พื้นอ่อน ขอบเข้ม) — คงสัญญาณสถานะที่พื้น + ขอบชัดไม่กลืนพื้นเซลล์
-const CHIP_STYLE: Record<string, string> = {
-  primary: "bg-primary/10 border-primary/30 hover:bg-primary/15",
-  success: "bg-success/10 border-success/30 hover:bg-success/15",
-  warning: "bg-warning/10 border-warning/40 hover:bg-warning/15",
-  secondary: "bg-secondary/10 border-secondary/30 hover:bg-secondary/15",
-  danger: "bg-danger/10 border-danger/30 hover:bg-danger/15",
-  default: "bg-muted-100 border-muted-300 hover:bg-muted-200",
-};
+// พื้น/ขอบ + dot ตามสถานะ — `./calendar-status`, shared with the day grid AND the legend that explains both.
+// 🚫 Do not re-declare either map here: the legend drifting out of step with the grid is the defect that put
+// them in one file.
 
 export default function CalendarWeekGrid({
   teachers,
@@ -129,33 +114,48 @@ export default function CalendarWeekGrid({
                         key={b.id}
                         type="button"
                         onClick={() => onSelectBooking(b)}
-                        className={`relative flex w-full flex-col gap-0.5 rounded-lg border-y border-r py-1.5 pl-3 pr-2 text-left transition-colors ${CHIP_STYLE[accent]}`}
+                        className={`relative flex w-full flex-col gap-0.5 rounded-lg border-y border-r py-1.5 pl-3 pr-2 text-left transition-colors ${CAL_SURFACE_STYLE[accent]} ${CAL_SURFACE_HOVER[accent]}`}
                       >
                         {/* SPEC-046 — the left stripe carries TYPE; STATUS rides the dot beside the time. */}
                         <BookingTypeStripe type={b.bookingType} />
                         <span className="flex min-w-0 items-center gap-1.5">
-                          <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${DOT_STYLE[accent]}`} />
+                          <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${CAL_DOT_STYLE[accent]}`} />
                           {/* 🔴 TASK-326 §1 — through the helper although `toBookingDTO` already applies
                               `hhmm()`, so this cell was never showing seconds. Routed for the reason TASK-324
                               settled on: **a renderer that is correct only because a mapper in another repo is
                               correct breaks silently the day that mapper moves.** */}
-                          <span className="shrink-0 text-[11px] font-medium tabular-nums text-muted-500">
+                          {/* 🔴 `cal-ink` + `font-semibold` (2026-09-16). Was `muted-500`/`font-medium`: at a
+                              34% fill a mid grey is the first thing to sink, and the owner asked every line in
+                              the cell to share one colour. Weight, not colour, now sets the reading order. */}
+                          <span className="shrink-0 text-[11px] font-semibold tabular-nums text-cal-ink">
                             {formatTimeDisplay(b.startTime)}
                           </span>
                           {/* AC-10 — ONE name field, computed on the BE. 🚫 No `|| studentName` fallback here:
                               that is exactly the per-call-site guessing `displayName` exists to delete. */}
-                          <span className="min-w-0 flex-1 truncate text-xs font-medium">{b.displayName}</span>
+                          {/* `font-semibold` matches the DAY cell, which has always used it — the two views
+                              rendered the same name at two different weights until now. */}
+                          <span className="min-w-0 flex-1 truncate text-xs font-semibold text-cal-ink">
+                            {b.displayName}
+                          </span>
                           {/* REQ-089 item 5 — the server's `courseLast`, as a stamp on the name row. */}
                           <LastStamp booking={b} size="sm" />
                           {/* Branch (badge) — a primary identifier, kept as a labelled chip like the day cell. */}
                           {display.badge && (b.badges ?? []).length > 0 && (
                             <span className="flex shrink-0 flex-wrap justify-end gap-1">
                               {(b.badges ?? []).map((bd) => (
+                                /* 🔴 WHITE ground + a 1px border in the branch colour (2026-09-16). The soft
+                                   tint it used to sit on is the same KIND of colour the cell fill is — two
+                                   washes stacked — so the owner read it as *"ดูกลืนเกินไป"*, and deepening the
+                                   fill only closed the gap further. An opaque white ground keeps the same
+                                   distance from every status at every intensity; the hue survives on the
+                                   border and the label, so a branch is still recognised by colour.
+                                   🚫 `badgeColorSoftVar` is untouched — Badges, BookingModal, Dashboard and
+                                   Overview paint on white already and read fine there. */
                                 <span
                                   key={bd.valueId}
-                                  className="inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[9px] font-medium leading-tight"
+                                  className="inline-flex items-center gap-1 rounded-full border bg-white px-1.5 py-px text-[9px] font-medium leading-tight"
                                   style={{
-                                    backgroundColor: badgeColorSoftVar(bd.color ?? "gray"),
+                                    borderColor: badgeColorVar(bd.color ?? "gray"),
                                     color: badgeColorVar(bd.color ?? "gray"),
                                   }}
                                 >
@@ -177,10 +177,15 @@ export default function CalendarWeekGrid({
                     <button
                       type="button"
                       onClick={() => onCreate(tc.id, TIME_SLOTS[0], day)}
-                      className="flex w-full items-center justify-center rounded-lg border border-dashed border-muted-200 py-1 text-muted-300 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                      /* Only the GLYPH was strengthened (`muted-300` → `muted-500`, 14 → 16): beside a 34% fill
+                         the plus had faded to almost nothing, and it is the primary way staff create a booking.
+                         🚫 The dashed border and the hover wash stay as they were — an empty slot is meant to
+                         read as empty, and darkening its outline would give every free cell on the grid a
+                         presence it should not have. */
+                      className="flex w-full items-center justify-center rounded-lg border border-dashed border-muted-200 py-1 text-muted-500 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
                       aria-label={t("calendar.addBooking")}
                     >
-                      <Plus size={14} />
+                      <Plus size={16} />
                     </button>
                   )}
                 </div>
