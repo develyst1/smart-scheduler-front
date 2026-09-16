@@ -54,6 +54,14 @@ export default function CalendarLegendBar() {
           </span>
         );
       })}
+      <span aria-hidden className="mx-1 h-4 w-px bg-muted-200" />
+      {/* REQ-089 item 5 — the stamp, explained. Same chip as the cell (same key), so the legend IS the sample. */}
+      <span className="flex items-center gap-1 text-[11px] text-muted-600">
+        <span className="inline-flex items-center rounded-sm bg-neutral-900 px-1.5 py-px text-[9px] font-bold uppercase leading-tight tracking-wide text-white">
+          {t("calendar.lastStamp")}
+        </span>
+        {t("calendar.lastLegend")}
+      </span>
       <div className="ml-auto">
         <CellDisplayMenu />
       </div>

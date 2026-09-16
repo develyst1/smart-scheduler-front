@@ -229,6 +229,13 @@ export interface BookingDTO {
   /** TASK-178 (REQ-068) — the attendee note: who is actually bringing the child, and logistics. Separate from
    *  `note`, which the status flows own. Editing it notifies nobody (AC-8, structural: its own endpoint). */
   attendeeNote: string | null;
+  /**
+   * TASK-366/367 (REQ-089 item 5) — `true` only on a LIVE `COURSE_PACKAGE` row (PENDING/CONFIRMED/EXTENDED) that
+   * is its course's LAST session. COMPUTED on `GET /calendar` and the single-booking read; `false` on the
+   * paginated `/bookings` list and on create/pause/resume returns — the `hasRental` shape. 🔑 Read it only on
+   * the calendar. 🚫 Never derived from the visible rows: the visible range never holds the whole course.
+   */
+  courseLast?: boolean;
   // Conflict resolution (B.1)
   pendingSlot: boolean;
   incomingBookingId: string | null;

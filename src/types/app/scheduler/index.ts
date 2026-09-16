@@ -195,6 +195,8 @@ export interface Booking {
   discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string; actor: string | null } | null;
   /** REQ-068 — who's bringing the child / logistics for THIS session. Not the status `note`. */
   attendeeNote?: string | null;
+  /** REQ-089 item 5 (TASK-367) — the SERVER's flag: this live row is its course's last session. Calendar reads only. */
+  courseLast?: boolean;
 }
 
 // ──────────────────────────── Badges ────────────────────────────

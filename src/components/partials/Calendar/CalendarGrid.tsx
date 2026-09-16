@@ -13,6 +13,7 @@ import {
   BOOKING_TYPE_ICON,
   BOOKING_TYPE_VAR,
   SharedTeachersMarker,
+  LastStamp,
 } from "@/components/common/BookingCellBody";
 
 interface Props {
@@ -154,6 +155,8 @@ function Row({
                   {/* AC-10 — ONE name field, computed on the BE. 🚫 No `|| studentName` fallback here: that is
                       exactly the per-call-site guessing `displayName` exists to delete. */}
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold">{booking.displayName}</span>
+                  {/* REQ-089 item 5 — the server's `courseLast`, as a stamp on the name row. */}
+                  <LastStamp booking={booking} />
                   {/* Branch (badge) — a primary identifier here, so it stays a labelled chip, never a bare dot. */}
                   {display.badge && (booking.badges ?? []).length > 0 && (
                     <span className="flex shrink-0 flex-wrap justify-end gap-1">

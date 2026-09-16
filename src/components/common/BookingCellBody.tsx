@@ -71,6 +71,30 @@ export function SharedTeachersMarker({
   );
 }
 
+/**
+ * 🔴 REQ-089 item 5 (TASK-367) — the owner's stamp: *"แปะบนตารางว่า Last เห็นชัดๆ แปะๆ ไว้"*. Rendered ONLY from the
+ * server's `courseLast` (true on the live row that is its course's last session — TASK-366); 🚫 nothing here or in
+ * either grid derives "last" from the rows on screen, because the visible range never holds the whole course.
+ * High-contrast on purpose (a solid dark chip, not a pastel tint): it must read at the week cell's smallest size,
+ * and it must not inherit the dashboard-colour complaint (item 6, not ours). Not gated by `CellDisplay` — it is
+ * the one thing an admin should see even with every other channel switched off. One component; the day grid and
+ * the week grid both place it on the name row, beside the branch badge.
+ */
+export function LastStamp({ booking, size = "md" }: { booking: Booking; size?: "sm" | "md" }) {
+  const t = useT();
+  if (booking.courseLast !== true) return null;
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-sm bg-neutral-900 px-1.5 font-bold uppercase leading-tight tracking-wide text-white ${
+        size === "sm" ? "text-[9px] py-px" : "text-[10px] py-0.5"
+      }`}
+      title={t("calendar.lastLegend")}
+    >
+      {t("calendar.lastStamp")}
+    </span>
+  );
+}
+
 /** The leading edge-stripe that carries the type as a second, quieter channel (status stays primary). */
 export function BookingTypeStripe({ type }: { type: BookingType }) {
   return (

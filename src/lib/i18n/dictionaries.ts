@@ -350,6 +350,9 @@ const en = {
     // SPEC-046 re-cut — the calendar cell display toggle + the two-dimension legend.
     legendStatus: "Status",
     legendType: "Type",
+    // REQ-089 item 5 (TASK-367) — the owner's own stamp word, kept as-is in both languages; the legend explains it
+    lastStamp: "Last",
+    lastLegend: "last session of the course",
     // ── SPEC-075 / REQ-076 §3 (TASK-261) — the พัก tray. Thai is @Porter's copy VERBATIM; English is the
     //    equivalent. 🚫 "พัก" is the customer's own word — never "ระงับ", never "Hold".
     pausedTray: "Paused bookings",
@@ -1640,6 +1643,8 @@ const th: typeof en = {
     addBooking: "เพิ่มการจอง",
     legendStatus: "สถานะ",
     legendType: "ประเภท",
+    lastStamp: "Last", // REQ-089 item 5 — the owner's word, a stamp not a sentence; same in both languages on purpose
+    lastLegend: "คาบสุดท้ายของคอร์ส",
     // ── SPEC-075 / REQ-076 §3 (TASK-261) — ถาด "พัก" · คำของ @Porter ทั้งหมด ห้ามแก้ ──
     pausedTray: "รายการที่พักไว้",
     pausedTrayEmpty: "ไม่มีรายการที่พักไว้",
