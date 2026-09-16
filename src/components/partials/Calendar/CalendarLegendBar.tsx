@@ -1,9 +1,10 @@
 "use client";
 
 import { BOOKING_TYPE_ICON, BOOKING_TYPE_VAR } from "@/components/common/BookingCellBody";
+import { BOOKING_STATUS_ICON } from "@/components/common/BookingBadges";
 import type { BookingType } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR } from "@/types/app/scheduler";
-import { CAL_DOT_STYLE, CAL_SURFACE_STYLE } from "./calendar-status";
+import { CAL_SURFACE_STYLE } from "./calendar-status";
 import { useT } from "@/lib/i18n";
 import { STATUS_LEGEND } from "./Calendar.config";
 import CellDisplayMenu from "./CellDisplayMenu";
@@ -41,11 +42,13 @@ export default function CalendarLegendBar() {
           `cal-*` ramp the strip that exists to say *"this colour means ลา"* was showing a different colour from
           the cells right below it. A legend that disagrees with its grid is worse than no legend, because staff
           trust it and then misread the schedule.
-          ⇒ same fill, same border, same dot, straight from `CAL_SURFACE_STYLE` / `CAL_DOT_STYLE`.
+          ⇒ same fill and border straight from `CAL_SURFACE_STYLE`, with the same per-status icon used by
+          `StatusChip` everywhere else. Shape now carries the meaning alongside colour again.
           🚫 `StatusChip` itself is untouched — `BookingsTable`, `PlanModal` and `BookingModal` sit on white and
           read fine as they are. */}
       {STATUS_LEGEND.map((status) => {
         const accent = BOOKING_STATUS_COLOR[status];
+        const Icon = BOOKING_STATUS_ICON[status];
         return (
           <span
             key={status}
@@ -57,7 +60,7 @@ export default function CalendarLegendBar() {
                cell's typography. */
             className={`inline-flex items-center gap-1.5 rounded-md border px-1.5 py-0.5 text-[11px] font-bold uppercase text-cal-ink ${CAL_SURFACE_STYLE[accent]}`}
           >
-            <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${CAL_DOT_STYLE[accent]}`} />
+            <Icon size={13} strokeWidth={2.25} aria-hidden className="shrink-0" />
             {t(`bookingStatus.${status}`)}
           </span>
         );
