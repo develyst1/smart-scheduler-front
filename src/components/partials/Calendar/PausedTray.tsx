@@ -14,12 +14,49 @@ import { Badge, Button, Card, Group, Loader, Stack, Text } from "@mantine/core";
  *
  * ⚠️ Both point at what pressing WILL do, never at the current state — the same rule as the aria-labels.
  */
-import { ChevronDown, ChevronUp, PanelRightClose, PanelRightOpen, PauseCircle } from "lucide-react";
+import { Ban, ChevronDown, ChevronUp, PanelRightClose, PanelRightOpen, PauseCircle } from "lucide-react";
 import { BookingTypeChip } from "@/components/common/BookingBadges";
 import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
 import { usePausedTrayCollapsed } from "@/lib/scheduler/paused-tray";
+import { cancelReasonDisplay, useCancelledTrayCollapsed } from "@/lib/scheduler/cancelled-tray";
 import type { Booking } from "@/types/app/scheduler";
+
+/**
+ * TASK-369 (REQ-089 §5.1) — the SAME tray, twice: `paused` (REQ-076, default) and `cancelled` (the owner's box
+ * beside it, revealed by the `Show cancelled` toggle). One component, one collapse/spine/strip behaviour, one row
+ * shape; what differs is named here — the icon, the four labels, the count colour, the collapsed store, and the
+ * row's meta line (a paused row shows its ORIGINAL slot; a cancelled row shows date · time · coach and the REASON).
+ */
+export type TrayVariant = "paused" | "cancelled";
+const TRAY: Record<
+  TrayVariant,
+  { Icon: typeof PauseCircle; title: string; empty: string; collapse: string; expand: string; color: string }
+> = {
+  paused: {
+    Icon: PauseCircle,
+    title: "calendar.pausedTray",
+    empty: "calendar.pausedTrayEmpty",
+    collapse: "calendar.pausedTrayCollapse",
+    expand: "calendar.pausedTrayExpand",
+    color: "grape",
+  },
+  cancelled: {
+    Icon: Ban,
+    title: "calendar.cancelledTray",
+    empty: "calendar.cancelledTrayEmpty",
+    collapse: "calendar.cancelledTrayCollapse",
+    expand: "calendar.cancelledTrayExpand",
+    color: "gray",
+  },
+};
+
+/** One hook per variant; both are the same store shape, chosen once at the top so the two instances never mix. */
+function useTrayCollapsed(variant: TrayVariant) {
+  const paused = usePausedTrayCollapsed();
+  const cancelled = useCancelledTrayCollapsed();
+  return variant === "cancelled" ? cancelled : paused;
+}
 
 /**
  * SPEC-075 / REQ-076 / TASK-261 — **รายการที่พักไว้**, the tray a paused booking lives in.
@@ -62,15 +99,19 @@ export default function PausedTray({
   onSelect,
   /** `rail` = the ≥xl column beside the grid · `strip` = the narrower-screen band above it. See Q2 in TASK-261. */
   layout,
+  /** TASK-369 — `paused` (default) or `cancelled`. */
+  variant = "paused",
 }: {
   bookings: Booking[];
   loading: boolean;
   onSelect: (b: Booking) => void;
   layout: "rail" | "strip";
+  variant?: TrayVariant;
 }) {
   const t = useT();
   const isStrip = layout === "strip";
-  const { collapsed, toggle } = usePausedTrayCollapsed();
+  const { collapsed, toggle } = useTrayCollapsed(variant);
+  const { Icon, title, empty, collapse, expand, color } = TRAY[variant];
 
   /**
    * The collapsed RAIL — the spine. 🔴 Only the rail gets one: the strip band is already a single row on a
@@ -88,15 +129,15 @@ export default function PausedTray({
         type="button"
         onClick={toggle}
         aria-expanded={false}
-        aria-label={t("calendar.pausedTrayExpand")}
+        aria-label={t(expand)}
         className="sticky top-4 flex w-10 flex-col items-center gap-2 rounded-xl border border-muted-200 bg-content1 py-3 shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
       >
-        <PauseCircle size={16} className="shrink-0 text-muted-500" />
-        <Badge size="sm" variant="light" color={bookings.length ? "grape" : "gray"}>
+        <Icon size={16} className="shrink-0 text-muted-500" />
+        <Badge size="sm" variant="light" color={bookings.length ? color : "gray"}>
           {bookings.length}
         </Badge>
         <Text size="xs" c="dimmed" style={{ writingMode: "vertical-rl" }}>
-          {t("calendar.pausedTray")}
+          {t(title)}
         </Text>
         <PanelRightOpen size={14} aria-hidden className="shrink-0 text-muted-500" />
       </button>
@@ -114,22 +155,22 @@ export default function PausedTray({
         type="button"
         onClick={toggle}
         aria-expanded={!collapsed}
-        aria-label={collapsed ? t("calendar.pausedTrayExpand") : t("calendar.pausedTrayCollapse")}
+        aria-label={collapsed ? t(expand) : t(collapse)}
         className={`-m-1 flex w-full items-center justify-between gap-2 rounded-md p-1 text-left transition-colors hover:bg-muted-50 ${
           collapsed ? "" : "mb-2"
         }`}
       >
         <Group gap={6} wrap="nowrap">
-          <PauseCircle size={16} className="shrink-0 text-muted-500" />
+          <Icon size={16} className="shrink-0 text-muted-500" />
           <Text fw={600} size="sm">
-            {t("calendar.pausedTray")}
+            {t(title)}
           </Text>
         </Group>
         <Group gap={6} wrap="nowrap">
           {/* The count is what makes it noticeable from across the page (AC-9) — and it is `light gray` at zero
               so an empty tray reads as calm rather than as an alert about nothing. 🔴 It stays visible while
               collapsed: that is what keeps a closed tray honest about holding three bookings. */}
-          <Badge size="sm" variant="light" color={bookings.length ? "grape" : "gray"}>
+          <Badge size="sm" variant="light" color={bookings.length ? color : "gray"}>
             {bookings.length}
           </Badge>
           {/* The rail never reaches here collapsed — that state returns the spine above — so its glyph is
@@ -155,7 +196,7 @@ export default function PausedTray({
       ) : bookings.length === 0 ? (
         /* AC-11 — a sentence, not an absence. */
         <Text size="xs" c="dimmed">
-          {t("calendar.pausedTrayEmpty")}
+          {t(empty)}
         </Text>
       ) : (
         <div className={isStrip ? "flex gap-2 overflow-x-auto pb-1" : "max-h-[28rem] overflow-y-auto"}>
@@ -176,21 +217,52 @@ export default function PausedTray({
                 <Group gap={6} mt={4} wrap="nowrap">
                   <BookingTypeChip type={b.bookingType} />
                 </Group>
-                <Text size="xs" c="dimmed" mt={4}>
-                  {/* 🔴 TASK-329 §3 — **the whole of TASK-324 in two adjacent lines.** The DATE went through
-                      `formatDateDisplay` and the TIME went raw, **in the same call**, because dates had a
-                      formatter and times never did. No grep found it either: the time is a key in an i18n
-                      ARGUMENT OBJECT, not a render. */}
-                  {t("calendar.pausedOriginalSlot", {
-                    date: formatDateDisplay(b.date),
-                    time: formatTimeDisplay(b.startTime),
-                  })}
-                </Text>
+                {variant === "paused" ? (
+                  <Text size="xs" c="dimmed" mt={4}>
+                    {/* 🔴 TASK-329 §3 — **the whole of TASK-324 in two adjacent lines.** The DATE went through
+                        `formatDateDisplay` and the TIME went raw, **in the same call**, because dates had a
+                        formatter and times never did. No grep found it either: the time is a key in an i18n
+                        ARGUMENT OBJECT, not a render. */}
+                    {t("calendar.pausedOriginalSlot", {
+                      date: formatDateDisplay(b.date),
+                      time: formatTimeDisplay(b.startTime),
+                    })}
+                  </Text>
+                ) : (
+                  <CancelledRowMeta booking={b} />
+                )}
               </button>
             ))}
           </Stack>
         </div>
         ))}
     </Card>
+  );
+}
+
+/**
+ * TASK-369 §4 — a cancelled row's second and third lines: date · time · coach, then the REASON — the closed code's
+ * existing label (`endCourse.<code>`), else the human `note`, else nothing. Both from the row as the server sent
+ * it; 🚫 no filtering by reason, no colour beyond dimmed.
+ */
+function CancelledRowMeta({ booking }: { booking: Booking }) {
+  const t = useT();
+  const coach = booking.teachers[0];
+  const reason = cancelReasonDisplay(booking.cancelReason, booking.note);
+  return (
+    <>
+      <Text size="xs" c="dimmed" mt={4}>
+        {t("calendar.cancelledRow", {
+          date: formatDateDisplay(booking.date),
+          time: formatTimeDisplay(booking.startTime),
+          coach: coach ? coach.nickname || coach.name : "—",
+        })}
+      </Text>
+      {reason && (
+        <Text size="xs" c="dimmed" truncate title={"text" in reason ? reason.text : undefined}>
+          {"key" in reason ? t(reason.key) : reason.text}
+        </Text>
+      )}
+    </>
   );
 }

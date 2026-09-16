@@ -6,9 +6,11 @@ import { useDisclosure } from "@mantine/hooks";
 import { calendarDayBookings, calendarToBookings } from "@/lib/api/mappers";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { usePausedTrayCollapsed } from "@/lib/scheduler/paused-tray";
+import { useCancelledTrayCollapsed, useShowCancelled } from "@/lib/scheduler/cancelled-tray";
 import { useLoadPhase } from "@/lib/ui/load-phase";
 import { useT } from "@/lib/i18n";
 import { useBadges, useCalendar, usePausedBookings, useTeachers } from "@/hooks/scheduler";
+import { dtoToBooking } from "@/lib/api/mappers";
 import type { Booking } from "@/types/app/scheduler";
 import CalendarHeader, { type CalendarView } from "./CalendarHeader";
 import CalendarGrid from "./CalendarGrid";
@@ -32,7 +34,12 @@ export default function CalendarContent() {
 
   const calView = view === "day" ? "day" : "week";
   const { data: teachers = [], isLoading: loadingTeachers } = useTeachers();
-  const { data: calendar, isLoading: loadingCalendar } = useCalendar(date, calView);
+  // TASK-369 (REQ-089 §5) — the `Show cancelled` toggle: ON ⇒ the request carries `includeCancelled=true` and the
+  // response carries `cancelled`, rendered in its own tray; OFF ⇒ no param, no tray. The grid is untouched either way.
+  const { shown: showCancelled } = useShowCancelled();
+  const { data: calendar, isLoading: loadingCalendar } = useCalendar(date, calView, showCancelled);
+  const cancelledBookings = (calendar?.cancelled ?? []).map(dtoToBooking);
+  const { collapsed: cancelledTrayCollapsed } = useCancelledTrayCollapsed();
   const { data: badgeTypes = [] } = useBadges();
   // REQ-076 AC-9 — the tray's own list. Deliberately NOT filtered by the calendar's date/teacher/badge
   // controls: a paused booking has no place in the grid, so hiding it behind a date filter would put it
@@ -147,6 +154,17 @@ export default function CalendarContent() {
       <div className="2xl:hidden">
         <PausedTray bookings={pausedBookings} loading={loadingPaused} onSelect={openView} layout="strip" />
       </div>
+      {showCancelled && (
+        <div className="2xl:hidden">
+          <PausedTray
+            variant="cancelled"
+            bookings={cancelledBookings}
+            loading={loadingCalendar}
+            onSelect={openView}
+            layout="strip"
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-5 2xl:flex-row 2xl:items-start">
         <div className="min-w-0 flex-1">
@@ -181,8 +199,23 @@ export default function CalendarContent() {
             spine and those ~14rem go to the schedule.
             The flag comes from the same store `PausedTray` reads, so the column and its contents cannot end up
             in different states. */}
-        <aside className={`hidden shrink-0 2xl:block ${trayCollapsed ? "w-10" : "w-[17rem]"}`}>
+        <aside
+          className={`hidden shrink-0 flex-col gap-4 2xl:flex ${
+            trayCollapsed && (!showCancelled || cancelledTrayCollapsed) ? "w-10" : "w-[17rem]"
+          }`}
+        >
           <PausedTray bookings={pausedBookings} loading={loadingPaused} onSelect={openView} layout="rail" />
+          {/* TASK-369 §4 — the cancelled tray, beside the paused one, only while the toggle is ON. The rail is a
+              spine only when EVERY tray in it is collapsed — one open tray needs the width. */}
+          {showCancelled && (
+            <PausedTray
+              variant="cancelled"
+              bookings={cancelledBookings}
+              loading={loadingCalendar}
+              onSelect={openView}
+              layout="rail"
+            />
+          )}
         </aside>
       </div>
 

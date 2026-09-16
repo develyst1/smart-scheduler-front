@@ -365,6 +365,13 @@ const en = {
     pausedTrayCollapse: "Collapse paused bookings",
     pausedTrayExpand: "Expand paused bookings",
     pausedOriginalSlot: "Was: {date} {time}",
+    // ── TASK-369 (REQ-089 §5 / §5.1) — the cancelled tray and its toggle ──
+    showCancelled: "Show cancelled sessions",
+    cancelledTray: "Cancelled sessions",
+    cancelledTrayEmpty: "No cancelled sessions in this range",
+    cancelledTrayCollapse: "Collapse cancelled sessions",
+    cancelledTrayExpand: "Expand cancelled sessions",
+    cancelledRow: "{date} {time} · {coach}",
     pauseAction: "Pause",
     pauseTitle: "Pause this booking?",
     // ⚠️ Says what a hold IS and what it is NOT. 🚫 No reason is asked for — offering REQ-009's list would
@@ -1652,6 +1659,13 @@ const th: typeof en = {
     pausedTrayCollapse: "ย่อรายการที่พักไว้",
     pausedTrayExpand: "ขยายรายการที่พักไว้",
     pausedOriginalSlot: "เดิม: {date} {time}",
+    // ── TASK-369 (REQ-089 §5 / §5.1) — ถาดคาบที่ยกเลิก และสวิตช์ของมัน ──
+    showCancelled: "แสดงคาบที่ยกเลิก",
+    cancelledTray: "คาบที่ยกเลิก",
+    cancelledTrayEmpty: "ไม่มีคาบที่ยกเลิกในช่วงนี้",
+    cancelledTrayCollapse: "ย่อคาบที่ยกเลิก",
+    cancelledTrayExpand: "ขยายคาบที่ยกเลิก",
+    cancelledRow: "{date} {time} · {coach}",
     pauseAction: "พัก",
     pauseTitle: "พักคาบนี้ไว้?",
     // ⚠️ บอกว่า "พัก" คืออะไร และ *ไม่ใช่* อะไร 🚫 ไม่ถามเหตุผล — การใส่ลิสต์เหตุผลของ REQ-009 ตรงนี้

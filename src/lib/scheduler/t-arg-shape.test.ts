@@ -158,10 +158,13 @@ describe("🔑 the shape sweep — a `t()` argument carrying an unformatted DTO 
     // ⚠️ THREE now, not two: TASK-340 added `CancelBookingDialog`'s, and this line going red is how I found
     // out — which is the pin doing its job in the direction that matters. A formatted site appearing is as
     // much a change to the sweep's world as a raw one.
+    // ⚠️ FOUR — TASK-369 added the cancelled tray's row line (`calendar.cancelledRow`, `CancelledRowMeta` in the
+    // same file): the pin went red on purpose, and the fourth is named here rather than the list loosened.
     expect(formatted.map((h) => h.id).sort()).toEqual([
       'partials/Calendar/Modal/CancelBookingDialog.tsx | booking ? formatTimeDisplay(booking.startTime) : "—"',
       "partials/Calendar/Modal/BookingModal.tsx | formatTimeDisplay(booking.startTime)",
       "partials/Calendar/PausedTray.tsx | formatTimeDisplay(b.startTime)",
+      "partials/Calendar/PausedTray.tsx | formatTimeDisplay(booking.startTime)",
     ].sort());
   });
 

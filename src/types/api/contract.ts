@@ -236,6 +236,12 @@ export interface BookingDTO {
    * the calendar. 🚫 Never derived from the visible rows: the visible range never holds the whole course.
    */
   courseLast?: boolean;
+  /**
+   * TASK-368/369 (REQ-089 §5) — the closed cancel code (`PROGRAM_CHANGED | CUSTOMER_CANCELLED | ADMIN_ERROR`) or
+   * `null` on a live row / a cancel without one. Rides EVERY booking DTO since TASK-368. The tray shows its EXISTING
+   * label (`endCourse.<code>`), else `note`.
+   */
+  cancelReason?: string | null;
   // Conflict resolution (B.1)
   pendingSlot: boolean;
   incomingBookingId: string | null;
@@ -375,6 +381,13 @@ export interface CalendarResponse {
       slots: Array<{ time: HhMm; booking: BookingDTO | null }>;
     }>;
   }>;
+  /**
+   * TASK-368 §8 / TASK-369 §4 (REQ-089 §5.1) — with `?includeCancelled=true`: every CANCELLED row in the range,
+   * date/time order, each with `status`, `cancelReason`, `note`. The grid (`days`) is UNCHANGED by the flag.
+   * Without the flag the key is ABSENT — read `?? []`. Rendered in its own tray beside the paused one, never on
+   * the grid (`PAUSED` stays in its tray; precedence on the grid is the server's).
+   */
+  cancelled?: BookingDTO[];
 }
 
 export interface TeachersResponse {

@@ -40,6 +40,8 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     attendeeNote: dto.attendeeNote ?? null,
     // TASK-367 — carried through as a strict boolean; the BE computes it, nothing here does.
     courseLast: dto.courseLast === true,
+    // TASK-369 — the closed cancel code as sent; the tray resolves it to the existing label, or falls back to `note`.
+    cancelReason: dto.cancelReason ?? null,
     // Conflict resolution (B.1)
     pendingSlot: dto.pendingSlot || undefined,
     incomingBookingId: dto.incomingBookingId ?? undefined,

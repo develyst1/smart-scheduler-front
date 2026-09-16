@@ -212,10 +212,11 @@ export const useTopUpFreelanceBudget = () => {
 
 // ───────────────────────────── Calendar ─────────────────────────────
 
-export const useCalendar = (date: string, view: "day" | "week") =>
+/** TASK-369 — `includeCancelled` is part of the KEY, so ON and OFF are two cached answers, never one stale one. */
+export const useCalendar = (date: string, view: "day" | "week", includeCancelled = false) =>
   useQuery({
-    queryKey: [...CALENDAR_KEY, date, view],
-    queryFn: () => getCalendar(date, view),
+    queryKey: [...CALENDAR_KEY, date, view, includeCancelled ? "with-cancelled" : "live"],
+    queryFn: () => getCalendar(date, view, includeCancelled),
   });
 
 // ───────────────────────────── Bookings ─────────────────────────────

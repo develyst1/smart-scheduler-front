@@ -4,6 +4,7 @@ import { Checkbox, Menu, Button } from "@mantine/core";
 import { SlidersHorizontal } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { CELL_FIELDS, useCellDisplay } from "@/lib/scheduler/cell-display";
+import { useShowCancelled } from "@/lib/scheduler/cancelled-tray";
 
 /**
  * SPEC-046 re-cut — the calendar cell's display toggle.
@@ -18,6 +19,9 @@ import { CELL_FIELDS, useCellDisplay } from "@/lib/scheduler/cell-display";
 export default function CellDisplayMenu() {
   const t = useT();
   const { display, toggle } = useCellDisplay();
+  // TASK-369 (REQ-089 §5) — NOT a sixth cell field: it reveals the cancelled TRAY and changes the calendar request
+  // (`includeCancelled=true`). Same menu, same remembered-preference mechanism, its own store and its own divider.
+  const { shown: showCancelled, toggle: toggleShowCancelled } = useShowCancelled();
 
   return (
     <Menu shadow="md" width={200} closeOnItemClick={false} position="bottom-end" withArrow>
@@ -51,6 +55,16 @@ export default function CellDisplayMenu() {
             />
           </Menu.Item>
         ))}
+        <Menu.Divider />
+        <Menu.Item onClick={toggleShowCancelled}>
+          <Checkbox
+            checked={showCancelled}
+            readOnly
+            label={t("calendar.showCancelled")}
+            size="xs"
+            styles={{ input: { cursor: "pointer" }, label: { cursor: "pointer" } }}
+          />
+        </Menu.Item>
       </Menu.Dropdown>
     </Menu>
   );

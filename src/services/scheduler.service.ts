@@ -96,8 +96,15 @@ function teachersToViews(dtos: ReturnType<typeof flattenTeachers>, bookings: Boo
 
 // ───────────────────────────── Calendar aggregate ─────────────────────────────
 
-export async function getCalendar(date: string, view: "day" | "week"): Promise<CalendarResponse> {
-  const { data } = await api.get<CalendarResponse>("/calendar", { params: { date, view } });
+export async function getCalendar(
+  date: string,
+  view: "day" | "week",
+  includeCancelled = false,
+): Promise<CalendarResponse> {
+  // TASK-369 — the `archived` pattern: the param is SENT only when ON; OFF is its ABSENCE, never `"false"`.
+  const { data } = await api.get<CalendarResponse>("/calendar", {
+    params: { date, view, ...(includeCancelled ? { includeCancelled: "true" } : {}) },
+  });
   return data;
 }
 

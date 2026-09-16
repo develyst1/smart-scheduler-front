@@ -197,6 +197,8 @@ export interface Booking {
   attendeeNote?: string | null;
   /** REQ-089 item 5 (TASK-367) — the SERVER's flag: this live row is its course's last session. Calendar reads only. */
   courseLast?: boolean;
+  /** REQ-089 §5 (TASK-369) — the closed cancel code, or null. The cancelled tray shows its existing label, else `note`. */
+  cancelReason?: string | null;
 }
 
 // ──────────────────────────── Badges ────────────────────────────
