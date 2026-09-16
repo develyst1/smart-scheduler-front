@@ -1,4 +1,16 @@
-import { CalendarDays, Users, BookOpenCheck, BarChart3, Tag, LayoutDashboard, Contact, BellRing, PieChart, Link2, Settings2 } from "lucide-react";
+import {
+  CalendarDays,
+  Users,
+  BookOpenCheck,
+  BarChart3,
+  Tag,
+  LayoutDashboard,
+  Contact,
+  BellRing,
+  PieChart,
+  Link2,
+  Settings2,
+} from "lucide-react";
 
 export interface NavItem {
   key: string;
@@ -9,17 +21,62 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { key: "calendar", labelKey: "nav.calendar", href: "/scheduler/calendar", icon: CalendarDays },
-  { key: "teachers", labelKey: "nav.teachers", href: "/scheduler/teachers", icon: Users },
-  { key: "people", labelKey: "nav.people", href: "/scheduler/people", icon: Contact },
-  { key: "linkRequests", labelKey: "nav.linkRequests", href: "/scheduler/link-requests", icon: Link2 },
-  { key: "bookings", labelKey: "nav.bookings", href: "/scheduler/bookings", icon: BookOpenCheck },
-  { key: "badges", labelKey: "nav.badges", href: "/scheduler/badges", icon: Tag },
-  { key: "overview", labelKey: "nav.overview", href: "/scheduler/overview", icon: LayoutDashboard },
+  {
+    key: "calendar",
+    labelKey: "nav.calendar",
+    href: "/scheduler/calendar",
+    icon: CalendarDays,
+  },
+  {
+    key: "teachers",
+    labelKey: "nav.teachers",
+    href: "/scheduler/teachers",
+    icon: Users,
+  },
+  {
+    key: "people",
+    labelKey: "nav.people",
+    href: "/scheduler/people",
+    icon: Contact,
+  },
+  {
+    key: "linkRequests",
+    labelKey: "nav.linkRequests",
+    href: "/scheduler/link-requests",
+    icon: Link2,
+  },
+  {
+    key: "bookings",
+    labelKey: "nav.bookings",
+    href: "/scheduler/bookings",
+    icon: BookOpenCheck,
+  },
+  {
+    key: "badges",
+    labelKey: "nav.badges",
+    href: "/scheduler/badges",
+    icon: Tag,
+  },
+  // { key: "overview", labelKey: "nav.overview", href: "/scheduler/overview", icon: LayoutDashboard },
   { key: "som", labelKey: "nav.som", href: "/scheduler/som", icon: PieChart },
-  { key: "attention", labelKey: "nav.attention", href: "/scheduler/attention", icon: BellRing },
-  { key: "reports", labelKey: "nav.reports", href: "/scheduler/reports", icon: BarChart3 },
-  { key: "settings", labelKey: "nav.settings", href: "/scheduler/settings", icon: Settings2 },
+  {
+    key: "attention",
+    labelKey: "nav.attention",
+    href: "/scheduler/attention",
+    icon: BellRing,
+  },
+  {
+    key: "reports",
+    labelKey: "nav.reports",
+    href: "/scheduler/reports",
+    icon: BarChart3,
+  },
+  {
+    key: "settings",
+    labelKey: "nav.settings",
+    href: "/scheduler/settings",
+    icon: Settings2,
+  },
 ];
 
 /**
@@ -37,7 +94,12 @@ export const NAV_ITEMS: NavItem[] = [
  * deliberately NOT done here.
  */
 export const HIDDEN_NAV_ITEMS: NavItem[] = [
-  { key: "dashboard", labelKey: "nav.dashboard", href: "/scheduler/dashboard", icon: LayoutDashboard },
+  {
+    key: "dashboard",
+    labelKey: "nav.dashboard",
+    href: "/scheduler/dashboard",
+    icon: LayoutDashboard,
+  },
 ];
 
 // TASK-357 (REQ-089 item 0) — the customer's name, the owner's spelling. Identifiers, keys and filenames keep the old name.
