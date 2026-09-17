@@ -199,6 +199,8 @@ export interface Booking {
   courseLast?: boolean;
   /** REQ-089 §5 (TASK-369) — the closed cancel code, or null. The cancelled tray shows its existing label, else `note`. */
   cancelReason?: string | null;
+  /** REQ-091 (TASK-372) — the session's rental row, or null. The `R` chip (red unpaid / green paid) reads only this. */
+  rental?: BookingRental | null;
 }
 
 // ──────────────────────────── Badges ────────────────────────────
@@ -528,9 +530,25 @@ export interface CourseHistory {
 
 // ──────── Equipment rental as revenue (SPEC-031 / REQ-028 — TASK-109) ────────
 
-/** The four rental codes are the frozen contract (BE `sale-items.ts`). Labels are FE i18n; price is BE-owned. */
-export const RENTAL_CODES = ["rental-set", "rental-ride", "rental-helmet", "rental-pads"] as const;
+/**
+ * The rental codes are the frozen contract (BE `sale-items.ts`). Labels are FE i18n; price is BE-owned.
+ * REQ-091 (TASK-371/372) — a FIFTH tier, `rental-helmet-pads` (Helmet + Pad, 100), joins the four. The order here is
+ * the customer's price ladder for the tier picker: 50 · 50 · 100 · 150 · 200.
+ */
+export const RENTAL_CODES = ["rental-helmet", "rental-pads", "rental-helmet-pads", "rental-ride", "rental-set"] as const;
 export type RentalCode = (typeof RENTAL_CODES)[number];
+
+/**
+ * REQ-091 (TASK-371/372) — the per-session rental ROW: recorded first (unpaid), money posted on the PAID press. The
+ * page renders it and calls three routes; every rule (remark for set/ride, live-only, once per session, no removal
+ * once paid) is the server's and arrives as a named code. `code` is typed loosely: a historic or future code the
+ * FE does not know still renders.
+ */
+export interface BookingRental {
+  code: string;
+  remark: string | null;
+  paid: boolean;
+}
 
 export interface RecordRentalInput {
   code: RentalCode;

@@ -835,6 +835,24 @@ export const getCourseHistory = (courseId: string) => {
 
 // Mock rental: echo the same key the real service would build; a repeated key in one session reads as a duplicate.
 const _rentalSeen = new Set<string>();
+// REQ-091 (TASK-372) — offline: one row per booking, paid on the press, removable while unpaid.
+const _bookingRentals = new Map<string, { code: string; remark: string | null; paid: boolean }>();
+export const recordBookingRental = (bookingId: string, input: { code: string; remark?: string }) => {
+  const rental = { code: input.code, remark: input.remark ?? null, paid: false };
+  _bookingRentals.set(bookingId, rental);
+  return delay({ rental });
+};
+export const payBookingRental = (bookingId: string) => {
+  const r = _bookingRentals.get(bookingId) ?? { code: "rental-helmet", remark: null, paid: false };
+  const rental = { ...r, paid: true };
+  _bookingRentals.set(bookingId, rental);
+  return delay({ rental });
+};
+export const removeBookingRental = (bookingId: string) => {
+  _bookingRentals.delete(bookingId);
+  return delay({ removed: true as const });
+};
+
 export const recordRental = (input: {
   code: string;
   hours: number;

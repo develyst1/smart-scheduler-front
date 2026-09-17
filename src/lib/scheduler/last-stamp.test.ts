@@ -86,7 +86,8 @@ describe("ONE component, both views, the legend — and no client-side 'last'", 
 
   it("both grids place `<LastStamp>` on the name row, right after `displayName`", () => {
     for (const [src, name] of [[day, "booking"], [week, "b"]] as const) {
-      const nameRow = src.indexOf(`{${name}.displayName}</span>`);
+      // TASK-372: the owner's colour pass (ed4fd47) put `{displayName}` on its own line — match with whitespace tolerance
+      const nameRow = src.search(new RegExp(`\\{${name}\\.displayName\\}\\s*</span>`));
       expect(nameRow).toBeGreaterThan(0);
       const after = src.slice(nameRow, nameRow + 400);
       expect(after).toContain(`<LastStamp booking={${name}}`);

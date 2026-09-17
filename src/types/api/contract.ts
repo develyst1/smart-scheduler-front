@@ -242,6 +242,13 @@ export interface BookingDTO {
    * label (`endCourse.<code>`), else `note`.
    */
   cancelReason?: string | null;
+  /**
+   * REQ-091 (TASK-371/372) — the session's rental row: `{ code, remark, paid }` or `null`. Rides EVERY booking DTO
+   * (a relation, so the calendar, the tray, the single read and the paginated list all carry it). `paid` is
+   * `paid_at != null` server-side. Replaces `hasRental`, which had no reader. Optional here only so a mock without
+   * the key type-checks; the mapper reads it `?? null`.
+   */
+  rental?: { code: string; remark: string | null; paid: boolean } | null;
   // Conflict resolution (B.1)
   pendingSlot: boolean;
   incomingBookingId: string | null;

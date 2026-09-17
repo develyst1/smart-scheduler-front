@@ -15,6 +15,7 @@ import {
   BOOKING_TYPE_VAR,
   SharedTeachersMarker,
   LastStamp,
+  RentalStamp,
 } from "@/components/common/BookingCellBody";
 
 interface Props {
@@ -145,6 +146,8 @@ function Row({
                   </span>
                   {/* REQ-089 item 5 — the server's `courseLast`, as a stamp on the name row. */}
                   <LastStamp booking={booking} />
+                  {/* REQ-091 — the server's rental row: red unpaid, green paid. */}
+                  <RentalStamp booking={booking} />
                   {/* Branch (badge) — a primary identifier here, so it stays a labelled chip, never a bare dot. */}
                   {display.badge && (booking.badges ?? []).length > 0 && (
                     <span className="flex shrink-0 flex-wrap justify-end gap-1">

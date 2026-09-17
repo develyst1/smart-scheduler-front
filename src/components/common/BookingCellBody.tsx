@@ -95,6 +95,29 @@ export function LastStamp({ booking, size = "md" }: { booking: Booking; size?: "
   );
 }
 
+/**
+ * 🔴 REQ-091 (TASK-372) — the `R` chip: *"like the Last chip"* — RED = a rental recorded and UNPAID, GREEN = paid.
+ * Renders ONLY from the server's `booking.rental` (null ⇒ nothing; a historic rental posted before the row
+ * existed has no row and so no chip, by the owner's ruling). Solid, high-contrast, not a pastel; not gated by the
+ * display toggles; one component, both grids, on the name row beside `LastStamp`. 🚫 Nothing here reads the ledger
+ * or derives "paid" from anything but the flag.
+ */
+export function RentalStamp({ booking, size = "md" }: { booking: Booking; size?: "sm" | "md" }) {
+  const t = useT();
+  const rental = booking.rental;
+  if (!rental) return null;
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-sm px-1.5 font-bold uppercase leading-tight tracking-wide text-white ${
+        rental.paid ? "bg-green-700" : "bg-red-600"
+      } ${size === "sm" ? "text-[9px] py-px" : "text-[10px] py-0.5"}`}
+      title={rental.paid ? t("calendar.rentalLegendPaid") : t("calendar.rentalLegendUnpaid")}
+    >
+      {t("calendar.rentalStamp")}
+    </span>
+  );
+}
+
 /** The leading edge-stripe that carries the type as a second, quieter channel (status stays primary). */
 export function BookingTypeStripe({ type }: { type: BookingType }) {
   return (

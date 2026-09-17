@@ -24,6 +24,7 @@ import type {
   DailyReport,
   RecordRentalInput,
   RentalResult,
+  BookingRental,
   EligibleStudent,
   EntitlementPlan,
   PlanChange,
@@ -934,6 +935,35 @@ export const getCourseHistory = async (courseId: string): Promise<CourseHistory>
 
 /** Record an equipment rental as revenue (SPEC-031). The post IS the event — the server surfaces recorded/duplicate,
  *  or a 502 `RENTAL_NOT_POSTED` we let bubble as an ApiClientError for the caller to display. */
+/**
+ * REQ-091 (TASK-371/372) — the per-session rental ROW, three doors, no rule on this side. `record` writes the row
+ * UNPAID (money is not posted); `pay` posts the money exactly once server-side (`paid: true`; a `502
+ * RENTAL_NOT_POSTED` leaves the row unpaid and the press retryable); `remove` is refused once paid. Every refusal
+ * is a named code in the app's usual envelope — `RENTAL_REMARK_REQUIRED` (set + ride), `BOOKING_NOT_LIVE`,
+ * `RENTAL_EXISTS`, `RENTAL_PAID`, `RENTAL_NOT_POSTED` — shown as the server's sentence.
+ */
+export const recordBookingRental = async (
+  bookingId: string,
+  input: { code: string; remark?: string },
+): Promise<{ rental: BookingRental }> => {
+  if (useMock) return mock.recordBookingRental(bookingId, input);
+  const { data } = await api.post<{ rental: BookingRental }>(`/bookings/${bookingId}/rental`, {
+    code: input.code,
+    ...(input.remark ? { remark: input.remark } : {}),
+  });
+  return data;
+};
+export const payBookingRental = async (bookingId: string): Promise<{ rental: BookingRental }> => {
+  if (useMock) return mock.payBookingRental(bookingId);
+  const { data } = await api.post<{ rental: BookingRental }>(`/bookings/${bookingId}/rental/paid`, {});
+  return data;
+};
+export const removeBookingRental = async (bookingId: string): Promise<{ removed: true }> => {
+  if (useMock) return mock.removeBookingRental(bookingId);
+  const { data } = await api.delete<{ removed: true }>(`/bookings/${bookingId}/rental`);
+  return data;
+};
+
 export const recordRental = async (input: RecordRentalInput): Promise<RentalResult> => {
   if (useMock) return mock.recordRental(input);
   const { data } = await api.post<RentalResult>("/rentals", input);

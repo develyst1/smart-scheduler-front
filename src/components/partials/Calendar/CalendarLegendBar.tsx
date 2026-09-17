@@ -92,6 +92,19 @@ export default function CalendarLegendBar() {
         </span>
         {t("calendar.lastLegend")}
       </span>
+      {/* REQ-091 (TASK-372) — the R chip, both states, the same chips as the cell. */}
+      <span className="flex items-center gap-1 text-[11px] text-muted-600">
+        <span className="inline-flex items-center rounded-sm bg-red-600 px-1.5 py-px text-[9px] font-bold uppercase leading-tight tracking-wide text-white">
+          {t("calendar.rentalStamp")}
+        </span>
+        {t("calendar.rentalLegendUnpaid")}
+      </span>
+      <span className="flex items-center gap-1 text-[11px] text-muted-600">
+        <span className="inline-flex items-center rounded-sm bg-green-700 px-1.5 py-px text-[9px] font-bold uppercase leading-tight tracking-wide text-white">
+          {t("calendar.rentalStamp")}
+        </span>
+        {t("calendar.rentalLegendPaid")}
+      </span>
       <div className="ml-auto">
         <CellDisplayMenu />
       </div>

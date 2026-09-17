@@ -42,6 +42,8 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     courseLast: dto.courseLast === true,
     // TASK-369 — the closed cancel code as sent; the tray resolves it to the existing label, or falls back to `note`.
     cancelReason: dto.cancelReason ?? null,
+    // TASK-372 — the rental row as sent; a payload without the key ⇒ null (no rental), never undefined.
+    rental: dto.rental ?? null,
     // Conflict resolution (B.1)
     pendingSlot: dto.pendingSlot || undefined,
     incomingBookingId: dto.incomingBookingId ?? undefined,

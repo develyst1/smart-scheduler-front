@@ -22,7 +22,7 @@ import {
   Loader,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PackageOpen, PauseCircle, PlayCircle } from "lucide-react";
+import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -68,7 +68,7 @@ import {
   canResumeBooking,
   canSubmitResume,
 } from "@/lib/scheduler/pause-booking";
-import RentalModal from "@/components/partials/Rental/RentalModal";
+import RentalSection from "./RentalSection";
 import CancelBookingDialog from "./CancelBookingDialog";
 import { useConfirm } from "@/components/common/useConfirm";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
@@ -172,8 +172,6 @@ function ViewBooking({
 
   const [moving, setMoving] = useState(false);
   const [noticeError, setNoticeError] = useState<string | null>(null);
-  // REQ-028 / TASK-109 — record an equipment rental as an add-on to this booking (refId = booking.id).
-  const [rentalOpen, setRentalOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   // SPEC-075 / REQ-076 (TASK-261) — พัก / นำกลับมาลงตาราง.
   const pause = usePauseBooking();
@@ -485,6 +483,12 @@ function ViewBooking({
       )}
       </div>
 
+      {/* REQ-091 (TASK-372) — the per-session rental ROW: add (unpaid) · mark paid (two taps, posts money) · remove
+          while unpaid. Replaces the ⋯ menu's "Add rental" (REQ-028's standalone `RentalModal` with hours + refId):
+          one door for a session's rental, on the modal itself; the standalone modal stays on the Bookings page for
+          walk-ins. */}
+      <RentalSection booking={booking} />
+
       {activeBadgeTypes.length > 0 && (
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-500">{t("calendar.badge")}</span>
@@ -657,9 +661,6 @@ function ViewBooking({
                 {t("cancelBooking.action")}
               </Menu.Item>
             )}
-            <Menu.Item leftSection={<PackageOpen size={16} />} onClick={() => setRentalOpen(true)}>
-              {t("rental.addonBtn")}
-            </Menu.Item>
           </Menu.Dropdown>
         </Menu>
       </div>
@@ -750,13 +751,6 @@ function ViewBooking({
         </Stack>
       </Modal>
 
-      {/* The rental is logged against the BOOKING, so it is named by what the booking is called. */}
-      <RentalModal
-        opened={rentalOpen}
-        onClose={() => setRentalOpen(false)}
-        refId={booking.id}
-        contextName={booking.displayName}
-      />
     </Stack>
   );
 }

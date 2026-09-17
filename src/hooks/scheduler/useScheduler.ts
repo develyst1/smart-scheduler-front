@@ -51,6 +51,9 @@ import {
   addExtraSession,
   getCourseHistory,
   recordRental,
+  recordBookingRental,
+  payBookingRental,
+  removeBookingRental,
   getSlotAvailability,
   previewCoursePackage,
   setAttendeeNote,
@@ -525,6 +528,25 @@ export const useCourseHistory = (id: string | null, enabled = true) =>
   });
 
 /** Record an equipment rental (TASK-109). Invalidates reports (rental is revenue); the caller shows the result. */
+// REQ-091 (TASK-372) — the three rental doors invalidate the same set pause/resume do (the row rides the booking
+// DTO everywhere: the grid, the tray, the single read, the list — and the money reaches the day's report).
+export const useRecordBookingRental = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, code, remark }: { bookingId: string; code: string; remark?: string }) =>
+      recordBookingRental(bookingId, { code, remark }),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+export const usePayBookingRental = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (bookingId: string) => payBookingRental(bookingId), onSuccess: () => invalidateAll(qc) });
+};
+export const useRemoveBookingRental = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (bookingId: string) => removeBookingRental(bookingId), onSuccess: () => invalidateAll(qc) });
+};
+
 export const useRecordRental = () => {
   const qc = useQueryClient();
   return useMutation({

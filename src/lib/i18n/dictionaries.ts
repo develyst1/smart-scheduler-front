@@ -353,6 +353,10 @@ const en = {
     // REQ-089 item 5 (TASK-367) — the owner's own stamp word, kept as-is in both languages; the legend explains it
     lastStamp: "Last",
     lastLegend: "last session of the course",
+    // REQ-091 (TASK-372) — the R chip: the owner's letter, same in both languages; the legend explains each colour
+    rentalStamp: "R",
+    rentalLegendUnpaid: "rental — unpaid",
+    rentalLegendPaid: "rental — paid",
     // ── SPEC-075 / REQ-076 §3 (TASK-261) — the พัก tray. Thai is @Porter's copy VERBATIM; English is the
     //    equivalent. 🚫 "พัก" is the customer's own word — never "ระงับ", never "Hold".
     pausedTray: "Paused bookings",
@@ -782,6 +786,32 @@ const en = {
     "itemRental-ride": "Ride only / hr",
     "itemRental-helmet": "Helmet / hr",
     "itemRental-pads": "Pads / hr",
+    "itemRental-helmet-pads": "Helmet + pads / hr",
+    // ── REQ-091 (TASK-372) — the per-session rental ROW on the booking modal. Tier words are the customer's
+    //    (`50 Helmet or Pad · 100 Helmet + Pad · 150 Ride only · 200 Full Set`); the print line is their shape.
+    section: "Rental",
+    tier: {
+      "rental-helmet": "Helmet",
+      "rental-pads": "Pad",
+      "rental-helmet-pads": "Helmet + Pad",
+      "rental-ride": "Ride only",
+      "rental-set": "Full Set",
+    },
+    tierLabel: "{tier} — {price}",
+    remark: "Remark",
+    remarkHint: "Which pair / which size — required for Full Set and Ride only",
+    save: "Save rental",
+    printLine: "Rent {price} / {tier}",
+    paidState: "paid",
+    unpaidState: "unpaid",
+    markPaid: "Mark paid",
+    markPaidTitle: "Mark this rental paid?",
+    markPaidBody: "This posts {line} to today's sales. It cannot be undone from here.",
+    markPaidConfirm: "Yes, paid",
+    remove: "Remove",
+    paidOk: "Rental marked paid",
+    savedOk: "Rental saved — unpaid",
+    removedOk: "Rental removed",
   },
 
   voucher: {
@@ -1652,6 +1682,9 @@ const th: typeof en = {
     legendType: "ประเภท",
     lastStamp: "Last", // REQ-089 item 5 — the owner's word, a stamp not a sentence; same in both languages on purpose
     lastLegend: "คาบสุดท้ายของคอร์ส",
+    rentalStamp: "R", // REQ-091 — the owner's letter, a stamp
+    rentalLegendUnpaid: "ค่าเช่า — ยังไม่จ่าย",
+    rentalLegendPaid: "ค่าเช่า — จ่ายแล้ว",
     // ── SPEC-075 / REQ-076 §3 (TASK-261) — ถาด "พัก" · คำของ @Porter ทั้งหมด ห้ามแก้ ──
     pausedTray: "รายการที่พักไว้",
     pausedTrayEmpty: "ไม่มีรายการที่พักไว้",
@@ -2041,6 +2074,30 @@ const th: typeof en = {
     "itemRental-ride": "เฉพาะตัวเล่น / ชม.",
     "itemRental-helmet": "หมวกกันน็อก / ชม.",
     "itemRental-pads": "สนับ / ชม.",
+    "itemRental-helmet-pads": "หมวก + สนับ / ชม.",
+    section: "ค่าเช่าอุปกรณ์", // REQ-091 (TASK-372)
+    tier: {
+      "rental-helmet": "หมวก",
+      "rental-pads": "สนับ",
+      "rental-helmet-pads": "หมวก + สนับ",
+      "rental-ride": "เฉพาะตัวเล่น",
+      "rental-set": "ชุดเต็ม",
+    },
+    tierLabel: "{tier} — {price}",
+    remark: "หมายเหตุ",
+    remarkHint: "คู่ไหน / ไซส์อะไร — ต้องใส่สำหรับชุดเต็มและเฉพาะตัวเล่น",
+    save: "บันทึกค่าเช่า",
+    printLine: "Rent {price} / {tier}", // the customer's print shape, as-is in both languages
+    paidState: "จ่ายแล้ว",
+    unpaidState: "ยังไม่จ่าย",
+    markPaid: "จ่ายแล้ว",
+    markPaidTitle: "ยืนยันว่าจ่ายค่าเช่าแล้ว?",
+    markPaidBody: "จะบันทึก {line} เข้ายอดขายวันนี้ ยกเลิกจากตรงนี้ไม่ได้",
+    markPaidConfirm: "ใช่ จ่ายแล้ว",
+    remove: "ลบ",
+    paidOk: "บันทึกว่าจ่ายค่าเช่าแล้ว",
+    savedOk: "บันทึกค่าเช่าแล้ว — ยังไม่จ่าย",
+    removedOk: "ลบค่าเช่าแล้ว",
   },
 
   voucher: {
