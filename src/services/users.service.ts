@@ -3,6 +3,8 @@
 // `session.user.isSuperAdmin` as the honest UI, never as the guard. Every refusal is a named code shown as the
 // server's sentence: `VALIDATION` (username `^[a-z0-9._-]{3,40}$` after trim + lowercase) · `PASSWORD_TOO_SHORT`
 // (min 8 — the only password rule) · `USERNAME_TAKEN` · `LAST_SUPER_ADMIN` · `FORBIDDEN`. 🚫 No delete (no route).
+// Stage 2 (TASK-382): `PUT /users/:id/menus { keys }` — the per-user menu grants, the bridge until Stage 4's roles SET
+// the same rows. An unknown key is `400`; a super-admin target is accepted (their menus are all of them regardless).
 import { api, useMockData } from "@/lib/api/client";
 import type { UserDTO } from "@/types/api/contract";
 import * as mock from "./users.mock.service";
@@ -50,6 +52,12 @@ export const resetUserPassword = async (id: string, password: string): Promise<{
   if (useMockData) return mock.resetUserPassword(id, password);
   const { data } = await api.post<{ ok: true }>(`/users/${id}/password`, { password });
   return data;
+};
+
+export const setUserMenus = async (id: string, keys: string[]): Promise<UserDTO> => {
+  if (useMockData) return mock.setUserMenus(id, keys);
+  const { data } = await api.put<{ user: UserDTO }>(`/users/${id}/menus`, { keys });
+  return data.user;
 };
 
 export const setUserDisabled = async (id: string, disabled: boolean): Promise<UserDTO> => {

@@ -573,7 +573,12 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   /** REQ-092 Stage 1 — the REAL user: the row's id, the display name the header shows, the super-admin flag. */
-  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; role: Role };
+  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; role: Role; menus: string[] };
+}
+
+/** REQ-092 Stage 2 (TASK-381) — `GET /auth/me`: who the token is, and the menus they may open (a super admin: all). */
+export interface MeResponse {
+  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; menus: string[] };
 }
 
 /** REQ-092 Stage 1 (TASK-377) — a row of the super admin's Users page. No password, no permissions yet (Stage 2). */
@@ -584,6 +589,8 @@ export interface UserDTO {
   isSuperAdmin: boolean;
   disabledAt: string | null;
   createdAt: string;
+  /** REQ-092 Stage 2 — the `menu:*` keys granted to this user (a super admin: all of them). */
+  menus: string[];
 }
 
 export type ApiErrorCode =

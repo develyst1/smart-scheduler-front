@@ -82,6 +82,15 @@ const en = {
     resetOk: "Password reset for {name}",
     disabledOk: "User disabled",
     enabledOk: "User enabled",
+    // Stage 2 (TASK-382) — the per-user menu checklist
+    colMenus: "Menus",
+    menusAll: "All menus (super admin)",
+    menusCount: "{n} menus",
+    menusTitle: "Menus for {name}",
+    menusBody: "Tick the menus this user may open. The change applies to their next request.",
+    menusSelectAll: "Select all",
+    menusSelectNone: "Select none",
+    menusSavedOk: "Menus saved for {name}",
   },
 
   // REQ-063 / TASK-161 — the discount block shared by all five sale/booking forms. Wording is REQ-063's
@@ -312,6 +321,13 @@ const en = {
     collapseMenu: "Collapse menu",
     logout: "Sign out",
     staff: "Staff",
+    // REQ-092 Stage 2 (TASK-382) — the avatar's user menu and the self-service password change
+    userMenu: "Account",
+    changePassword: "Change password",
+    changePasswordTitle: "Change my password",
+    currentPassword: "Current password",
+    newPassword: "New password",
+    passwordChangedOk: "Password changed",
   },
 
   login: {
@@ -321,6 +337,15 @@ const en = {
     submit: "Sign in",
     failTitle: "Sign-in failed",
     failDesc: "Incorrect username or password",
+    disabledReason: "This account has been disabled — contact your admin.", // REQ-092 Stage 2, only on ?reason=disabled
+  },
+
+  // REQ-092 Stage 2 (TASK-382) — the route guard's two states: a page without its menu, and a user with no menus.
+  rbac: {
+    noMenu: "You do not have access to this menu.",
+    goTo: "Go to {menu}",
+    shellTitle: "You have no menus yet",
+    shellBody: "Ask your admin to give you access to the menus you need.",
   },
 
   bookingType: {
@@ -1500,6 +1525,14 @@ const th: typeof en = {
     resetOk: "ตั้งรหัสผ่านใหม่ให้ {name} แล้ว",
     disabledOk: "ปิดใช้งานผู้ใช้แล้ว",
     enabledOk: "เปิดใช้งานผู้ใช้แล้ว",
+    colMenus: "เมนู",
+    menusAll: "ทุกเมนู (super admin)",
+    menusCount: "{n} เมนู",
+    menusTitle: "เมนูของ {name}",
+    menusBody: "เลือกเมนูที่ผู้ใช้นี้เปิดได้ มีผลตั้งแต่คำขอถัดไป",
+    menusSelectAll: "เลือกทั้งหมด",
+    menusSelectNone: "ไม่เลือกเลย",
+    menusSavedOk: "บันทึกเมนูของ {name} แล้ว",
   },
 
   confirmAction: {
@@ -1704,6 +1737,12 @@ const th: typeof en = {
     collapseMenu: "ย่อเมนู",
     logout: "ออกจากระบบ",
     staff: "ทีมงาน",
+    userMenu: "บัญชีผู้ใช้",
+    changePassword: "เปลี่ยนรหัสผ่าน",
+    changePasswordTitle: "เปลี่ยนรหัสผ่านของฉัน",
+    currentPassword: "รหัสผ่านปัจจุบัน",
+    newPassword: "รหัสผ่านใหม่",
+    passwordChangedOk: "เปลี่ยนรหัสผ่านแล้ว",
   },
 
   login: {
@@ -1713,6 +1752,14 @@ const th: typeof en = {
     submit: "เข้าสู่ระบบ",
     failTitle: "เข้าสู่ระบบไม่สำเร็จ",
     failDesc: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+    disabledReason: "บัญชีนี้ถูกปิดใช้งาน — กรุณาติดต่อผู้ดูแลระบบ",
+  },
+
+  rbac: {
+    noMenu: "คุณไม่มีสิทธิ์เข้าถึงเมนูนี้",
+    goTo: "ไปที่ {menu}",
+    shellTitle: "คุณยังไม่มีเมนูที่เข้าถึงได้",
+    shellBody: "กรุณาแจ้งผู้ดูแลระบบให้กำหนดสิทธิ์เมนูที่ต้องใช้",
   },
 
   bookingType: {

@@ -2,6 +2,16 @@ import axios from "axios";
 import { getSession, signOut } from "next-auth/react";
 import type { ApiError } from "@/types/api/contract";
 
+/**
+ * REQ-092 Stage 2 (TASK-382) — the guard's own sentence for a disabled account (`middleware/auth.ts`, a `401`). Only
+ * a 401 carrying THIS sentence adds `reason=disabled` to the sign-out redirect; every other 401 is unchanged.
+ */
+export const DISABLED_SENTENCE = "บัญชีนี้ถูกปิดใช้งาน";
+/** The one 401 that is NOT a dead session: a wrong CURRENT password on the self-service change. No sign-out. */
+const SELF_PASSWORD_PATH = "/auth/me/password";
+/** Fired on a `403 FORBIDDEN` so `useMe()` re-reads the grants (the guard then shows the sentence). */
+const FORBIDDEN_EVENT = "ss:forbidden";
+
 export class ApiClientError extends Error {
   constructor(
     public code: string,
@@ -53,14 +63,20 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Session missing/expired → end the NextAuth session and bounce to login (skip in mock).
-    if (error.response?.status === 401 && typeof window !== "undefined" && !useMockData) {
+    const body = error.response?.data as ApiError | undefined;
+    const url = String(error.config?.url ?? "");
+    // Session missing/expired → end the NextAuth session and bounce to login (skip in mock). A disabled account's
+    // sentence rides along as `reason=disabled` so the login page can say why. The self-service password route's 401
+    // (wrong current password) is a refusal to show in its dialog, not a dead session.
+    if (error.response?.status === 401 && typeof window !== "undefined" && !useMockData && !url.endsWith(SELF_PASSWORD_PATH)) {
       if (!window.location.pathname.startsWith("/login")) {
         const next = encodeURIComponent(window.location.pathname + window.location.search);
-        void signOut({ callbackUrl: `/login?next=${next}` });
+        const reason = body?.error?.message === DISABLED_SENTENCE ? "&reason=disabled" : "";
+        void signOut({ callbackUrl: `/login?next=${next}${reason}` });
       }
     }
-    const body = error.response?.data as ApiError | undefined;
+    // A menu grant taken away since the last `/auth/me`: re-read it so the route guard shows the sentence.
+    if (error.response?.status === 403 && typeof window !== "undefined") window.dispatchEvent(new Event(FORBIDDEN_EVENT));
     if (body?.error) {
       throw new ApiClientError(
         body.error.code,

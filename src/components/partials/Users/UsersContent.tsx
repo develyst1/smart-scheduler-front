@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Alert, Badge, Button, Card, Checkbox, Group, Loader, Modal, PasswordInput, Stack, Table, Text, TextInput } from "@mantine/core";
-import { AlertTriangle, KeyRound, Pencil, ShieldCheck, UserPlus, UserX, UserCheck } from "lucide-react";
+import { AlertTriangle, KeyRound, LayoutList, Pencil, ShieldCheck, UserPlus, UserX, UserCheck } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { useConfirm } from "@/components/common/useConfirm";
 import { formatDateDisplay } from "@/lib/ui/format";
-import { useCreateUser, useResetUserPassword, useSetUserDisabled, useUpdateUser, useUsers } from "@/hooks/scheduler/useUsers";
+import { useCreateUser, useResetUserPassword, useSetUserDisabled, useSetUserMenus, useUpdateUser, useUsers } from "@/hooks/scheduler/useUsers";
+import { MENU_KEYS, type MenuKey } from "@/lib/rbac/menus";
+import { HIDDEN_NAV_ITEMS, NAV_ITEMS } from "@/components/layout/AdminLayout/AdminLayout.config";
 import type { UserDTO } from "@/types/api/contract";
 
 /**
@@ -23,7 +25,10 @@ import type { UserDTO } from "@/types/api/contract";
  * minimum (`PASSWORD_TOO_SHORT`, 8), uniqueness (`USERNAME_TAKEN`), the last super admin (`LAST_SUPER_ADMIN`). The
  * ONE thing this page checks itself is that the two password boxes match — a typing aid, not a rule the server has.
  * Two taps on the destructive ones: **disable** (button → confirm) and **reset password** (button → the dialog's own
- * submit). 🚫 No delete · no self-service password change · no permissions (Stage 2).
+ * submit). 🚫 No delete. Stage 2 (TASK-382): a **`Menus`** count per row ⇒ a checklist of the twelve `menu:*` grants
+ * (labelled by the nav's own words, in the nav's order) ⇒ `PUT /users/:id/menus { keys }` — the bridge until Stage 4's
+ * roles SET the same rows. A super admin's row says "all menus" and has no checklist (their menus are all of them).
+ * The self-service password change lives in the header's user menu, not here.
  */
 const errMsg = (e: unknown) => (e instanceof ApiClientError ? e.message : (e as Error).message);
 
@@ -36,6 +41,7 @@ export default function UsersContent() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<UserDTO | null>(null);
   const [resetTarget, setResetTarget] = useState<UserDTO | null>(null);
+  const [menusTarget, setMenusTarget] = useState<UserDTO | null>(null);
 
   if (status === "loading") return <Loader />;
   if (!isSuperAdmin) {
@@ -76,6 +82,7 @@ export default function UsersContent() {
                 <Table.Th>{t("users.colUsername")}</Table.Th>
                 <Table.Th>{t("users.colDisplayName")}</Table.Th>
                 <Table.Th>{t("users.colRole")}</Table.Th>
+                <Table.Th>{t("users.colMenus")}</Table.Th>
                 <Table.Th>{t("users.colStatus")}</Table.Th>
                 <Table.Th>{t("users.colCreated")}</Table.Th>
                 <Table.Th />
@@ -89,6 +96,7 @@ export default function UsersContent() {
                   isSelf={u.id === session?.user?.id}
                   onEdit={() => setEditTarget(u)}
                   onReset={() => setResetTarget(u)}
+                  onMenus={() => setMenusTarget(u)}
                 />
               ))}
             </Table.Tbody>
@@ -99,11 +107,24 @@ export default function UsersContent() {
       <CreateUserModal opened={createOpen} onClose={() => setCreateOpen(false)} />
       <EditUserModal user={editTarget} onClose={() => setEditTarget(null)} />
       <ResetPasswordModal user={resetTarget} onClose={() => setResetTarget(null)} />
+      <MenusModal user={menusTarget} onClose={() => setMenusTarget(null)} />
     </Stack>
   );
 }
 
-function UserRow({ user, isSelf, onEdit, onReset }: { user: UserDTO; isSelf: boolean; onEdit: () => void; onReset: () => void }) {
+function UserRow({
+  user,
+  isSelf,
+  onEdit,
+  onReset,
+  onMenus,
+}: {
+  user: UserDTO;
+  isSelf: boolean;
+  onEdit: () => void;
+  onReset: () => void;
+  onMenus: () => void;
+}) {
   const t = useT();
   const setDisabled = useSetUserDisabled();
   const { confirm: askConfirm, confirmDialog } = useConfirm();
@@ -149,6 +170,17 @@ function UserRow({ user, isSelf, onEdit, onReset }: { user: UserDTO; isSelf: boo
           <Text size="sm" c="dimmed">
             {t("users.admin")}
           </Text>
+        )}
+      </Table.Td>
+      <Table.Td>
+        {user.isSuperAdmin ? (
+          <Text size="sm" c="dimmed">
+            {t("users.menusAll")}
+          </Text>
+        ) : (
+          <Button size="compact-xs" variant="light" leftSection={<LayoutList size={13} />} onClick={onMenus}>
+            {t("users.menusCount", { n: String(user.menus?.length ?? 0) })}
+          </Button>
         )}
       </Table.Td>
       <Table.Td>
@@ -314,6 +346,76 @@ function EditUserModal({ user, onClose }: { user: UserDTO | null; onClose: () =>
             {t("common.cancel")}
           </Button>
           <Button loading={update.isPending} disabled={!displayName.trim()} onClick={submit}>
+            {t("common.save")}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+}
+
+/** The twelve grants in the nav's order, each labelled by its entry's own `labelKey` (the hidden pages last). */
+const MENU_ROWS: { key: MenuKey; labelKey: string }[] = [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS]
+  .filter((i): i is typeof i & { menuKey: MenuKey } => !!i.menuKey)
+  .map((i) => ({ key: i.menuKey, labelKey: i.labelKey }));
+
+function MenusModal({ user, onClose }: { user: UserDTO | null; onClose: () => void }) {
+  const t = useT();
+  const save = useSetUserMenus();
+  const [keys, setKeys] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [seededFor, setSeededFor] = useState<string | null>(null);
+  // Seed from the row on open (render-time, as EditUserModal does): the checklist is a copy of the row's menus.
+  if (user && seededFor !== user.id) {
+    setSeededFor(user.id);
+    setKeys(user.menus ?? []);
+    setError(null);
+  }
+  if (!user && seededFor !== null) setSeededFor(null);
+
+  const toggle = (key: string, on: boolean) => setKeys((k) => (on ? [...new Set([...k, key])] : k.filter((x) => x !== key)));
+  const submit = async () => {
+    if (!user) return;
+    setError(null);
+    try {
+      // Only the keys the registry knows, in the registry's order — the server refuses an unknown one anyway.
+      await save.mutateAsync({ id: user.id, keys: MENU_KEYS.filter((k) => keys.includes(k)) });
+      notify({ title: t("users.menusSavedOk", { name: user.displayName }), color: "success" });
+      onClose();
+    } catch (e) {
+      setError(errMsg(e));
+    }
+  };
+
+  return (
+    <Modal opened={user !== null} onClose={onClose} centered title={t("users.menusTitle", { name: user?.displayName ?? "" })}>
+      <Stack gap="sm">
+        {error && (
+          <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
+            {error}
+          </Alert>
+        )}
+        <Text size="sm" c="dimmed">
+          {t("users.menusBody")}
+        </Text>
+        <Group gap="xs">
+          <Button size="compact-xs" variant="subtle" onClick={() => setKeys([...MENU_KEYS])}>
+            {t("users.menusSelectAll")}
+          </Button>
+          <Button size="compact-xs" variant="subtle" onClick={() => setKeys([])}>
+            {t("users.menusSelectNone")}
+          </Button>
+        </Group>
+        <Stack gap={6}>
+          {MENU_ROWS.map((row) => (
+            <Checkbox key={row.key} label={t(row.labelKey)} checked={keys.includes(row.key)} onChange={(e) => toggle(row.key, e.currentTarget.checked)} />
+          ))}
+        </Stack>
+        <Group justify="flex-end" gap="sm">
+          <Button variant="default" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button loading={save.isPending} onClick={submit}>
             {t("common.save")}
           </Button>
         </Group>

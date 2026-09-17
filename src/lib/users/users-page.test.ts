@@ -2,6 +2,7 @@ import { readFileSync } from "fs";
 import { describe, expect, it } from "bun:test";
 import { dictionaries } from "@/lib/i18n/dictionaries";
 import { NAV_ITEMS, navItemsFor } from "@/components/layout/AdminLayout/AdminLayout.config";
+import { MENU_KEYS } from "@/lib/rbac/menus";
 
 /**
  * REQ-092 Stage 1 / TASK-378 — the session carries the REAL user; the Users page for the super admin.
@@ -51,21 +52,24 @@ describe("§1 — the session carries the real user; the login screen is untouch
     );
   });
 
-  it("a 401 (a disabled user's next call) takes the EXISTING sign-out path — nothing new", () => {
+  it("a 401 (a disabled user's next call) takes the EXISTING sign-out path — nothing new (Stage 2 adds only `reason`)", () => {
     const client = codeOf("src/lib/api/client.ts");
     expect(client).toContain("error.response?.status === 401");
-    expect(client).toContain("void signOut({ callbackUrl: `/login?next=${next}` });");
+    expect(client).toContain("void signOut({ callbackUrl: `/login?next=${next}${reason}` });");
     expect(page).not.toMatch(/signOut|401/); // the page adds no second handler
   });
 
   it("the nav: `users` is superAdminOnly and `navItemsFor` hides it for everyone else (value-tested)", () => {
     const users = NAV_ITEMS.find((i) => i.key === "users");
     expect(users).toMatchObject({ href: "/scheduler/users", labelKey: "nav.users", superAdminOnly: true });
-    expect(navItemsFor(true).map((i) => i.key)).toContain("users");
-    expect(navItemsFor(false).map((i) => i.key)).not.toContain("users");
-    expect(navItemsFor(false).length).toBe(NAV_ITEMS.length - 1); // exactly one entry is gated today
+    // Stage 2: `navItemsFor` takes the user's access ({ isSuperAdmin, menus }); with every menu granted, `users` is
+    // still the ONE entry the flag alone gates.
+    const all = [...MENU_KEYS];
+    expect(navItemsFor({ isSuperAdmin: true, menus: [] }).map((i) => i.key)).toContain("users");
+    expect(navItemsFor({ isSuperAdmin: false, menus: all }).map((i) => i.key)).not.toContain("users");
+    expect(navItemsFor({ isSuperAdmin: false, menus: all }).length).toBe(NAV_ITEMS.length - 1); // exactly one entry is gated by the flag
     const sidebar = codeOf("src/components/layout/AdminLayout/Sidebar/Sidebar.tsx");
-    expect(sidebar).toContain("navItemsFor(session?.user?.isSuperAdmin === true)");
+    expect(sidebar).toContain("navItemsFor(access)");
     expect(sidebar).not.toContain("NAV_ITEMS.map");
   });
 });
@@ -118,13 +122,13 @@ describe("§2 — the Users page", () => {
 
   it("refusals render the server's sentence — in the dialog for create/edit/reset, as a notice for disable", () => {
     expect(page).toContain("const errMsg = (e: unknown) => (e instanceof ApiClientError ? e.message : (e as Error).message);");
-    expect((page.match(/setError\(errMsg\(e\)\)/g) ?? []).length).toBe(3); // create · edit · reset
+    expect((page.match(/setError\(errMsg\(e\)\)/g) ?? []).length).toBe(4); // create · edit · reset · menus (Stage 2)
     expect(page).toContain('notify({ title: errMsg(e), color: "danger" });'); // disable/enable
   });
 
-  it("copy: the page's keys exist in both languages (38 × 2), plus nav.users", () => {
+  it("copy: the page's keys exist in both languages (38 + 8 Stage 2 = 46 × 2), plus nav.users", () => {
     const keys = Object.keys(dictionaries.en.users);
-    expect(keys.length).toBe(38);
+    expect(keys.length).toBe(46);
     for (const k of keys) expect((dictionaries.th.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);
     expect(dictionaries.en.nav.users).toBe("Users");
     expect(dictionaries.th.nav.users).toBe("ผู้ใช้งาน");

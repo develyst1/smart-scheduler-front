@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useMe } from "@/hooks/scheduler/useMe";
 import { CalendarRange } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { navItemsFor, APP_NAME } from "../AdminLayout.config";
@@ -46,9 +46,10 @@ function NavList({
 }) {
   const pathname = usePathname();
   const t = useT();
-  // REQ-092 Stage 1 — the super-admin-only entries appear only for a super admin (the server guards the routes).
-  const { data: session } = useSession();
-  const items = navItemsFor(session?.user?.isSuperAdmin === true);
+  // REQ-092 Stage 2 — the entries the user may open: `superAdminOnly` ones for a super admin, the rest by `menu:*`
+  // grant from `/auth/me` (the server guards the routes). Nothing is listed until the grants are known.
+  const { access } = useMe();
+  const items = navItemsFor(access);
 
   return (
     <nav className="flex flex-1 flex-col gap-1 px-3 py-2">

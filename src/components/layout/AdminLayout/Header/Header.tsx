@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { ActionIcon, Button } from "@mantine/core";
-import { LogOut, Menu, PanelLeft, PanelLeftClose } from "lucide-react";
+import { ActionIcon, Menu as MantineMenu, UnstyledButton } from "@mantine/core";
+import { KeyRound, LogOut, Menu, PanelLeft, PanelLeftClose } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useT, LanguageToggle } from "@/lib/i18n";
-import { HIDDEN_NAV_ITEMS, NAV_ITEMS } from "../AdminLayout.config";
+import { navItemForPath } from "../AdminLayout.config";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 interface Props {
   collapsed: boolean;
@@ -18,11 +20,14 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
   const t = useT();
   // Hidden entries are searched too: a hidden page still resolves when visited directly (REQ-026 Stage 1 hides
   // the menu item, not the route), and it should keep its own title rather than fall back to the app name.
-  const current = [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS].find((i) => pathname?.startsWith(i.href));
+  const current = navItemForPath(pathname);
 
   const { data: session } = useSession();
   // REQ-092 Stage 1 — the real user's display name; the username as a fallback for a pre-Stage-1 token.
   const name = session?.user?.displayName ?? session?.user?.username ?? t("header.staff");
+  // REQ-092 Stage 2 (TASK-382 §3) — the avatar is the user menu: who they are · change my password · sign out. The
+  // sign-out moved in here from a bare button; nothing else about it changed.
+  const [pwOpen, setPwOpen] = useState(false);
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-muted-200 bg-content1/80 px-4 backdrop-blur sm:px-6">
@@ -56,19 +61,30 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
 
       <div className="flex shrink-0 items-center gap-3 text-sm">
         <LanguageToggle />
-        <span className="hidden text-muted-500 sm:inline">{name}</span>
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-700 text-xs font-semibold text-primary-foreground ring-2 ring-primary/20">
-          TM
-        </span>
-        <Button
-          variant="subtle"
-          color="gray"
-          size="xs"
-          leftSection={<LogOut size={15} />}
-          onClick={() => signOut({ callbackUrl: "/login" })}
-        >
-          <span className="hidden sm:inline">{t("header.logout")}</span>
-        </Button>
+        <MantineMenu shadow="md" width={220} position="bottom-end">
+          <MantineMenu.Target>
+            <UnstyledButton className="flex items-center gap-3" aria-label={t("header.userMenu")}>
+              <span className="hidden text-muted-500 sm:inline">{name}</span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-700 text-xs font-semibold text-primary-foreground ring-2 ring-primary/20">
+                TM
+              </span>
+            </UnstyledButton>
+          </MantineMenu.Target>
+          <MantineMenu.Dropdown>
+            <MantineMenu.Label>
+              <span className="block truncate text-sm font-medium text-foreground">{name}</span>
+              {session?.user?.username && <span className="block truncate font-mono text-xs">{session.user.username}</span>}
+            </MantineMenu.Label>
+            <MantineMenu.Divider />
+            <MantineMenu.Item leftSection={<KeyRound size={15} />} onClick={() => setPwOpen(true)}>
+              {t("header.changePassword")}
+            </MantineMenu.Item>
+            <MantineMenu.Item leftSection={<LogOut size={15} />} onClick={() => signOut({ callbackUrl: "/login" })}>
+              {t("header.logout")}
+            </MantineMenu.Item>
+          </MantineMenu.Dropdown>
+        </MantineMenu>
+        <ChangePasswordModal opened={pwOpen} onClose={() => setPwOpen(false)} />
       </div>
     </header>
   );

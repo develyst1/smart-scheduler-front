@@ -6,6 +6,7 @@ import {
   listUsers,
   resetUserPassword,
   setUserDisabled,
+  setUserMenus,
   updateUser,
   type CreateUserInput,
   type UpdateUserInput,
@@ -31,6 +32,14 @@ export const useUpdateUser = () => {
 };
 export const useResetUserPassword = () =>
   useMutation({ mutationFn: ({ id, password }: { id: string; password: string }) => resetUserPassword(id, password) });
+/** Stage 2 — the per-user menu grants (the bridge until Stage 4's roles). */
+export const useSetUserMenus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, keys }: { id: string; keys: string[] }) => setUserMenus(id, keys),
+    onSuccess: () => invalidate(qc),
+  });
+};
 export const useSetUserDisabled = () => {
   const qc = useQueryClient();
   return useMutation({

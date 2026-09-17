@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Paper, PasswordInput, TextInput, Title } from "@mantine/core";
+import { Alert, Button, Paper, PasswordInput, TextInput, Title } from "@mantine/core";
 import { CalendarDays } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { notify } from "@/lib/ui/notify";
@@ -14,6 +14,12 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  // REQ-092 Stage 2 (TASK-382) — the sign-out redirect carries `reason=disabled` ONLY for the guard's disabled sentence
+  // (`lib/api/client.ts`); read after mount (the query string is the browser's, not the server render's).
+  const [disabledReason, setDisabledReason] = useState(false);
+  useEffect(() => {
+    setDisabledReason(new URLSearchParams(window.location.search).get("reason") === "disabled");
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +52,12 @@ export default function LoginPage() {
           <Title order={3}>SOM SCHEDULE</Title>
           <p className="text-sm text-muted-500">{t("login.subtitle")}</p>
         </div>
+
+        {disabledReason && (
+          <Alert color="orange" variant="light" mb="md">
+            {t("login.disabledReason")}
+          </Alert>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <TextInput

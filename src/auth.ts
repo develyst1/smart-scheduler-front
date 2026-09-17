@@ -9,6 +9,7 @@ import Credentials from "next-auth/providers/credentials";
 import axios from "axios";
 import { authConfig } from "@/auth.config";
 import type { LoginResponse } from "@/types/api/contract";
+import { MENU_KEYS } from "@/lib/rbac/menus";
 
 const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
@@ -40,6 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             displayName: username || "admin",
             isSuperAdmin: true,
             role: "super_admin",
+            menus: [...MENU_KEYS],
             backendToken: "mock-token",
           };
         }
@@ -60,6 +62,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             displayName: data.user.displayName,
             isSuperAdmin: data.user.isSuperAdmin === true,
             role: data.user.role,
+            // REQ-092 Stage 2 (TASK-382) — the login body's menus SEED the nav; `/auth/me` on load is the truth.
+            menus: Array.isArray(data.user.menus) ? data.user.menus : [],
             backendToken: data.token,
           };
         } catch {
