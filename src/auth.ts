@@ -37,7 +37,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             id: username || "admin",
             name: username || "admin",
             username: username || "admin",
-            role: "admin",
+            displayName: username || "admin",
+            isSuperAdmin: true,
+            role: "super_admin",
             backendToken: "mock-token",
           };
         }
@@ -48,10 +50,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             username,
             password,
           });
+          // REQ-092 Stage 1 (TASK-378) — the REAL user from the table: `id` is the row's id (it used to be the
+          // username), `name`/`displayName` is what the header shows, `isSuperAdmin` gates the Users page and its nav
+          // entry. `role` is still read as today so nothing else moves (the discount guard reads it — Stage 3's).
           return {
-            id: data.user.username,
-            name: data.user.username,
+            id: data.user.id,
+            name: data.user.displayName,
             username: data.user.username,
+            displayName: data.user.displayName,
+            isSuperAdmin: data.user.isSuperAdmin === true,
             role: data.user.role,
             backendToken: data.token,
           };

@@ -15,6 +15,10 @@ export const authConfig = {
         token.backendToken = user.backendToken;
         token.role = user.role;
         token.username = user.username;
+        // REQ-092 Stage 1 — the real user's id, display name and super-admin flag ride the token to the session.
+        token.userId = user.id;
+        token.displayName = user.displayName;
+        token.isSuperAdmin = user.isSuperAdmin === true;
       }
       return token;
     },
@@ -23,6 +27,9 @@ export const authConfig = {
       if (session.user) {
         session.user.role = token.role;
         session.user.username = token.username;
+        session.user.id = token.userId ?? "";
+        session.user.displayName = token.displayName;
+        session.user.isSuperAdmin = token.isSuperAdmin === true;
       }
       return session;
     },

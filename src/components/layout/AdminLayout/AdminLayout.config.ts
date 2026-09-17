@@ -10,6 +10,7 @@ import {
   PieChart,
   Link2,
   Settings2,
+  UserCog,
 } from "lucide-react";
 
 export interface NavItem {
@@ -18,6 +19,8 @@ export interface NavItem {
   labelKey: string;
   href: string;
   icon: typeof CalendarDays;
+  /** REQ-092 Stage 1 — shown only to a super admin (`session.user.isSuperAdmin`); the server guards the routes. */
+  superAdminOnly?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -77,7 +80,19 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/scheduler/settings",
     icon: Settings2,
   },
+  // REQ-092 Stage 1 (TASK-378) — the super admin's Users page. Hidden for everyone else; the server is the guard.
+  {
+    key: "users",
+    labelKey: "nav.users",
+    href: "/scheduler/users",
+    icon: UserCog,
+    superAdminOnly: true,
+  },
 ];
+
+/** The nav a given session sees — `superAdminOnly` entries only when the session says so. */
+export const navItemsFor = (isSuperAdmin: boolean): NavItem[] =>
+  NAV_ITEMS.filter((i) => !i.superAdminOnly || isSuperAdmin);
 
 /**
  * REQ-026 Stage 1 — hidden from the sidebar, **not deleted**. The route, page and components all still exist

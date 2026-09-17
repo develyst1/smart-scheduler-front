@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { CalendarRange } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { NAV_ITEMS, APP_NAME } from "../AdminLayout.config";
+import { navItemsFor, APP_NAME } from "../AdminLayout.config";
 
 interface Props {
   /** desktop: ย่อเหลือไอคอน */
@@ -45,10 +46,13 @@ function NavList({
 }) {
   const pathname = usePathname();
   const t = useT();
+  // REQ-092 Stage 1 — the super-admin-only entries appear only for a super admin (the server guards the routes).
+  const { data: session } = useSession();
+  const items = navItemsFor(session?.user?.isSuperAdmin === true);
 
   return (
     <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
-      {NAV_ITEMS.map((item) => {
+      {items.map((item) => {
         const Icon = item.icon;
         const active = pathname?.startsWith(item.href);
         const label = t(item.labelKey);

@@ -29,7 +29,12 @@ interface Props {
 export default function DiscountSection({ fullMinor, value, onChange, serverProblems = [] }: Props) {
   const t = useT();
   const { data: session } = useSession();
-  if (session?.user?.role !== "admin") return null;
+  // REQ-092 Stage 1 (TASK-378) — the token now issues `"super_admin"` for a super admin; a super admin is at least an
+  // admin, so the section shows for both. ⚠️ The server's own gate (`assertMayDiscount`, `role !== "admin"`) has NOT
+  // been widened — a super admin's discount is refused there today (reported, TASK-378); Stage 3's permission key
+  // retires both checks. This line is the FE half of the intent, not a bypass: the server still decides.
+  const role = session?.user?.role;
+  if (role !== "admin" && role !== "super_admin") return null;
 
   const { discountMinor, problemKeys, netMinor, touched } = evaluateDiscount(value, fullMinor);
 

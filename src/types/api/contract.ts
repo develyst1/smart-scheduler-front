@@ -559,7 +559,12 @@ export interface SetTeacherTypeOrderRequest {
   order: TeacherType[];
 }
 
-export type Role = "admin" | "staff";
+/**
+ * REQ-092 Stage 1 (TASK-377/378) — `role` STAYS in the claim and the login body for now (`"super_admin" | "admin"`;
+ * `"staff"` kept for the contract's sake, never issued). Access is NOT the role any more — it is `isSuperAdmin`
+ * today and the permission keys from Stage 2 on; `role` goes when Stage 3 retires the one inline check.
+ */
+export type Role = "super_admin" | "admin" | "staff";
 
 export interface LoginRequest {
   username: string;
@@ -567,7 +572,18 @@ export interface LoginRequest {
 }
 export interface LoginResponse {
   token: string;
-  user: { username: string; role: Role };
+  /** REQ-092 Stage 1 — the REAL user: the row's id, the display name the header shows, the super-admin flag. */
+  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; role: Role };
+}
+
+/** REQ-092 Stage 1 (TASK-377) — a row of the super admin's Users page. No password, no permissions yet (Stage 2). */
+export interface UserDTO {
+  id: string;
+  username: string;
+  displayName: string;
+  isSuperAdmin: boolean;
+  disabledAt: string | null;
+  createdAt: string;
 }
 
 export type ApiErrorCode =

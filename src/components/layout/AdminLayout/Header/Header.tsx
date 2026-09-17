@@ -21,7 +21,8 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
   const current = [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS].find((i) => pathname?.startsWith(i.href));
 
   const { data: session } = useSession();
-  const name = session?.user?.username ?? t("header.staff");
+  // REQ-092 Stage 1 — the real user's display name; the username as a fallback for a pre-Stage-1 token.
+  const name = session?.user?.displayName ?? session?.user?.username ?? t("header.staff");
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-muted-200 bg-content1/80 px-4 backdrop-blur sm:px-6">
