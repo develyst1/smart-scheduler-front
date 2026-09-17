@@ -28,7 +28,11 @@
      status AND type at once, so sharing a hue would make one unreadable. The text label is always present —
      colour is redundant reinforcement, never the carrier (AC-1/AC-8, and the a11y rule from REQ-041). */
   --booking-type-first-trial: 217 70 239; /* fuchsia — the "new face" */
-  --booking-type-single-session: 20 184 166; /* teal */
+  /* 🔴 Deepened from teal `20 184 166` (2026-09-16, owner review). The old value sat at mid lightness, which
+     was invisible only because the cell fill used to be a 10% wash of everything. Once the status fill went to
+     34% the `มาเรียน` green fill and this stripe landed in the same band and the stripe stopped reading.
+     ⚠️ Same hue family on purpose — staff already know 1 HR as "the green one"; it is darker, not different. */
+  --booking-type-single-session: 4 120 87; /* emerald-700 #047857 */
   --booking-type-course-package: 79 70 229; /* indigo */
   --booking-type-voucher: 202 138 4; /* amber-700 */
   /* REQ-078 / TASK-227 — อื่นๆ. The four above are saturated because they are the four PAID products; this one
@@ -36,6 +40,75 @@
      own token, not a re-use — and stone rather than slate, so it never collides with the `--color-muted-*`
      ramp the borders and dimmed text already use. */
   --booking-type-other: 120 113 108; /* stone-500 */
+
+  /* ── SCHEDULE cell colours (2026-09-16, owner review) ─────────────────────────────────────────────
+     🔴 Their own tokens, NOT the `primary/success/warning/danger/secondary` Tailwind colours the rest of the
+     app runs on — and that separation is the whole point of adding them.
+
+     The owner's note was about ONE screen: *"สีไม่จำเป็นต้องเป็นพาสเทล เพราะสีแต่ละอันแอบใกล้เคียงกัน โดยเฉพาะ
+     ลาที่ดูยากมาก"*. The semantic five are read by 16 other files — login, the sidebar, the header, Teachers,
+     Attention, Checkin, Register, PlanModal, the budget strip — plus every `notify()` toast through
+     `MANTINE_COLOR`. Deepening them there would repaint the product to fix a calendar.
+
+     🔴 **VIVID, not dark — and the distinction cost several passes to find.** The first cut read the owner's
+     *"เข้มคมชัดขึ้น"* as *lower lightness*, and darkening six hues gives exactly what came back: *"มันเข้มแบบ
+     มืดเกิน"*. Separation on a pale grid comes from CHROMA, not from darkness; a dark hue at a 34% fill just
+     turns muddy, because the tint is mostly the white it is mixed with either way.
+
+     ⇒ every status is now the **500 stop of its own ramp** — high chroma, mid lightness, one consistent
+     energy across all six. That uniformity matters as much as the brightness: the earlier hand-picked set had
+     each hue at a slightly different lightness, which is why some statuses read heavier than others and why
+     `leave` in particular kept needing another adjustment.
+
+     ⚠️ `pend` stays AMBER. An early draft drifted it to orange-red `#d9480f` — a different colour rather than a
+     brighter one — and the owner caught it.
+
+     `leave` is the one the complaint named. Still the neutral slate (the owner asked for a change of weight,
+     not of hue) and now `slate-500`, the same stop as its five neighbours — which is the value four passes of
+     eyeballing had already converged on independently. */
+  /* ⚠️ `sky-500`, not `blue-500`, on the owner's look. Tailwind's `blue` leans indigo, so at the same 500 stop
+     it reads duller beside the amber and the green — the one hue in the set that still looked heavy. `sky` is
+     the same "blue" to a reader but sits further toward cyan, where the chroma is higher. */
+  --cal-conf: 14 165 233; /* #0ea5e9 sky-500    ← primary  #228be6 */
+  --cal-att: 34 197 94; /* #22c55e green-500  ← success  #2f9e44 */
+  /* ⚠️ `amber-400`, one stop up from the rest, on the owner's look. `amber-500` sits toward gold — beside a
+     `sky` and a `green` it reads as the dull one, the same way `blue-500` did. 400 pushes it toward yellow,
+     where the hue is brighter, and it also moves it further from the `Voucher` stripe (`amber-700`).
+     📌 So the "500 across the board" rule above is the STARTING POINT, not a law: two hues needed a nudge
+     because perceived brightness is not flat across a ramp. Both nudges are recorded here rather than left as
+     unexplained odd values. */
+  --cal-pend: 251 191 36; /* #fbbf24 amber-400  ← warning  #e8a23d */
+
+  /* ── Dots ─────────────────────────────────────────────────────────────────────────────────────────
+     🔴 **The dot is always DARKER than its own fill — every status, no exceptions.** A dot painted in the same
+     hue as the tint it sits on has nothing to stand against: at a 34% fill the marker dissolves into the wash
+     it is supposed to mark.
+     ⇒ each is the **700 stop** of its ramp, two steps above the 500 the fill uses. `pend` is `amber-600`
+     because its fill is `amber-400` — same two-step gap, counted from where that fill actually sits.
+     📌 This started as an exception for green and amber alone (they carry the highest perceived lightness, so
+     they showed the problem first). Extending it to all six is the better shape: one rule beats four values
+     that behave one way and two that behave another, and the next hue added to the set inherits the rule
+     instead of an argument about whether it qualifies.
+     ⚠️ The FILLS are untouched throughout — the colour staff have learned for each status is unchanged; only
+     the marker on top of it is stronger. */
+  --cal-conf-dot: 3 105 161; /* #0369a1 sky-700 */
+  --cal-att-dot: 21 128 61; /* #15803d green-700 */
+  --cal-pend-dot: 217 119 6; /* #d97706 amber-600 */
+  --cal-leave-dot: 51 65 85; /* #334155 slate-700 */
+  --cal-ext-dot: 109 40 217; /* #6d28d9 violet-700 */
+  --cal-no-dot: 185 28 28; /* #b91c1c red-700 */
+  /* 🚫 Do not lighten past `slate-500`. One step further (`#94a3b8`) mixes to about `muted-200` at a 34% fill,
+     which is where *"ลาที่ดูยากมาก"* started — the owner went there and came back. If ลา ever needs to be
+     softer again, take it out of the FILL (24% instead of 34%) or put it into a heavier border, not this hue. */
+  --cal-leave: 100 116 139; /* #64748b slate-500  ← was muted-100/300, a borrowed grey */
+  --cal-ext: 139 92 246; /* #8b5cf6 violet-500 ← secondary #845ef7 */
+  --cal-no: 239 68 68; /* #ef4444 red-500    ← danger   #e03131 */
+
+  /* 🔴 ONE ink for every line in a cell — time, name, type, programme, note, shared-teachers.
+     The cell used to run a three-tier grey (`muted-500` / fg / `muted-600`) so colour carried the reading
+     order. At a 34% fill those two greys are the first things to sink into the background, and the owner asked
+     for the lines to match. Hierarchy now comes from SIZE and WEIGHT, which do not fade as the fill deepens. */
+  --cal-ink: 15 23 42; /* #0f172a */
 }
 
 /* Minimal reset (Tailwind preflight is disabled so it doesn't fight Mantine).

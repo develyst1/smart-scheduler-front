@@ -27,6 +27,25 @@ const config: Config = {
         warning: "#e8a23d",
         secondary: "#845ef7",
         danger: "#e03131",
+        // 🔴 Schedule-only status colours (2026-09-16). Additive: nothing above changes, so the 16 files and
+        // every `notify()` toast that read `primary/success/warning/danger/secondary` are untouched. Only the
+        // two calendar grids reference `cal-*`.
+        cal: {
+          conf: "rgb(var(--cal-conf) / <alpha-value>)",
+          att: "rgb(var(--cal-att) / <alpha-value>)",
+          pend: "rgb(var(--cal-pend) / <alpha-value>)",
+          // The status dot, always two ramp steps darker than the fill it sits on — see `--cal-*-dot`.
+          "conf-dot": "rgb(var(--cal-conf-dot) / <alpha-value>)",
+          "att-dot": "rgb(var(--cal-att-dot) / <alpha-value>)",
+          "pend-dot": "rgb(var(--cal-pend-dot) / <alpha-value>)",
+          "leave-dot": "rgb(var(--cal-leave-dot) / <alpha-value>)",
+          "ext-dot": "rgb(var(--cal-ext-dot) / <alpha-value>)",
+          "no-dot": "rgb(var(--cal-no-dot) / <alpha-value>)",
+          leave: "rgb(var(--cal-leave) / <alpha-value>)",
+          ext: "rgb(var(--cal-ext) / <alpha-value>)",
+          no: "rgb(var(--cal-no) / <alpha-value>)",
+          ink: "rgb(var(--cal-ink) / <alpha-value>)",
+        },
         // `muted` replaces the old `default` scale (same slate values, now via vars).
         muted: {
           50: "rgb(var(--color-muted-50) / <alpha-value>)",

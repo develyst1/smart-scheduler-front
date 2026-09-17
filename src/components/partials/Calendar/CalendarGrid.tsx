@@ -4,8 +4,9 @@ import { Plus } from "lucide-react";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR, OFF_CALENDAR_STATUSES, TIME_SLOTS } from "@/types/app/scheduler";
-import { badgeColorSoftVar, badgeColorVar } from "@/lib/ui/badge-colors";
+import { badgeColorVar } from "@/lib/ui/badge-colors";
 import { useCellDisplay, type CellDisplay } from "@/lib/scheduler/cell-display";
+import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE } from "./calendar-status";
 import { useT } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
@@ -23,25 +24,10 @@ interface Props {
   onCreate: (teacherId: string, time: string) => void;
 }
 
-// พื้น/ขอบการ์ดตามสถานะ (พื้นอ่อน ขอบเข้ม) — คงสัญญาณสถานะที่พื้นการ์ดไว้
-const CARD_STYLE: Record<string, string> = {
-  primary: "bg-primary/10 border-primary/30 hover:bg-primary/15",
-  success: "bg-success/10 border-success/30 hover:bg-success/15",
-  warning: "bg-warning/10 border-warning/40 hover:bg-warning/15",
-  secondary: "bg-secondary/10 border-secondary/30 hover:bg-secondary/15",
-  danger: "bg-danger/10 border-danger/30 hover:bg-danger/15",
-  default: "bg-muted-100 border-muted-300 hover:bg-muted-200",
-};
-
-// สี dot สถานะ (จุดกลมหน้าชื่อ) — แถบซ้าย = ประเภท
-const DOT_STYLE: Record<string, string> = {
-  primary: "bg-primary",
-  success: "bg-success",
-  warning: "bg-warning",
-  secondary: "bg-secondary",
-  danger: "bg-danger",
-  default: "bg-muted-400",
-};
+// พื้น/ขอบการ์ด + dot ตามสถานะ — `./calendar-status`, shared with the week grid AND the legend.
+// ⚠️ The day card is larger, so the identical percentage reads heavier here than in a week chip; that is the
+// tradeoff the owner saw in both previews before choosing it, not an oversight.
+// 🚫 Do not re-declare either map here (see that file).
 
 export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCreate }: Props) {
   const t = useT();
@@ -140,7 +126,7 @@ function Row({
               <button
                 type="button"
                 onClick={() => onSelectBooking(booking)}
-                className={`relative flex h-full w-full flex-col gap-1 overflow-hidden rounded-xl border-y border-r p-2 pl-3 text-left shadow-sm transition-shadow hover:shadow-md ${CARD_STYLE[accent]}`}
+                className={`relative flex h-full w-full flex-col gap-1 overflow-hidden rounded-xl border-y border-r p-2 pl-3 text-left shadow-sm transition-shadow hover:shadow-md ${CAL_SURFACE_STYLE[accent]} ${CAL_SURFACE_HOVER[accent]}`}
               >
                 {/* SPEC-046 — the left stripe carries TYPE (the stable commercial channel), matching the week cell;
                     STATUS rides the dot beside the name. Two competing stripes on one card would make neither
@@ -151,21 +137,25 @@ function Row({
                   style={{ backgroundColor: `rgb(${BOOKING_TYPE_VAR[booking.bookingType]})` }}
                 />
                 <span className="flex items-center gap-1.5">
-                  <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${DOT_STYLE[accent]}`} />
+                  <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${CAL_DOT_STYLE[accent]}`} />
                   {/* AC-10 — ONE name field, computed on the BE. 🚫 No `|| studentName` fallback here: that is
                       exactly the per-call-site guessing `displayName` exists to delete. */}
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">{booking.displayName}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-cal-ink">
+                    {booking.displayName}
+                  </span>
                   {/* REQ-089 item 5 — the server's `courseLast`, as a stamp on the name row. */}
                   <LastStamp booking={booking} />
                   {/* Branch (badge) — a primary identifier here, so it stays a labelled chip, never a bare dot. */}
                   {display.badge && (booking.badges ?? []).length > 0 && (
                     <span className="flex shrink-0 flex-wrap justify-end gap-1">
                       {(booking.badges ?? []).map((bd) => (
+                        /* White ground + branch-coloured border — the week chip's treatment, for the same
+                           reason: a soft tint on a 34% fill is two washes stacked. See the note there. */
                         <span
                           key={bd.valueId}
-                          className="inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-medium leading-tight"
+                          className="inline-flex items-center gap-1 rounded-full border bg-white px-1.5 py-px text-[10px] font-medium leading-tight"
                           style={{
-                            backgroundColor: badgeColorSoftVar(bd.color ?? "gray"),
+                            borderColor: badgeColorVar(bd.color ?? "gray"),
                             color: badgeColorVar(bd.color ?? "gray"),
                           }}
                         >
@@ -182,7 +172,7 @@ function Row({
                 </span>
                 {/* type · program on one line — AC-4: the day view keeps the FULL program name (it may wrap, never truncates). */}
                 {(display.type || (display.program && booking.subject)) && (
-                  <span className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[11px] text-muted-600">
+                  <span className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[11px] font-medium text-cal-ink">
                     {display.type && (
                       <>
                         {(() => {
@@ -200,7 +190,7 @@ function Row({
                       </>
                     )}
                     {display.type && display.program && booking.subject && (
-                      <span className="shrink-0 text-muted-300">·</span>
+                      <span className="shrink-0 text-cal-ink">·</span>
                     )}
                     {display.program && booking.subject && <span className="min-w-0">{booking.subject}</span>}
                   </span>
@@ -211,7 +201,7 @@ function Row({
                 {/* REQ-068 — the session note as a neutral-bordered callout so it reads as a note, not more meta. */}
                 {display.note && booking.attendeeNote && (
                   <span
-                    className="truncate border-l-2 border-muted-300 pl-1.5 text-[11px] text-muted-500"
+                    className="truncate border-l-2 border-cal-ink pl-1.5 text-[11px] font-medium text-cal-ink"
                     title={booking.attendeeNote}
                   >
                     {booking.attendeeNote}
@@ -222,10 +212,11 @@ function Row({
               <button
                 type="button"
                 onClick={() => onCreate(tc.id, time)}
-                className="flex h-full min-h-16 w-full items-center justify-center rounded-xl border border-dashed border-muted-200 text-muted-300 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                /* Glyph only — see the week grid's note. Border and hover unchanged. */
+                className="flex h-full min-h-16 w-full items-center justify-center rounded-xl border border-dashed border-muted-200 text-muted-500 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
                 aria-label={t("calendar.addBooking")}
               >
-                <Plus size={16} />
+                <Plus size={18} />
               </button>
             )}
           </div>

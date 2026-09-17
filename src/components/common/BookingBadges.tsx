@@ -27,7 +27,7 @@ const NO_TRUNCATE = { root: { maxWidth: "none" }, label: { overflow: "visible" }
 
 // SPEC-037 §2 / TASK-129 item 7 — a per-status icon so status is NEVER signalled by colour alone
 // (three of these share `danger` red: NO_SHOW / PENDING_RESCHEDULE / CANCELLED). Label + colour + shape.
-const STATUS_ICON: Record<BookingStatus, LucideIcon> = {
+export const BOOKING_STATUS_ICON: Record<BookingStatus, LucideIcon> = {
   PENDING: Clock,
   CONFIRMED: Bell,
   ATTENDED: BadgeCheck,
@@ -43,7 +43,7 @@ const STATUS_ICON: Record<BookingStatus, LucideIcon> = {
 
 export function StatusChip({ status, size = "sm" }: { status: BookingStatus; size?: Size }) {
   const t = useT();
-  const Icon = STATUS_ICON[status];
+  const Icon = BOOKING_STATUS_ICON[status];
   return (
     <Badge
       size={size}
