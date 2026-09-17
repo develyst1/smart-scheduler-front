@@ -99,6 +99,8 @@ export function dtoToCourseView(row: CourseSummary & { student: StudentRef }): C
     // TASK-189 — one source of lifecycle truth. `ACTIVE` only as a defensive default for pre-TASK-188 payloads.
     status: row.status ?? "ACTIVE",
     subject: row.subject ?? null,
+    // TASK-374 — the course's rental as sent (derived server-side); absent ⇒ null.
+    rental: row.rental ?? null,
   };
 }
 

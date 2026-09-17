@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Group, Select, Stack, Text, TextInput } from "@mantine/core";
+import { Alert, Button, Group, Stack, Text } from "@mantine/core";
 import { AlertTriangle, PackageOpen, Trash2 } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { useConfirm } from "@/components/common/useConfirm";
-import { usePayBookingRental, useRecordBookingRental, useRemoveBookingRental, useSellablePackages } from "@/hooks/scheduler";
-import { RENTAL_CODES, type Booking } from "@/types/app/scheduler";
+import { usePayBookingRental, useRecordBookingRental, useRemoveBookingRental } from "@/hooks/scheduler";
+import RentalTierPicker, { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
+import { OFF_CALENDAR_STATUSES, type Booking } from "@/types/app/scheduler";
+
+export { rentalPrintLine };
 
 /**
  * REQ-091 (TASK-372) — the per-session RENTAL section on the booking modal.
@@ -23,26 +26,18 @@ import { RENTAL_CODES, type Booking } from "@/types/app/scheduler";
  * Prices are the server's `rentalItems` (the same source `RentalModal` reads — never a second FE copy); the tier
  * WORDS are the customer's. The print line is their shape: `Rent 200 / Full Set (inline skate size 18-19 CM)`.
  */
-export const rentalPrintLine = (
-  t: (key: string, vars?: Record<string, string | number>) => string,
-  code: string,
-  remark: string | null,
-  priceMinor: number | undefined,
-) => {
-  const tier = t(`rental.tier.${code}`);
-  const price = priceMinor == null ? "—" : String(Math.round(priceMinor / 100));
-  const line = t("rental.printLine", { price, tier });
-  return remark ? `${line} (${remark})` : line;
-};
-
 export default function RentalSection({ booking }: { booking: Booking }) {
   const t = useT();
   const record = useRecordBookingRental();
   const pay = usePayBookingRental();
   const remove = useRemoveBookingRental();
   const { confirm: askConfirm, confirmDialog } = useConfirm();
-  const { data: card } = useSellablePackages();
-  const priceOf = (c: string) => card?.rentalItems.find((r) => r.code === c)?.priceMinor;
+  const priceOf = useRentalPrices();
+  // TASK-374 §2(a) — a CANCELLED/PAUSED session is offered no `Add rental`: the server refuses it (`BOOKING_NOT_LIVE`,
+  // its `rentalBookingLive` = not in CALENDAR_HIDDEN_STATUSES), and this is the FE half of the same rule, read off
+  // the ONE literal both grids already use (`OFF_CALENDAR_STATUSES` = CANCELLED · PAUSED). An ATTENDED session still
+  // accepts one, on both sides. An existing row still renders and can be marked paid on a cancelled session.
+  const canAdd = !OFF_CALENDAR_STATUSES.includes(booking.status);
 
   const [adding, setAdding] = useState(false);
   const [code, setCode] = useState<string | null>(null);
@@ -142,28 +137,7 @@ export default function RentalSection({ booking }: { booking: Booking }) {
         </Stack>
       ) : adding ? (
         <Stack gap="xs">
-          <Select
-            label={t("rental.item")}
-            placeholder={t("rental.pickItem")}
-            value={code}
-            onChange={setCode}
-            data={RENTAL_CODES.map((c) => {
-              const p = priceOf(c);
-              return {
-                value: c,
-                label: t("rental.tierLabel", { tier: t(`rental.tier.${c}`), price: p == null ? "—" : Math.round(p / 100) }),
-              };
-            })}
-            allowDeselect={false}
-            comboboxProps={{ withinPortal: true }}
-          />
-          <TextInput
-            label={t("rental.remark")}
-            description={t("rental.remarkHint")}
-            value={remark}
-            onChange={(e) => setRemark(e.currentTarget.value)}
-            maxLength={200}
-          />
+          <RentalTierPicker code={code} remark={remark} onCode={setCode} onRemark={setRemark} />
           <Group gap="xs">
             <Button size="xs" loading={record.isPending} disabled={!code} onClick={submitAdd}>
               {t("rental.save")}
@@ -173,7 +147,7 @@ export default function RentalSection({ booking }: { booking: Booking }) {
             </Button>
           </Group>
         </Stack>
-      ) : (
+      ) : canAdd ? (
         <Button
           size="xs"
           variant="light"
@@ -186,7 +160,7 @@ export default function RentalSection({ booking }: { booking: Booking }) {
         >
           {t("rental.addonBtn")}
         </Button>
-      )}
+      ) : null}
       {confirmDialog}
     </div>
   );

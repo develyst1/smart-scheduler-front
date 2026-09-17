@@ -682,6 +682,12 @@ export interface CreateCourseInput {
   discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string };
   /** REQ-068 — seeded onto every session the course creates; per-session edits happen in manage-course. */
   attendeeNote?: string;
+  /**
+   * REQ-091 Deploy B (TASK-373/374) — the whole-course rental: the session rental's own shape. Sent ONLY when the
+   * admin switched it on; OFF ⇒ the key is absent. The remark rule (set + ride) is the server's, refused BEFORE the
+   * course is written (`400 RENTAL_REMARK_REQUIRED`); every live session then carries a PAID row.
+   */
+  rental?: { code: string; remark?: string };
 }
 
 export const createCoursePackage = async (
@@ -702,6 +708,11 @@ export const createCoursePackage = async (
     absentWeeks: input.absentWeeks,
     discount: input.discount,
     attendeeNote: input.attendeeNote,
+    // TASK-374 — OFF ⇒ `undefined` ⇒ the key is ABSENT on the wire (JSON drops it, exactly as `discount` and
+    // `absentWeeks` above are absent when untouched); ON ⇒ { code, remark? }, the remark riding only when typed.
+    rental: input.rental
+      ? { code: input.rental.code, ...(input.rental.remark ? { remark: input.rental.remark } : {}) }
+      : undefined,
   });
   return data;
 };

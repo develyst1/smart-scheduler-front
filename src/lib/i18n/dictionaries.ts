@@ -812,6 +812,9 @@ const en = {
     paidOk: "Rental marked paid",
     savedOk: "Rental saved — unpaid",
     removedOk: "Rental removed",
+    // REQ-091 Deploy B (TASK-374) — the whole-course rental on course creation
+    courseToggle: "Equipment rental for the whole course",
+    courseSummary: "{line} × {size} sessions",
   },
 
   voucher: {
@@ -2098,6 +2101,8 @@ const th: typeof en = {
     paidOk: "บันทึกว่าจ่ายค่าเช่าแล้ว",
     savedOk: "บันทึกค่าเช่าแล้ว — ยังไม่จ่าย",
     removedOk: "ลบค่าเช่าแล้ว",
+    courseToggle: "เช่าอุปกรณ์ทั้งคอร์ส", // REQ-091 Deploy B (TASK-374)
+    courseSummary: "{line} × {size} คาบ",
   },
 
   voucher: {

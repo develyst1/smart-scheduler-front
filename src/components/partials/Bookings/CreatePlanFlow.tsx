@@ -20,6 +20,8 @@ import { formatPriceMinor } from "@/types/app/pricing";
 import { ApiClientError, errorProblems } from "@/lib/api/client";
 import DiscountSection from "@/components/common/DiscountSection";
 import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
+import { Checkbox } from "@mantine/core";
+import RentalTierPicker, { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
 import { useT } from "@/lib/i18n";
 import {
   LEAVE_QUOTA_BY_SIZE,
@@ -64,6 +66,14 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
   // now — the FE stops reading it FIRST, the contract drops it later, never both at once.
   // REQ-063 — the sale's discount. FE math is display only; the BE re-validates and is the source of truth.
   const [discount, setDiscount] = useState<DiscountDraft>(emptyDiscount());
+  // REQ-091 Deploy B (TASK-374) — the whole-course rental: OFF by default; when ON, the same tier + remark as the
+  // per-session section. Sent only when ON; the remark rule is the server's (refused before the course is written).
+  const [rentalOn, setRentalOn] = useState(false);
+  const [rentalCode, setRentalCode] = useState<string | null>(null);
+  const [rentalRemark, setRentalRemark] = useState("");
+  const rentalPriceOf = useRentalPrices();
+  const rentalLine =
+    rentalOn && rentalCode ? rentalPrintLine(t, rentalCode, rentalRemark.trim() || null, rentalPriceOf(rentalCode)) : null;
   const [discountProblems, setDiscountProblems] = useState<string[]>([]);
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
@@ -243,6 +253,8 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
       absentWeeks: absentWeeks.length ? absentWeeks : undefined,
       // Untouched ⇒ `undefined` ⇒ the request is byte-identical to a pre-REQ-063 create (AC-7).
       discount: discountPayload(discount, chosen?.priceMinor ?? 0),
+      // TASK-374 — OFF ⇒ no key at all; ON ⇒ { code, remark? } — the session rental's own shape.
+      rental: rentalOn && rentalCode ? { code: rentalCode, remark: rentalRemark.trim() || undefined } : undefined,
       // SPEC-045 (REQ-054) — the program is a COURSE-level fact, sent once as `subjectId` above. Per-row
       // `subjectId` is deliberately NOT sent: it was the door through which a brand-new course could be born
       // mixed-program (and its derived program then became whatever `bookings[0]` happened to be). The BE falls
@@ -279,6 +291,21 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
         absentWeeks={absentWeeks}
         onToggleAbsent={toggleAbsent}
         previewPending={preview.isPending}
+        // TASK-374 — after the plan, before confirm: the whole-course rental, and its line × the count.
+        createExtras={
+          <Stack gap="xs">
+            <Checkbox
+              label={t("rental.courseToggle")}
+              checked={rentalOn}
+              onChange={(e) => setRentalOn(e.currentTarget.checked)}
+              size="sm"
+            />
+            {rentalOn && (
+              <RentalTierPicker code={rentalCode} remark={rentalRemark} onCode={setRentalCode} onRemark={setRentalRemark} />
+            )}
+          </Stack>
+        }
+        createSummaryLine={rentalLine ? t("rental.courseSummary", { line: rentalLine, size }) : null}
       />
     );
   }

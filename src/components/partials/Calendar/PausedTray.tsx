@@ -16,6 +16,7 @@ import { Badge, Button, Card, Group, Loader, Stack, Text } from "@mantine/core";
  */
 import { Ban, ChevronDown, ChevronUp, PanelRightClose, PanelRightOpen, PauseCircle } from "lucide-react";
 import { BookingTypeChip } from "@/components/common/BookingBadges";
+import { RentalStamp } from "@/components/common/BookingCellBody";
 import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
 import { usePausedTrayCollapsed } from "@/lib/scheduler/paused-tray";
@@ -216,6 +217,8 @@ export default function PausedTray({
                 </Text>
                 <Group gap={6} mt={4} wrap="nowrap">
                   <BookingTypeChip type={b.bookingType} />
+                  {/* TASK-374 §2(b) — a paid rental survives a cancel; the admin sees the green here too. */}
+                  <RentalStamp booking={b} size="sm" />
                 </Group>
                 {variant === "paused" ? (
                   <Text size="xs" c="dimmed" mt={4}>

@@ -321,6 +321,8 @@ export interface CoursePackage {
    */
   droppedAt?: string | null;
   dropReason?: string | null;
+  /** REQ-091 Deploy B (TASK-374) — the whole-course rental (derived server-side from the rows), or null. Display only. */
+  rental?: { code: string; remark: string | null } | null;
 }
 
 export interface CoursePackageView extends CoursePackage {

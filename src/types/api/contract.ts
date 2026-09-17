@@ -139,6 +139,12 @@ export interface CourseSummary {
   /** Sport program of the course, derived from its bookings (SPEC-010). The `/courses` list carries it
    *  (TASK-034); other embeds (e.g. `BookingDTO.course`) / post-mutation responses may omit it → optional. */
   subject?: SubjectRef | null;
+  /**
+   * REQ-091 Deploy B (TASK-373/374) — the whole-course rental, DERIVED from the course's session rows (every live
+   * session born with the course carries a PAID row). On the create's return and the course list; embeds may omit
+   * it → optional. `null` when the course has no rental.
+   */
+  rental?: { code: string; remark: string | null } | null;
 }
 
 /** Badge value as embedded on a booking. */

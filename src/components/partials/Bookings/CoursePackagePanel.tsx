@@ -12,6 +12,7 @@ import { ApiClientError } from "@/lib/api/client";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import PagerBar from "@/components/common/PagerBar";
 import CourseHistoryModal from "./CourseHistoryModal";
+import { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
 import EditExpiryDialog from "./EditExpiryDialog";
 import { useT } from "@/lib/i18n";
 import { useLoadPhase } from "@/lib/ui/load-phase";
@@ -33,6 +34,8 @@ const PAGE_SIZE = 9;
 
 export default function CoursePackagePanel({ onManage }: { onManage: (id: string) => void }) {
   const t = useT();
+
+  const rentalPriceOf = useRentalPrices(); // TASK-374 — the course card's rental line reads the server's prices
   const [search, setSearch] = useState("");
   const [debounced] = useDebouncedValue(search, 300);
   const [page, setPage] = useState(1);
@@ -205,6 +208,15 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                     <p className="mt-0.5 text-xs text-muted-400">
                       {t("course.program")}:{" "}
                       <span className="font-medium text-muted-600">{c.subject.name}</span>
+                    </p>
+                  )}
+                  {/* REQ-091 Deploy B (TASK-374) — the whole-course rental, the customer's print shape; null ⇒ nothing. */}
+                  {c.rental && (
+                    <p className="mt-0.5 text-xs text-muted-400 tabular-nums">
+                      {t("rental.section")}:{" "}
+                      <span className="font-medium text-muted-600">
+                        {rentalPrintLine(t, c.rental.code, c.rental.remark, rentalPriceOf(c.rental.code))}
+                      </span>
                     </p>
                   )}
                 </div>

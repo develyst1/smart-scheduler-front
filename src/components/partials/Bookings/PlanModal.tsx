@@ -94,6 +94,10 @@ interface Props {
   onToggleAbsent?: (weekIndex: number) => void | Promise<void>;
   /** True while that preview is in flight — the plan on screen is stale until it lands. */
   previewPending?: boolean;
+  /** TASK-374 create mode — the whole-course rental picker (owned by `CreatePlanFlow`), rendered above the preview line. */
+  createExtras?: React.ReactNode;
+  /** TASK-374 create mode — one more summary line under the preview (`Rent 200 / Full Set (…) × 8 sessions`). */
+  createSummaryLine?: string | null;
   // 🧹 TASK-311 §2 — `exceedsCeiling` is gone from here. `REQ-085 §12` deleted the MAX_WEEK rule; the field is
   // false by construction on the server (TASK-309), so the refusal it drove could never fire again. Its message
   // — *"reduce the planned absences or pick a different start date"* — was the owner's own screenshot: he was
@@ -116,6 +120,8 @@ export default function PlanModal({
   absentWeeks = [],
   onToggleAbsent,
   previewPending = false,
+  createExtras,
+  createSummaryLine = null,
 }: Props) {
   const t = useT();
   const isCreate = mode === "create";
@@ -343,6 +349,8 @@ export default function PlanModal({
 
           {isCourse && isCreate && (
             <Stack gap="xs">
+              {/* TASK-374 — after the plan, before confirm: the whole-course rental (off by default). */}
+              {createExtras}
               {/* AC-1 — n sessions · absent d · ends {date}, BEFORE saving. */}
               <Group gap="xs" wrap="wrap">
                 <Text fz="sm" fw={500} className="tabular-nums">
@@ -350,6 +358,12 @@ export default function PlanModal({
                 </Text>
                 {previewPending && <Loader size="xs" />}
               </Group>
+              {/* TASK-374 — the money the admin is about to take, in the customer's print shape × the count. */}
+              {createSummaryLine && (
+                <Text fz="sm" fw={500} className="tabular-nums">
+                  {createSummaryLine}
+                </Text>
+              )}
             </Stack>
           )}
 
