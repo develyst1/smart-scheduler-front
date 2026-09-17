@@ -6,6 +6,7 @@ import { Archive, MoreVertical, Pencil, Repeat } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
 import { useArchiveTeacher, useUpdateTeacher } from "@/hooks/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 import { syncErrorMessage } from "@/lib/scheduler/teacher-errors";
 import { TEACHER_TYPE_LABEL, type Teacher, type TeacherType } from "@/types/app/scheduler";
 
@@ -65,6 +66,12 @@ export default function TeacherRowActions({
     }
   };
 
+  // REQ-092 Stage 3 — edit + change type are `teachers.edit`; archive is `teachers.archive`; neither ⇒ no ⋯ menu at all.
+  const can = useCan();
+  const canEdit = can("action:teachers.edit");
+  const canArchive = can("action:teachers.archive");
+  if (!canEdit && !canArchive) return null;
+
   return (
     <>
       <Menu shadow="md" position="bottom-end" withinPortal>
@@ -74,16 +81,22 @@ export default function TeacherRowActions({
           </ActionIcon>
         </Menu.Target>
         <Menu.Dropdown>
-          <Menu.Item leftSection={<Pencil size={14} />} onClick={onEdit}>
-            {t("teachers.actEdit")}
-          </Menu.Item>
-          <Menu.Item leftSection={<Repeat size={14} />} onClick={openChangeType}>
-            {t("teachers.actChangeType")}
-          </Menu.Item>
-          <Menu.Divider />
-          <Menu.Item color="red" leftSection={<Archive size={14} />} onClick={openArchive}>
-            {t("teachers.actArchive")}
-          </Menu.Item>
+          {canEdit && (
+            <Menu.Item leftSection={<Pencil size={14} />} onClick={onEdit}>
+              {t("teachers.actEdit")}
+            </Menu.Item>
+          )}
+          {canEdit && (
+            <Menu.Item leftSection={<Repeat size={14} />} onClick={openChangeType}>
+              {t("teachers.actChangeType")}
+            </Menu.Item>
+          )}
+          {canEdit && canArchive && <Menu.Divider />}
+          {canArchive && (
+            <Menu.Item color="red" leftSection={<Archive size={14} />} onClick={openArchive}>
+              {t("teachers.actArchive")}
+            </Menu.Item>
+          )}
         </Menu.Dropdown>
       </Menu>
 

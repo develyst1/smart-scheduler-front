@@ -6,6 +6,7 @@ import {
   listUsers,
   resetUserPassword,
   setUserDisabled,
+  setUserActions,
   setUserMenus,
   updateUser,
   type CreateUserInput,
@@ -37,6 +38,14 @@ export const useSetUserMenus = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, keys }: { id: string; keys: string[] }) => setUserMenus(id, keys),
+    onSuccess: () => invalidate(qc),
+  });
+};
+/** Stage 3 — the per-user action grants. */
+export const useSetUserActions = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, keys }: { id: string; keys: string[] }) => setUserActions(id, keys),
     onSuccess: () => invalidate(qc),
   });
 };

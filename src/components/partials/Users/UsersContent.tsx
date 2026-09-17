@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Alert, Badge, Button, Card, Checkbox, Group, Loader, Modal, PasswordInput, Stack, Table, Text, TextInput } from "@mantine/core";
-import { AlertTriangle, KeyRound, LayoutList, Pencil, ShieldCheck, UserPlus, UserX, UserCheck } from "lucide-react";
+import { AlertTriangle, KeyRound, LayoutList, ListChecks, Pencil, ShieldCheck, UserPlus, UserX, UserCheck } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
-import { useT } from "@/lib/i18n";
+import { useI18n, useT } from "@/lib/i18n";
 import { useConfirm } from "@/components/common/useConfirm";
 import { formatDateDisplay } from "@/lib/ui/format";
-import { useCreateUser, useResetUserPassword, useSetUserDisabled, useSetUserMenus, useUpdateUser, useUsers } from "@/hooks/scheduler/useUsers";
+import { useCreateUser, useResetUserPassword, useSetUserActions, useSetUserDisabled, useSetUserMenus, useUpdateUser, useUsers } from "@/hooks/scheduler/useUsers";
+import { usePermissions } from "@/hooks/scheduler/useMe";
 import { MENU_KEYS, type MenuKey } from "@/lib/rbac/menus";
 import { HIDDEN_NAV_ITEMS, NAV_ITEMS } from "@/components/layout/AdminLayout/AdminLayout.config";
 import type { UserDTO } from "@/types/api/contract";
@@ -29,6 +30,10 @@ import type { UserDTO } from "@/types/api/contract";
  * (labelled by the nav's own words, in the nav's order) ⇒ `PUT /users/:id/menus { keys }` — the bridge until Stage 4's
  * roles SET the same rows. A super admin's row says "all menus" and has no checklist (their menus are all of them).
  * The self-service password change lives in the header's user menu, not here.
+ * Stage 3 (TASK-386): an **`Actions`** count per row ⇒ a checklist rendered FROM `GET /permissions` (the BE's keys and
+ * labels — the FE keeps no list of action names), grouped by `area` under the menu's own nav label, `Select all` per
+ * group and overall ⇒ `PUT /users/:id/actions { keys }`. Ticking an act whose menu is not granted is allowed (the
+ * server refuses the route by menu first) — the group header says so; nothing is auto-granted.
  */
 const errMsg = (e: unknown) => (e instanceof ApiClientError ? e.message : (e as Error).message);
 
@@ -42,6 +47,7 @@ export default function UsersContent() {
   const [editTarget, setEditTarget] = useState<UserDTO | null>(null);
   const [resetTarget, setResetTarget] = useState<UserDTO | null>(null);
   const [menusTarget, setMenusTarget] = useState<UserDTO | null>(null);
+  const [actionsTarget, setActionsTarget] = useState<UserDTO | null>(null);
 
   if (status === "loading") return <Loader />;
   if (!isSuperAdmin) {
@@ -83,6 +89,7 @@ export default function UsersContent() {
                 <Table.Th>{t("users.colDisplayName")}</Table.Th>
                 <Table.Th>{t("users.colRole")}</Table.Th>
                 <Table.Th>{t("users.colMenus")}</Table.Th>
+                <Table.Th>{t("users.colActions")}</Table.Th>
                 <Table.Th>{t("users.colStatus")}</Table.Th>
                 <Table.Th>{t("users.colCreated")}</Table.Th>
                 <Table.Th />
@@ -97,6 +104,7 @@ export default function UsersContent() {
                   onEdit={() => setEditTarget(u)}
                   onReset={() => setResetTarget(u)}
                   onMenus={() => setMenusTarget(u)}
+                  onActions={() => setActionsTarget(u)}
                 />
               ))}
             </Table.Tbody>
@@ -108,6 +116,7 @@ export default function UsersContent() {
       <EditUserModal user={editTarget} onClose={() => setEditTarget(null)} />
       <ResetPasswordModal user={resetTarget} onClose={() => setResetTarget(null)} />
       <MenusModal user={menusTarget} onClose={() => setMenusTarget(null)} />
+      <ActionsModal user={actionsTarget} onClose={() => setActionsTarget(null)} />
     </Stack>
   );
 }
@@ -118,12 +127,14 @@ function UserRow({
   onEdit,
   onReset,
   onMenus,
+  onActions,
 }: {
   user: UserDTO;
   isSelf: boolean;
   onEdit: () => void;
   onReset: () => void;
   onMenus: () => void;
+  onActions: () => void;
 }) {
   const t = useT();
   const setDisabled = useSetUserDisabled();
@@ -180,6 +191,17 @@ function UserRow({
         ) : (
           <Button size="compact-xs" variant="light" leftSection={<LayoutList size={13} />} onClick={onMenus}>
             {t("users.menusCount", { n: String(user.menus?.length ?? 0) })}
+          </Button>
+        )}
+      </Table.Td>
+      <Table.Td>
+        {user.isSuperAdmin ? (
+          <Text size="sm" c="dimmed">
+            {t("users.actionsAll")}
+          </Text>
+        ) : (
+          <Button size="compact-xs" variant="light" leftSection={<ListChecks size={13} />} onClick={onActions}>
+            {t("users.actionsCount", { n: String(user.actions?.length ?? 0) })}
           </Button>
         )}
       </Table.Td>
@@ -416,6 +438,121 @@ function MenusModal({ user, onClose }: { user: UserDTO | null; onClose: () => vo
             {t("common.cancel")}
           </Button>
           <Button loading={save.isPending} onClick={submit}>
+            {t("common.save")}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+}
+
+/** The nav entry whose tail is this area — its label heads the group; `sales` (the discount) has no menu. */
+const NAV_BY_AREA = new Map([...NAV_ITEMS, ...HIDDEN_NAV_ITEMS].filter((i) => i.menuKey).map((i) => [i.menuKey!.slice("menu:".length), i]));
+
+function ActionsModal({ user, onClose }: { user: UserDTO | null; onClose: () => void }) {
+  const t = useT();
+  const { lang } = useI18n();
+  const save = useSetUserActions();
+  // 🔴 The registry is the ONLY source of action keys and labels — fetched, never listed here.
+  const { data: registry, isLoading, error: registryError } = usePermissions(user !== null);
+  const [keys, setKeys] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [seededFor, setSeededFor] = useState<string | null>(null);
+  if (user && seededFor !== user.id) {
+    setSeededFor(user.id);
+    setKeys(user.actions ?? []);
+    setError(null);
+  }
+  if (!user && seededFor !== null) setSeededFor(null);
+
+  const actions = registry?.actions ?? [];
+  const allKeys = actions.map((a) => a.key);
+  const areas = [...new Set(actions.map((a) => a.area))];
+  const setMany = (list: string[], on: boolean) => setKeys((k) => (on ? [...new Set([...k, ...list])] : k.filter((x) => !list.includes(x))));
+  const submit = async () => {
+    if (!user) return;
+    setError(null);
+    try {
+      // Only registry keys, in the registry's order — an unknown key is the server's 400 anyway.
+      await save.mutateAsync({ id: user.id, keys: allKeys.filter((k) => keys.includes(k)) });
+      notify({ title: t("users.actionsSavedOk", { name: user.displayName }), color: "success" });
+      onClose();
+    } catch (e) {
+      setError(errMsg(e));
+    }
+  };
+
+  return (
+    <Modal opened={user !== null} onClose={onClose} centered size="lg" title={t("users.actionsTitle", { name: user?.displayName ?? "" })}>
+      <Stack gap="sm">
+        {(error || registryError) && (
+          <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
+            {error ?? errMsg(registryError)}
+          </Alert>
+        )}
+        <Text size="sm" c="dimmed">
+          {t("users.actionsBody")}
+        </Text>
+        {isLoading ? (
+          <Loader size="xs" />
+        ) : (
+          <>
+            <Group gap="xs">
+              <Button size="compact-xs" variant="subtle" onClick={() => setMany(allKeys, true)}>
+                {t("users.menusSelectAll")}
+              </Button>
+              <Button size="compact-xs" variant="subtle" onClick={() => setKeys([])}>
+                {t("users.menusSelectNone")}
+              </Button>
+            </Group>
+            <Stack gap="md">
+              {areas.map((area) => {
+                const nav = NAV_BY_AREA.get(area);
+                const rows = actions.filter((a) => a.area === area);
+                const rowKeys = rows.map((a) => a.key);
+                const allOn = rowKeys.every((k) => keys.includes(k));
+                // Convenience, not a rule: an act under a menu the user cannot open is allowed to be ticked — the
+                // server refuses the route by menu first — but the header says so. Nothing is auto-granted.
+                const menuMissing = !!nav?.menuKey && !user?.isSuperAdmin && !(user?.menus ?? []).includes(nav.menuKey);
+                return (
+                  <div key={area}>
+                    <Group justify="space-between" mb={4}>
+                      <Group gap={6}>
+                        <Text size="sm" fw={600}>
+                          {nav ? t(nav.labelKey) : t("users.areaSales")}
+                        </Text>
+                        {menuMissing && (
+                          <Badge size="xs" variant="light" color="orange">
+                            {t("users.areaMenuNotGranted")}
+                          </Badge>
+                        )}
+                      </Group>
+                      <Button size="compact-xs" variant="subtle" onClick={() => setMany(rowKeys, !allOn)}>
+                        {allOn ? t("users.menusSelectNone") : t("users.menusSelectAll")}
+                      </Button>
+                    </Group>
+                    <Stack gap={4}>
+                      {rows.map((a) => (
+                        <Checkbox
+                          key={a.key}
+                          size="sm"
+                          label={lang === "th" ? a.labelTh : a.labelEn}
+                          checked={keys.includes(a.key)}
+                          onChange={(e) => setMany([a.key], e.currentTarget.checked)}
+                        />
+                      ))}
+                    </Stack>
+                  </div>
+                );
+              })}
+            </Stack>
+          </>
+        )}
+        <Group justify="flex-end" gap="sm">
+          <Button variant="default" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button loading={save.isPending} disabled={isLoading || !registry} onClick={submit}>
             {t("common.save")}
           </Button>
         </Group>

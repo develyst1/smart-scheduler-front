@@ -9,6 +9,7 @@ import { useCreateTeacher, useUpdateTeacher } from "@/hooks/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import { TEACHER_TYPE_LABEL, type Teacher, type TeacherType } from "@/types/app/scheduler";
 import { syncErrorMessage } from "@/lib/scheduler/teacher-errors";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 interface Props {
   opened: boolean;
@@ -20,6 +21,7 @@ interface Props {
 
 export default function TeacherFormModal({ opened, teacher, subjectCatalog, onClose }: Props) {
   const t = useT();
+  const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const { options: dayOptions } = useWorkDays();
   const create = useCreateTeacher();
   const update = useUpdateTeacher();
@@ -145,9 +147,11 @@ export default function TeacherFormModal({ opened, teacher, subjectCatalog, onCl
           <Button variant="subtle" color="gray" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button color="green" onClick={submit} loading={busy}>
-            {t("common.save")}
-          </Button>
+          {can(teacher ? "action:teachers.edit" : "action:teachers.create") && (
+            <Button color="green" onClick={submit} loading={busy}>
+              {t("common.save")}
+            </Button>
+          )}
         </Group>
       </Stack>
     </Modal>

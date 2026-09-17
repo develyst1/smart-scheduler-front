@@ -13,6 +13,7 @@ import ExpiryWarningAlert from "@/components/common/ExpiryWarningAlert";
 import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import type { ExpiryWarning } from "@/types/api/contract";
 import type { CoursePackageView, ExpiryPreview } from "@/types/app/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 /** How many would-be-cut sessions to list before summarising the rest — the same cap `ExpiryWarningAlert` uses. */
 const MAX_LISTED = 5;
@@ -43,6 +44,7 @@ export default function EditExpiryDialog({
   onClose: () => void;
 }) {
   const t = useT();
+  const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const update = useUpdateCourseExpiry();
   const preview = usePreviewCourseExpiry();
   const [expiry, setExpiry] = useState<string | null>(null);
@@ -159,7 +161,7 @@ export default function EditExpiryDialog({
           <Button variant="subtle" color="gray" onClick={onClose}>
             {t(saved ? "common.close" : "common.cancel")}
           </Button>
-          {!saved && (
+          {!saved && can("action:bookings.course-expiry") && (
             <Button
               loading={update.isPending}
               // 🚫 Disabled only when there is no date to send. **Never by a warning, before or after** — AC-4

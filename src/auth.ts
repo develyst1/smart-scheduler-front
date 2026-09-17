@@ -10,6 +10,7 @@ import axios from "axios";
 import { authConfig } from "@/auth.config";
 import type { LoginResponse } from "@/types/api/contract";
 import { MENU_KEYS } from "@/lib/rbac/menus";
+import { ACTION_KEYS_SNAPSHOT } from "@/lib/rbac/actions";
 
 const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
@@ -42,6 +43,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             isSuperAdmin: true,
             role: "super_admin",
             menus: [...MENU_KEYS],
+            actions: [...ACTION_KEYS_SNAPSHOT],
             backendToken: "mock-token",
           };
         }
@@ -62,8 +64,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             displayName: data.user.displayName,
             isSuperAdmin: data.user.isSuperAdmin === true,
             role: data.user.role,
-            // REQ-092 Stage 2 (TASK-382) — the login body's menus SEED the nav; `/auth/me` on load is the truth.
+            // REQ-092 Stage 2 (TASK-382) — the login body's menus SEED the nav; `/me` on load is the truth.
             menus: Array.isArray(data.user.menus) ? data.user.menus : [],
+            actions: Array.isArray(data.user.actions) ? data.user.actions : [],
             backendToken: data.token,
           };
         } catch {

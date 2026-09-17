@@ -5,6 +5,7 @@ import { Alert, Button, Group, Modal, Stack, Text } from "@mantine/core";
 import { AlertTriangle } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { useSetTeacherWorkDays } from "@/hooks/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 import { getWorkDaysImpact } from "@/services/scheduler.service";
 import { useT } from "@/lib/i18n";
 import { useWorkDays } from "@/lib/scheduler/useWorkDays";
@@ -34,6 +35,9 @@ export default function TeacherWorkDaysSelect({ teacherId, nickname, workDays }:
   // TASK-100 — if the change removes a day the teacher works, warn before applying (not a hard block).
   const [impact, setImpact] = useState<WorkDaysImpact | null>(null);
   const [checking, setChecking] = useState(false);
+  // REQ-092 Stage 3 — without `teachers.work-days` the days are read, not edited: one line, no buttons.
+  const can = useCan();
+  const canEdit = can("action:teachers.work-days");
 
   const toggleDay = (day: number) =>
     setDraft((prev) =>
@@ -77,6 +81,14 @@ export default function TeacherWorkDaysSelect({ teacherId, nickname, workDays }:
       setChecking(false);
     }
   };
+
+  if (!canEdit) {
+    return (
+      <p className="mt-2 text-xs text-muted-500">
+        {t("teachers.workDaysLabel")} · {format(saved)}
+      </p>
+    );
+  }
 
   return (
     <div className="mt-2 space-y-2">

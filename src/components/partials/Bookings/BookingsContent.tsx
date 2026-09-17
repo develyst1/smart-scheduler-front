@@ -12,6 +12,7 @@ import CreateVoucherModal from "./CreateVoucherModal";
 import ImportBalanceModal from "./ImportBalanceModal";
 import PlanModal from "./PlanModal";
 import RentalModal from "@/components/partials/Rental/RentalModal";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 export default function BookingsContent() {
   const t = useT();
@@ -24,6 +25,8 @@ export default function BookingsContent() {
   const [planId, setPlanId] = useState<string | null>(null);
   // REQ-028 / TASK-109 — standalone equipment rental (walk-in), no booking to attach to.
   const [rentalOpen, setRentalOpen] = useState(false);
+  // REQ-092 Stage 3 (TASK-386) — every door to a mutate is behind its key; not granted ⇒ hidden.
+  const can = useCan();
 
   return (
     <>
@@ -38,19 +41,23 @@ export default function BookingsContent() {
           <Group justify="space-between" align="flex-start" mb="md" wrap="wrap" gap="sm">
             <p className="max-w-2xl text-sm text-muted-500">{t("bookings.coursesHint")}</p>
             <Group gap="sm">
-              <Button
-                variant="default"
-                leftSection={<History size={16} />}
-                onClick={() => setImportOpen(true)}
-              >
-                {t("bookings.importBalance")}
-              </Button>
-              <Button
-                leftSection={<CalendarPlus size={16} />}
-                onClick={() => setCourseOpen(true)}
-              >
-                {t("bookings.newCourse")}
-              </Button>
+              {can("action:bookings.course-import") && (
+                <Button
+                  variant="default"
+                  leftSection={<History size={16} />}
+                  onClick={() => setImportOpen(true)}
+                >
+                  {t("bookings.importBalance")}
+                </Button>
+              )}
+              {can("action:bookings.course-create") && (
+                <Button
+                  leftSection={<CalendarPlus size={16} />}
+                  onClick={() => setCourseOpen(true)}
+                >
+                  {t("bookings.newCourse")}
+                </Button>
+              )}
             </Group>
           </Group>
           <CoursePackagePanel onManage={setPlanId} />
@@ -60,31 +67,37 @@ export default function BookingsContent() {
           <Group justify="space-between" align="flex-start" mb="md" wrap="wrap" gap="sm">
             <p className="max-w-2xl text-sm text-muted-500">{t("bookings.vouchersHint")}</p>
             <Group gap="sm">
-              <Button
-                variant="default"
-                leftSection={<History size={16} />}
-                onClick={() => setImportOpen(true)}
-              >
-                {t("bookings.importBalance")}
-              </Button>
-              <Button leftSection={<Ticket size={16} />} onClick={() => setVoucherOpen(true)}>
-                {t("bookings.issueVoucher")}
-              </Button>
+              {can("action:bookings.voucher-import") && (
+                <Button
+                  variant="default"
+                  leftSection={<History size={16} />}
+                  onClick={() => setImportOpen(true)}
+                >
+                  {t("bookings.importBalance")}
+                </Button>
+              )}
+              {can("action:bookings.voucher-create") && (
+                <Button leftSection={<Ticket size={16} />} onClick={() => setVoucherOpen(true)}>
+                  {t("bookings.issueVoucher")}
+                </Button>
+              )}
             </Group>
           </Group>
           <VoucherPanel onManage={setPlanId} />
         </Tabs.Panel>
 
         <Tabs.Panel value="all" pt="md">
-          <Group justify="flex-end" mb="md">
-            <Button
-              variant="default"
-              leftSection={<PackageOpen size={16} />}
-              onClick={() => setRentalOpen(true)}
-            >
-              {t("rental.standaloneBtn")}
-            </Button>
-          </Group>
+          {can("action:calendar.rental-sale") && (
+            <Group justify="flex-end" mb="md">
+              <Button
+                variant="default"
+                leftSection={<PackageOpen size={16} />}
+                onClick={() => setRentalOpen(true)}
+              >
+                {t("rental.standaloneBtn")}
+              </Button>
+            </Group>
+          )}
           <BookingsTable />
         </Tabs.Panel>
       </Tabs>

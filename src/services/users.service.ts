@@ -60,6 +60,13 @@ export const setUserMenus = async (id: string, keys: string[]): Promise<UserDTO>
   return data.user;
 };
 
+/** Stage 3 (TASK-386) — the per-user action grants; the same shape as the menus. */
+export const setUserActions = async (id: string, keys: string[]): Promise<UserDTO> => {
+  if (useMockData) return mock.setUserActions(id, keys);
+  const { data } = await api.put<{ user: UserDTO }>(`/users/${id}/actions`, { keys });
+  return data.user;
+};
+
 export const setUserDisabled = async (id: string, disabled: boolean): Promise<UserDTO> => {
   if (useMockData) return mock.setUserDisabled(id, disabled);
   const { data } = await api.post<{ user: UserDTO }>(`/users/${id}/${disabled ? "disable" : "enable"}`, {});

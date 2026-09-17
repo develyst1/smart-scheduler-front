@@ -28,6 +28,7 @@ import { previewCourseImport } from "@/services/scheduler.service";
 import { remainingSessions, remainingDates, usedExceedsSize } from "@/lib/scheduler/import-preview";
 import { useI18n } from "@/lib/i18n";
 import { TIME_SLOTS } from "@/types/app/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 type Kind = "COURSE" | "VOUCHER";
 
@@ -48,8 +49,15 @@ export default function ImportBalanceModal({ opened, onClose }: Props) {
   const { data: teachers = [] } = useTeachers();
   const importCourse = useImportCoursePackage();
   const importVoucher = useImportVoucher();
+  // REQ-092 Stage 3 — course import and voucher import are two acts; the kind switch offers only the granted ones.
+  const can = useCan();
+  const canCourse = can("action:bookings.course-import");
+  const canVoucher = can("action:bookings.voucher-import");
 
-  const [kind, setKind] = useState<Kind>("COURSE");
+  const [kindPick, setKind] = useState<Kind>("COURSE");
+  // The kind in force: the pick, unless that kind is not granted and the other is (then the other).
+  const kind: Kind = kindPick === "COURSE" && !canCourse && canVoucher ? "VOUCHER" : kindPick === "VOUCHER" && !canVoucher && canCourse ? "COURSE" : kindPick;
+  const canSaveKind = kind === "COURSE" ? canCourse : canVoucher;
   const [student, setStudent] = useState<StudentSelectValue | null>(null);
   const [teacherId, setTeacherId] = useState("");
   const [subjectId, setSubjectId] = useState("");
@@ -222,8 +230,8 @@ export default function ImportBalanceModal({ opened, onClose }: Props) {
           value={kind}
           onChange={(v) => setKind(v as Kind)}
           data={[
-            { value: "COURSE", label: t("importBalance.kindCourse") },
-            { value: "VOUCHER", label: t("importBalance.kindVoucher") },
+            ...(canCourse ? [{ value: "COURSE", label: t("importBalance.kindCourse") }] : []),
+            ...(canVoucher ? [{ value: "VOUCHER", label: t("importBalance.kindVoucher") }] : []),
           ]}
         />
 
@@ -424,9 +432,11 @@ export default function ImportBalanceModal({ opened, onClose }: Props) {
           <Button variant="default" onClick={onClose} disabled={busy}>
             {t("importBalance.done")}
           </Button>
-          <Button onClick={handleSave} loading={busy} disabled={!valid}>
-            {t("importBalance.saveAndNext")}
-          </Button>
+          {canSaveKind && (
+            <Button onClick={handleSave} loading={busy} disabled={!valid}>
+              {t("importBalance.saveAndNext")}
+            </Button>
+          )}
         </Group>
       </Stack>
     </Modal>

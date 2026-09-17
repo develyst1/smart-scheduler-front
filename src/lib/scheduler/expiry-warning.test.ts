@@ -111,7 +111,8 @@ describe("🔑 TASK-287 §2 — the confirmation STATES what the re-plan did, an
 
   it("nothing blocks the admin afterwards — the only control left is Close", () => {
     expect(src).toContain('t(result ? "common.close" : "common.cancel")');
-    expect(src).toContain("{!result && (");
+    // REQ-092 Stage 3 (TASK-386) — the submit also needs the user's `bookings.course-drop` grant
+    expect(src).toContain('{!result && can("action:bookings.course-drop") && (');
   });
 });
 

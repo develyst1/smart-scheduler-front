@@ -10,8 +10,8 @@ import { useChangeMyPassword } from "@/hooks/scheduler/useMe";
 
 /**
  * REQ-092 Stage 2 (TASK-382 §3) — "change my password", any user, from the header's user menu. Current + new + confirm
- * ⇒ `POST /auth/me/password { currentPassword, newPassword }`. 🔴 Every rule is the server's: a wrong current password
- * (`401`, its sentence — the api client does NOT sign out on this one route) and the minimum (`400 PASSWORD_TOO_SHORT`).
+ * ⇒ `POST /me/password { currentPassword, newPassword }`. 🔴 Every rule is the server's: a wrong current password
+ * (`400 WRONG_PASSWORD`, its sentence) and the minimum (`400 PASSWORD_TOO_SHORT`).
  * The ONE thing checked here is that the two new boxes match — a typing aid, the same as the Users page's dialogs.
  */
 export default function ChangePasswordModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {
@@ -37,7 +37,7 @@ export default function ChangePasswordModal({ opened, onClose }: { opened: boole
       notify({ title: t("header.passwordChangedOk"), color: "success" });
       close();
     } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : (e as Error).message); // wrong current · PASSWORD_TOO_SHORT
+      setError(e instanceof ApiClientError ? e.message : (e as Error).message); // WRONG_PASSWORD · PASSWORD_TOO_SHORT
     }
   };
 

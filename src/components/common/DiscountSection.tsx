@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useCan } from "@/hooks/scheduler/useMe";
 import { Alert, Group, NumberInput, SegmentedControl, Stack, Text, TextInput } from "@mantine/core";
 import { AlertTriangle } from "lucide-react";
 import { useT } from "@/lib/i18n";
@@ -28,13 +28,10 @@ interface Props {
  */
 export default function DiscountSection({ fullMinor, value, onChange, serverProblems = [] }: Props) {
   const t = useT();
-  const { data: session } = useSession();
-  // REQ-092 Stage 1 (TASK-378) — the token now issues `"super_admin"` for a super admin; a super admin is at least an
-  // admin, so the section shows for both. ⚠️ The server's own gate (`assertMayDiscount`, `role !== "admin"`) has NOT
-  // been widened — a super admin's discount is refused there today (reported, TASK-378); Stage 3's permission key
-  // retires both checks. This line is the FE half of the intent, not a bypass: the server still decides.
-  const role = session?.user?.role;
-  if (role !== "admin" && role !== "super_admin") return null;
+  // REQ-092 Stage 3 (TASK-386) — by KEY now, not by role: `action:sales.discount` is the body-level act the server
+  // checks (`assertMayDiscount`, `403 "ไม่มีสิทธิ์ให้ส่วนลด"`). Hidden without it — a courtesy, not the control.
+  const can = useCan();
+  if (!can("action:sales.discount")) return null;
 
   const { discountMinor, problemKeys, netMinor, touched } = evaluateDiscount(value, fullMinor);
 

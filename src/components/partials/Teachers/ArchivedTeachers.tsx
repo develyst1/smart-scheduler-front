@@ -5,6 +5,7 @@ import { RotateCcw } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
 import { useArchivedTeachers, useReactivateTeacher } from "@/hooks/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 import { syncErrorMessage } from "@/lib/scheduler/teacher-errors";
 import { TEACHER_TYPE_LABEL, type Teacher } from "@/types/app/scheduler";
 
@@ -12,6 +13,7 @@ export default function ArchivedTeachers() {
   const t = useT();
   const { data: archived = [] } = useArchivedTeachers();
   const reactivate = useReactivateTeacher();
+  const can = useCan();
 
   // Nothing archived → don't clutter the screen.
   if (archived.length === 0) return null;
@@ -44,16 +46,18 @@ export default function ArchivedTeachers() {
                 {TEACHER_TYPE_LABEL[tc.type]}
               </Badge>
             </div>
-            <Button
-              size="xs"
-              variant="light"
-              color="green"
-              leftSection={<RotateCcw size={13} />}
-              onClick={() => onReactivate(tc)}
-              loading={reactivate.isPending && reactivate.variables === tc.id}
-            >
-              {t("teachers.actReactivate")}
-            </Button>
+            {can("action:teachers.archive") && (
+              <Button
+                size="xs"
+                variant="light"
+                color="green"
+                leftSection={<RotateCcw size={13} />}
+                onClick={() => onReactivate(tc)}
+                loading={reactivate.isPending && reactivate.variables === tc.id}
+              >
+                {t("teachers.actReactivate")}
+              </Button>
+            )}
           </div>
         ))}
       </div>

@@ -8,6 +8,7 @@ import { useCreateParent, useUpdateParent } from "@/hooks/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import { provinceOptions } from "@/lib/people/th-provinces";
 import type { Parent } from "@/types/app/people";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 interface Props {
   opened: boolean;
@@ -18,6 +19,7 @@ interface Props {
 
 export default function ParentFormModal({ opened, parent, onClose }: Props) {
   const t = useT();
+  const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const create = useCreateParent();
   const update = useUpdateParent();
   const isEdit = !!parent;
@@ -123,9 +125,11 @@ export default function ParentFormModal({ opened, parent, onClose }: Props) {
           <Button variant="subtle" color="gray" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button color="green" onClick={submit} loading={busy}>
-            {t("common.save")}
-          </Button>
+          {can(isEdit ? "action:people.parent-edit" : "action:people.parent-create") && (
+            <Button color="green" onClick={submit} loading={busy}>
+              {t("common.save")}
+            </Button>
+          )}
         </Group>
       </Stack>
     </Modal>

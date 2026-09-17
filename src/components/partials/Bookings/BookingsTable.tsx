@@ -37,6 +37,7 @@ import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
 import { useLoadPhase } from "@/lib/ui/load-phase";
 import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 type DateRange = "ALL" | "TODAY" | "WEEK" | "MONTH" | "CUSTOM";
 
@@ -119,6 +120,9 @@ export default function BookingsTable() {
 
   // ── Bulk-confirm (SPEC-011): tick PENDING rows → confirm in one call ──
   const bulk = useBulkConfirm();
+  // REQ-092 Stage 3 — the tick boxes and the button are one control (`bookings.bulk-confirm`); hidden together.
+  const can = useCan();
+  const canBulk = can("action:bookings.bulk-confirm");
   // REQ-073 (2) — bulk-confirm messages EVERY selected booking's teacher. Bulk is more consequence than a
   // single confirm, not less, so it is the one place the count belongs in the sentence.
   const { confirm: askConfirm, confirmDialog } = useConfirm();
@@ -280,7 +284,7 @@ export default function BookingsTable() {
 
       <Group justify="space-between" align="center">
         <p className="text-xs text-muted-400">{t("bookings.found", { count: total })}</p>
-        {selected.length > 0 && (
+        {selected.length > 0 && canBulk && (
           <Button
             size="xs"
             leftSection={<CheckCheck size={15} />}
@@ -297,13 +301,15 @@ export default function BookingsTable() {
         <Table.Thead className="bg-muted-100">
           <Table.Tr className="text-xs uppercase tracking-wide text-muted-500">
             <Table.Th w={40} data-pin="lead">
-              <Checkbox
-                aria-label={t("bookings.bulkSelectAll")}
-                checked={allPendingSelected}
-                indeterminate={somePendingSelected}
-                disabled={pendingIds.length === 0}
-                onChange={toggleAllPending}
-              />
+              {canBulk && (
+                <Checkbox
+                  aria-label={t("bookings.bulkSelectAll")}
+                  checked={allPendingSelected}
+                  indeterminate={somePendingSelected}
+                  disabled={pendingIds.length === 0}
+                  onChange={toggleAllPending}
+                />
+              )}
             </Table.Th>
             <Table.Th>{t("bookings.colStudent")}</Table.Th>
             <Table.Th>{t("bookings.colSubject")}</Table.Th>
@@ -349,7 +355,7 @@ export default function BookingsTable() {
             rows.map((b) => (
               <Table.Tr key={b.id}>
                 <Table.Td data-pin="lead">
-                  {b.status === "PENDING" && (
+                  {b.status === "PENDING" && canBulk && (
                     <Checkbox
                       aria-label={t("bookings.bulkSelectRow")}
                       checked={selected.includes(b.id)}

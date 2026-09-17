@@ -19,6 +19,7 @@ import { useLoadPhase } from "@/lib/ui/load-phase";
 import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import { isCollision, type TeacherLinkRequest } from "@/types/app/teacher-link";
 import type { TeacherView } from "@/types/app/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 /**
  * One pending request. A **collision** (the request names no teacher) renders the candidate picker inline and
@@ -39,6 +40,9 @@ function RequestCard({
   const { t, lang } = useI18n();
   const collision = isCollision(request);
   const [picked, setPicked] = useState<string | null>(null);
+  // REQ-092 Stage 3 (TASK-386) — approve + reject are one act (`link-requests.decide`); without it the card only reads.
+  const can = useCan();
+  const canDecide = can("action:link-requests.decide");
 
   const named = request.candidates.find((c) => c.id === request.teacherId);
   const arrived = dayjs(request.createdAt).locale(lang);
@@ -71,7 +75,7 @@ function RequestCard({
         </Group>
 
         {/* The collision IS the feature — choosing is the primary action here, not a hidden extra step. */}
-        {collision && (
+        {collision && canDecide && (
           <Select
             label={t("linkRequests.whichTeacher")}
             description={t("linkRequests.whichTeacherHint")}
@@ -84,26 +88,28 @@ function RequestCard({
           />
         )}
 
-        <Group gap="sm">
-          <Button
-            size="xs"
-            leftSection={<Check size={15} />}
-            loading={busy}
-            disabled={collision && !picked}
-            onClick={() => onApprove(collision ? picked! : undefined)}
-          >
-            {t("linkRequests.approve")}
-          </Button>
-          <Button
-            size="xs"
-            variant="default"
-            leftSection={<X size={15} />}
-            loading={busy}
-            onClick={onReject}
-          >
-            {t("linkRequests.reject")}
-          </Button>
-        </Group>
+        {canDecide && (
+          <Group gap="sm">
+            <Button
+              size="xs"
+              leftSection={<Check size={15} />}
+              loading={busy}
+              disabled={collision && !picked}
+              onClick={() => onApprove(collision ? picked! : undefined)}
+            >
+              {t("linkRequests.approve")}
+            </Button>
+            <Button
+              size="xs"
+              variant="default"
+              leftSection={<X size={15} />}
+              loading={busy}
+              onClick={onReject}
+            >
+              {t("linkRequests.reject")}
+            </Button>
+          </Group>
+        )}
       </Stack>
     </Card>
   );
@@ -111,6 +117,7 @@ function RequestCard({
 
 export default function LinkRequestsContent() {
   const { t } = useI18n();
+  const can = useCan();
   // 🔴 The raw `data` is kept, not just the `?? []` view: `useLoadPhase` needs "has the query answered yet",
   // and a defaulted `[]` can never say no — it would report the first load as having data and flash the
   // empty-queue card before the first request arrives.
@@ -256,16 +263,18 @@ export default function LinkRequestsContent() {
                     {tc.name}
                   </Text>
                 </div>
-                <Button
-                  size="xs"
-                  variant="light"
-                  color="red"
-                  leftSection={<Link2Off size={15} />}
-                  loading={unlink.isPending && unlink.variables === tc.id}
-                  onClick={() => setUnlinkTarget(tc)}
-                >
-                  {t("linkRequests.unlink")}
-                </Button>
+                {can("action:link-requests.unlink") && (
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="red"
+                    leftSection={<Link2Off size={15} />}
+                    loading={unlink.isPending && unlink.variables === tc.id}
+                    onClick={() => setUnlinkTarget(tc)}
+                  >
+                    {t("linkRequests.unlink")}
+                  </Button>
+                )}
               </Group>
             ))}
           </Stack>

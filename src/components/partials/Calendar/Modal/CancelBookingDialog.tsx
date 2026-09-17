@@ -10,6 +10,7 @@ import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { formatPriceMinor } from "@/types/app/pricing";
 import { useCancelBooking, usePostedSale } from "@/hooks/scheduler";
 import { END_COURSE_REASONS, type Booking, type EndCourseReason } from "@/types/app/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 interface Props {
   opened: boolean;
@@ -32,6 +33,7 @@ interface Props {
  */
 export default function CancelBookingDialog({ opened, booking, onClose, onCancelled }: Props) {
   const t = useT();
+  const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const cancel = useCancelBooking();
   // SPEC-069 / TASK-222 — `enabled` is the dialog's own `opened`, so a dialog nobody opens never queries.
   const postedSale = usePostedSale(booking?.id, opened);
@@ -161,9 +163,11 @@ export default function CancelBookingDialog({ opened, booking, onClose, onCancel
           <Button variant="subtle" color="gray" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button color="red" loading={cancel.isPending} disabled={!reasonCode} onClick={submit}>
-            {t("cancelBooking.confirm")}
-          </Button>
+          {can("action:calendar.status") && (
+            <Button color="red" loading={cancel.isPending} disabled={!reasonCode} onClick={submit}>
+              {t("cancelBooking.confirm")}
+            </Button>
+          )}
         </Group>
 
         {!reasonCode && (

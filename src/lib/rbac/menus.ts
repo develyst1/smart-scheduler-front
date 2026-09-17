@@ -23,10 +23,14 @@ export const MENU_KEYS = [
 
 export type MenuKey = (typeof MENU_KEYS)[number];
 
-/** What the app knows about the signed-in user's access: the super-admin flag and the menus `/auth/me` handed back. */
+/**
+ * What the app knows about the signed-in user's access: the super-admin flag, the menus and (Stage 3) the actions `/me`
+ * handed back. `can()` in `actions.ts` reads the same object.
+ */
 export interface MenuAccess {
   isSuperAdmin: boolean;
   menus: readonly string[];
+  actions: readonly string[];
 }
 
 /** The ONE answer to "may this user open this menu?": a super admin may open all; anyone else needs the grant. Pure. */

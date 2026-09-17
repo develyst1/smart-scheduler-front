@@ -15,6 +15,7 @@ import { formatDateDisplay } from "@/lib/ui/format";
 import { TIME_SLOTS, type EndCoursePreview } from "@/types/app/scheduler";
 import type { ResumeCourseResponse } from "@/types/api/contract";
 import { defaultResumeDate, resumeDefaultTime } from "@/lib/scheduler/resume-defaults";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 interface Props {
   opened: boolean;
@@ -76,6 +77,7 @@ export default function DropResumeDialog({
   onDone,
 }: Props) {
   const t = useT();
+  const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const drop = useDropCourse();
   const resume = useResumeCourse();
   const previewPause = usePreviewEndCourse();
@@ -368,7 +370,7 @@ export default function DropResumeDialog({
             {t(result ? "common.close" : "common.cancel")}
           </Button>
           {/* Once the re-plan has happened there is nothing left to submit — only what it did, to read. */}
-          {!result && (
+          {!result && can("action:bookings.course-drop") && (
             <Button
               color={isDrop ? "yellow" : "green"}
               loading={busy}

@@ -21,6 +21,7 @@ import DiscountSection from "@/components/common/DiscountSection";
 import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
 import { useT } from "@/lib/i18n";
 import type { CreateVoucherResponse } from "@/types/api/contract";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 interface Props {
   opened: boolean;
@@ -29,6 +30,7 @@ interface Props {
 
 export default function CreateVoucherModal({ opened, onClose }: Props) {
   const t = useT();
+  const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const create = useCreateVoucher();
 
   const [student, setStudent] = useState<StudentSelectValue | null>(null);
@@ -179,9 +181,11 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
             <Button variant="subtle" color="gray" onClick={onClose}>
               {t("common.cancel")}
             </Button>
-            <Button loading={create.isPending} disabled={!valid} onClick={handleSubmit}>
-              {t("voucher.issueBtn")}
-            </Button>
+            {can("action:bookings.voucher-create") && (
+              <Button loading={create.isPending} disabled={!valid} onClick={handleSubmit}>
+                {t("voucher.issueBtn")}
+              </Button>
+            )}
           </Group>
         </Stack>
       )}

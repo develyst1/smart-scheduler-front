@@ -22,12 +22,16 @@ import { useT } from "@/lib/i18n";
 import { useSettings, useUpdateSetting, useResetSetting } from "@/hooks/scheduler";
 import { settingHelp } from "@/lib/scheduler/setting-help";
 import type { SettingRow } from "@/types/app/settings";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 export default function SettingsContent() {
   const t = useT();
   const { data: rows = [], isLoading } = useSettings();
   const update = useUpdateSetting();
   const reset = useResetSetting();
+  // REQ-092 Stage 3 (TASK-386) — edit + reset are one act (`settings.edit`); without it the page only reads.
+  const can = useCan();
+  const canEdit = can("action:settings.edit");
 
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<number | string>(0);
@@ -224,15 +228,17 @@ export default function SettingsContent() {
                     </Stack>
                   ) : (
                     <Group gap="sm">
-                      <Button
-                        size="xs"
-                        variant="light"
-                        leftSection={<Pencil size={14} />}
-                        onClick={() => startEdit(row)}
-                      >
-                        {t("settings.edit")}
-                      </Button>
-                      {row.isOverridden && (
+                      {canEdit && (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<Pencil size={14} />}
+                          onClick={() => startEdit(row)}
+                        >
+                          {t("settings.edit")}
+                        </Button>
+                      )}
+                      {row.isOverridden && canEdit && (
                         <Button
                           size="xs"
                           variant="subtle"

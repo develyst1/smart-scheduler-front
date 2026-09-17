@@ -10,6 +10,7 @@ import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE } from "./calendar-
 import { useT } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
+import { useCan } from "@/hooks/scheduler/useMe";
 import {
   BOOKING_TYPE_ICON,
   BOOKING_TYPE_VAR,
@@ -113,6 +114,8 @@ function Row({
   display: CellDisplay;
 }) {
   const t = useT();
+  const can = useCan();
+  const canBook = can("action:calendar.book");
   return (
     <>
       <div className="sticky left-0 z-10 flex items-start justify-end border-r border-t border-muted-100 bg-content1 p-2 pr-3 text-xs font-medium text-muted-500">
@@ -211,6 +214,8 @@ function Row({
                   </span>
                 )}
               </button>
+            ) : !canBook ? (
+              <div className="h-full min-h-16 w-full rounded-xl border border-dashed border-muted-200" aria-hidden />
             ) : (
               <button
                 type="button"

@@ -29,11 +29,14 @@ import {
   useUpdateBadgeValue,
 } from "@/hooks/scheduler";
 import { BADGE_COLORS, type BadgeColor, type BadgeType } from "@/types/app/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 export default function BadgesContent() {
   const t = useT();
   const { data: types = [], isLoading } = useBadges(true); // admin view: include inactive
   const createType = useCreateBadgeType();
+  // REQ-092 Stage 3 (TASK-386) — the add-type card is the `badges.type-create` control; hidden whole without it.
+  const can = useCan();
 
   const [newType, setNewType] = useState("");
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
@@ -79,6 +82,7 @@ export default function BadgesContent() {
         <p className="text-sm text-muted-500">{t("badges.subtitle")}</p>
       </div>
 
+      {can("action:badges.type-create") && (
       <Card withBorder radius="lg" p="md">
         <Group align="end" gap="sm">
           <TextInput
@@ -94,6 +98,7 @@ export default function BadgesContent() {
           </Button>
         </Group>
       </Card>
+      )}
 
       <Modal
         opened={confirmOpen}
@@ -136,6 +141,8 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
   const updateType = useUpdateBadgeType();
   const createValue = useCreateBadgeValue();
   const updateValue = useUpdateBadgeValue();
+  // type on/off = `badges.type-edit` · a value's on/off = `badges.value-edit` · the add-value row = `badges.value-create`
+  const can = useCan();
 
   const [label, setLabel] = useState("");
   const [color, setColor] = useState<BadgeColor>(BADGE_COLORS[0]);
@@ -170,14 +177,18 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
     <Card withBorder radius="lg" p="md" className={type.active ? undefined : "opacity-60"}>
       <Group justify="space-between" mb="sm">
         <span className="text-base font-semibold">{type.name}</span>
-        <Switch
-          size="sm"
-          checked={type.active}
-          onChange={(e) =>
-            updateType.mutate({ id: type.id, patch: { active: e.currentTarget.checked } })
-          }
-          label={type.active ? t("badges.active") : t("badges.inactive")}
-        />
+        {can("action:badges.type-edit") ? (
+          <Switch
+            size="sm"
+            checked={type.active}
+            onChange={(e) =>
+              updateType.mutate({ id: type.id, patch: { active: e.currentTarget.checked } })
+            }
+            label={type.active ? t("badges.active") : t("badges.inactive")}
+          />
+        ) : (
+          <span className="text-xs text-muted-400">{type.active ? t("badges.active") : t("badges.inactive")}</span>
+        )}
       </Group>
 
       {type.values.length === 0 ? (
@@ -191,6 +202,7 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
               color={v.color}
               className={v.active ? undefined : "opacity-50 line-through"}
               rightSection={
+                !can("action:badges.value-edit") ? undefined : (
                 <Tooltip label={v.active ? t("badges.inactive") : t("badges.active")}>
                   <ActionIcon
                     size="xs"
@@ -204,6 +216,7 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
                     {v.active ? <PowerOff size={12} /> : <Power size={12} />}
                   </ActionIcon>
                 </Tooltip>
+                )
               }
             >
               {v.label}
@@ -212,6 +225,7 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
         </Group>
       )}
 
+      {can("action:badges.value-create") && (
       <Group align="end" gap="sm" className="border-t border-muted-100 pt-3">
         <TextInput
           label={t("badges.valueLabel")}
@@ -252,6 +266,7 @@ function BadgeTypeCard({ type }: { type: BadgeType }) {
           {t("badges.addValue")}
         </Button>
       </Group>
+      )}
 
       <Modal
         opened={confirmOpen}

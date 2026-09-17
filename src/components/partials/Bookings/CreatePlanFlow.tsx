@@ -32,6 +32,7 @@ import {
   type PlanSession,
 } from "@/types/app/scheduler";
 import PlanModal from "./PlanModal";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 interface Props {
   opened: boolean;
@@ -42,6 +43,7 @@ interface Props {
  *  → atomic `POST /courses` with per-session overrides. The plan UI itself is TASK-099's component (reused). */
 export default function CreatePlanFlow({ opened, onClose }: Props) {
   const t = useT();
+  const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const { data: teachers = [] } = useTeachers();
   const { data: card } = useSellablePackages();
   const preview = usePreviewCourse();
@@ -416,9 +418,11 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
           <Button variant="subtle" color="gray" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button loading={preview.isPending} disabled={!valid} onClick={generate} leftSection={<CalendarPlus size={16} />}>
-            {t("plan.generate")}
-          </Button>
+          {can("action:bookings.course-create") && (
+            <Button loading={preview.isPending} disabled={!valid} onClick={generate} leftSection={<CalendarPlus size={16} />}>
+              {t("plan.generate")}
+            </Button>
+          )}
         </Group>
       </Stack>
     </Modal>

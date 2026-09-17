@@ -19,7 +19,7 @@ import { LANDING_HREF, mayOpen, navItemForPath, navItemsFor } from "./AdminLayou
  * - zero menus (and not a super admin) ⇒ the empty shell: "no menus yet — ask your admin". The header above still
  *   shows who they are and offers "change my password".
  * 🔑 The server is the guard (`403 FORBIDDEN` without the grant); this is the honest UI. A grant taken away mid-session
- * reaches here on the next `/auth/me` (focus, 30 s, or the first 403).
+ * reaches here on the next `/me` (focus, 30 s, or the first 403).
  */
 export default function MenuGuard({ children }: { children: React.ReactNode }) {
   const t = useT();

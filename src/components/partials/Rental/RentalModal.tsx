@@ -10,6 +10,7 @@ import { RENTAL_CODES, type RentalCode, type RentalResult } from "@/types/app/sc
 import { formatPriceMinor } from "@/types/app/pricing";
 import DiscountSection from "@/components/common/DiscountSection";
 import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 /**
  * Record an equipment rental (SPEC-031 / TASK-109). One modal, both surfaces:
@@ -28,6 +29,7 @@ export default function RentalModal({
   contextName?: string;
 }) {
   const t = useT();
+  const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const record = useRecordRental();
   // TASK-123 — rental prices come from the server's `rentalItems` (never a second FE copy); labels stay FE i18n.
   const { data: card } = useSellablePackages();
@@ -174,13 +176,15 @@ export default function RentalModal({
               <Button variant="subtle" color="gray" onClick={onClose}>
                 {t("common.cancel")}
               </Button>
-              <Button
-                loading={record.isPending}
-                disabled={!code || hours < 1 || discountEval.problemKeys.length > 0}
-                onClick={submit}
-              >
-                {t("rental.record")}
-              </Button>
+              {can("action:calendar.rental-sale") && (
+                <Button
+                  loading={record.isPending}
+                  disabled={!code || hours < 1 || discountEval.problemKeys.length > 0}
+                  onClick={submit}
+                >
+                  {t("rental.record")}
+                </Button>
+              )}
             </Group>
           </>
         )}

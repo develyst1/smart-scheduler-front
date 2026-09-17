@@ -10,6 +10,7 @@ import { useConfirm } from "@/components/common/useConfirm";
 import { usePayBookingRental, useRecordBookingRental, useRemoveBookingRental } from "@/hooks/scheduler";
 import RentalTierPicker, { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
 import { OFF_CALENDAR_STATUSES, type Booking } from "@/types/app/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 export { rentalPrintLine };
 
@@ -38,6 +39,9 @@ export default function RentalSection({ booking }: { booking: Booking }) {
   // the ONE literal both grids already use (`OFF_CALENDAR_STATUSES` = CANCELLED · PAUSED). An ATTENDED session still
   // accepts one, on both sides. An existing row still renders and can be marked paid on a cancelled session.
   const canAdd = !OFF_CALENDAR_STATUSES.includes(booking.status);
+  // REQ-092 Stage 3 — add · mark paid · remove are ONE act (`calendar.rental`); without it the row only reads.
+  const can = useCan();
+  const canRental = can("action:calendar.rental");
 
   const [adding, setAdding] = useState(false);
   const [code, setCode] = useState<string | null>(null);
@@ -115,7 +119,7 @@ export default function RentalSection({ booking }: { booking: Booking }) {
               {rental.paid ? t("rental.paidState") : t("rental.unpaidState")}
             </span>
           </Text>
-          {!rental.paid && (
+          {!rental.paid && canRental && (
             <Group gap="xs">
               <Button size="xs" color="green" loading={pay.isPending} disabled={busy && !pay.isPending} onClick={submitPaid}>
                 {t("rental.markPaid")}
@@ -147,7 +151,7 @@ export default function RentalSection({ booking }: { booking: Booking }) {
             </Button>
           </Group>
         </Stack>
-      ) : canAdd ? (
+      ) : canAdd && canRental ? (
         <Button
           size="xs"
           variant="light"

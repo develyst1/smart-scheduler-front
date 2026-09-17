@@ -33,6 +33,7 @@ import {
   useSetParentSuspended,
 } from "@/hooks/scheduler";
 import { THAI_NATIONALITY, type Parent, type Student } from "@/types/app/people";
+import { useCan } from "@/hooks/scheduler/useMe";
 import ParentFormModal from "./ParentFormModal";
 import StudentFormModal from "./StudentFormModal";
 
@@ -60,6 +61,8 @@ export default function PeopleContent() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const suspend = useSetParentSuspended();
+  // REQ-092 Stage 3 (TASK-386) — every mutate control asks `can()`; not granted ⇒ hidden (the server refuses anyway).
+  const can = useCan();
 
   const [parentModal, setParentModal] = useState<{ open: boolean; parent: Parent | null }>({
     open: false,
@@ -141,9 +144,11 @@ export default function PeopleContent() {
           <h1 className="text-xl font-semibold tracking-tight">{t("people.title")}</h1>
           <p className="max-w-2xl text-sm text-muted-500">{t("people.subtitle")}</p>
         </div>
-        <Button leftSection={<UserPlus size={16} />} onClick={() => setParentModal({ open: true, parent: null })}>
-          {t("people.addParent")}
-        </Button>
+        {can("action:people.parent-create") && (
+          <Button leftSection={<UserPlus size={16} />} onClick={() => setParentModal({ open: true, parent: null })}>
+            {t("people.addParent")}
+          </Button>
+        )}
       </div>
 
       <TextInput
@@ -199,26 +204,30 @@ export default function PeopleContent() {
                     </div>
 
                     <Group gap="xs">
-                      <Button
-                        size="compact-sm"
-                        variant="light"
-                        color="gray"
-                        leftSection={<Pencil size={13} />}
-                        onClick={() => setParentModal({ open: true, parent: p })}
-                      >
-                        {t("people.edit")}
-                      </Button>
-                      <Button
-                        size="compact-sm"
-                        variant="light"
-                        leftSection={<Baby size={13} />}
-                        onClick={() => setStudentModal({ open: true, parentId: p.id, student: null })}
-                      >
-                        {t("people.addStudent")}
-                      </Button>
+                      {can("action:people.parent-edit") && (
+                        <Button
+                          size="compact-sm"
+                          variant="light"
+                          color="gray"
+                          leftSection={<Pencil size={13} />}
+                          onClick={() => setParentModal({ open: true, parent: p })}
+                        >
+                          {t("people.edit")}
+                        </Button>
+                      )}
+                      {can("action:people.parent-students") && (
+                        <Button
+                          size="compact-sm"
+                          variant="light"
+                          leftSection={<Baby size={13} />}
+                          onClick={() => setStudentModal({ open: true, parentId: p.id, student: null })}
+                        >
+                          {t("people.addStudent")}
+                        </Button>
+                      )}
                       {/* The list response already carries `lineUserId`, so the destructive action exists only
                           when this row has a link to clear. The value itself is never rendered. */}
-                      {p.lineUserId !== null && (
+                      {p.lineUserId !== null && can("action:people.parent-line-unlink") && (
                         <Button
                           size="compact-sm"
                           variant="light"
@@ -229,7 +238,7 @@ export default function PeopleContent() {
                           {t("people.lineClear")}
                         </Button>
                       )}
-                      {suspended ? (
+                      {!can("action:people.parent-suspend") ? null : suspended ? (
                         <Button
                           size="compact-sm"
                           variant="light"
@@ -273,32 +282,36 @@ export default function PeopleContent() {
                                 {meta && <span className="ml-2 text-xs text-muted-400">· {meta}</span>}
                               </div>
                               <Group gap={2} wrap="nowrap">
-                                <Tooltip label={t("people.edit")} withinPortal>
-                                  <ActionIcon
-                                    variant="subtle"
-                                    color="gray"
-                                    aria-label={t("people.edit")}
-                                    onClick={() =>
-                                      setStudentModal({ open: true, parentId: p.id, student: s })
-                                    }
-                                  >
-                                    <Pencil size={15} />
-                                  </ActionIcon>
-                                </Tooltip>
+                                {can("action:people.student-edit") && (
+                                  <Tooltip label={t("people.edit")} withinPortal>
+                                    <ActionIcon
+                                      variant="subtle"
+                                      color="gray"
+                                      aria-label={t("people.edit")}
+                                      onClick={() =>
+                                        setStudentModal({ open: true, parentId: p.id, student: s })
+                                      }
+                                    >
+                                      <Pencil size={15} />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                )}
                                 {/* TASK-365 — offered on EVERY student; the server decides (409 ⇒ its sentence). First tap. */}
-                                <Tooltip label={t("people.deleteStudent")} withinPortal>
-                                  <ActionIcon
-                                    variant="subtle"
-                                    color="red"
-                                    aria-label={t("people.deleteStudent")}
-                                    onClick={() => {
-                                      setDeleteError(null);
-                                      setDeleteTarget(s);
-                                    }}
-                                  >
-                                    <Trash2 size={15} />
-                                  </ActionIcon>
-                                </Tooltip>
+                                {can("action:people.student-delete") && (
+                                  <Tooltip label={t("people.deleteStudent")} withinPortal>
+                                    <ActionIcon
+                                      variant="subtle"
+                                      color="red"
+                                      aria-label={t("people.deleteStudent")}
+                                      onClick={() => {
+                                        setDeleteError(null);
+                                        setDeleteTarget(s);
+                                      }}
+                                    >
+                                      <Trash2 size={15} />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                )}
                               </Group>
                             </div>
                           );

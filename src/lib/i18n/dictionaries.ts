@@ -91,6 +91,15 @@ const en = {
     menusSelectAll: "Select all",
     menusSelectNone: "Select none",
     menusSavedOk: "Menus saved for {name}",
+    // Stage 3 (TASK-386) — the per-user action checklist, rendered from GET /permissions (the BE's labels)
+    colActions: "Actions",
+    actionsAll: "All actions (super admin)",
+    actionsCount: "{n} actions",
+    actionsTitle: "Actions for {name}",
+    actionsBody: "Tick what this user may do. Each group is a menu; an action under a menu they cannot open is refused by the menu first.",
+    actionsSavedOk: "Actions saved for {name}",
+    areaSales: "Sales",
+    areaMenuNotGranted: "menu not granted",
   },
 
   // REQ-063 / TASK-161 — the discount block shared by all five sale/booking forms. Wording is REQ-063's
@@ -1533,6 +1542,14 @@ const th: typeof en = {
     menusSelectAll: "เลือกทั้งหมด",
     menusSelectNone: "ไม่เลือกเลย",
     menusSavedOk: "บันทึกเมนูของ {name} แล้ว",
+    colActions: "รายการ",
+    actionsAll: "ทุกรายการ (super admin)",
+    actionsCount: "{n} รายการ",
+    actionsTitle: "รายการที่ {name} ทำได้",
+    actionsBody: "เลือกรายการที่ผู้ใช้นี้ทำได้ แต่ละกลุ่มคือหนึ่งเมนู รายการใต้เมนูที่เปิดไม่ได้จะถูกปฏิเสธที่เมนูก่อน",
+    actionsSavedOk: "บันทึกรายการของ {name} แล้ว",
+    areaSales: "การขาย",
+    areaMenuNotGranted: "ยังไม่ได้รับเมนูนี้",
   },
 
   confirmAction: {

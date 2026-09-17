@@ -573,12 +573,18 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   /** REQ-092 Stage 1 — the REAL user: the row's id, the display name the header shows, the super-admin flag. */
-  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; role: Role; menus: string[] };
+  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; role: Role; menus: string[]; actions: string[] };
 }
 
-/** REQ-092 Stage 2 (TASK-381) — `GET /auth/me`: who the token is, and the menus they may open (a super admin: all). */
+/** REQ-092 Stage 2 (TASK-381) — `GET /me`: who the token is, the menus they may open and (Stage 3) the acts they may do (a super admin: all). */
 export interface MeResponse {
-  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; menus: string[] };
+  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; menus: string[]; actions: string[] };
+}
+
+/** REQ-092 Stage 3 (TASK-385) — `GET /permissions`: the registry. The ONLY source of action names and labels. */
+export interface PermissionRegistry {
+  menus: string[];
+  actions: { key: string; area: string; labelTh: string; labelEn: string }[];
 }
 
 /** REQ-092 Stage 1 (TASK-377) — a row of the super admin's Users page. No password, no permissions yet (Stage 2). */
@@ -591,6 +597,8 @@ export interface UserDTO {
   createdAt: string;
   /** REQ-092 Stage 2 — the `menu:*` keys granted to this user (a super admin: all of them). */
   menus: string[];
+  /** REQ-092 Stage 3 — the `action:*` keys granted to this user (a super admin: all of them). */
+  actions: string[];
 }
 
 export type ApiErrorCode =

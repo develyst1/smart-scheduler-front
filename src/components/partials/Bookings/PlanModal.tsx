@@ -56,6 +56,7 @@ import { canResumeCourse, isCourseWritable } from "@/lib/scheduler/course-lifecy
 import { visiblePlanRows } from "@/lib/scheduler/plan-rows";
 import { toTimeSlot } from "@/lib/scheduler/time-slot";
 import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 /**
  * The COURSE pause/resume control. **Both faces read this one flag**, so they can never come back by halves —
@@ -145,6 +146,13 @@ export default function PlanModal({
   const [skips, setSkips] = useState<{ id: string; reason?: string }[]>([]);
   const previewMut = usePreviewPlanChange();
   const applyMut = useApplyPlanChange();
+  // REQ-092 Stage 3 (TASK-386) — every mutate control asks `can()`; not granted ⇒ hidden. On a course the per-row
+  // edit / absence go through the plan (`bookings.course-plan`); on a voucher the row edit is a booking move
+  // (`calendar.booking-edit`); cancelling a session is a status change (`calendar.status`). Create mode edits a
+  // local draft (no key) — the create itself is gated at its door.
+  const can = useCan();
+  const canPlan = can("action:bookings.course-plan");
+  const canDrop = can("action:bookings.course-drop");
 
   useEffect(() => {
     if (!opened) {
@@ -163,6 +171,7 @@ export default function PlanModal({
   }, [isCreate, plan]);
 
   const isCourse = plan?.kind === "course";
+  const canRowEdit = isCreate || (isCourse ? canPlan : can("action:calendar.booking-edit"));
   const sessions = isCreate ? draft : (plan?.sessions ?? []);
   // SPEC-049 — which row is this? The BE builds (and previews) a course as the `size` weekly rows in order, then
   // the appended make-ups, and `CreatePlanFlow` maps that order straight into the draft. **A row's 1-based index
@@ -306,7 +315,7 @@ export default function PlanModal({
           <SessionTable
             sessions={planRows}
             onEdit={
-              !courseWritable
+              !courseWritable || !canRowEdit
                 ? undefined
                 : (session) => {
                     setError(null);
@@ -322,7 +331,9 @@ export default function PlanModal({
                     onToggleAbsent
                     ? (s) => onToggleAbsent(weekIndexOf(s))
                     : undefined
-                  : (s) => requestChange({ kind: "mark-absence", bookingId: s.id, planned: true })
+                  : canPlan
+                    ? (s) => requestChange({ kind: "mark-absence", bookingId: s.id, planned: true })
+                    : undefined
             }
             absenceLabelFor={
               isCourse && isCreate
@@ -338,7 +349,7 @@ export default function PlanModal({
                 : undefined
             }
             onCancelSession={
-              !isCreate
+              !isCreate && can("action:calendar.status")
                 ? (session) => {
                     setError(null);
                     setCancelTarget(session);
@@ -387,7 +398,7 @@ export default function PlanModal({
               <Text fz="sm" c="dimmed">
                 {t("course.droppedNoWrites")}
               </Text>
-              {COURSE_PAUSE_RESUME_ENABLED && (
+              {COURSE_PAUSE_RESUME_ENABLED && canDrop && (
                 <Button
                   variant="light"
                   color="green"
@@ -414,7 +425,7 @@ export default function PlanModal({
                     add-a-session actions, and opens a SERVER-powered confirm rather than acting on the click. */}
                 {/* TASK-202 — only meaningful while something is still PENDING, so it is not rendered otherwise:
                     a button whose only outcome is "0 confirmed" teaches staff to ignore it. */}
-                {pendingCount > 0 && (
+                {pendingCount > 0 && can("action:bookings.course-confirm") && (
                   <Button
                     variant="light"
                     color="blue"
@@ -443,7 +454,7 @@ export default function PlanModal({
                     keeps the course, its slot and its size and can be undone. Cancel stays the grave one.
                     🔴 TASK-285 — off tonight, with its resume, from the one flag above. Hiding this half alone
                     would strand any course an admin paused. */}
-                {COURSE_PAUSE_RESUME_ENABLED && (
+                {COURSE_PAUSE_RESUME_ENABLED && canDrop && (
                   <Button
                     variant="light"
                     color="yellow"
@@ -457,19 +468,22 @@ export default function PlanModal({
                     {t("endCourse.drop")}
                   </Button>
                 )}
-                <Button
-                  variant="light"
-                  color="red"
-                  size="xs"
-                  leftSection={<Ban size={14} />}
-                  onClick={() => {
-                    setError(null);
-                    setEndOpen(true);
-                  }}
-                >
-                  {t("endCourse.action")}
-                </Button>
+                {can("action:bookings.course-cancel") && (
+                  <Button
+                    variant="light"
+                    color="red"
+                    size="xs"
+                    leftSection={<Ban size={14} />}
+                    onClick={() => {
+                      setError(null);
+                      setEndOpen(true);
+                    }}
+                  >
+                    {t("endCourse.action")}
+                  </Button>
+                )}
                 {/* SPEC-033 — visibly separate from Insert: a charged single-session, not a quota reschedule. */}
+                {can("action:bookings.course-extra-session") && (
                 <Tooltip label={t("plan.extraHint")} withArrow multiline w={220}>
                   <Button
                     variant="light"
@@ -484,6 +498,8 @@ export default function PlanModal({
                     {t("plan.extra")}
                   </Button>
                 </Tooltip>
+                )}
+                {canPlan && (
                 <Tooltip label={insertable ? t("plan.insertHint") : t("plan.insertDisabled")} withArrow multiline w={220}>
                   <Button
                     variant="light"
@@ -498,6 +514,7 @@ export default function PlanModal({
                     {t("plan.insert")}
                   </Button>
                 </Tooltip>
+                )}
               </Group>
             </Group>
           )}
@@ -888,6 +905,7 @@ function SessionEditor({
   // REQ-073 (3) — an extra session CHARGES. Money is the one consequence a second click can't take back.
   const { confirm: askConfirm, confirmDialog } = useConfirm();
   const noteMut = useSetAttendeeNote();
+  const can = useCan();
   const [attendeeNote, setAttendeeNote] = useState(seed?.attendeeNote ?? "");
   const [noteSaving, setNoteSaving] = useState(false);
   const [date, setDate] = useState<string>(seed?.date ?? dayjs().format("YYYY-MM-DD"));
@@ -1063,7 +1081,7 @@ function SessionEditor({
       {/* REQ-068 — per-session note. Only on an EXISTING session: a create-mode draft row has no booking id yet,
           and the note endpoint is keyed by booking. Saved on its own button so it is unmistakably one session's
           note, not part of the move being composed above it. */}
-      {target.kind === "move" && !onLocalSave && (
+      {target.kind === "move" && !onLocalSave && can("action:calendar.note") && (
         <div className="mt-3">
           <AttendeeNoteInput value={attendeeNote} onChange={setAttendeeNote} disabled={noteSaving} />
           <Group justify="flex-end" mt="xs">

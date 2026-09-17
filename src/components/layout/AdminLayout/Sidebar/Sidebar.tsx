@@ -47,7 +47,7 @@ function NavList({
   const pathname = usePathname();
   const t = useT();
   // REQ-092 Stage 2 — the entries the user may open: `superAdminOnly` ones for a super admin, the rest by `menu:*`
-  // grant from `/auth/me` (the server guards the routes). Nothing is listed until the grants are known.
+  // grant from `/me` (the server guards the routes). Nothing is listed until the grants are known.
   const { access } = useMe();
   const items = navItemsFor(access);
 

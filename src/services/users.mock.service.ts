@@ -1,5 +1,6 @@
 // REQ-092 Stage 1 — offline Users page. In-memory rows; the same shapes as the real service.
 import { MENU_KEYS } from "@/lib/rbac/menus";
+import { ACTION_KEYS_SNAPSHOT } from "@/lib/rbac/actions";
 import type { UserDTO } from "@/types/api/contract";
 import type { CreateUserInput, UpdateUserInput } from "./users.service";
 
@@ -7,7 +8,7 @@ const delay = <T>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(v)
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 const users: UserDTO[] = [
-  { id: "u-admin", username: "admin", displayName: "Admin", isSuperAdmin: true, disabledAt: null, createdAt: "2026-09-17T00:00:00.000Z", menus: [...MENU_KEYS] },
+  { id: "u-admin", username: "admin", displayName: "Admin", isSuperAdmin: true, disabledAt: null, createdAt: "2026-09-17T00:00:00.000Z", menus: [...MENU_KEYS], actions: [...ACTION_KEYS_SNAPSHOT] },
 ];
 let seq = 1;
 
@@ -22,6 +23,7 @@ export const createUser = (input: CreateUserInput) => {
     disabledAt: null,
     createdAt: new Date().toISOString(),
     menus: input.isSuperAdmin ? [...MENU_KEYS] : [],
+    actions: input.isSuperAdmin ? [...ACTION_KEYS_SNAPSHOT] : [],
   };
   users.push(u);
   return delay(clone(u));
@@ -37,6 +39,12 @@ export const updateUser = (id: string, input: UpdateUserInput) => {
 export const setUserMenus = (id: string, keys: string[]) => {
   const u = users.find((x) => x.id === id)!;
   u.menus = u.isSuperAdmin ? [...MENU_KEYS] : [...new Set(keys)];
+  return delay(clone(u));
+};
+
+export const setUserActions = (id: string, keys: string[]) => {
+  const u = users.find((x) => x.id === id)!;
+  u.actions = u.isSuperAdmin ? [...ACTION_KEYS_SNAPSHOT] : [...new Set(keys)];
   return delay(clone(u));
 };
 

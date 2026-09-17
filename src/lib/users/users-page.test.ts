@@ -122,23 +122,23 @@ describe("§2 — the Users page", () => {
 
   it("refusals render the server's sentence — in the dialog for create/edit/reset, as a notice for disable", () => {
     expect(page).toContain("const errMsg = (e: unknown) => (e instanceof ApiClientError ? e.message : (e as Error).message);");
-    expect((page.match(/setError\(errMsg\(e\)\)/g) ?? []).length).toBe(4); // create · edit · reset · menus (Stage 2)
+    expect((page.match(/setError\(errMsg\(e\)\)/g) ?? []).length).toBe(5); // create · edit · reset · menus (Stage 2) · actions (Stage 3)
     expect(page).toContain('notify({ title: errMsg(e), color: "danger" });'); // disable/enable
   });
 
-  it("copy: the page's keys exist in both languages (38 + 8 Stage 2 = 46 × 2), plus nav.users", () => {
+  it("copy: the page's keys exist in both languages (38 + 8 Stage 2 + 8 Stage 3 = 54 × 2), plus nav.users", () => {
     const keys = Object.keys(dictionaries.en.users);
-    expect(keys.length).toBe(46);
+    expect(keys.length).toBe(54);
     for (const k of keys) expect((dictionaries.th.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);
     expect(dictionaries.en.nav.users).toBe("Users");
     expect(dictionaries.th.nav.users).toBe("ผู้ใช้งาน");
   });
 });
 
-describe("the one FE role reader — the discount gate widened to the new claim", () => {
-  it("`super_admin` sees the discount section (a super admin is at least an admin); anything else does not", () => {
+describe("the one FE role reader — retired by Stage 3: the discount gate is by KEY", () => {
+  it("`action:sales.discount` shows the discount section; no role is read anywhere in it (TASK-378's role line is gone)", () => {
     const d = codeOf("src/components/common/DiscountSection.tsx");
-    expect(d).toContain('if (role !== "admin" && role !== "super_admin") return null;');
-    expect(d).not.toContain('role !== "admin") return null');
+    expect(d).toContain('if (!can("action:sales.discount")) return null;');
+    expect(d).not.toMatch(/role|useSession/);
   });
 });

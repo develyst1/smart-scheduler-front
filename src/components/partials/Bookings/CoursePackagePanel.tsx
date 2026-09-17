@@ -18,6 +18,7 @@ import { useT } from "@/lib/i18n";
 import { useLoadPhase } from "@/lib/ui/load-phase";
 import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import type { CoursePackageView } from "@/types/app/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 /** One place mapping lifecycle → colour, so the four states can't drift apart across screens. */
 const COURSE_STATUS_COLOR: Record<CourseStatus, string> = {
@@ -64,6 +65,10 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   // empty state before the first page arrives.
   const phase = useLoadPhase(busy, data !== undefined);
   const setUnlock = useSetCourseAdminUnlock();
+  // REQ-092 Stage 3 — the expiry date is `bookings.course-expiry`; unlock/relock is a course PATCH = `bookings.course-edit`.
+  const can = useCan();
+  const canExpiry = can("action:bookings.course-expiry");
+  const canEdit = can("action:bookings.course-edit");
 
   // คอร์ส + ทิศทาง (unlock/relock) ที่รอการยืนยันใน modal
   const [pending, setPending] = useState<{ course: CoursePackageView; unlock: boolean } | null>(null);
@@ -194,15 +199,19 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                         and the screen did not say so. The dialog is unchanged; this is its same entry point,
                         grown to cover the words the owner reads. 🚫 Not moved: the icon stays, inside the
                         button, so it is one control and not two adjacent ones doing the same thing. */}
-                    <UnstyledButton
-                      onClick={() => setExpiryTarget(c)}
-                      aria-label={t("expiry.edit")}
-                      title={t("expiry.edit")}
-                      className="inline-flex items-center gap-1 align-baseline text-xs text-muted-400 underline decoration-dotted underline-offset-2 hover:text-muted-600"
-                    >
-                      {t("course.expiresOn", { expiry: c.expiryDate })}
-                      <CalendarClock size={14} />
-                    </UnstyledButton>
+                    {canExpiry ? (
+                      <UnstyledButton
+                        onClick={() => setExpiryTarget(c)}
+                        aria-label={t("expiry.edit")}
+                        title={t("expiry.edit")}
+                        className="inline-flex items-center gap-1 align-baseline text-xs text-muted-400 underline decoration-dotted underline-offset-2 hover:text-muted-600"
+                      >
+                        {t("course.expiresOn", { expiry: c.expiryDate })}
+                        <CalendarClock size={14} />
+                      </UnstyledButton>
+                    ) : (
+                      <span className="text-xs text-muted-400">{t("course.expiresOn", { expiry: c.expiryDate })}</span>
+                    )}
                   </p>
                   {c.subject?.name && (
                     <p className="mt-0.5 text-xs text-muted-400">
@@ -309,6 +318,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                   defect as AC-A wearing a different button: **a control offered for a call the server rejects.**
                   Same predicate as the plan modal's, so the two cannot drift apart. */}
               {isCourseWritable(c.status) &&
+                canEdit &&
                 (c.leaveLocked ? (
                   <Button
                     size="xs"

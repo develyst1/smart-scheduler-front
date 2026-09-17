@@ -19,8 +19,9 @@ export const authConfig = {
         token.userId = user.id;
         token.displayName = user.displayName;
         token.isSuperAdmin = user.isSuperAdmin === true;
-        // REQ-092 Stage 2 — the menus from the login body seed the first paint; `useMe()` refetches `/auth/me` at once.
+        // REQ-092 Stage 2 — the menus from the login body seed the first paint; `useMe()` refetches `/me` at once.
         token.menus = user.menus;
+        token.actions = user.actions;
       }
       return token;
     },
@@ -33,6 +34,7 @@ export const authConfig = {
         session.user.displayName = token.displayName;
         session.user.isSuperAdmin = token.isSuperAdmin === true;
         session.user.menus = token.menus;
+        session.user.actions = token.actions;
       }
       return session;
     },

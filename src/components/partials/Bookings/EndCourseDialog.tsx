@@ -12,6 +12,7 @@ import {
   type EndCoursePreview,
   type EndCourseReason,
 } from "@/types/app/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 interface Props {
   opened: boolean;
@@ -33,6 +34,7 @@ interface Props {
  */
 export default function EndCourseDialog({ opened, courseId, onClose, onEnded }: Props) {
   const t = useT();
+  const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const preview = usePreviewEndCourse();
   const end = useEndCourse();
 
@@ -130,7 +132,7 @@ export default function EndCourseDialog({ opened, courseId, onClose, onEnded }: 
           <Button variant="subtle" color="gray" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          {!alreadyEnded && (
+          {!alreadyEnded && can("action:bookings.course-cancel") && (
             // Disabled until a reason is picked — and the reason for the disabling is stated, never left to guess.
             <Button
               color="red"

@@ -22,6 +22,7 @@ import { useT } from "@/lib/i18n";
 import TeacherWorkDaysSelect from "./TeacherWorkDaysSelect";
 import TeacherRowActions from "./TeacherRowActions";
 import TeacherFormModal from "./TeacherFormModal";
+import { useCan } from "@/hooks/scheduler/useMe";
 import ArchivedTeachers from "./ArchivedTeachers";
 import FreelanceBudgetControls from "./FreelanceBudgetControls";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
@@ -47,6 +48,10 @@ export default function TeachersContent() {
   const toggle = useToggleTeacher();
   const toggleType = useToggleTeacherType();
   const setOrder = useSetTeacherTypeOrder();
+  // REQ-092 Stage 3 (TASK-386) — every mutate control asks `can()`; not granted ⇒ hidden (the server refuses anyway).
+  const can = useCan();
+  const canOrder = can("action:teachers.type-order");
+  const canAvailability = can("action:teachers.availability");
 
   const [formOpen, setFormOpen] = useState(false);
   const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
@@ -111,7 +116,7 @@ export default function TeachersContent() {
                 className="flex flex-col gap-2"
               >
                 {typeOrder.map((type, i) => (
-                  <Draggable key={type} draggableId={type} index={i}>
+                  <Draggable key={type} draggableId={type} index={i} isDragDisabled={!canOrder}>
                     {(dragProvided, snapshot) => (
                       <div
                         ref={dragProvided.innerRef}
@@ -125,7 +130,7 @@ export default function TeachersContent() {
                         <div className="flex items-center gap-2">
                           <span
                             {...dragProvided.dragHandleProps}
-                            className="cursor-grab text-muted-300 active:cursor-grabbing"
+                            className={canOrder ? "cursor-grab text-muted-300 active:cursor-grabbing" : "hidden"}
                             aria-label={t("teachers.dragReorder")}
                           >
                             <GripVertical size={18} />
@@ -148,9 +153,11 @@ export default function TeachersContent() {
 
       <Group justify="space-between" align="center">
         <p className="text-sm text-muted-500">{t("teachers.pageHint")}</p>
-        <Button leftSection={<UserPlus size={16} />} onClick={openAdd}>
-          {t("teachers.addTeacher")}
-        </Button>
+        {can("action:teachers.create") && (
+          <Button leftSection={<UserPlus size={16} />} onClick={openAdd}>
+            {t("teachers.addTeacher")}
+          </Button>
+        )}
       </Group>
 
       {typeOrder.map((type) => {
@@ -165,15 +172,17 @@ export default function TeachersContent() {
                 <TeacherTypeChip type={type} size="md" />
                 <span className="text-sm text-muted-400">{t("teachers.count", { n: group.length })}</span>
               </div>
-              <Button
-                size="xs"
-                variant="light"
-                color={allActive ? "gray" : "green"}
-                leftSection={allActive ? <PowerOff size={15} /> : <Power size={15} />}
-                onClick={() => handleToggleType(type, !allActive)}
-              >
-                {allActive ? t("teachers.disableGroup") : t("teachers.enableGroup")}
-              </Button>
+              {canAvailability && (
+                <Button
+                  size="xs"
+                  variant="light"
+                  color={allActive ? "gray" : "green"}
+                  leftSection={allActive ? <PowerOff size={15} /> : <Power size={15} />}
+                  onClick={() => handleToggleType(type, !allActive)}
+                >
+                  {allActive ? t("teachers.disableGroup") : t("teachers.enableGroup")}
+                </Button>
+              )}
             </Group>
             <Stack gap="xs">
               {group.map((tc) =>
@@ -250,6 +259,7 @@ function TeacherRow({
 }) {
   const t = useT();
   const { format } = useWorkDays();
+  const can = useCan();
   return (
     <div
       className={`rounded-xl border border-muted-100 p-3 transition-colors hover:bg-muted-100/60 ${
@@ -274,12 +284,14 @@ function TeacherRow({
               {teacher.active ? t("teachers.active") : t("teachers.inactive")}
             </span>
           )}
-          <Switch
-            checked={teacher.active}
-            onChange={onToggle}
-            disabled={teacher.setupIncomplete}
-            aria-label={t("teachers.toggleStatus", { name: teacher.name })}
-          />
+          {can("action:teachers.availability") && (
+            <Switch
+              checked={teacher.active}
+              onChange={onToggle}
+              disabled={teacher.setupIncomplete}
+              aria-label={t("teachers.toggleStatus", { name: teacher.name })}
+            />
+          )}
           <TeacherRowActions teacher={teacher} onEdit={onEdit} />
         </div>
       </div>
@@ -302,6 +314,7 @@ function FreelanceRow({
   const t = useT();
   const { format } = useWorkDays();
   const setOverride = useSetLimitOverride();
+  const can = useCan();
 
   // งบฟรีแลนซ์รายเดือน (สตางค์) มาจาก back-office EXPENSE item — ตัดตอนจอง (SPEC-001).
   const remainingMinor = teacher.remainingMinor ?? null;
@@ -364,12 +377,14 @@ function FreelanceRow({
               {teacher.active ? t("teachers.active") : t("teachers.inactive")}
             </span>
           )}
-          <Switch
-            checked={teacher.active}
-            onChange={onToggle}
-            disabled={(teacher.overLimit && !teacher.limitOverride) || teacher.setupIncomplete}
-            aria-label={t("teachers.toggleStatus", { name: teacher.name })}
-          />
+          {can("action:teachers.availability") && (
+            <Switch
+              checked={teacher.active}
+              onChange={onToggle}
+              disabled={(teacher.overLimit && !teacher.limitOverride) || teacher.setupIncomplete}
+              aria-label={t("teachers.toggleStatus", { name: teacher.name })}
+            />
+          )}
           <TeacherRowActions teacher={teacher} onEdit={onEdit} />
         </div>
       </div>
@@ -404,7 +419,7 @@ function FreelanceRow({
         )}
       </div>
 
-      {reached && (
+      {reached && can("action:teachers.limit-override") && (
         <div className="mt-3 flex items-center justify-end gap-2">
           <span className="text-xs text-muted-500">{t("teachers.overrideLabel")}</span>
           <Switch

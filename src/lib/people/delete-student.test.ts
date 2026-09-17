@@ -28,8 +28,12 @@ describe("two taps — the red action on every student row, then a dialog that n
     // offered on EVERY student: no `&&` guard around the delete icon, no suspend/history/bookings condition
     const icon = rows.slice(rows.indexOf('label={t("people.deleteStudent")}'), rows.indexOf("</Group>"));
     expect(icon).not.toMatch(/suspended|history|bookings|courses|hasHistory|\?\s*\(|&&\s*\(/);
-    // and nothing GATES the tooltip either: between the Edit icon's close and the Delete tooltip there is no `&&`/`?`
-    const gap = rows.slice(rows.indexOf("</Tooltip>"), rows.indexOf('<Tooltip label={t("people.deleteStudent")}'));
+    // and nothing about the STUDENT gates the tooltip either: between the Edit icon's close and the Delete tooltip the only
+    // condition allowed is the USER's own grant (REQ-092 Stage 3 / TASK-386 — `can("action:people.student-delete")`),
+    // which is stripped here before the negative runs; a suspend/history/parent condition would still trip it.
+    const gap = rows
+      .slice(rows.indexOf("</Tooltip>"), rows.indexOf('<Tooltip label={t("people.deleteStudent")}'))
+      .replace(/\{can\("action:people\.student-delete"\) && \(/g, "");
     expect(gap.length).toBeGreaterThan(0);
     expect(gap).not.toMatch(/&&|\?|suspended/);
   });

@@ -1,4 +1,5 @@
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync, statSync } from "fs";
+import { join } from "path";
 import { describe, expect, it } from "bun:test";
 import { dictionaries } from "@/lib/i18n/dictionaries";
 import { HIDDEN_NAV_ITEMS, LANDING_HREF, NAV_ITEMS, mayOpen, navItemForPath, navItemsFor } from "@/components/layout/AdminLayout/AdminLayout.config";
@@ -79,7 +80,7 @@ describe("§1 — the registry and the nav", () => {
     const cfg = codeOf("src/auth.config.ts");
     expect(cfg).toContain("token.menus = user.menus;");
     expect(cfg).toContain("session.user.menus = token.menus;");
-    expect(meSvc).toContain('api.get<MeResponse>("/auth/me")');
+    expect(meSvc).toContain('api.get<MeResponse>("/me")');
     expect(useMe).toContain("queryFn: getMe,");
     expect(useMe).toContain('enabled: status === "authenticated",');
     expect(useMe).toContain("initialData: seed,");
@@ -146,16 +147,24 @@ describe("§4 — change my password, and the disabled reason on login", () => {
     expect(header).toContain('t("header.logout")');
     expect(header).toContain('onClick={() => signOut({ callbackUrl: "/login" })}');
     expect(header).toContain("<ChangePasswordModal opened={pwOpen} onClose={() => setPwOpen(false)} />");
-    expect(meSvc).toContain('api.post<{ ok: true }>("/auth/me/password", { currentPassword, newPassword })');
+    expect(meSvc).toContain('api.post<{ ok: true }>("/me/password", { currentPassword, newPassword })');
     const modal = codeOf("src/components/layout/AdminLayout/Header/ChangePasswordModal.tsx");
     expect(modal).toContain("await change.mutateAsync({ currentPassword: current, newPassword: password });");
     expect(modal).toContain("const mismatch = confirm.length > 0 && confirm !== password;");
     expect(modal).toContain("disabled={!current || !password || mismatch || confirm.length === 0}");
     // no client rule beyond the two boxes matching
     expect(stripTrailing(modal)).not.toMatch(/length\s*[<>]=?\s*8|PASSWORD_TOO_SHORT/);
-    // the one 401 that is NOT a dead session: the api client does not sign out on the self-service route
-    expect(client).toContain('const SELF_PASSWORD_PATH = "/auth/me/password";');
-    expect(client).toContain("!useMockData && !url.endsWith(SELF_PASSWORD_PATH)) {");
+    // TASK-384: a wrong current password is a 400 — the api client has NO path exemption; every 401 signs out
+    expect(client).toContain('if (error.response?.status === 401 && typeof window !== "undefined" && !useMockData) {');
+    expect(stripTrailing(client)).not.toMatch(/SELF_PASSWORD_PATH|endsWith\(|error\.config\?\.url/);
+    expect(stripTrailing(modal)).not.toMatch(/401|SELF_PASSWORD/);
+    // the old paths are gone everywhere in src (the BE answers 404 there)
+    const walk = (d: string): string[] =>
+      readdirSync(d).flatMap((e) => {
+        const p = join(d, e);
+        return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(p) && !/\.test\.tsx?$/.test(p) ? [p] : [];
+      });
+    for (const f of walk("src")) expect({ f, hit: readFileSync(f, "utf8").includes("/auth/me") }).toEqual({ f, hit: false });
   });
 
   it("`reason=disabled` rides the sign-out ONLY for the guard's disabled sentence; the login page shows one line for it", () => {
@@ -181,7 +190,7 @@ describe("copy", () => {
     both("rbac", 4);
     both("header", 11);
     both("login", 7);
-    both("users", 46);
+    both("users", 54); // 46 + the Stage-3 `Actions` checklist's 8
     for (const i of [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS]) {
       const k = i.labelKey.replace("nav.", "");
       expect(dictionaries.en.nav[k as keyof typeof dictionaries.en.nav]?.length).toBeGreaterThan(0);

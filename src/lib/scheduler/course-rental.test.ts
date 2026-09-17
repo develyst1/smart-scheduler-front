@@ -87,7 +87,9 @@ describe("§2 — the two Deploy-A QA nits", () => {
   it("(a) `Add rental` is hidden on CANCELLED/PAUSED — by the ONE literal the grids use — and shown on ATTENDED/live", () => {
     expect([...OFF_CALENDAR_STATUSES].sort()).toEqual(["CANCELLED", "PAUSED"]); // = the server's rentalBookingLive complement
     expect(section).toContain("const canAdd = !OFF_CALENDAR_STATUSES.includes(booking.status);");
-    expect(section).toContain(") : canAdd ? (");
+    // REQ-092 Stage 3 (TASK-386) — AND the user's own grant (`calendar.rental`); the status literal is unchanged
+    expect(section).toContain('const canRental = can("action:calendar.rental");');
+    expect(section).toContain(") : canAdd && canRental ? (");
     expect(section).not.toMatch(/status === "CANCELLED"|status === "PAUSED"|status === "ATTENDED"/); // no second literal
     // the existing-row branch is NOT gated: a row on a cancelled session still renders (and can be paid)
     const before = section.slice(section.indexOf("{rental ? ("), section.indexOf(") : adding ? ("));

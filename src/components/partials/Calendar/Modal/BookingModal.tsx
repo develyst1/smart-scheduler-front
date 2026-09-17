@@ -51,6 +51,7 @@ import {
   useSetBookingBadges,
 } from "@/hooks/scheduler";
 import { packageFor, voucherAllowsSubject } from "@/lib/scheduler/sellable";
+import { useCan } from "@/hooks/scheduler/useMe";
 import { eligibleLabel, entKey, type EligibleType } from "@/lib/scheduler/eligible";
 import {
   emptyOtherBooking,
@@ -169,6 +170,10 @@ function ViewBooking({
   const attended = useMarkAttended();
   const sickLeave = useMarkSickLeave();
   const setBadges = useSetBookingBadges();
+  // REQ-092 Stage 3 (TASK-386) — every mutate control asks `can()`; not granted ⇒ hidden. The four status changes
+  // (confirm · attended · sick leave · cancel) are ONE act, `calendar.status` (the BE keeps the route one key).
+  const can = useCan();
+  const canStatus = can("action:calendar.status");
 
   const [moving, setMoving] = useState(false);
   const [noticeError, setNoticeError] = useState<string | null>(null);
@@ -393,8 +398,8 @@ function ViewBooking({
 
   // ── โหมดดูปกติ ──
   // จองทับได้เฉพาะช่องที่นักเรียนเดิม "ลา" เท่านั้น (UC-004)
-  const canOverbook = booking.status === "SICK_LEAVE";
-  const canMove = MOVABLE_STATUSES.includes(booking.status);
+  const canOverbook = booking.status === "SICK_LEAVE" && can("action:calendar.book"); // an overbook is a new booking
+  const canMove = MOVABLE_STATUSES.includes(booking.status) && can("action:calendar.booking-edit");
   // REQ-074 + TASK-220 — cancel-with-reason covers the NON-course types: 1HR, voucher, 1st Trial and (TASK-227 /
   // REQ-078) อื่นๆ. A course session is still cancelled from its PLAN (TASK-105), where the re-owe/make-up
   // consequence is visible; offering it here too would be a second door to a different behaviour.
@@ -413,7 +418,12 @@ function ViewBooking({
       booking.bookingType === "VOUCHER" ||
       booking.bookingType === "FIRST_TRIAL" ||
       booking.bookingType === "OTHER") &&
-    booking.status !== "CANCELLED";
+    booking.status !== "CANCELLED" &&
+    canStatus;
+  const canPause = can("action:calendar.pause");
+  // The ⋯ menu exists only when at least one of its items does.
+  const menuHasItems =
+    canOverbook || canMove || canStatus || (canPause && (canPauseBooking(booking) || canResumeBooking(booking))) || canCancelWithReason;
 
   return (
     <Stack gap="md">
@@ -489,7 +499,7 @@ function ViewBooking({
           walk-ins. */}
       <RentalSection booking={booking} />
 
-      {activeBadgeTypes.length > 0 && (
+      {activeBadgeTypes.length > 0 && can("action:calendar.badges") && (
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-500">{t("calendar.badge")}</span>
           <div className="grid grid-cols-2 gap-3">
@@ -543,20 +553,23 @@ function ViewBooking({
           title={t("booking.leaveNoticeTitle")}
         >
           {noticeError}
-          <div className="mt-2">
-            <Button
-              size="xs"
-              color="orange"
-              variant="light"
-              loading={sickLeave.isPending}
-              onClick={() => {
-                setNoticeError(null);
-                void handleSickLeave(true);
-              }}
-            >
-              {t("booking.leaveOverrideBtn")}
-            </Button>
-          </div>
+          {/* The override is its own body-level act (`calendar.leave-override`); without it the sentence stands alone. */}
+          {can("action:calendar.leave-override") && (
+            <div className="mt-2">
+              <Button
+                size="xs"
+                color="orange"
+                variant="light"
+                loading={sickLeave.isPending}
+                onClick={() => {
+                  setNoticeError(null);
+                  void handleSickLeave(true);
+                }}
+              >
+                {t("booking.leaveOverrideBtn")}
+              </Button>
+            </div>
+          )}
         </Alert>
       )}
 
@@ -572,16 +585,18 @@ function ViewBooking({
           {t("common.close")}
         </Button>
 
-        <Button
-          variant="default"
-          leftSection={<BadgeCheck size={16} className="text-success" />}
-          loading={attended.isPending}
-          onClick={handleAttended}
-          className="w-full sm:w-auto"
-        >
-          {t("booking.attendBtn")}
-        </Button>
-        {booking.status === "PENDING" && (
+        {canStatus && (
+          <Button
+            variant="default"
+            leftSection={<BadgeCheck size={16} className="text-success" />}
+            loading={attended.isPending}
+            onClick={handleAttended}
+            className="w-full sm:w-auto"
+          >
+            {t("booking.attendBtn")}
+          </Button>
+        )}
+        {booking.status === "PENDING" && canStatus && (
           <Button
             color="blue"
             leftSection={<Bell size={16} />}
@@ -593,6 +608,7 @@ function ViewBooking({
           </Button>
         )}
 
+        {menuHasItems && (
         <Menu position="top-end" withinPortal shadow="md" width={220}>
           <Menu.Target>
             <ActionIcon
@@ -623,25 +639,27 @@ function ViewBooking({
                 {t("booking.moveBtn")}
               </Menu.Item>
             )}
-            <Menu.Item
-              leftSection={<CalendarX2 size={16} />}
-              onClick={() => handleSickLeave()}
-              disabled={booking.status === "SICK_LEAVE"}
-            >
-              {t("booking.sickLeaveBtn")}
-            </Menu.Item>
+            {canStatus && (
+              <Menu.Item
+                leftSection={<CalendarX2 size={16} />}
+                onClick={() => handleSickLeave()}
+                disabled={booking.status === "SICK_LEAVE"}
+              >
+                {t("booking.sickLeaveBtn")}
+              </Menu.Item>
+            )}
             {/* 🔴 SPEC-075 / REQ-076 (TASK-261) — พัก. Offered for exactly the three non-course types, and only
                 while the session has not happened; the rule itself is `canPauseBooking`, a tested function, not
                 this condition (TASK-147/237's lesson: a rule that only lives in JSX cannot be tested).
                 🚫 AC-3: never for a course booking — REQ-071 owns that, with its own wording, on the plan modal.
                 🚫 AC-8: this opens a plain confirm with NO reason field. Offering REQ-009's reason list here
                 would teach staff that พัก and ยกเลิก are the same act, and they are not. */}
-            {canPauseBooking(booking) && (
+            {canPause && canPauseBooking(booking) && (
               <Menu.Item leftSection={<PauseCircle size={16} />} onClick={handlePause}>
                 {t("calendar.pauseAction")}
               </Menu.Item>
             )}
-            {canResumeBooking(booking) && (
+            {canPause && canResumeBooking(booking) && (
               <Menu.Item
                 leftSection={<PlayCircle size={16} />}
                 onClick={() => {
@@ -663,6 +681,7 @@ function ViewBooking({
             )}
           </Menu.Dropdown>
         </Menu>
+        )}
       </div>
 
       {/* REQ-074 — placement: the booking detail's ⋯ menu, beside sick-leave/move. See the task notes. */}
@@ -906,6 +925,7 @@ function CreateForm({
   const t = useT();
   const create = useCreateBooking();
   const detect = useDetectConflict();
+  const can = useCan();
 
   const [bookingType, setBookingType] = useState<BookingType>("SINGLE_SESSION");
   // Trial / Single — free student picker + teacher + subject + time.
@@ -1515,14 +1535,16 @@ function CreateForm({
         <Button variant="subtle" color="gray" onClick={onClose}>
           {t("common.cancel")}
         </Button>
-        <Button
-          color="blue"
-          disabled={!valid}
-          loading={create.isPending || detect.isPending}
-          onClick={handleSubmit}
-        >
-          {t("common.save")}
-        </Button>
+        {can("action:calendar.book") && (
+          <Button
+            color="blue"
+            disabled={!valid}
+            loading={create.isPending || detect.isPending}
+            onClick={handleSubmit}
+          >
+            {t("common.save")}
+          </Button>
+        )}
       </Group>
     </Stack>
   );

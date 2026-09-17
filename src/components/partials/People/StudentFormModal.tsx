@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n";
 import { useCreateStudent, useUpdateStudent } from "@/hooks/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import { GENDERS, THAI_NATIONALITY, type Student } from "@/types/app/people";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 interface Props {
   opened: boolean;
@@ -30,6 +31,7 @@ const ageOf = (birthDate: string | null): number | null => {
 
 export default function StudentFormModal({ opened, parentId, student, onClose }: Props) {
   const t = useT();
+  const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const create = useCreateStudent();
   const update = useUpdateStudent();
   const isEdit = !!student;
@@ -200,9 +202,11 @@ export default function StudentFormModal({ opened, parentId, student, onClose }:
           <Button variant="subtle" color="gray" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button color="green" onClick={submit} loading={busy}>
-            {t("common.save")}
-          </Button>
+          {can(isEdit ? "action:people.student-edit" : "action:people.parent-students") && (
+            <Button color="green" onClick={submit} loading={busy}>
+              {t("common.save")}
+            </Button>
+          )}
         </Group>
       </Stack>
     </Modal>

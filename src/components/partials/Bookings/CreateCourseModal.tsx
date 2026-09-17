@@ -32,6 +32,7 @@ import {
   type PackageSize,
 } from "@/types/app/scheduler";
 import type { CreateCoursePackageResponse } from "@/types/api/contract";
+import { useCan } from "@/hooks/scheduler/useMe";
 
 interface Props {
   opened: boolean;
@@ -40,6 +41,7 @@ interface Props {
 
 export default function CreateCourseModal({ opened, onClose }: Props) {
   const t = useT();
+  const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const { data: teachers = [] } = useTeachers();
   const create = useCreateCoursePackage();
   const { data: card } = useSellablePackages();
@@ -280,9 +282,11 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
             <Button variant="subtle" color="gray" onClick={handleClose}>
               {t("common.cancel")}
             </Button>
-            <Button loading={create.isPending} disabled={!valid} onClick={handleSubmit}>
-              {t("course.submitBtn")}
-            </Button>
+            {can("action:bookings.course-create") && (
+              <Button loading={create.isPending} disabled={!valid} onClick={handleSubmit}>
+                {t("course.submitBtn")}
+              </Button>
+            )}
           </Group>
         </Stack>
       )}

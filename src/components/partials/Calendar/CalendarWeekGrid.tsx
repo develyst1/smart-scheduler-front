@@ -14,6 +14,7 @@ import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
 import BookingCellBody, { BookingTypeStripe, LastStamp, RentalStamp, SharedTeachersMarker } from "@/components/common/BookingCellBody";
 import { useCellDisplay } from "@/lib/scheduler/cell-display";
+import { useCan } from "@/hooks/scheduler/useMe";
 import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE } from "./calendar-status";
 
 interface Props {
@@ -38,6 +39,8 @@ export default function CalendarWeekGrid({
   const { lang, t } = useI18n();
   // Display-only preference (SPEC-046 re-cut) — it hides lines, it never filters bookings.
   const { display } = useCellDisplay();
+  const can = useCan();
+  const mayBook = can("action:calendar.book");
   const activeTeachers = teachers.filter((tc) => tc.bookable);
   const today = dayjs().format("YYYY-MM-DD");
 
@@ -175,7 +178,7 @@ export default function CalendarWeekGrid({
                     );
                   })}
 
-                  {canBook && (
+                  {canBook && mayBook && (
                     <button
                       type="button"
                       onClick={() => onCreate(tc.id, TIME_SLOTS[0], day)}

@@ -126,11 +126,13 @@ describe("§2 — the modal's rental section", () => {
 
   it("remove is offered ONLY while unpaid; the paid row shows no buttons", () => {
     const row = section.slice(section.indexOf("{rental ? ("), section.indexOf(") : adding ? ("));
-    expect(row).toContain("{!rental.paid && (");
-    const gated = row.slice(row.indexOf("{!rental.paid && ("));
+    // REQ-092 Stage 3 (TASK-386) — pay + remove also need the user's `calendar.rental` grant; the unpaid rule is unchanged
+    const GATE = "{!rental.paid && canRental && (";
+    expect(row).toContain(GATE);
+    const gated = row.slice(row.indexOf(GATE));
     expect(gated).toContain("onClick={submitPaid}");
     expect(gated).toContain("onClick={submitRemove}");
-    expect(row.slice(0, row.indexOf("{!rental.paid && ("))).not.toMatch(/onClick=\{submit(Paid|Remove)\}/);
+    expect(row.slice(0, row.indexOf(GATE))).not.toMatch(/onClick=\{submit(Paid|Remove)\}/);
   });
 
   it("mounted in the booking modal; the ⋯ 'Add rental' door is gone; the standalone RentalModal stays on the Bookings page", () => {

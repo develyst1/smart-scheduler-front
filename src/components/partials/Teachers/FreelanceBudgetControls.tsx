@@ -6,6 +6,7 @@ import { Plus, Wallet } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
 import { useSetFreelanceBudget, useTopUpFreelanceBudget } from "@/hooks/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
 import { ApiClientError } from "@/lib/api/client";
 import type { TeacherView } from "@/types/app/scheduler";
 
@@ -18,6 +19,9 @@ export default function FreelanceBudgetControls({ teacher }: { teacher: TeacherV
   const topUp = useTopUpFreelanceBudget();
   const [budgetOpen, setBudgetOpen] = useState(false);
   const [topUpOpen, setTopUpOpen] = useState(false);
+  // REQ-092 Stage 3 — set + top up are one act (`teachers.budget`); without it the row shows no budget buttons.
+  const can = useCan();
+  if (!can("action:teachers.budget")) return null;
 
   return (
     <>

@@ -14,8 +14,9 @@ declare module "next-auth" {
       username?: string;
       displayName?: string;
       isSuperAdmin?: boolean;
-      /** REQ-092 Stage 2 — the menus from the login body (a seed; `/auth/me` is the truth). Absent on an older token. */
+      /** REQ-092 Stage 2 — the menus from the login body (a seed; `/me` is the truth). Absent on an older token. */
       menus?: string[];
+      actions?: string[];
     } & DefaultSession["user"];
   }
 
@@ -26,6 +27,7 @@ declare module "next-auth" {
     displayName?: string;
     isSuperAdmin?: boolean;
     menus?: string[];
+    actions?: string[];
   }
 }
 
@@ -38,5 +40,6 @@ declare module "next-auth/jwt" {
     displayName?: string;
     isSuperAdmin?: boolean;
     menus?: string[];
+    actions?: string[];
   }
 }
