@@ -17,12 +17,18 @@ export default function OtherScheduleFields({
   teacherIds,
   teachers,
   kindRequired = false,
+  ratesOnly = false,
+  hideKind = false,
 }: {
   value: OtherScheduleDraft;
   onChange: (next: OtherScheduleDraft) => void;
   teacherIds: readonly string[];
   teachers: TeacherView[];
   kindRequired?: boolean;
+  /** TASK-398 — a DUO/Group row has its own kind and cap; only the per-teacher rates apply. */
+  ratesOnly?: boolean;
+  /** TASK-398 — the details editor on a GROUP row: cap + rates, the kind is the group's own. */
+  hideKind?: boolean;
 }) {
   const t = useT();
   const nameOf = (id: string) => {
@@ -31,6 +37,7 @@ export default function OtherScheduleFields({
   };
   return (
     <Stack gap="sm">
+      {!ratesOnly && !hideKind && (
       <Select
         label={t("booking.otherKind")}
         placeholder={t("booking.otherKindPick")}
@@ -41,6 +48,8 @@ export default function OtherScheduleFields({
         required={kindRequired}
         className="max-w-xs"
       />
+      )}
+      {!ratesOnly && (
       <NumberInput
         label={t("booking.otherHeadCount")}
         value={value.headCount}
@@ -50,6 +59,7 @@ export default function OtherScheduleFields({
         allowDecimal={false}
         className="max-w-xs"
       />
+      )}
       {teacherIds.length > 0 && (
         <div>
           <Text size="sm" fw={500}>

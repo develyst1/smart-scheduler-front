@@ -12,7 +12,7 @@ import { BOOKING_STATUS_COLOR, OFF_CALENDAR_STATUSES, TIME_SLOTS } from "@/types
 import { useI18n } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
-import BookingCellBody, { BookingTypeStripe, LastStamp, OtherKindTag, RentalStamp, SharedTeachersMarker } from "@/components/common/BookingCellBody";
+import BookingCellBody, { BookingTypeStripe, GroupSeatsLine, LastStamp, OtherKindTag, RentalStamp, SharedTeachersMarker } from "@/components/common/BookingCellBody";
 import { useCellDisplay } from "@/lib/scheduler/cell-display";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE } from "./calendar-status";
@@ -173,6 +173,8 @@ export default function CalendarWeekGrid({
                           )}
                         </span>
                         <BookingCellBody booking={b} display={display} />
+                        {/* REQ-095 Stage 2a — a GROUP row's seats `n/cap` + names. */}
+                        <GroupSeatsLine booking={b} size="sm" />
                         {/* AC-18 — names the OTHER teachers on a shared booking, so three columns read as one
                             booking rather than three meetings. Renders nothing when there is only one teacher. */}
                         <SharedTeachersMarker booking={b} inColumnOf={tc.id} />

@@ -67,6 +67,8 @@ const BOOKING_TYPE_COLOR: Record<BookingType, SemanticColor> = {
   // which is fine here and NOT the same compromise as the cell: this chip always renders its own label beside
   // the dot, so the colour is reinforcement. The cell's stripe has no label, which is why it got its own hue.
   OTHER: "default",
+  // REQ-095 Stage 2a — a group session is a product of sorts; the chip carries its label, so `primary` reads fine.
+  GROUP: "primary",
 };
 
 export function BookingTypeChip({ type, size = "sm" }: { type: BookingType; size?: Size }) {

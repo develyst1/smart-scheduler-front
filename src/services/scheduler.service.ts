@@ -72,7 +72,8 @@ import type {
 } from "@/types/app/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import type { OtherKind, OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
-import type { OtherSeriesResponse } from "@/types/api/contract";
+import type { GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
+import { groupSeriesBody, type GroupSeriesInput, type GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 import * as mock from "./scheduler.mock.service";
 
 const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -644,6 +645,20 @@ export interface OtherSeriesInput {
   startTime: string;
   dates: string[];
 }
+/** REQ-095 Stage 2a (TASK-398) — a DUO/Group series: the group's rows, ONE call, all or nothing (`409 SLOT_TAKEN` names the date). */
+export const createGroupSeries = async (input: GroupSeriesInput): Promise<GroupSeriesResponse> => {
+  if (useMock) return mock.createGroupSeries(input);
+  const { data } = await api.post<GroupSeriesResponse>("/bookings/group-series", groupSeriesBody(input));
+  return data;
+};
+
+/** TASK-398 — swap the teacher on a GROUP row (`fromHereOn` ⇒ every later row too; the seats follow server-side). 🔴 Sends no notice. */
+export const swapGroupTeacher = async (id: string, input: GroupTeacherSwapInput) => {
+  if (useMock) return mock.swapGroupTeacher(id, input);
+  const { data } = await api.patch<MoveBookingResponse>(`/bookings/${id}/group-teacher`, { teacherId: input.teacherId, fromHereOn: input.fromHereOn });
+  return dtoToBooking(data.booking);
+};
+
 export const createOtherSeries = async (input: OtherSeriesInput): Promise<OtherSeriesResponse> => {
   if (useMock) return mock.createOtherSeries(input);
   const { data } = await api.post<OtherSeriesResponse>("/bookings/other-series", {
@@ -739,6 +754,12 @@ export interface CreateCourseInput {
    * session: every row born UNPAID, no post; collected session by session). Sent both ways when the rental is on.
    */
   rental?: { code: string; remark?: string; paidUpfront: boolean };
+  /**
+   * REQ-095 Stage 2a (TASK-398) — sell this course INTO a group: teacher / weekday / startTime are the GROUP's (the
+   * form prefills and locks them); the server seats the student on every row (`409 GROUP_FULL` / `SLOT_TAKEN` naming
+   * the date, `400 GROUP_MISMATCH`), extending the group past its last row when the course runs longer.
+   */
+  groupKey?: string;
 }
 
 export const createCoursePackage = async (
@@ -764,6 +785,8 @@ export const createCoursePackage = async (
     rental: input.rental
       ? { code: input.rental.code, ...(input.rental.remark ? { remark: input.rental.remark } : {}), paidUpfront: input.rental.paidUpfront }
       : undefined,
+    // TASK-398 — into a group, only when selling into one (absent otherwise; the literal is the wire).
+    groupKey: input.groupKey,
   });
   return data;
 };

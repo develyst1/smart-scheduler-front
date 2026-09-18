@@ -455,6 +455,9 @@ export const updateBookingOther = async (id: string, _patch: unknown): Promise<B
   const b = bookings.find((x) => x.id === id);
   return delay(b as Booking);
 };
+export const createGroupSeries = async (input: { dates: string[] }) => delay({ groupKey: "mock-group", created: input.dates.length, bookingIds: input.dates.map((d) => `mock-g-${d}`) });
+export const swapGroupTeacher = async (id: string, _input: unknown): Promise<Booking> => delay(bookings.find((x) => x.id === id) as Booking);
+
 export const createOtherSeries = async (input: { dates: string[] }) => delay({ created: input.dates.length, bookingIds: input.dates.map((d) => `mock-${d}`) });
 
 export const moveBooking = (

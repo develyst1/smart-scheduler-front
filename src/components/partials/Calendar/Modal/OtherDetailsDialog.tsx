@@ -20,9 +20,13 @@ export default function OtherDetailsDialog({ booking, teachers, opened, onClose 
   const t = useT();
   const update = useUpdateBookingOther();
   const teacherIds = booking.teachers.map((tc) => tc.id);
-  const [draft, setDraft] = useState<OtherScheduleDraft>(() => draftFromFacts(booking.other, teacherIds));
+  // TASK-398 — on a GROUP row the same route edits the cap (`headCount`) and the rates; the facts come from `group`
+  // (`other` is null there) and the kind is the group's own, not editable here.
+  const isGroup = booking.bookingType === "GROUP";
+  const facts = isGroup && booking.group ? { kind: null, headCount: booking.group.seatCap, teacherRates: booking.group.teacherRates, ratePostedAt: booking.group.ratePostedAt } : booking.other;
+  const [draft, setDraft] = useState<OtherScheduleDraft>(() => draftFromFacts(facts, teacherIds));
   const [error, setError] = useState<string | null>(null);
-  const patch = otherSchedulePatch(booking.other, draft, teacherIds);
+  const patch = otherSchedulePatch(facts, draft, teacherIds);
   const dirty = Object.keys(patch).length > 0;
 
   const submit = async () => {
@@ -48,7 +52,7 @@ export default function OtherDetailsDialog({ booking, teachers, opened, onClose 
         <Text size="xs" c="dimmed">
           {t("booking.otherEditDetailsHint")}
         </Text>
-        <OtherScheduleFields value={draft} onChange={setDraft} teacherIds={teacherIds} teachers={teachers} />
+        <OtherScheduleFields value={draft} onChange={setDraft} teacherIds={teacherIds} teachers={teachers} hideKind={isGroup} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onClose}>
             {t("common.cancel")}

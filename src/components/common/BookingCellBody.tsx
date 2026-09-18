@@ -3,6 +3,7 @@
 import { Award, GraduationCap, Shapes, Sparkles, Ticket, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { seatsLabel } from "@/lib/scheduler/group-session";
 import type { Booking, BookingType } from "@/types/app/scheduler";
 import type { CellDisplay } from "@/lib/scheduler/cell-display";
 
@@ -15,6 +16,8 @@ export const BOOKING_TYPE_ICON: Record<BookingType, LucideIcon> = {
   // REQ-078 — the four lesson icons all say "a paid product". อื่นๆ is not one, so it gets the odd-one-out
   // glyph rather than a fifth product-shaped icon.
   OTHER: Shapes,
+  // REQ-095 Stage 2a — a DUO/Group session: people, plural.
+  GROUP: Users,
 };
 
 /** The dedicated type hues from `globals.css` — deliberately none of the status colours. */
@@ -24,6 +27,7 @@ export const BOOKING_TYPE_VAR: Record<BookingType, string> = {
   COURSE_PACKAGE: "var(--booking-type-course-package)",
   VOUCHER: "var(--booking-type-voucher)",
   OTHER: "var(--booking-type-other)",
+  GROUP: "var(--booking-type-group)",
 };
 
 /**
@@ -124,16 +128,35 @@ export function RentalStamp({ booking, size = "md" }: { booking: Booking; size?:
  */
 export function OtherKindTag({ booking, size = "md" }: { booking: Booking; size?: "sm" | "md" }) {
   const t = useT();
-  const kind = booking.other?.kind;
-  if (booking.bookingType !== "OTHER" || !kind) return null;
+  // TASK-398 — the same tag grows the two GROUP kinds (DUO / Group), from `group.kind` on a GROUP row only.
+  const isGroup = booking.bookingType === "GROUP";
+  const kind = isGroup ? booking.group?.kind : booking.bookingType === "OTHER" ? booking.other?.kind : null;
+  if (!kind) return null;
   return (
     <span
       className={`inline-flex shrink-0 items-center rounded-sm border border-cal-ink/40 bg-white px-1 font-semibold uppercase leading-tight tracking-wide text-cal-ink ${
         size === "sm" ? "text-[9px] py-px" : "text-[10px] py-0.5"
       }`}
-      title={t(`booking.otherKind_${kind}`)}
+      title={isGroup ? t(`booking.groupKind_${kind}`) : t(`booking.otherKind_${kind}`)}
     >
-      {t(`calendar.otherKindTag_${kind}`)}
+      {isGroup ? t(`calendar.groupKindTag_${kind}`) : t(`calendar.otherKindTag_${kind}`)}
+    </span>
+  );
+}
+
+/**
+ * REQ-095 Stage 2a (TASK-398) — a GROUP row's seats on the cell: `n/cap` from the server's `group.seats` (never
+ * counted from anything else) and the seated names. An empty group reads `0/cap`. Nothing on a non-GROUP row.
+ */
+export function GroupSeatsLine({ booking, size = "md" }: { booking: Booking; size?: "sm" | "md" }) {
+  const t = useT();
+  const g = booking.group;
+  if (booking.bookingType !== "GROUP" || !g) return null;
+  const names = g.seats.map((s) => s.studentName).filter((n): n is string => !!n);
+  return (
+    <span className={`flex min-w-0 items-baseline gap-1 text-cal-ink ${size === "sm" ? "text-[10px]" : "text-[11px]"}`} data-seats={seatsLabel(g)}>
+      <span className="shrink-0 font-semibold tabular-nums">{t("booking.groupSeats", { n: seatsLabel(g) })}</span>
+      {names.length > 0 && <span className="truncate text-muted-600">{names.join(", ")}</span>}
     </span>
   );
 }

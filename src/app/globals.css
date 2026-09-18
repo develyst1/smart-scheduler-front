@@ -40,6 +40,9 @@
      own token, not a re-use — and stone rather than slate, so it never collides with the `--color-muted-*`
      ramp the borders and dimmed text already use. */
   --booking-type-other: 120 113 108; /* stone-500 */
+  /* REQ-095 Stage 2a / TASK-398 — a DUO/Group SESSION. A paid product again, so saturated like the four — teal, the
+     one hue none of them use, so a group row reads as its own kind at a glance. */
+  --booking-type-group: 13 148 136; /* teal-600 */
 
   /* ── SCHEDULE cell colours (2026-09-16, owner review) ─────────────────────────────────────────────
      🔴 Their own tokens, NOT the `primary/success/warning/danger/secondary` Tailwind colours the rest of the

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import dayjs from "dayjs";
-import { Alert, Button, Group, Modal, MultiSelect, NumberInput, Select, Stack, Text, TextInput, Textarea } from "@mantine/core";
-import { DatePicker } from "@mantine/dates";
+import { Alert, Button, Group, Modal, MultiSelect, Select, Stack, TextInput, Textarea } from "@mantine/core";
 import { AlertTriangle, CalendarPlus } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
@@ -13,6 +11,7 @@ import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOpt
 import { OTHER_KINDS, teacherRatesMinor, type OtherKind, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import { TIME_SLOTS } from "@/types/app/scheduler";
 import OtherScheduleFields from "./OtherScheduleFields";
+import MultiDateField from "./MultiDateField";
 
 /**
  * REQ-095 Stage 1 (TASK-395) — the SERIES: the same OTHER facts + a multi-date picker ⇒ ONE call,
@@ -98,20 +97,7 @@ export default function OtherSeriesDialog({
           className="max-w-xs"
         />
         <Textarea label={t("booking.otherSeriesNote")} value={note} onChange={(e) => setNote(e.currentTarget.value)} autosize minRows={1} />
-        <div>
-          <Text size="sm" fw={500}>
-            {t("booking.otherSeriesDates")}
-          </Text>
-          <Text size="xs" c="dimmed" mb={4}>
-            {t("booking.otherSeriesCount", { n: String(dates.length) })}
-          </Text>
-          <DatePicker
-            type="multiple"
-            value={dates.map((d) => new Date(d))}
-            onChange={(v) => setDates((v as unknown as (Date | string)[]).map((d) => dayjs(d).format("YYYY-MM-DD")))}
-            numberOfColumns={2}
-          />
-        </div>
+        <MultiDateField value={dates} onChange={setDates} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onClose}>
             {t("common.cancel")}

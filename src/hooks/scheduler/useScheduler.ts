@@ -14,6 +14,8 @@ import {
   moveBooking,
   updateBookingOther,
   createOtherSeries,
+  createGroupSeries,
+  swapGroupTeacher,
   type OtherSeriesInput,
   type MoveBookingInput,
   createCoursePackage,
@@ -80,6 +82,7 @@ import {
 } from "@/services/scheduler.service";
 import type { EndCourseReason, PlanChange, RecordRentalInput, TeacherType } from "@/types/app/scheduler";
 import type { OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
+import type { GroupSeriesInput, GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 
 export const TEACHERS_KEY = ["teachers"] as const;
 export const BOOKINGS_KEY = ["bookings"] as const;
@@ -507,6 +510,19 @@ export const useUpdateBookingOther = () => {
 export const useCreateOtherSeries = () => {
   const qc = useQueryClient();
   return useMutation({ mutationFn: (input: OtherSeriesInput) => createOtherSeries(input), onSuccess: () => invalidateAll(qc) });
+};
+
+/** REQ-095 Stage 2a (TASK-398) — the group series and the teacher swap; the calendar re-reads as for every write. */
+export const useCreateGroupSeries = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (input: GroupSeriesInput) => createGroupSeries(input), onSuccess: () => invalidateAll(qc) });
+};
+export const useSwapGroupTeacher = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: GroupTeacherSwapInput }) => swapGroupTeacher(id, input),
+    onSuccess: () => invalidateAll(qc),
+  });
 };
 
 export const useMoveBooking = () => {

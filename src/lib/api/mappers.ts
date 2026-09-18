@@ -46,6 +46,10 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     rental: dto.rental ?? null,
     // TASK-395 — the OTHER facts as sent; absent ⇒ null.
     other: dto.other ?? null,
+    // TASK-398 — a GROUP row's facts / a seat's group, as sent; absent ⇒ null.
+    group: dto.group ?? null,
+    groupId: dto.groupId ?? null,
+    groupName: dto.groupName ?? null,
     // Conflict resolution (B.1)
     pendingSlot: dto.pendingSlot || undefined,
     incomingBookingId: dto.incomingBookingId ?? undefined,

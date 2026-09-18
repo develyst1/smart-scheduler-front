@@ -18,6 +18,7 @@ import {
   LastStamp,
   RentalStamp,
   OtherKindTag,
+  GroupSeatsLine,
 } from "@/components/common/BookingCellBody";
 
 interface Props {
@@ -207,6 +208,8 @@ function Row({
                 {/* AC-18 — names the OTHER teachers on a shared booking, so three columns read as one booking
                     rather than three meetings. Renders nothing when there is only one teacher. */}
                 <SharedTeachersMarker booking={booking} inColumnOf={tc.id} />
+                {/* REQ-095 Stage 2a — a GROUP row's seats `n/cap` + names, from the server's `group.seats`. */}
+                <GroupSeatsLine booking={booking} />
                 {/* REQ-068 — the session note as a neutral-bordered callout so it reads as a note, not more meta. */}
                 {display.note && booking.attendeeNote && (
                   <span

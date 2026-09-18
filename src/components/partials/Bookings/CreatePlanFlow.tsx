@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Alert, Button, Group, Modal, Select, Stack, TextInput } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { CalendarPlus, Info, AlertTriangle } from "lucide-react";
+import { CalendarPlus, Info, AlertTriangle, Users } from "lucide-react";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { notify } from "@/lib/ui/notify";
@@ -37,11 +37,17 @@ import { useCan } from "@/hooks/scheduler/useMe";
 interface Props {
   opened: boolean;
   onClose: () => void;
+  /**
+   * REQ-095 Stage 2a (TASK-398) — sell INTO a group: the group's teacher / first date (its weekday) / start time are
+   * prefilled and LOCKED, and `groupKey` rides in the body. 🚫 No second course form — this one, with three fields
+   * held. `409 GROUP_FULL` / `SLOT_TAKEN` are the server's sentences in the same error slot.
+   */
+  group?: { groupKey: string; name: string; teacherId: string; startDate: string; startTime: string };
 }
 
 /** TASK-098 — the purchase-time create flow: picker → generate preview → the shared PlanModal (create mode)
  *  → atomic `POST /courses` with per-session overrides. The plan UI itself is TASK-099's component (reused). */
-export default function CreatePlanFlow({ opened, onClose }: Props) {
+export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   const t = useT();
   const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const { data: teachers = [] } = useTeachers();
@@ -100,6 +106,15 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
   useEffect(() => {
     if (sellableSizes.length > 0 && !sellableSizes.includes(size)) setSize(sellableSizes[0] as PackageSize);
   }, [subjectId, sellableSizes.join(","), size]);
+
+  // TASK-398 — the group's three, seeded on open (and re-seeded if a different group opens the same form).
+  useEffect(() => {
+    if (opened && group) {
+      setTeacherId(group.teacherId);
+      setStartDate(group.startDate);
+      setStartTime(group.startTime);
+    }
+  }, [opened, group?.groupKey]);
 
   useEffect(() => {
     if (!opened) {
@@ -260,6 +275,8 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
       discount: discountPayload(discount, chosen?.priceMinor ?? 0),
       // TASK-374 — OFF ⇒ no key at all; ON ⇒ { code, remark? } — the session rental's own shape.
       rental: rentalOn && rentalCode ? { code: rentalCode, remark: rentalRemark.trim() || undefined, paidUpfront: rentalPaidUpfront } : undefined,
+      // TASK-398 — into a group: the key rides only when selling into one.
+      groupKey: group?.groupKey,
       // SPEC-045 (REQ-054) — the program is a COURSE-level fact, sent once as `subjectId` above. Per-row
       // `subjectId` is deliberately NOT sent: it was the door through which a brand-new course could be born
       // mixed-program (and its derived program then became whatever `bookings[0]` happened to be). The BE falls
@@ -357,11 +374,17 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
           </Alert>
         )}
 
+        {group && (
+          <Alert color="teal" variant="light" icon={<Users size={16} />}>
+            {t("booking.groupSellInto", { name: group.name })}
+          </Alert>
+        )}
         <Select
           label={t("course.teacher")}
           placeholder={t("course.pickTeacher")}
           value={teacherId}
           onChange={(v) => v && setTeacherId(v)}
+          disabled={!!group}
           data={teacherSelectData(bookableTeachers)}
           renderOption={({ option, checked }) => (
             <TeacherOption option={option} checked={checked} teachers={bookableTeachers} />
@@ -416,6 +439,7 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
             label={t("course.firstDate")}
             value={startDate}
             onChange={(v) => v && setStartDate(v)}
+            disabled={!!group}
             valueFormat="D MMM YYYY"
             minDate={new Date()}
             required
@@ -424,6 +448,7 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
             label={t("course.time")}
             value={startTime}
             onChange={(v) => v && setStartTime(v)}
+            disabled={!!group}
             data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
             allowDeselect={false}
             searchable

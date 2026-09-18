@@ -22,7 +22,7 @@ import {
   Loader,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil } from "lucide-react";
+import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil, Users, Repeat, GraduationCap } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -73,6 +73,10 @@ import RentalSection from "./RentalSection";
 import OtherScheduleFields from "./OtherScheduleFields";
 import OtherSeriesDialog from "./OtherSeriesDialog";
 import OtherDetailsDialog from "./OtherDetailsDialog";
+import GroupSeriesDialog from "./GroupSeriesDialog";
+import GroupSwapDialog from "./GroupSwapDialog";
+import CreatePlanFlow from "@/components/partials/Bookings/CreatePlanFlow";
+import { seatsLabel } from "@/lib/scheduler/group-session";
 import { emptyOtherSchedule, otherScheduleFacts, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import CancelBookingDialog from "./CancelBookingDialog";
 import { useConfirm } from "@/components/common/useConfirm";
@@ -184,6 +188,9 @@ function ViewBooking({
   const [cancelOpen, setCancelOpen] = useState(false);
   // REQ-095 (TASK-395) — the OTHER facts editor (its own route); behind `calendar.booking-edit`.
   const [otherDetailsOpen, setOtherDetailsOpen] = useState(false);
+  // REQ-095 Stage 2a (TASK-398) — a GROUP row's three doors: sell a course into it, swap the teacher, edit cap/rates.
+  const [sellOpen, setSellOpen] = useState(false);
+  const [swapOpen, setSwapOpen] = useState(false);
   // SPEC-075 / REQ-076 (TASK-261) — พัก / นำกลับมาลงตาราง.
   const pause = usePauseBooking();
   const resume = useResumeBooking();
@@ -499,6 +506,51 @@ function ViewBooking({
       )}
       {/* REQ-095 (TASK-395) — the ECA/Free/KOL facts on an OTHER booking, from the server's `other`; the pencil edits them
           through their own route. A lesson booking has `other === null` and shows nothing. */}
+      {/* A SEAT row: which group it sits in, from the server's `groupName`; nothing else changes on a seat. */}
+      {booking.groupName && (
+        <p className="text-sm text-muted-500">{t("booking.inGroup", { name: booking.groupName })}</p>
+      )}
+      {/* A GROUP row: the roster (the seats with their status, from `group.seats`), cap/rates via the Stage 1 editor. */}
+      {booking.bookingType === "GROUP" && booking.group && (
+        <div className="flex flex-col gap-1.5 rounded-lg border border-muted-200 p-3">
+          <div className="flex flex-wrap items-center gap-x-2 text-sm">
+            <span className="font-medium">{t("booking.groupRoster")}</span>
+            <span className="tabular-nums text-muted-500">{t("booking.groupSeats", { n: seatsLabel(booking.group) })}</span>
+            {can("action:calendar.booking-edit") && (
+              <Button size="compact-xs" variant="subtle" leftSection={<Pencil size={12} />} onClick={() => setOtherDetailsOpen(true)}>
+                {t("booking.otherEditDetails")}
+              </Button>
+            )}
+          </div>
+          {booking.group.seats.length === 0 ? (
+            <span className="text-xs text-muted-500">{t("booking.groupRosterEmpty")}</span>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {booking.group.seats.map((s) => (
+                <li key={s.bookingId} className="flex items-center justify-between gap-2 text-sm" data-seat={s.bookingId}>
+                  {/* The seat is an ordinary booking on the Bookings page — its own check-in / leave / details. */}
+                  <a href={`/scheduler/bookings?q=${encodeURIComponent(s.studentName ?? "")}`} className="truncate underline decoration-dotted underline-offset-2">
+                    {s.studentName ?? "—"}
+                  </a>
+                  <StatusChip status={s.status as Booking["status"]} />
+                </li>
+              ))}
+            </ul>
+          )}
+          <Group gap="xs" mt={4}>
+            {can("action:bookings.course-create") && (
+              <Button size="compact-xs" variant="light" leftSection={<GraduationCap size={13} />} onClick={() => setSellOpen(true)}>
+                {t("booking.groupSell")}
+              </Button>
+            )}
+            {can("action:calendar.booking-edit") && (
+              <Button size="compact-xs" variant="light" color="grape" leftSection={<Repeat size={13} />} onClick={() => setSwapOpen(true)}>
+                {t("booking.groupSwap")}
+              </Button>
+            )}
+          </Group>
+        </div>
+      )}
       {booking.bookingType === "OTHER" && booking.other && (
         <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-500">
           <span>
@@ -515,8 +567,19 @@ function ViewBooking({
         </p>
       )}
       </div>
-      {booking.bookingType === "OTHER" && otherDetailsOpen && (
+      {(booking.bookingType === "OTHER" || booking.bookingType === "GROUP") && otherDetailsOpen && (
         <OtherDetailsDialog booking={booking} teachers={teachers} opened={otherDetailsOpen} onClose={() => setOtherDetailsOpen(false)} />
+      )}
+      {booking.bookingType === "GROUP" && swapOpen && (
+        <GroupSwapDialog booking={booking} teachers={teachers} opened={swapOpen} onClose={() => setSwapOpen(false)} />
+      )}
+      {/* Sell a course INTO this group: the EXISTING course form, the group's teacher / day / time prefilled + locked. */}
+      {booking.bookingType === "GROUP" && booking.group?.key && sellOpen && (
+        <CreatePlanFlow
+          opened={sellOpen}
+          onClose={() => setSellOpen(false)}
+          group={{ groupKey: booking.group.key, name: booking.group.name ?? booking.displayName, teacherId: booking.teacherId, startDate: booking.date, startTime: booking.startTime }}
+        />
       )}
 
       {/* REQ-091 (TASK-372) — the per-session rental ROW: add (unpaid) · mark paid (two taps, posts money) · remove
@@ -981,6 +1044,7 @@ function CreateForm({
   // REQ-095 (TASK-395) — the ECA/Free/KOL facts: kind · head count · rate per teacher (baht as typed; satang on the wire).
   const [otherSched, setOtherSched] = useState<OtherScheduleDraft>(emptyOtherSchedule);
   const [seriesOpen, setSeriesOpen] = useState(false);
+  const [groupOpen, setGroupOpen] = useState(false);
 
   const isVoucher = bookingType === "VOUCHER";
   const isOther = bookingType === "OTHER";
@@ -1351,10 +1415,28 @@ function CreateForm({
           {/* REQ-095 Stage 1 (TASK-395) — kind · head count · rate per teacher (stored, not posted — the hint says so). */}
           <OtherScheduleFields value={otherSched} onChange={setOtherSched} teacherIds={other.teacherIds} teachers={teachers} />
           {/* The SERIES door — its own key; the dialog copies what is typed here and adds the dates. */}
-          {can("action:calendar.other-series") && (
-            <Button variant="light" size="xs" leftSection={<CalendarPlus size={14} />} className="self-start" onClick={() => setSeriesOpen(true)}>
-              {t("booking.otherSeries")}
-            </Button>
+          <Group gap="xs">
+            {can("action:calendar.other-series") && (
+              <Button variant="light" size="xs" leftSection={<CalendarPlus size={14} />} onClick={() => setSeriesOpen(true)}>
+                {t("booking.otherSeries")}
+              </Button>
+            )}
+            {/* REQ-095 Stage 2a — a DUO/Group series, its own key; the same shape as the OTHER series (shared fields + picker). */}
+            {can("action:calendar.group-series") && (
+              <Button variant="light" size="xs" leftSection={<Users size={14} />} onClick={() => setGroupOpen(true)}>
+                {t("booking.groupCreate")}
+              </Button>
+            )}
+          </Group>
+          {groupOpen && (
+            <GroupSeriesDialog
+              opened={groupOpen}
+              onClose={() => {
+                setGroupOpen(false);
+                onClose();
+              }}
+              seed={{ teacherIds: other.teacherIds, startTime, date: createSlot.date, schedule: otherSched }}
+            />
           )}
           {seriesOpen && (
             <OtherSeriesDialog

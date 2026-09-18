@@ -30,7 +30,10 @@ export type BookingType =
   // SPEC-070 / TASK-224 (REQ-078) — the fifth type: not a lesson. No program, optionally no student, and
   // possibly several teachers. Every `Record<BookingType, …>` in the FE now REFUSES to compile until it has an
   // `OTHER` entry — which is how the cell, the legend and the chip were found rather than remembered.
-  | "OTHER";
+  | "OTHER"
+  // REQ-095 Stage 2a / TASK-397 — a DUO/Group SESSION row: the group itself (its seats are ordinary rows the grid
+  // never shows). Same rule: every `Record<BookingType, …>` refuses to compile until it names `GROUP`.
+  | "GROUP";
 export type BookingStatus =
   | "PENDING"
   | "CONFIRMED"
@@ -263,6 +266,22 @@ export interface BookingDTO {
    * `null` on every lesson type. Optional so a mock without the key type-checks; the mapper reads it `?? null`.
    */
   other?: { kind: "ECA" | "FREE" | "KOL" | null; headCount: number | null; teacherRates: Record<string, number>; ratePostedAt: string | null } | null;
+  /**
+   * REQ-095 Stage 2a (TASK-397) — a GROUP row's facts: the key, DUO/GROUP, the name, the cap, the SEATS (ordinary
+   * booking rows, hidden from the grid server-side), the rates. `null` on every other type. A SEAT row carries
+   * `groupId` / `groupName` instead.
+   */
+  group?: {
+    key: string | null;
+    kind: "DUO" | "GROUP" | null;
+    name: string | null;
+    seatCap: number | null;
+    seats: Array<{ bookingId: string; studentId: string | null; studentName: string | null; status: string; courseId: string | null }>;
+    teacherRates: Record<string, number>;
+    ratePostedAt: string | null;
+  } | null;
+  groupId?: string | null;
+  groupName?: string | null;
   // Conflict resolution (B.1)
   pendingSlot: boolean;
   incomingBookingId: string | null;
@@ -519,6 +538,13 @@ export interface CreateBookingRequest {
 
 /** REQ-095 (TASK-394) — `POST /bookings/other-series`: one OTHER row per date, all or nothing (`409 SLOT_TAKEN` names the date). */
 export interface OtherSeriesResponse {
+  created: number;
+  bookingIds: string[];
+}
+
+/** REQ-095 Stage 2a (TASK-397) — `POST /bookings/group-series`: the group's key + one row per date. */
+export interface GroupSeriesResponse {
+  groupKey: string;
   created: number;
   bookingIds: string[];
 }

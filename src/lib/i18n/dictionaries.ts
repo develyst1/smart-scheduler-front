@@ -406,6 +406,7 @@ const en = {
     // REQ-078 — the TYPE's name. 🚫 Never a booking's name: AC-10 is that no cell ever reads "อื่นๆ" where a
     // name belongs — that is `displayName`'s job, and the BE guarantees it is never this word.
     OTHER: "Other",
+    GROUP: "Group session", // REQ-095 Stage 2a (TASK-398)
   },
 
   /**
@@ -474,6 +475,9 @@ const en = {
     otherKindTag_ECA: "ECA",
     otherKindTag_FREE: "Free",
     otherKindTag_KOL: "KOL",
+    // REQ-095 Stage 2a (TASK-398) — the GROUP kind tags
+    groupKindTag_DUO: "DUO",
+    groupKindTag_GROUP: "Group",
     // ── SPEC-075 / REQ-076 §3 (TASK-261) — the พัก tray. Thai is @Porter's copy VERBATIM; English is the
     //    equivalent. 🚫 "พัก" is the customer's own word — never "ระงับ", never "Hold".
     pausedTray: "Paused bookings",
@@ -607,6 +611,28 @@ const en = {
     otherEditDetails: "Edit details",
     otherEditDetailsHint: "Kind, head count and rates only — moving the slot is a separate action.",
     otherDetailsSavedOk: "Details saved",
+    // REQ-095 Stage 2a (TASK-398) — DUO / Group sessions
+    groupKind_DUO: "DUO",
+    groupKind_GROUP: "Group",
+    groupCreate: "Create group",
+    groupCreateTitle: "Create a DUO / Group session series",
+    groupName: "Group name",
+    groupKindLabel: "Kind",
+    groupSeatCap: "Seats",
+    groupSeatCapDuo: "A DUO always has 2 seats",
+    groupSeatCapHint: "3–12 seats",
+    groupSeriesCreatedOk: "Group created — {n} sessions",
+    groupSeats: "Seats {n}",
+    groupRoster: "Roster",
+    groupRosterEmpty: "No seats yet — sell a course into this group.",
+    groupSell: "Sell a course into this group",
+    groupSellInto: "Into group: {name} — teacher, day and time are the group's",
+    groupSwap: "Swap teacher",
+    groupSwapTitle: "Swap the teacher on {name}",
+    groupSwapFromHereOn: "From this date on (every later session of the group)",
+    groupSwapNoNotice: "No message is sent to families or the coach — tell them yourself.",
+    groupSwapOk: "Teacher swapped",
+    inGroup: "In group: {name}",
     otherTitleHint: "What this booking is called, everywhere it appears",
     otherStudentOptional: "Student (optional)",
     otherCharge: "Charge for this booking",
@@ -1901,6 +1927,7 @@ const th: typeof en = {
     // REQ-078 — ชื่อ "ประเภท" เท่านั้น 🚫 ไม่ใช่ชื่อการจอง: AC-10 บอกว่าต้องไม่มีเซลล์ไหนแสดงคำว่า อื่นๆ
     // ตรงที่ควรเป็นชื่อ — ตรงนั้นคือ `displayName` และ BE รับประกันว่าไม่มีทางเป็นคำนี้
     OTHER: "อื่นๆ",
+    GROUP: "คลาสกลุ่ม",
   },
 
   bookingStatus: {
@@ -1953,6 +1980,8 @@ const th: typeof en = {
     otherKindTag_ECA: "ECA",
     otherKindTag_FREE: "ฟรี",
     otherKindTag_KOL: "KOL",
+    groupKindTag_DUO: "DUO",
+    groupKindTag_GROUP: "กลุ่ม",
     // ── SPEC-075 / REQ-076 §3 (TASK-261) — ถาด "พัก" · คำของ @Porter ทั้งหมด ห้ามแก้ ──
     pausedTray: "รายการที่พักไว้",
     pausedTrayEmpty: "ไม่มีรายการที่พักไว้",
@@ -2072,6 +2101,27 @@ const th: typeof en = {
     otherEditDetails: "แก้ไขรายละเอียด",
     otherEditDetailsHint: "เฉพาะประเภท จำนวนคน และค่าตอบแทน — การย้ายช่องเป็นอีกรายการหนึ่ง",
     otherDetailsSavedOk: "บันทึกรายละเอียดแล้ว",
+    groupKind_DUO: "DUO",
+    groupKind_GROUP: "กลุ่ม",
+    groupCreate: "สร้างกลุ่ม",
+    groupCreateTitle: "สร้างคลาส DUO / กลุ่ม เป็นชุด",
+    groupName: "ชื่อกลุ่ม",
+    groupKindLabel: "ประเภท",
+    groupSeatCap: "จำนวนที่นั่ง",
+    groupSeatCapDuo: "DUO มี 2 ที่นั่งเสมอ",
+    groupSeatCapHint: "3–12 ที่นั่ง",
+    groupSeriesCreatedOk: "สร้างกลุ่มแล้ว — {n} คาบ",
+    groupSeats: "ที่นั่ง {n}",
+    groupRoster: "รายชื่อในกลุ่ม",
+    groupRosterEmpty: "ยังไม่มีที่นั่ง — ขายคอร์สเข้ากลุ่มนี้ได้",
+    groupSell: "ขายคอร์สเข้ากลุ่มนี้",
+    groupSellInto: "เข้ากลุ่ม: {name} — ครู วัน และเวลาเป็นของกลุ่ม",
+    groupSwap: "เปลี่ยนครู",
+    groupSwapTitle: "เปลี่ยนครูของ {name}",
+    groupSwapFromHereOn: "ตั้งแต่วันนี้เป็นต้นไป (ทุกคาบถัดไปของกลุ่ม)",
+    groupSwapNoNotice: "ระบบไม่ส่งข้อความถึงผู้ปกครองหรือโค้ช — กรุณาแจ้งเอง",
+    groupSwapOk: "เปลี่ยนครูแล้ว",
+    inGroup: "อยู่ในกลุ่ม: {name}",
     otherTitleHint: "ชื่อนี้จะแสดงเป็นชื่อของการจองนี้ทุกที่",
     otherStudentOptional: "นักเรียน (ไม่บังคับ)",
     otherCharge: "คิดเงินรายการนี้",

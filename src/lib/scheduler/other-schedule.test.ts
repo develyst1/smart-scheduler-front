@@ -78,8 +78,10 @@ describe("§2 — the form, the series, the editor", () => {
     for (const line of ["title: input.title,", "otherKind: input.otherKind,", "headCount: input.headCount,", "teacherId: input.teacherId,", "startTime: input.startTime,", "dates: input.dates,"]) expect(svc).toContain(line);
     expect(svc).toContain("...(input.teacherRates ? { teacherRates: input.teacherRates } : {}),");
     expect(svc).not.toMatch(/other-series[\s\S]{0,600}endTime/); // the server derives it
-    expect(series).toMatch(/<DatePicker\s+type="multiple"/);
-    expect(series).toContain('t("booking.otherSeriesCount", { n: String(dates.length) })');
+    // TASK-398 moved the picker into the SHARED `MultiDateField` (the DUO/Group series uses the same one)
+    expect(codeOf("src/components/partials/Calendar/Modal/MultiDateField.tsx")).toMatch(/<DatePicker\s+type="multiple"/);
+    expect(series).toContain("<MultiDateField value={dates} onChange={setDates} />");
+    expect(codeOf("src/components/partials/Calendar/Modal/MultiDateField.tsx")).toContain('t("booking.otherSeriesCount", { n: String(value.length) })');
     expect(series).toContain("dates: [...dates].sort(),");
     // on a refusal the sentence is shown and NOTHING resets the ticks
     const catchBlock = series.slice(series.indexOf("} catch (e) {"), series.indexOf("return ("));
@@ -92,7 +94,7 @@ describe("§2 — the form, the series, the editor", () => {
 
   it("the editor: its OWN route (not the move), only changed fields, behind booking-edit; the view shows the facts from `other`", () => {
     expect(svc).toContain("api.patch<MoveBookingResponse>(`/bookings/${id}/other`, patch)");
-    expect(details).toContain("const patch = otherSchedulePatch(booking.other, draft, teacherIds);");
+    expect(details).toContain("const patch = otherSchedulePatch(facts, draft, teacherIds);"); // TASK-398: `facts` = `other`, or a GROUP row's `group`
     expect(details).toContain("await update.mutateAsync({ id: booking.id, patch });");
     expect(details).toContain("disabled={!dirty}");
     expect(modal).toContain('{booking.bookingType === "OTHER" && booking.other && (');
@@ -105,7 +107,9 @@ describe("§2 — the form, the series, the editor", () => {
   it("the cell tag + the legend: from `other.kind` only; three kinds on the legend; the copy counted", () => {
     const cell = codeOf("src/components/common/BookingCellBody.tsx");
     expect(cell).toContain("export function OtherKindTag(");
-    expect(cell).toContain('if (booking.bookingType !== "OTHER" || !kind) return null;');
+    // TASK-398: the same tag serves a GROUP row (`group.kind`); a lesson booking still gets nothing
+    expect(cell).toContain('const kind = isGroup ? booking.group?.kind : booking.bookingType === "OTHER" ? booking.other?.kind : null;');
+    expect(cell).toContain("if (!kind) return null;");
     expect(codeOf("src/components/partials/Calendar/CalendarGrid.tsx")).toContain("<OtherKindTag booking={booking} />");
     expect(codeOf("src/components/partials/Calendar/CalendarWeekGrid.tsx")).toContain('<OtherKindTag booking={b} size="sm" />');
     const legend = codeOf("src/components/partials/Calendar/CalendarLegendBar.tsx");

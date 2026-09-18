@@ -1,5 +1,6 @@
 import type { ExpiryWarning } from "@/types/api/contract";
 import type { OtherFacts } from "@/lib/scheduler/other-schedule";
+import type { GroupFacts } from "@/lib/scheduler/group-session";
 
 // ───────────────────────────── Teachers ─────────────────────────────
 
@@ -77,7 +78,9 @@ export type BookingType =
   | "VOUCHER" // บัตรกำนัล 5/10/15 ชม.
   // SPEC-070 / REQ-078 — อื่นๆ: ไม่ใช่คาบเรียน (ประชุม / ปิดปรับปรุงลาน / ฯลฯ). ไม่มีโปรแกรม อาจไม่มีนักเรียน
   // และมีครูได้หลายคน. ทุก `Record<BookingType, …>` จะคอมไพล์ไม่ผ่านจนกว่าจะมี `OTHER` — นั่นคือจุดประสงค์.
-  | "OTHER";
+  | "OTHER"
+  // REQ-095 Stage 2a (TASK-398) — DUO/Group: แถวกลุ่ม (ที่นั่งเป็นการจองธรรมดา ซ่อนจากตารางฝั่งเซิร์ฟเวอร์)
+  | "GROUP";
 
 // Display labels for booking types/statuses come from the i18n dictionary via
 // t(`bookingType.*`) / t(`bookingStatus.*`) — see src/lib/i18n/dictionaries.ts.
@@ -204,6 +207,11 @@ export interface Booking {
   rental?: BookingRental | null;
   /** REQ-095 (TASK-395) — the ECA · Free · KOL facts (`OTHER` only), or null. Display + the details editor read only this. */
   other?: OtherFacts | null;
+  /** REQ-095 Stage 2a (TASK-398) — a GROUP row's facts (`GROUP` only), or null. The cell's `n/cap` reads `group.seats`. */
+  group?: GroupFacts | null;
+  /** A SEAT row's group (`groupId` / `groupName`); null on everything else. */
+  groupId?: string | null;
+  groupName?: string | null;
 }
 
 // ──────────────────────────── Badges ────────────────────────────

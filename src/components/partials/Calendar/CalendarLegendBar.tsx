@@ -7,6 +7,7 @@ import { BOOKING_STATUS_COLOR } from "@/types/app/scheduler";
 import { CAL_SURFACE_STYLE } from "./calendar-status";
 import { useT } from "@/lib/i18n";
 import { OTHER_KINDS } from "@/lib/scheduler/other-schedule";
+import { GROUP_KINDS } from "@/lib/scheduler/group-session";
 import { STATUS_LEGEND } from "./Calendar.config";
 import CellDisplayMenu from "./CellDisplayMenu";
 
@@ -23,6 +24,7 @@ const BOOKING_TABS_LEGEND: BookingType[] = [
   "COURSE_PACKAGE",
   "VOUCHER",
   "OTHER",
+  "GROUP", // REQ-095 Stage 2a (TASK-398)
 ];
 
 /**
@@ -114,6 +116,15 @@ export default function CalendarLegendBar() {
             {t(`calendar.otherKindTag_${k}`)}
           </span>
           {t(`booking.otherKind_${k}`)}
+        </span>
+      ))}
+      {/* REQ-095 Stage 2a (TASK-398) — the two GROUP kinds, the same tag; the cell shows `n/cap` beside it. */}
+      {GROUP_KINDS.map((k) => (
+        <span key={k} className="flex items-center gap-1 text-[11px] text-muted-600">
+          <span className="inline-flex items-center rounded-sm border border-cal-ink/40 bg-white px-1 py-px text-[9px] font-semibold uppercase leading-tight tracking-wide text-cal-ink">
+            {t(`calendar.groupKindTag_${k}`)}
+          </span>
+          {t(`booking.groupKind_${k}`)}
         </span>
       ))}
       <div className="ml-auto">

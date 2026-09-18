@@ -27,4 +27,5 @@ export const BOOKING_TYPE_OPTIONS: BookingType[] = [
   "COURSE_PACKAGE",
   "VOUCHER",
   "OTHER",
+  "GROUP", // REQ-095 Stage 2a (TASK-398)
 ];
