@@ -2,18 +2,19 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { Alert, Badge, Button, Card, Checkbox, Group, Loader, Modal, PasswordInput, Stack, Table, Text, TextInput } from "@mantine/core";
+import { Alert, Badge, Button, Card, Checkbox, Group, Loader, Modal, PasswordInput, Select, Stack, Table, Text, TextInput } from "@mantine/core";
 import { AlertTriangle, KeyRound, LayoutList, ListChecks, Pencil, ShieldCheck, UserPlus, UserX, UserCheck } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
-import { useI18n, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import { useConfirm } from "@/components/common/useConfirm";
 import { formatDateDisplay } from "@/lib/ui/format";
-import { useCreateUser, useResetUserPassword, useSetUserActions, useSetUserDisabled, useSetUserMenus, useUpdateUser, useUsers } from "@/hooks/scheduler/useUsers";
+import { useCreateUser, useResetUserPassword, useSetUserActions, useSetUserDisabled, useSetUserMenus, useSetUserRole, useUpdateUser, useUsers } from "@/hooks/scheduler/useUsers";
+import { useRoles } from "@/hooks/scheduler/useRoles";
+import { ActionsChecklist, MenusChecklist } from "./GrantChecklists";
 import { usePermissions } from "@/hooks/scheduler/useMe";
-import { MENU_KEYS, type MenuKey } from "@/lib/rbac/menus";
-import { HIDDEN_NAV_ITEMS, NAV_ITEMS } from "@/components/layout/AdminLayout/AdminLayout.config";
-import type { UserDTO } from "@/types/api/contract";
+import { MENU_KEYS } from "@/lib/rbac/menus";
+import type { RoleDTO, UserDTO } from "@/types/api/contract";
 
 /**
  * REQ-092 Stage 1 (TASK-378) — **the super admin's Users page.** List · create · edit (display name, super-admin
@@ -42,6 +43,8 @@ export default function UsersContent() {
   const { data: session, status } = useSession();
   const isSuperAdmin = session?.user?.isSuperAdmin === true;
   const { data: users = [], isLoading, error } = useUsers(isSuperAdmin);
+  // REQ-092 Stage 4 (TASK-388) — the roles for the per-row `Select`; fetched only for a super admin, like the users.
+  const { data: roles = [] } = useRoles(isSuperAdmin);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<UserDTO | null>(null);
@@ -88,6 +91,7 @@ export default function UsersContent() {
                 <Table.Th>{t("users.colUsername")}</Table.Th>
                 <Table.Th>{t("users.colDisplayName")}</Table.Th>
                 <Table.Th>{t("users.colRole")}</Table.Th>
+                <Table.Th>{t("users.colRoleName")}</Table.Th>
                 <Table.Th>{t("users.colMenus")}</Table.Th>
                 <Table.Th>{t("users.colActions")}</Table.Th>
                 <Table.Th>{t("users.colStatus")}</Table.Th>
@@ -101,6 +105,7 @@ export default function UsersContent() {
                   key={u.id}
                   user={u}
                   isSelf={u.id === session?.user?.id}
+                  roles={roles}
                   onEdit={() => setEditTarget(u)}
                   onReset={() => setResetTarget(u)}
                   onMenus={() => setMenusTarget(u)}
@@ -128,9 +133,11 @@ function UserRow({
   onReset,
   onMenus,
   onActions,
+  roles,
 }: {
   user: UserDTO;
   isSelf: boolean;
+  roles: RoleDTO[];
   onEdit: () => void;
   onReset: () => void;
   onMenus: () => void;
@@ -138,8 +145,19 @@ function UserRow({
 }) {
   const t = useT();
   const setDisabled = useSetUserDisabled();
+  const setRole = useSetUserRole();
   const { confirm: askConfirm, confirmDialog } = useConfirm();
   const disabled = !!user.disabledAt;
+
+  /** Stage 4 — assign / clear the LIVE role: `null` on *none*; the row's counts become the effective ones on re-read. */
+  const assignRole = async (roleId: string | null) => {
+    try {
+      await setRole.mutateAsync({ id: user.id, roleId });
+      notify({ title: t("users.roleSavedOk", { name: user.displayName }), color: "success" });
+    } catch (e) {
+      notify({ title: errMsg(e), color: "danger" });
+    }
+  };
 
   /** Two taps on DISABLE (it locks someone out mid-session); enable is one tap — it only gives back. */
   const toggle = async () => {
@@ -181,6 +199,25 @@ function UserRow({
           <Text size="sm" c="dimmed">
             {t("users.admin")}
           </Text>
+        )}
+      </Table.Td>
+      <Table.Td>
+        {user.isSuperAdmin ? (
+          <Text size="sm" c="dimmed">
+            —
+          </Text>
+        ) : (
+          <Select
+            size="xs"
+            w={160}
+            value={user.roleId ?? ""}
+            onChange={(v) => void assignRole(v ? v : null)}
+            data={[{ value: "", label: t("users.roleNone") }, ...roles.map((r) => ({ value: r.id, label: r.name }))]}
+            allowDeselect={false}
+            disabled={setRole.isPending}
+            comboboxProps={{ withinPortal: true }}
+            aria-label={t("users.colRoleName")}
+          />
         )}
       </Table.Td>
       <Table.Td>
@@ -376,10 +413,14 @@ function EditUserModal({ user, onClose }: { user: UserDTO | null; onClose: () =>
   );
 }
 
-/** The twelve grants in the nav's order, each labelled by its entry's own `labelKey` (the hidden pages last). */
-const MENU_ROWS: { key: MenuKey; labelKey: string }[] = [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS]
-  .filter((i): i is typeof i & { menuKey: MenuKey } => !!i.menuKey)
-  .map((i) => ({ key: i.menuKey, labelKey: i.labelKey }));
+/**
+ * REQ-092 Stage 4 (TASK-388) — the two dialogs render the SHARED checklists (`GrantChecklists.tsx`, the same rows the
+ * Roles page's builder uses). Two-tone: the keys from the user's role are ticked and LOCKED ("from role X"); the
+ * editable ticks are the user's OWN rows, and the save writes ONLY those (`PUT …/menus` / `…/actions`, as before).
+ * The effective set the row shows is role ∪ own — the server's.
+ */
+const ownOf = (user: UserDTO | null, prefix: "menu:" | "action:") => (user?.grants?.own ?? []).filter((k) => k.startsWith(prefix));
+const fromRoleOf = (user: UserDTO | null, prefix: "menu:" | "action:") => (user?.grants?.fromRole ?? []).filter((k) => k.startsWith(prefix));
 
 function MenusModal({ user, onClose }: { user: UserDTO | null; onClose: () => void }) {
   const t = useT();
@@ -387,20 +428,20 @@ function MenusModal({ user, onClose }: { user: UserDTO | null; onClose: () => vo
   const [keys, setKeys] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [seededFor, setSeededFor] = useState<string | null>(null);
-  // Seed from the row on open (render-time, as EditUserModal does): the checklist is a copy of the row's menus.
+  // Seed from the row on open (render-time, as EditUserModal does): the editable ticks are the row's OWN menus.
   if (user && seededFor !== user.id) {
     setSeededFor(user.id);
-    setKeys(user.menus ?? []);
+    setKeys(ownOf(user, "menu:"));
     setError(null);
   }
   if (!user && seededFor !== null) setSeededFor(null);
+  const locked = fromRoleOf(user, "menu:");
 
-  const toggle = (key: string, on: boolean) => setKeys((k) => (on ? [...new Set([...k, key])] : k.filter((x) => x !== key)));
   const submit = async () => {
     if (!user) return;
     setError(null);
     try {
-      // Only the keys the registry knows, in the registry's order — the server refuses an unknown one anyway.
+      // Only the keys the registry knows, in the registry's order — the server refuses an unknown one anyway. Own rows only.
       await save.mutateAsync({ id: user.id, keys: MENU_KEYS.filter((k) => keys.includes(k)) });
       notify({ title: t("users.menusSavedOk", { name: user.displayName }), color: "success" });
       onClose();
@@ -420,19 +461,7 @@ function MenusModal({ user, onClose }: { user: UserDTO | null; onClose: () => vo
         <Text size="sm" c="dimmed">
           {t("users.menusBody")}
         </Text>
-        <Group gap="xs">
-          <Button size="compact-xs" variant="subtle" onClick={() => setKeys([...MENU_KEYS])}>
-            {t("users.menusSelectAll")}
-          </Button>
-          <Button size="compact-xs" variant="subtle" onClick={() => setKeys([])}>
-            {t("users.menusSelectNone")}
-          </Button>
-        </Group>
-        <Stack gap={6}>
-          {MENU_ROWS.map((row) => (
-            <Checkbox key={row.key} label={t(row.labelKey)} checked={keys.includes(row.key)} onChange={(e) => toggle(row.key, e.currentTarget.checked)} />
-          ))}
-        </Stack>
+        <MenusChecklist value={keys} onChange={setKeys} locked={locked} lockedHint={user?.roleName ? t("users.fromRole", { role: user.roleName }) : undefined} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onClose}>
             {t("common.cancel")}
@@ -446,12 +475,8 @@ function MenusModal({ user, onClose }: { user: UserDTO | null; onClose: () => vo
   );
 }
 
-/** The nav entry whose tail is this area — its label heads the group; `sales` (the discount) has no menu. */
-const NAV_BY_AREA = new Map([...NAV_ITEMS, ...HIDDEN_NAV_ITEMS].filter((i) => i.menuKey).map((i) => [i.menuKey!.slice("menu:".length), i]));
-
 function ActionsModal({ user, onClose }: { user: UserDTO | null; onClose: () => void }) {
   const t = useT();
-  const { lang } = useI18n();
   const save = useSetUserActions();
   // 🔴 The registry is the ONLY source of action keys and labels — fetched, never listed here.
   const { data: registry, isLoading, error: registryError } = usePermissions(user !== null);
@@ -460,20 +485,18 @@ function ActionsModal({ user, onClose }: { user: UserDTO | null; onClose: () => 
   const [seededFor, setSeededFor] = useState<string | null>(null);
   if (user && seededFor !== user.id) {
     setSeededFor(user.id);
-    setKeys(user.actions ?? []);
+    setKeys(ownOf(user, "action:"));
     setError(null);
   }
   if (!user && seededFor !== null) setSeededFor(null);
+  const locked = fromRoleOf(user, "action:");
 
-  const actions = registry?.actions ?? [];
-  const allKeys = actions.map((a) => a.key);
-  const areas = [...new Set(actions.map((a) => a.area))];
-  const setMany = (list: string[], on: boolean) => setKeys((k) => (on ? [...new Set([...k, ...list])] : k.filter((x) => !list.includes(x))));
+  const allKeys = registry?.actions.map((a) => a.key) ?? [];
   const submit = async () => {
     if (!user) return;
     setError(null);
     try {
-      // Only registry keys, in the registry's order — an unknown key is the server's 400 anyway.
+      // Only registry keys, in the registry's order — an unknown key is the server's 400 anyway. Own rows only.
       await save.mutateAsync({ id: user.id, keys: allKeys.filter((k) => keys.includes(k)) });
       notify({ title: t("users.actionsSavedOk", { name: user.displayName }), color: "success" });
       onClose();
@@ -493,61 +516,14 @@ function ActionsModal({ user, onClose }: { user: UserDTO | null; onClose: () => 
         <Text size="sm" c="dimmed">
           {t("users.actionsBody")}
         </Text>
-        {isLoading ? (
-          <Loader size="xs" />
-        ) : (
-          <>
-            <Group gap="xs">
-              <Button size="compact-xs" variant="subtle" onClick={() => setMany(allKeys, true)}>
-                {t("users.menusSelectAll")}
-              </Button>
-              <Button size="compact-xs" variant="subtle" onClick={() => setKeys([])}>
-                {t("users.menusSelectNone")}
-              </Button>
-            </Group>
-            <Stack gap="md">
-              {areas.map((area) => {
-                const nav = NAV_BY_AREA.get(area);
-                const rows = actions.filter((a) => a.area === area);
-                const rowKeys = rows.map((a) => a.key);
-                const allOn = rowKeys.every((k) => keys.includes(k));
-                // Convenience, not a rule: an act under a menu the user cannot open is allowed to be ticked — the
-                // server refuses the route by menu first — but the header says so. Nothing is auto-granted.
-                const menuMissing = !!nav?.menuKey && !user?.isSuperAdmin && !(user?.menus ?? []).includes(nav.menuKey);
-                return (
-                  <div key={area}>
-                    <Group justify="space-between" mb={4}>
-                      <Group gap={6}>
-                        <Text size="sm" fw={600}>
-                          {nav ? t(nav.labelKey) : t("users.areaSales")}
-                        </Text>
-                        {menuMissing && (
-                          <Badge size="xs" variant="light" color="orange">
-                            {t("users.areaMenuNotGranted")}
-                          </Badge>
-                        )}
-                      </Group>
-                      <Button size="compact-xs" variant="subtle" onClick={() => setMany(rowKeys, !allOn)}>
-                        {allOn ? t("users.menusSelectNone") : t("users.menusSelectAll")}
-                      </Button>
-                    </Group>
-                    <Stack gap={4}>
-                      {rows.map((a) => (
-                        <Checkbox
-                          key={a.key}
-                          size="sm"
-                          label={lang === "th" ? a.labelTh : a.labelEn}
-                          checked={keys.includes(a.key)}
-                          onChange={(e) => setMany([a.key], e.currentTarget.checked)}
-                        />
-                      ))}
-                    </Stack>
-                  </div>
-                );
-              })}
-            </Stack>
-          </>
-        )}
+        <ActionsChecklist
+          registry={registry}
+          value={keys}
+          onChange={setKeys}
+          locked={locked}
+          lockedHint={user?.roleName ? t("users.fromRole", { role: user.roleName }) : undefined}
+          menus={user?.isSuperAdmin ? MENU_KEYS : (user?.menus ?? [])}
+        />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onClose}>
             {t("common.cancel")}

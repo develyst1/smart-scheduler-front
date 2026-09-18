@@ -11,6 +11,7 @@ import {
   Link2,
   Settings2,
   UserCog,
+  ShieldCheck,
 } from "lucide-react";
 import { hasMenu, type MenuAccess, type MenuKey } from "@/lib/rbac/menus";
 
@@ -101,6 +102,14 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.users",
     href: "/scheduler/users",
     icon: UserCog,
+    superAdminOnly: true,
+  },
+  // REQ-092 Stage 4 (TASK-388) — the Roles page (builder + matrix), beside Users; super admin only, like it.
+  {
+    key: "roles",
+    labelKey: "nav.roles",
+    href: "/scheduler/roles",
+    icon: ShieldCheck,
     superAdminOnly: true,
   },
 ];

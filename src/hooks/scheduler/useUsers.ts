@@ -8,6 +8,7 @@ import {
   setUserDisabled,
   setUserActions,
   setUserMenus,
+  setUserRole,
   updateUser,
   type CreateUserInput,
   type UpdateUserInput,
@@ -47,6 +48,17 @@ export const useSetUserActions = () => {
   return useMutation({
     mutationFn: ({ id, keys }: { id: string; keys: string[] }) => setUserActions(id, keys),
     onSuccess: () => invalidate(qc),
+  });
+};
+/** Stage 4 — assign / clear the role; the roles' `userCount` moves too, so both keys invalidate. */
+export const useSetUserRole = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, roleId }: { id: string; roleId: string | null }) => setUserRole(id, roleId),
+    onSuccess: () => {
+      void invalidate(qc);
+      void qc.invalidateQueries({ queryKey: ["roles"] });
+    },
   });
 };
 export const useSetUserDisabled = () => {

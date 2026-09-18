@@ -578,7 +578,7 @@ export interface LoginResponse {
 
 /** REQ-092 Stage 2 (TASK-381) — `GET /me`: who the token is, the menus they may open and (Stage 3) the acts they may do (a super admin: all). */
 export interface MeResponse {
-  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; menus: string[]; actions: string[] };
+  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; menus: string[]; actions: string[]; roleName: string | null };
 }
 
 /** REQ-092 Stage 3 (TASK-385) — `GET /permissions`: the registry. The ONLY source of action names and labels. */
@@ -597,8 +597,24 @@ export interface UserDTO {
   createdAt: string;
   /** REQ-092 Stage 2 — the `menu:*` keys granted to this user (a super admin: all of them). */
   menus: string[];
-  /** REQ-092 Stage 3 — the `action:*` keys granted to this user (a super admin: all of them). */
+  /** REQ-092 Stage 3 — the `action:*` keys granted to this user (a super admin: all of them). 🔻 Stage 4: EFFECTIVE (role ∪ own). */
   actions: string[];
+  /** REQ-092 Stage 4 (TASK-387) — the LIVE role, and the two halves the effective sets are made of. */
+  roleId: string | null;
+  roleName: string | null;
+  grants: { fromRole: string[]; own: string[] };
+}
+
+/** REQ-092 Stage 4 (TASK-387) — a role: a named bundle of keys (registry order, menus then actions), LIVE for its holders. */
+export interface RoleDTO {
+  id: string;
+  name: string;
+  description: string | null;
+  keys: string[];
+  /** Users whose `role_id` is this role — what `DELETE` refuses on (`409 ROLE_IN_USE`). */
+  userCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type ApiErrorCode =

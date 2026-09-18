@@ -67,6 +67,13 @@ export const setUserActions = async (id: string, keys: string[]): Promise<UserDT
   return data.user;
 };
 
+/** Stage 4 (TASK-388) — assign / clear the LIVE role; `null` clears. The user's own rows are untouched. */
+export const setUserRole = async (id: string, roleId: string | null): Promise<UserDTO> => {
+  if (useMockData) return mock.setUserRole(id, roleId);
+  const { data } = await api.put<{ user: UserDTO }>(`/users/${id}/role`, { roleId });
+  return data.user;
+};
+
 export const setUserDisabled = async (id: string, disabled: boolean): Promise<UserDTO> => {
   if (useMockData) return mock.setUserDisabled(id, disabled);
   const { data } = await api.post<{ user: UserDTO }>(`/users/${id}/${disabled ? "disable" : "enable"}`, {});

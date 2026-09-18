@@ -40,6 +40,7 @@ const en = {
     reports: "Daily report",
     settings: "Settings",
     users: "Users", // REQ-092 Stage 1 — super admin only
+    roles: "Roles", // REQ-092 Stage 4 — super admin only
   },
 
   // ── REQ-092 Stage 1 (TASK-378) — the super admin's Users page. Every refusal sentence is the server's.
@@ -100,6 +101,11 @@ const en = {
     actionsSavedOk: "Actions saved for {name}",
     areaSales: "Sales",
     areaMenuNotGranted: "menu not granted",
+    // Stage 4 (TASK-388) — the role column and the two-tone checklists
+    colRoleName: "Role",
+    roleNone: "No role",
+    fromRole: "from role {role}",
+    roleSavedOk: "Role saved for {name}",
   },
 
   // REQ-063 / TASK-161 — the discount block shared by all five sale/booking forms. Wording is REQ-063's
@@ -350,6 +356,36 @@ const en = {
   },
 
   // REQ-092 Stage 2 (TASK-382) — the route guard's two states: a page without its menu, and a user with no menus.
+  // REQ-092 Stage 4 (TASK-388) — the Roles page: the builder and the matrix. Every refusal sentence is the server's.
+  roles: {
+    tabRoles: "Roles",
+    tabMatrix: "Matrix",
+    hint: "A role is a named bundle of menus and actions. It is live: editing it changes every user who holds it.",
+    create: "New role",
+    createTitle: "New role",
+    editTitle: "Edit {name}",
+    empty: "No roles yet. Create one, then assign it on the Users page.",
+    colName: "Name",
+    colDescription: "Description",
+    colKeys: "Keys",
+    colUsers: "Users",
+    keysCount: "menus {menus} · actions {actions}",
+    usersCount: "{n} users",
+    name: "Name",
+    description: "Description",
+    delete: "Delete",
+    deleteTitle: "Delete {name}?",
+    deleteBody: "A role held by any user cannot be deleted — reassign them first. This cannot be undone.",
+    deleteConfirm: "Delete role",
+    createdOk: "Role {name} created",
+    savedOk: "Role {name} saved",
+    deletedOk: "Role {name} deleted",
+    matrixHint: "Who may do what: ● own grant · ▲ from the role · a grey ● is a super admin. Read-only — edit on the Users or Roles tab.",
+    matrixLabel: "Permission matrix",
+    filterAll: "All users",
+    filterLabel: "Filter by role",
+  },
+
   rbac: {
     noMenu: "You do not have access to this menu.",
     goTo: "Go to {menu}",
@@ -1493,6 +1529,7 @@ const th: typeof en = {
     reports: "รายงานประจำวัน",
     settings: "ตั้งค่า",
     users: "ผู้ใช้งาน", // REQ-092 Stage 1 — super admin only
+    roles: "บทบาท",
   },
 
   users: {
@@ -1550,6 +1587,10 @@ const th: typeof en = {
     actionsSavedOk: "บันทึกรายการของ {name} แล้ว",
     areaSales: "การขาย",
     areaMenuNotGranted: "ยังไม่ได้รับเมนูนี้",
+    colRoleName: "บทบาท",
+    roleNone: "ไม่มีบทบาท",
+    fromRole: "จากบทบาท {role}",
+    roleSavedOk: "บันทึกบทบาทของ {name} แล้ว",
   },
 
   confirmAction: {
@@ -1770,6 +1811,35 @@ const th: typeof en = {
     failTitle: "เข้าสู่ระบบไม่สำเร็จ",
     failDesc: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
     disabledReason: "บัญชีนี้ถูกปิดใช้งาน — กรุณาติดต่อผู้ดูแลระบบ",
+  },
+
+  roles: {
+    tabRoles: "บทบาท",
+    tabMatrix: "ตารางสิทธิ์",
+    hint: "บทบาทคือชุดเมนูและรายการที่ตั้งชื่อไว้ มีผลทันที: แก้บทบาทแล้วผู้ใช้ทุกคนที่ถือบทบาทนั้นเปลี่ยนตาม",
+    create: "สร้างบทบาท",
+    createTitle: "สร้างบทบาทใหม่",
+    editTitle: "แก้ไข {name}",
+    empty: "ยังไม่มีบทบาท สร้างแล้วไปกำหนดให้ผู้ใช้ที่หน้าผู้ใช้งาน",
+    colName: "ชื่อ",
+    colDescription: "คำอธิบาย",
+    colKeys: "สิทธิ์",
+    colUsers: "ผู้ใช้",
+    keysCount: "เมนู {menus} · รายการ {actions}",
+    usersCount: "{n} คน",
+    name: "ชื่อ",
+    description: "คำอธิบาย",
+    delete: "ลบ",
+    deleteTitle: "ลบ {name}?",
+    deleteBody: "บทบาทที่มีผู้ใช้ถืออยู่ลบไม่ได้ — ย้ายผู้ใช้ก่อน การลบย้อนกลับไม่ได้",
+    deleteConfirm: "ลบบทบาท",
+    createdOk: "สร้างบทบาท {name} แล้ว",
+    savedOk: "บันทึกบทบาท {name} แล้ว",
+    deletedOk: "ลบบทบาท {name} แล้ว",
+    matrixHint: "ใครทำอะไรได้: ● สิทธิ์ของตัวเอง · ▲ จากบทบาท · ● สีเทาคือ super admin ดูอย่างเดียว — แก้ที่แท็บผู้ใช้งานหรือบทบาท",
+    matrixLabel: "ตารางสิทธิ์",
+    filterAll: "ผู้ใช้ทั้งหมด",
+    filterLabel: "กรองตามบทบาท",
   },
 
   rbac: {

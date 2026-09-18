@@ -33,6 +33,7 @@ export const useMe = () => {
           isSuperAdmin: su.isSuperAdmin === true,
           menus: su.menus,
           actions: Array.isArray(su.actions) ? su.actions : [],
+          roleName: null, // the seed has no role name; `/me` fills it at once
         }
       : undefined;
   const q = useQuery({

@@ -43,7 +43,7 @@ describe("§1 — ONE gate, everywhere", () => {
     expect(useMe).toContain("export const useCan = (): ((action: ActionKey) => boolean) => {");
     expect(useMe).toContain("return (action) => can(access, action);");
     expect(useMe).toContain("actions: Array.isArray(q.data.actions) ? q.data.actions : []");
-    expect(codeOf("src/types/api/contract.ts")).toContain("isSuperAdmin: boolean; menus: string[]; actions: string[] };");
+    expect(codeOf("src/types/api/contract.ts")).toContain("isSuperAdmin: boolean; menus: string[]; actions: string[]; roleName: string | null };");
     expect(codeOf("src/auth.ts")).toContain("actions: Array.isArray(data.user.actions) ? data.user.actions : [],");
   });
 
@@ -95,7 +95,7 @@ describe("§1 — ONE gate, everywhere", () => {
     expect(d).toContain('if (!can("action:sales.discount")) return null;');
     expect(d).not.toMatch(/role/);
     // the Users page's own actions stay super-admin-gated (no action key anywhere on it)
-    expect(codeOf("src/components/partials/Users/UsersContent.tsx")).not.toContain('"action:');
+    expect(codeOf("src/components/partials/Users/UsersContent.tsx")).not.toMatch(/"action:[a-z]/); // only the `"action:"` prefix split, no key
     // the three forms that serve create AND edit ask the right key for the mode (create ≠ edit is the BE's naming rule)
     expect(codeOf("src/components/partials/Teachers/TeacherFormModal.tsx")).toContain('can(teacher ? "action:teachers.edit" : "action:teachers.create")');
     expect(codeOf("src/components/partials/People/ParentFormModal.tsx")).toContain('can(isEdit ? "action:people.parent-edit" : "action:people.parent-create")');
@@ -116,16 +116,21 @@ describe("§2 — the Actions checklist, rendered from GET /permissions", () => 
   });
 
   it("grouped by area under the menu's own nav label, the BE's label per row in `lang`, select-all per group and overall, the not-granted hint", () => {
-    expect(page).toContain("const NAV_BY_AREA = new Map(");
-    expect(page).toContain("const areas = [...new Set(actions.map((a) => a.area))];");
-    expect(page).toContain('{nav ? t(nav.labelKey) : t("users.areaSales")}');
-    expect(page).toContain('label={lang === "th" ? a.labelTh : a.labelEn}');
-    expect(page).toContain("onClick={() => setMany(rowKeys, !allOn)}");
-    expect(page).toContain("onClick={() => setMany(allKeys, true)}");
-    expect(page).toContain("const menuMissing = !!nav?.menuKey && !user?.isSuperAdmin && !(user?.menus ?? []).includes(nav.menuKey);");
-    expect(page).toContain('t("users.areaMenuNotGranted")');
-    // no FE list of action names: no `labelEn:` / `labelTh:` literal and no snapshot import on the page
+    // Stage 4 moved the checklist body into the SHARED `GrantChecklists.tsx`; the dialog mounts it with the OWN rows
+    const shared = codeOf("src/components/partials/Users/GrantChecklists.tsx");
+    expect(shared).toContain("export const NAV_BY_AREA = new Map(");
+    expect(shared).toContain("const areas = [...new Set(actions.map((a) => a.area))];");
+    expect(shared).toContain('{nav ? t(nav.labelKey) : t("users.areaSales")}');
+    expect(shared).toContain('label={lang === "th" ? a.labelTh : a.labelEn}');
+    expect(shared).toContain("onClick={() => onChange(withKeys(value, rowKeys, !allOn))}");
+    expect(shared).toContain("onClick={() => onChange(withKeys(value, allKeys, true))}");
+    expect(shared).toContain("const menuMissing = !!menus && !!nav?.menuKey && !menus.includes(nav.menuKey);");
+    expect(shared).toContain('t("users.areaMenuNotGranted")');
+    expect(page).toContain("<ActionsChecklist");
+    expect(page).toContain("menus={user?.isSuperAdmin ? MENU_KEYS : (user?.menus ?? [])}");
+    // no FE list of action names: no `labelEn:` / `labelTh:` literal and no snapshot import on the page or the shared file
     expect(page).not.toMatch(/labelEn:|labelTh:|ACTION_KEYS_SNAPSHOT/);
+    expect(shared).not.toMatch(/labelEn:|labelTh:|ACTION_KEYS_SNAPSHOT/);
   });
 });
 
@@ -148,7 +153,7 @@ describe("§3 — the sentences, and the copy", () => {
   it("copy: users +8 (54 × 2); nothing else moved", () => {
     const en = dictionaries.en.users as Record<string, string>;
     const th = dictionaries.th.users as Record<string, string>;
-    expect(Object.keys(en).length).toBe(54);
+    expect(Object.keys(en).length).toBe(58); // + Stage 4's role column 4
     for (const k of ["colActions", "actionsAll", "actionsCount", "actionsTitle", "actionsBody", "actionsSavedOk", "areaSales", "areaMenuNotGranted"]) {
       expect(en[k]?.length).toBeGreaterThan(0);
       expect(th[k]?.length).toBeGreaterThan(0);

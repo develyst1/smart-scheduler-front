@@ -8,7 +8,7 @@ const delay = <T>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(v)
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 const users: UserDTO[] = [
-  { id: "u-admin", username: "admin", displayName: "Admin", isSuperAdmin: true, disabledAt: null, createdAt: "2026-09-17T00:00:00.000Z", menus: [...MENU_KEYS], actions: [...ACTION_KEYS_SNAPSHOT] },
+  { id: "u-admin", username: "admin", displayName: "Admin", isSuperAdmin: true, disabledAt: null, createdAt: "2026-09-17T00:00:00.000Z", menus: [...MENU_KEYS], actions: [...ACTION_KEYS_SNAPSHOT], roleId: null, roleName: null, grants: { fromRole: [], own: [] } },
 ];
 let seq = 1;
 
@@ -24,6 +24,9 @@ export const createUser = (input: CreateUserInput) => {
     createdAt: new Date().toISOString(),
     menus: input.isSuperAdmin ? [...MENU_KEYS] : [],
     actions: input.isSuperAdmin ? [...ACTION_KEYS_SNAPSHOT] : [],
+    roleId: null,
+    roleName: null,
+    grants: { fromRole: [], own: [] },
   };
   users.push(u);
   return delay(clone(u));
@@ -36,15 +39,33 @@ export const updateUser = (id: string, input: UpdateUserInput) => {
   return delay(clone(u));
 };
 
+// Stage 4 — the mock's effective read: own ∪ role, like the BE's UNION.
+const recompute = (u: UserDTO) => {
+  const eff = new Set([...u.grants.own, ...u.grants.fromRole]);
+  u.menus = u.isSuperAdmin ? [...MENU_KEYS] : MENU_KEYS.filter((k) => eff.has(k));
+  u.actions = u.isSuperAdmin ? [...ACTION_KEYS_SNAPSHOT] : ACTION_KEYS_SNAPSHOT.filter((k) => eff.has(k));
+};
+
 export const setUserMenus = (id: string, keys: string[]) => {
   const u = users.find((x) => x.id === id)!;
-  u.menus = u.isSuperAdmin ? [...MENU_KEYS] : [...new Set(keys)];
+  u.grants.own = [...u.grants.own.filter((k) => !k.startsWith("menu:")), ...new Set(keys)];
+  recompute(u);
+  return delay(clone(u));
+};
+
+export const setUserRole = (id: string, roleId: string | null) => {
+  const u = users.find((x) => x.id === id)!;
+  u.roleId = roleId;
+  u.roleName = roleId ? `role ${roleId}` : null;
+  u.grants.fromRole = [];
+  recompute(u);
   return delay(clone(u));
 };
 
 export const setUserActions = (id: string, keys: string[]) => {
   const u = users.find((x) => x.id === id)!;
-  u.actions = u.isSuperAdmin ? [...ACTION_KEYS_SNAPSHOT] : [...new Set(keys)];
+  u.grants.own = [...u.grants.own.filter((k) => !k.startsWith("action:")), ...new Set(keys)];
+  recompute(u);
   return delay(clone(u));
 };
 

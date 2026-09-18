@@ -67,7 +67,7 @@ describe("§1 — the session carries the real user; the login screen is untouch
     const all = [...MENU_KEYS];
     expect(navItemsFor({ isSuperAdmin: true, menus: [] }).map((i) => i.key)).toContain("users");
     expect(navItemsFor({ isSuperAdmin: false, menus: all }).map((i) => i.key)).not.toContain("users");
-    expect(navItemsFor({ isSuperAdmin: false, menus: all }).length).toBe(NAV_ITEMS.length - 1); // exactly one entry is gated by the flag
+    expect(navItemsFor({ isSuperAdmin: false, menus: all }).length).toBe(NAV_ITEMS.length - 2); // exactly two entries are gated by the flag: users + roles (Stage 4)
     const sidebar = codeOf("src/components/layout/AdminLayout/Sidebar/Sidebar.tsx");
     expect(sidebar).toContain("navItemsFor(access)");
     expect(sidebar).not.toContain("NAV_ITEMS.map");
@@ -128,7 +128,7 @@ describe("§2 — the Users page", () => {
 
   it("copy: the page's keys exist in both languages (38 + 8 Stage 2 + 8 Stage 3 = 54 × 2), plus nav.users", () => {
     const keys = Object.keys(dictionaries.en.users);
-    expect(keys.length).toBe(54);
+    expect(keys.length).toBe(58); // + Stage 4's role column 4
     for (const k of keys) expect((dictionaries.th.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);
     expect(dictionaries.en.nav.users).toBe("Users");
     expect(dictionaries.th.nav.users).toBe("ผู้ใช้งาน");

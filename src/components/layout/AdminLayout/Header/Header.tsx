@@ -8,6 +8,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useT, LanguageToggle } from "@/lib/i18n";
 import { navItemForPath } from "../AdminLayout.config";
 import ChangePasswordModal from "./ChangePasswordModal";
+import { useMe } from "@/hooks/scheduler/useMe";
 
 interface Props {
   collapsed: boolean;
@@ -28,6 +29,8 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
   // REQ-092 Stage 2 (TASK-382 §3) — the avatar is the user menu: who they are · change my password · sign out. The
   // sign-out moved in here from a bare button; nothing else about it changed.
   const [pwOpen, setPwOpen] = useState(false);
+  // REQ-092 Stage 4 (TASK-388) — the role's name under the display name, from `/me` (null for none ⇒ nothing).
+  const roleName = useMe().me?.roleName ?? null;
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-muted-200 bg-content1/80 px-4 backdrop-blur sm:px-6">
@@ -64,7 +67,10 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
         <MantineMenu shadow="md" width={220} position="bottom-end">
           <MantineMenu.Target>
             <UnstyledButton className="flex items-center gap-3" aria-label={t("header.userMenu")}>
-              <span className="hidden text-muted-500 sm:inline">{name}</span>
+              <span className="hidden flex-col items-end leading-tight sm:flex">
+                <span className="text-muted-500">{name}</span>
+                {roleName && <span className="text-xs text-muted-400">{roleName}</span>}
+              </span>
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-700 text-xs font-semibold text-primary-foreground ring-2 ring-primary/20">
                 TM
               </span>
@@ -74,6 +80,7 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
             <MantineMenu.Label>
               <span className="block truncate text-sm font-medium text-foreground">{name}</span>
               {session?.user?.username && <span className="block truncate font-mono text-xs">{session.user.username}</span>}
+              {roleName && <span className="block truncate text-xs">{roleName}</span>}
             </MantineMenu.Label>
             <MantineMenu.Divider />
             <MantineMenu.Item leftSection={<KeyRound size={15} />} onClick={() => setPwOpen(true)}>

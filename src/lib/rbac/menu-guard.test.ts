@@ -52,7 +52,8 @@ describe("§1 — the registry and the nav", () => {
     const derived = [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS].flatMap((i) => (i.menuKey ? [i.menuKey] : []));
     expect(derived).toEqual(ALL);
     expect(NAV_ITEMS.find((i) => i.key === "users")?.menuKey).toBeUndefined();
-    for (const i of [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS]) if (i.key !== "users") expect(i.menuKey).toBe(`menu:${i.href.split("/").pop()}`);
+    expect(NAV_ITEMS.find((i) => i.key === "roles")).toMatchObject({ href: "/scheduler/roles", superAdminOnly: true }); // Stage 4
+    for (const i of [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS]) if (i.key !== "users" && i.key !== "roles") expect(i.menuKey).toBe(`menu:${i.href.split("/").pop()}`);
     expect(HIDDEN_NAV_ITEMS.map((i) => i.key)).toEqual(["dashboard", "overview"]); // overview: hidden, no longer a comment
   });
 
@@ -131,12 +132,16 @@ describe("§3 — the Users page checklist (the bridge until Stage 4)", () => {
     const cell = page.slice(page.indexOf('t("users.menusAll")') - 200, page.indexOf('t("users.menusAll")') + 400);
     expect(cell).toContain("{user.isSuperAdmin ? (");
     expect(cell).toContain('t("users.menusCount", { n: String(user.menus?.length ?? 0) })');
-    // twelve rows labelled by the nav's own words, in the nav's order; select all / none
-    expect(page).toContain("const MENU_ROWS: { key: MenuKey; labelKey: string }[] = [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS]");
-    expect(page).toContain(".map((i) => ({ key: i.menuKey, labelKey: i.labelKey }));");
-    expect(page).toContain("<Checkbox key={row.key} label={t(row.labelKey)} checked={keys.includes(row.key)}");
-    expect(page).toContain("onClick={() => setKeys([...MENU_KEYS])}");
-    expect(page).toContain("onClick={() => setKeys([])}");
+    // twelve rows labelled by the nav's own words, in the nav's order; select all / none — Stage 4 moved the rows
+    // into the SHARED `GrantChecklists.tsx` (the Roles page renders the same); the dialog mounts it and saves OWN rows
+    const shared = codeOf("src/components/partials/Users/GrantChecklists.tsx");
+    expect(shared).toContain("export const MENU_ROWS: { key: MenuKey; labelKey: string }[] = [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS]");
+    expect(shared).toContain(".map((i) => ({ key: i.menuKey, labelKey: i.labelKey }));");
+    expect(shared).toContain("label={t(row.labelKey)}");
+    expect(shared).toContain("checked={isTicked(value, locked, row.key)}");
+    expect(shared).toContain("onClick={() => onChange(withKeys(value, free, true))}");
+    expect(shared).toContain("onClick={() => onChange([])}");
+    expect(page).toContain("<MenusChecklist value={keys} onChange={setKeys} locked={locked}");
     expect(codeOf("src/hooks/scheduler/useUsers.ts")).toContain("mutationFn: ({ id, keys }: { id: string; keys: string[] }) => setUserMenus(id, keys),");
   });
 });
@@ -190,7 +195,7 @@ describe("copy", () => {
     both("rbac", 4);
     both("header", 11);
     both("login", 7);
-    both("users", 54); // 46 + the Stage-3 `Actions` checklist's 8
+    both("users", 58); // 46 + the Stage-3 `Actions` checklist's 8 + Stage 4's role column 4
     for (const i of [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS]) {
       const k = i.labelKey.replace("nav.", "");
       expect(dictionaries.en.nav[k as keyof typeof dictionaries.en.nav]?.length).toBeGreaterThan(0);
