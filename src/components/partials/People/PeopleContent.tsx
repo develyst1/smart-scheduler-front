@@ -17,22 +17,26 @@ import {
   ActionIcon,
   Tooltip,
   Alert,
+  Switch,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { Search, UserPlus, Pencil, Ban, CircleCheck, Baby, Phone, MapPin, Link2Off, Trash2, AlertTriangle } from "lucide-react";
+import { Search, UserPlus, Pencil, Ban, CircleCheck, Baby, Phone, MapPin, Link2Off, Trash2, AlertTriangle, Archive, ArchiveRestore } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { useLoadPhase } from "@/lib/ui/load-phase";
 import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import {
+  useArchiveStudent,
   useClearParentLineLink,
   useDeleteStudent,
+  useUnarchiveStudent,
   useParent,
   useParents,
   useSetParentSuspended,
 } from "@/hooks/scheduler";
 import { THAI_NATIONALITY, type Parent, type Student } from "@/types/app/people";
+import { useShowArchived } from "@/lib/people/show-archived";
 import { useCan } from "@/hooks/scheduler/useMe";
 import ParentFormModal from "./ParentFormModal";
 import StudentFormModal from "./StudentFormModal";
@@ -79,6 +83,14 @@ export default function PeopleContent() {
   const deleteStudent = useDeleteStudent();
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // REQ-093 (TASK-393) — ARCHIVE (two taps; history and money stay; the 409 sentence in the dialog) and one-tap RESTORE
+  // under `Show archived`, a remembered toggle. The server hides archived children from every working read; the
+  // list's `archivedStudents` is the same read split, so showing them costs no second call.
+  const archiveStudent = useArchiveStudent();
+  const unarchiveStudent = useUnarchiveStudent();
+  const [archiveTarget, setArchiveTarget] = useState<Student | null>(null);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const { shown: showArchived, toggle: toggleShowArchived } = useShowArchived();
   // SPEC-071 / TASK-243 — which family's LINE link is open in the dialog. `null` = closed, so nothing is fetched.
   const [lineTarget, setLineTarget] = useState<Parent | null>(null);
 
@@ -117,6 +129,28 @@ export default function PeopleContent() {
     }
   };
 
+  const runArchive = async () => {
+    if (!archiveTarget) return;
+    setArchiveError(null);
+    try {
+      await archiveStudent.mutateAsync(archiveTarget.id);
+      notify({ title: t("people.archivedOk", { name: archiveTarget.nickname || archiveTarget.name }), color: "success" });
+      setArchiveTarget(null);
+    } catch (e) {
+      // 🔴 The server's sentence, unchanged — it carries the count of sessions ahead. Nothing invented.
+      setArchiveError(e instanceof ApiClientError ? e.message : (e as Error).message);
+    }
+  };
+  /** One tap: restore only gives back (a `409` on the family's cap is the server's sentence as a notice). */
+  const runRestore = async (s: Student) => {
+    try {
+      await unarchiveStudent.mutateAsync(s.id);
+      notify({ title: t("people.restoredOk", { name: s.nickname || s.name }), color: "success" });
+    } catch (e) {
+      notify({ title: e instanceof ApiClientError ? e.message : (e as Error).message, color: "danger" });
+    }
+  };
+
   const runSuspend = async () => {
     if (!suspendTarget) return;
     const { parent, suspend: doSuspend } = suspendTarget;
@@ -144,11 +178,14 @@ export default function PeopleContent() {
           <h1 className="text-xl font-semibold tracking-tight">{t("people.title")}</h1>
           <p className="max-w-2xl text-sm text-muted-500">{t("people.subtitle")}</p>
         </div>
-        {can("action:people.parent-create") && (
-          <Button leftSection={<UserPlus size={16} />} onClick={() => setParentModal({ open: true, parent: null })}>
-            {t("people.addParent")}
-          </Button>
-        )}
+        <Group gap="md">
+          <Switch size="sm" label={t("people.showArchived")} checked={showArchived} onChange={toggleShowArchived} />
+          {can("action:people.parent-create") && (
+            <Button leftSection={<UserPlus size={16} />} onClick={() => setParentModal({ open: true, parent: null })}>
+              {t("people.addParent")}
+            </Button>
+          )}
+        </Group>
       </div>
 
       <TextInput
@@ -297,6 +334,21 @@ export default function PeopleContent() {
                                   </Tooltip>
                                 )}
                                 {/* TASK-365 — offered on EVERY student; the server decides (409 ⇒ its sentence). First tap. */}
+                                {can("action:people.student-archive") && (
+                                  <Tooltip label={t("people.archiveStudent")} withinPortal>
+                                    <ActionIcon
+                                      variant="subtle"
+                                      color="red"
+                                      aria-label={t("people.archiveStudent")}
+                                      onClick={() => {
+                                        setArchiveError(null);
+                                        setArchiveTarget(s);
+                                      }}
+                                    >
+                                      <Archive size={15} />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                )}
                                 {can("action:people.student-delete") && (
                                   <Tooltip label={t("people.deleteStudent")} withinPortal>
                                     <ActionIcon
@@ -316,6 +368,33 @@ export default function PeopleContent() {
                             </div>
                           );
                         })}
+                      </Stack>
+                    )}
+                    {/* REQ-093 — the archived children, only under the toggle: dimmed, with a one-tap Restore. */}
+                    {showArchived && (p.archivedStudents?.length ?? 0) > 0 && (
+                      <Stack gap={6} mt={6} className="opacity-60">
+                        {p.archivedStudents!.map((s) => (
+                          <div key={s.id} className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <span className="text-sm font-medium line-through">{s.nickname || s.name}</span>
+                              <Badge size="xs" variant="light" color="gray" ml={6}>
+                                {t("people.archivedBadge")}
+                              </Badge>
+                            </div>
+                            {can("action:people.student-archive") && (
+                              <Button
+                                size="compact-xs"
+                                variant="light"
+                                color="green"
+                                leftSection={<ArchiveRestore size={13} />}
+                                loading={unarchiveStudent.isPending && unarchiveStudent.variables === s.id}
+                                onClick={() => void runRestore(s)}
+                              >
+                                {t("people.restore")}
+                              </Button>
+                            )}
+                          </div>
+                        ))}
                       </Stack>
                     )}
                   </div>
@@ -348,6 +427,33 @@ export default function PeopleContent() {
 
       {/* TASK-365 — the second tap: names the student, says it is permanent, red confirm beside a plain cancel
           (the TASK-355 unlink pattern). A 409 shows the server's sentence HERE and the dialog stays open. */}
+      {/* REQ-093 — the SECOND tap of ARCHIVE. History and money stay; a 409 (sessions ahead) shows the server's sentence HERE. */}
+      <Modal
+        opened={archiveTarget !== null}
+        onClose={() => setArchiveTarget(null)}
+        centered
+        title={t("people.archiveStudentTitle", { name: archiveTarget?.nickname || archiveTarget?.name || "" })}
+      >
+        {archiveTarget && (
+          <Stack gap="lg">
+            {archiveError && (
+              <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
+                {archiveError}
+              </Alert>
+            )}
+            <Text size="sm">{t("people.archiveStudentBody")}</Text>
+            <Group justify="flex-end" gap="sm">
+              <Button variant="default" onClick={() => setArchiveTarget(null)}>
+                {t("common.cancel")}
+              </Button>
+              <Button color="red" leftSection={<Archive size={15} />} loading={archiveStudent.isPending} onClick={runArchive}>
+                {t("people.archiveStudentConfirm")}
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
+
       <Modal
         opened={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}

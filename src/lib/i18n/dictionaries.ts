@@ -928,6 +928,15 @@ const en = {
     // REQ-091 Deploy B (TASK-374) — the whole-course rental on course creation
     courseToggle: "Equipment rental for the whole course",
     courseSummary: "{line} × {size} sessions",
+    // TASK-391 (REQ-091 §14) — paid upfront / pay per session, and the remove-from-remaining-sessions action
+    paidUpfront: "Paid upfront",
+    payPerSession: "Pay per session",
+    toCollect: "{n} to collect",
+    removeFromCourse: "Remove from remaining sessions",
+    removeFromCourseTitle: "Remove the rental from the remaining sessions?",
+    removeFromCourseBody: "The equipment rental comes off every session that has not happened yet. No money is changed: a rental paid upfront stays paid, and sessions already collected stay collected.",
+    removeFromCourseConfirm: "Remove rental",
+    removedFromCourseOk: "Rental removed from {n} sessions",
   },
 
   voucher: {
@@ -1113,6 +1122,16 @@ const en = {
       "Permanent — this cannot be undone. Only a student with no bookings or history can be deleted; the server will say if there is any.",
     deleteStudentConfirm: "Yes, delete",
     deletedOk: "{name} deleted",
+    // ── REQ-093 (TASK-393) — archive a student; the 409 sentence is the server's ──
+    archiveStudent: "Archive",
+    archiveStudentTitle: "Archive {name}?",
+    archiveStudentBody: "The student leaves every working list and picker. History and money stay exactly as they are, and you can restore them any time. A student with sessions ahead cannot be archived — the server will say how many.",
+    archiveStudentConfirm: "Yes, archive",
+    archivedOk: "{name} archived",
+    showArchived: "Show archived",
+    archivedBadge: "archived",
+    restore: "Restore",
+    restoredOk: "{name} restored",
     // ── SPEC-071 / TASK-243 — clearing a family's LINE binding ──
     lineLinkTitle: "LINE link — {family}",
     lineLinkChecking: "Checking this family's LINE link…",
@@ -2322,6 +2341,14 @@ const th: typeof en = {
     removedOk: "ลบค่าเช่าแล้ว",
     courseToggle: "เช่าอุปกรณ์ทั้งคอร์ส", // REQ-091 Deploy B (TASK-374)
     courseSummary: "{line} × {size} คาบ",
+    paidUpfront: "จ่ายล่วงหน้า",
+    payPerSession: "จ่ายรายคาบ",
+    toCollect: "ค้างเก็บ {n} คาบ",
+    removeFromCourse: "ถอดออกจากคาบที่เหลือ",
+    removeFromCourseTitle: "ถอดค่าเช่าอุปกรณ์ออกจากคาบที่เหลือ?",
+    removeFromCourseBody: "ค่าเช่าอุปกรณ์จะถูกถอดออกจากทุกคาบที่ยังไม่ถึง ไม่มีการเปลี่ยนแปลงเงิน: ค่าเช่าที่จ่ายล่วงหน้าแล้วยังคงจ่ายแล้ว และคาบที่เก็บเงินแล้วยังคงเก็บแล้ว",
+    removeFromCourseConfirm: "ถอดค่าเช่า",
+    removedFromCourseOk: "ถอดค่าเช่าออกจาก {n} คาบแล้ว",
   },
 
   voucher: {
@@ -2501,6 +2528,15 @@ const th: typeof en = {
     deleteStudentBody: "ลบถาวร — ทำแล้วย้อนกลับไม่ได้ ลบได้เฉพาะนักเรียนที่ยังไม่มีการจองหรือประวัติ ถ้ามี ระบบจะแจ้งค่ะ",
     deleteStudentConfirm: "ยืนยัน ลบ",
     deletedOk: "ลบ {name} แล้ว",
+    archiveStudent: "เก็บ",
+    archiveStudentTitle: "เก็บ {name}?",
+    archiveStudentBody: "นักเรียนจะหายจากทุกรายการและตัวเลือกที่ใช้งาน ประวัติและเงินคงเดิมทั้งหมด และคืนสถานะได้ทุกเมื่อ นักเรียนที่มีคาบเรียนข้างหน้าเก็บไม่ได้ — ระบบจะแจ้งจำนวนค่ะ",
+    archiveStudentConfirm: "ยืนยัน เก็บ",
+    archivedOk: "เก็บ {name} แล้ว",
+    showArchived: "แสดงที่เก็บแล้ว",
+    archivedBadge: "เก็บแล้ว",
+    restore: "คืนสถานะ",
+    restoredOk: "คืนสถานะ {name} แล้ว",
     // ── SPEC-071 / TASK-243 — ล้างการเชื่อมไลน์ของครอบครัว ──
     lineLinkTitle: "การเชื่อมไลน์ — {family}",
     lineLinkChecking: "กำลังตรวจสอบการเชื่อมไลน์ของครอบครัวนี้…",

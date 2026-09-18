@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Skeleton, Modal, SegmentedControl, TextInput, UnstyledButton } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban, CalendarClock } from "lucide-react";
-import { useSetCourseAdminUnlock, useCoursePackages } from "@/hooks/scheduler";
+import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban, CalendarClock, PackageX } from "lucide-react";
+import { useSetCourseAdminUnlock, useCoursePackages, useRemoveCourseRental } from "@/hooks/scheduler";
 import { COURSE_STATUSES, type CourseStatus } from "@/types/app/scheduler";
 import { isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import { notify } from "@/lib/ui/notify";
@@ -69,6 +69,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   const can = useCan();
   const canExpiry = can("action:bookings.course-expiry");
   const canEdit = can("action:bookings.course-edit");
+  const canRemoveRental = can("action:bookings.course-rental");
 
   // คอร์ส + ทิศทาง (unlock/relock) ที่รอการยืนยันใน modal
   const [pending, setPending] = useState<{ course: CoursePackageView; unlock: boolean } | null>(null);
@@ -76,6 +77,8 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   const [historyId, setHistoryId] = useState<string | null>(null);
   // REQ-082 AC-1 (TASK-265) — the course whose expiry is being moved; `null` = the dialog is closed.
   const [expiryTarget, setExpiryTarget] = useState<CoursePackageView | null>(null);
+  // TASK-391 (REQ-091 §14) — the course under the two-tap remove-rental dialog.
+  const [rentalTarget, setRentalTarget] = useState<CoursePackageView | null>(null);
 
   const runUnlock = async () => {
     if (!pending) return;
@@ -225,7 +228,21 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                       {t("rental.section")}:{" "}
                       <span className="font-medium text-muted-600">
                         {rentalPrintLine(t, c.rental.code, c.rental.remark, rentalPriceOf(c.rental.code))}
+                      </span>{" "}
+                      {/* TASK-391 — the variant chosen at creation; per-session also says how many are still to collect. */}
+                      <span>
+                        ({c.rental.paidUpfront ? t("rental.paidUpfront") : t("rental.payPerSession")}
+                        {!c.rental.paidUpfront && c.rental.unpaidSessions > 0 ? ` · ${t("rental.toCollect", { n: String(c.rental.unpaidSessions) })}` : ""})
                       </span>
+                      {canRemoveRental && isCourseWritable(c.status) && (
+                        <UnstyledButton
+                          onClick={() => setRentalTarget(c)}
+                          className="ml-2 inline-flex items-center gap-1 align-baseline text-xs text-red-600 underline decoration-dotted underline-offset-2 hover:text-red-700"
+                        >
+                          <PackageX size={12} />
+                          {t("rental.removeFromCourse")}
+                        </UnstyledButton>
+                      )}
                     </p>
                   )}
                 </div>
@@ -393,6 +410,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
 
       {/* REQ-082 AC-1 — reachable for every course the filter can show, DROPPED included (see the control). */}
       <EditExpiryDialog course={expiryTarget} onClose={() => setExpiryTarget(null)} />
+      <RemoveCourseRentalDialog course={rentalTarget} onClose={() => setRentalTarget(null)} />
     </Stack>
   );
 }
@@ -440,5 +458,52 @@ function CourseCardSkeletons({ count }: { count: number }) {
         </Card>
       ))}
     </div>
+  );
+}
+
+/**
+ * TASK-391 (REQ-091 §14) — the SECOND tap: the red link on the card opens this; its own red confirm removes the rental
+ * from the course's REMAINING sessions. 🔴 The dialog says what the server does: no money is changed (a paid-upfront
+ * post stands; collected rows stand); after `200` the notice names the count from the response, and the card's line
+ * reads "rental removed" on re-read (`rental === null`). Refusals (`RENTAL_NOT_ON_COURSE`) are the server's sentence.
+ */
+function RemoveCourseRentalDialog({ course, onClose }: { course: CoursePackageView | null; onClose: () => void }) {
+  const t = useT();
+  const remove = useRemoveCourseRental();
+  const [error, setError] = useState<string | null>(null);
+  const close = () => {
+    setError(null);
+    onClose();
+  };
+  const submit = async () => {
+    if (!course) return;
+    setError(null);
+    try {
+      const res = await remove.mutateAsync(course.id);
+      notify({ title: t("rental.removedFromCourseOk", { n: String(res.removed) }), color: "success" });
+      close();
+    } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : (e as Error).message);
+    }
+  };
+  return (
+    <Modal opened={course !== null} onClose={close} centered title={t("rental.removeFromCourseTitle")}>
+      <Stack gap="sm">
+        {error && (
+          <Text size="sm" c="red">
+            {error}
+          </Text>
+        )}
+        <Text size="sm">{t("rental.removeFromCourseBody")}</Text>
+        <Group justify="flex-end" gap="sm">
+          <Button variant="default" onClick={close}>
+            {t("common.cancel")}
+          </Button>
+          <Button color="red" leftSection={<PackageX size={15} />} loading={remove.isPending} onClick={submit}>
+            {t("rental.removeFromCourseConfirm")}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
   );
 }

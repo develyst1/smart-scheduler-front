@@ -10,6 +10,8 @@ import {
   createStudentForParent,
   updateStudent,
   deleteStudent,
+  archiveStudent,
+  unarchiveStudent,
   setParentSuspended,
   type ParentsQuery,
   type ParentInput,
@@ -85,6 +87,16 @@ export const useUpdateStudent = () => {
 };
 
 /** TASK-365 — after a delete the student leaves the list and the parent's count updates: the SAME invalidation as `useCreateStudent`. */
+/** REQ-093 (TASK-393) — archive / restore; both re-read the parents (the split moves a child between the two lists). */
+export const useArchiveStudent = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => archiveStudent(id), onSuccess: () => qc.invalidateQueries({ queryKey: PARENTS_KEY }) });
+};
+export const useUnarchiveStudent = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => unarchiveStudent(id), onSuccess: () => qc.invalidateQueries({ queryKey: PARENTS_KEY }) });
+};
+
 export const useDeleteStudent = () => {
   const qc = useQueryClient();
   return useMutation({

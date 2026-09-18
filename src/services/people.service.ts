@@ -114,6 +114,23 @@ export const deleteStudent = async (id: string): Promise<{ deleted: true }> => {
   return data;
 };
 
+/**
+ * REQ-093 (TASK-393) — archive / restore a student. 🔑 The rule has ONE source — the server: archive refuses with
+ * `409 STUDENT_HAS_LIVE_SESSIONS` (the Thai sentence carrying the count of sessions ahead) — the dialog shows it;
+ * an already-archived id is `200` no change; restore may `409` on the family's cap. History and money stay. One key
+ * for both (`action:people.student-archive`). The working reads no longer return archived students — server-side.
+ */
+export const archiveStudent = async (id: string): Promise<Student> => {
+  if (useMockData) return mock.archiveStudent(id);
+  const { data } = await api.post<{ student: Student }>(`/students/${id}/archive`, {});
+  return data.student;
+};
+export const unarchiveStudent = async (id: string): Promise<Student> => {
+  if (useMockData) return mock.unarchiveStudent(id);
+  const { data } = await api.post<{ student: Student }>(`/students/${id}/unarchive`, {});
+  return data.student;
+};
+
 export const setParentSuspended = async (id: string, suspended: boolean): Promise<Parent> => {
   if (useMockData) return mock.setParentSuspended(id, suspended);
   const { data } = await api.post<Parent>(`/parents/${id}/${suspended ? "suspend" : "unsuspend"}`, {});

@@ -14,7 +14,7 @@ import { END_COURSE_REASONS, type EndCourseReason } from "@/types/app/scheduler"
  * flag REVEALS a tray and changes the calendar REQUEST (`includeCancelled=true`), so it lives beside the five in
  * the same menu, not among them.
  */
-function boolStore(storageKey: string, serverDefault: boolean) {
+export function boolStore(storageKey: string, serverDefault: boolean) {
   const TRUE = "1";
   let state = serverDefault;
   let hydrated = false;

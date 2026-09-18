@@ -62,6 +62,7 @@ import {
   dropCourse,
   resumeCourse,
   updateCourseExpiry,
+  removeCourseRental,
   previewCourseExpiry,
   confirmCourse,
   type CreateBookingInput,
@@ -339,6 +340,12 @@ export const useResumeCourse = () => {
  * REQ-082 AC-1/AC-4 — move a course's expiry. 🚫 The `expiryWarning` on the response is a **warning about a
  * save that already happened**, never a refusal: nothing here or at the call site may use it to block.
  */
+/** TASK-391 — remove a course's rental from its remaining sessions; the same invalidation set as the other course actions. */
+export const useRemoveCourseRental = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (courseId: string) => removeCourseRental(courseId), onSuccess: () => invalidateAll(qc) });
+};
+
 export const useUpdateCourseExpiry = () => {
   const qc = useQueryClient();
   return useMutation({

@@ -23,7 +23,7 @@ export const LEAVE_OVERRIDE_FORBIDDEN_SENTENCE = "ไม่มีสิทธิ
 
 /**
  * 🔴 TEST-ONLY SNAPSHOT of the BE's `ACTION_KEYS` (`lib/permissions.ts`, TASK-385 — 46: 44 route keys + the two
- * body-level ones). Nothing at runtime reads it. `action-gate.test.ts` walks `src` for every `can("action:…")` literal
+ * body-level ones; TASK-390 added the 47th, `bookings.course-rental`; TASK-392 the 48th, `people.student-archive`). Nothing at runtime reads it. `action-gate.test.ts` walks `src` for every `can("action:…")` literal
  * and refuses one that is not here; the report states this list equals the BE's, key for key, and updating it is a
  * task, not a drift. `area` = the part between `action:` and the dot.
  */
@@ -49,6 +49,7 @@ export const ACTION_KEYS_SNAPSHOT = [
   "action:bookings.course-import",
   "action:bookings.voucher-create",
   "action:bookings.voucher-import",
+  "action:bookings.course-rental", // TASK-390/391 — the REMOVE from a course's remaining sessions; the set is under course-create
   "action:people.student-create",
   "action:people.student-edit",
   "action:people.student-delete",
@@ -57,6 +58,7 @@ export const ACTION_KEYS_SNAPSHOT = [
   "action:people.parent-students",
   "action:people.parent-suspend",
   "action:people.parent-line-unlink",
+  "action:people.student-archive", // TASK-392/393 — archive + restore, one key
   "action:teachers.create",
   "action:teachers.edit",
   "action:teachers.archive",

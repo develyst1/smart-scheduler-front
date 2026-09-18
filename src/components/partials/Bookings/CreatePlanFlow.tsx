@@ -20,7 +20,7 @@ import { formatPriceMinor } from "@/types/app/pricing";
 import { ApiClientError, errorProblems } from "@/lib/api/client";
 import DiscountSection from "@/components/common/DiscountSection";
 import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
-import { Checkbox } from "@mantine/core";
+import { Checkbox, SegmentedControl } from "@mantine/core";
 import RentalTierPicker, { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
 import { useT } from "@/lib/i18n";
 import {
@@ -73,6 +73,9 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
   const [rentalOn, setRentalOn] = useState(false);
   const [rentalCode, setRentalCode] = useState<string | null>(null);
   const [rentalRemark, setRentalRemark] = useState("");
+  // TASK-391 (REQ-091 §14) — paid upfront (the default: rows born paid, one post) or pay per session (rows born
+  // unpaid, collected one by one). A choice, not a rule: both ride to the server as `paidUpfront`.
+  const [rentalPaidUpfront, setRentalPaidUpfront] = useState(true);
   const rentalPriceOf = useRentalPrices();
   const rentalLine =
     rentalOn && rentalCode ? rentalPrintLine(t, rentalCode, rentalRemark.trim() || null, rentalPriceOf(rentalCode)) : null;
@@ -256,7 +259,7 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
       // Untouched ⇒ `undefined` ⇒ the request is byte-identical to a pre-REQ-063 create (AC-7).
       discount: discountPayload(discount, chosen?.priceMinor ?? 0),
       // TASK-374 — OFF ⇒ no key at all; ON ⇒ { code, remark? } — the session rental's own shape.
-      rental: rentalOn && rentalCode ? { code: rentalCode, remark: rentalRemark.trim() || undefined } : undefined,
+      rental: rentalOn && rentalCode ? { code: rentalCode, remark: rentalRemark.trim() || undefined, paidUpfront: rentalPaidUpfront } : undefined,
       // SPEC-045 (REQ-054) — the program is a COURSE-level fact, sent once as `subjectId` above. Per-row
       // `subjectId` is deliberately NOT sent: it was the door through which a brand-new course could be born
       // mixed-program (and its derived program then became whatever `bookings[0]` happened to be). The BE falls
@@ -303,11 +306,26 @@ export default function CreatePlanFlow({ opened, onClose }: Props) {
               size="sm"
             />
             {rentalOn && (
-              <RentalTierPicker code={rentalCode} remark={rentalRemark} onCode={setRentalCode} onRemark={setRentalRemark} />
+              <>
+                <RentalTierPicker code={rentalCode} remark={rentalRemark} onCode={setRentalCode} onRemark={setRentalRemark} />
+                <SegmentedControl
+                  size="xs"
+                  value={rentalPaidUpfront ? "upfront" : "perSession"}
+                  onChange={(v) => setRentalPaidUpfront(v === "upfront")}
+                  data={[
+                    { value: "upfront", label: t("rental.paidUpfront") },
+                    { value: "perSession", label: t("rental.payPerSession") },
+                  ]}
+                />
+              </>
             )}
           </Stack>
         }
-        createSummaryLine={rentalLine ? t("rental.courseSummary", { line: rentalLine, size }) : null}
+        createSummaryLine={
+          rentalLine
+            ? `${t("rental.courseSummary", { line: rentalLine, size })} · ${rentalPaidUpfront ? t("rental.paidUpfront") : t("rental.payPerSession")}`
+            : null
+        }
       />
     );
   }

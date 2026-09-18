@@ -104,6 +104,10 @@ export const createStudentForParent = (parentId: string, input: CreateStudentInp
   return delay(clone(s));
 };
 
+// REQ-093 — the mock archive: flip the stamp; the list/detail split is the server's, so the mock only echoes the row.
+export const archiveStudent = (id: string): Promise<Student> => delay({ id, parentId: null, name: "student", nickname: null, gender: null, birthDate: null, nationality: null, note: null, archivedAt: new Date().toISOString() });
+export const unarchiveStudent = (id: string): Promise<Student> => delay({ id, parentId: null, name: "student", nickname: null, gender: null, birthDate: null, nationality: null, note: null, archivedAt: null });
+
 export const deleteStudent = (id: string): Promise<{ deleted: true }> => {
   for (const p of parents) {
     const i = p.students.findIndex((s) => s.id === id);

@@ -13,6 +13,8 @@ export interface Student {
   /** "ไทย" for Thai, else the free-text country name. */
   nationality: string | null;
   note: string | null;
+  /** REQ-093 (TASK-392) — ISO timestamp when archived; null / absent = working. Set by the server only. */
+  archivedAt?: string | null;
 }
 
 export interface Parent {
@@ -27,7 +29,10 @@ export interface Parent {
   note: string | null;
   /** ISO timestamp when suspended; null = active. */
   suspendedAt: string | null;
+  /** The WORKING children (the server hides archived ones from every working read). */
   students: Student[];
+  /** REQ-093 (TASK-392) — the archived children, split from the same read; absent on an older payload. */
+  archivedStudents?: Student[];
 }
 
 /** SPEC-071 / TASK-243 — detail adds the account count used in the confirmation copy. */

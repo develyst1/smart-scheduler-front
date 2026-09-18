@@ -142,9 +142,11 @@ export interface CourseSummary {
   /**
    * REQ-091 Deploy B (TASK-373/374) — the whole-course rental, DERIVED from the course's session rows (every live
    * session born with the course carries a PAID row). On the create's return and the course list; embeds may omit
-   * it → optional. `null` when the course has no rental.
+   * it → optional. `null` when the course has no rental — or once it was REMOVED (TASK-390: the marker).
+   * TASK-390 (REQ-091 §14): `paidUpfront` (the variant chosen at creation) and `unpaidSessions` (live rows without a
+   * `paid_at` — "n to collect").
    */
-  rental?: { code: string; remark: string | null } | null;
+  rental?: { code: string; remark: string | null; paidUpfront: boolean; unpaidSessions: number } | null;
 }
 
 /** Badge value as embedded on a booking. */

@@ -32,10 +32,11 @@ const plan = codeOf("src/components/partials/Bookings/PlanModal.tsx");
 describe("§1 — the picker on course creation", () => {
   it("OFF by default ⇒ no `rental` key; ON ⇒ { code, remark? } — form and service agree", () => {
     expect(flow).toContain("const [rentalOn, setRentalOn] = useState(false);");
-    expect(flow).toContain('rental: rentalOn && rentalCode ? { code: rentalCode, remark: rentalRemark.trim() || undefined } : undefined,');
+    // TASK-391 — `paidUpfront` rides beside the code, both ways (true = the default)
+    expect(flow).toContain('rental: rentalOn && rentalCode ? { code: rentalCode, remark: rentalRemark.trim() || undefined, paidUpfront: rentalPaidUpfront } : undefined,');
     const body = svc.slice(svc.indexOf('api.post<CreateCoursePackageResponse>("/courses"'), svc.indexOf("export const previewCoursePackage"));
     expect(body).toContain("rental: input.rental");
-    expect(body).toContain('? { code: input.rental.code, ...(input.rental.remark ? { remark: input.rental.remark } : {}) }');
+    expect(body).toContain('? { code: input.rental.code, ...(input.rental.remark ? { remark: input.rental.remark } : {}), paidUpfront: input.rental.paidUpfront }');
     expect(body).toContain(": undefined,");
     // JSON drops an `undefined` property — the same mechanism `discount`/`absentWeeks` already rely on
     expect(JSON.parse(JSON.stringify({ size: 8, rental: undefined }))).toEqual({ size: 8 });
@@ -61,7 +62,8 @@ describe("§1 — the picker on course creation", () => {
     expect(plan).toContain("{createSummaryLine && (");
     const slot = plan.slice(plan.indexOf("{createExtras}"), plan.indexOf("{createSummaryLine && ("));
     expect(slot).toContain("{createPreviewLine}"); // extras above the preview line, the summary under it
-    expect(flow).toContain('createSummaryLine={rentalLine ? t("rental.courseSummary", { line: rentalLine, size }) : null}');
+    // TASK-391 — the summary also says which way the rental is paid
+    expect(flow).toContain('? `${t("rental.courseSummary", { line: rentalLine, size })} · ${rentalPaidUpfront ? t("rental.paidUpfront") : t("rental.payPerSession")}`');
     expect(flow).toContain('label={t("rental.courseToggle")}');
     for (const d of [dictionaries.en, dictionaries.th]) {
       expect(d.rental.courseSummary).toContain("{line} × {size}");

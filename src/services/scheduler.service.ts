@@ -686,8 +686,10 @@ export interface CreateCourseInput {
    * REQ-091 Deploy B (TASK-373/374) — the whole-course rental: the session rental's own shape. Sent ONLY when the
    * admin switched it on; OFF ⇒ the key is absent. The remark rule (set + ride) is the server's, refused BEFORE the
    * course is written (`400 RENTAL_REMARK_REQUIRED`); every live session then carries a PAID row.
+   * TASK-391 (REQ-091 §14): `paidUpfront` — `true` (the default, rows born PAID + one post) or `false` (pay per
+   * session: every row born UNPAID, no post; collected session by session). Sent both ways when the rental is on.
    */
-  rental?: { code: string; remark?: string };
+  rental?: { code: string; remark?: string; paidUpfront: boolean };
 }
 
 export const createCoursePackage = async (
@@ -711,9 +713,20 @@ export const createCoursePackage = async (
     // TASK-374 — OFF ⇒ `undefined` ⇒ the key is ABSENT on the wire (JSON drops it, exactly as `discount` and
     // `absentWeeks` above are absent when untouched); ON ⇒ { code, remark? }, the remark riding only when typed.
     rental: input.rental
-      ? { code: input.rental.code, ...(input.rental.remark ? { remark: input.rental.remark } : {}) }
+      ? { code: input.rental.code, ...(input.rental.remark ? { remark: input.rental.remark } : {}), paidUpfront: input.rental.paidUpfront }
       : undefined,
   });
+  return data;
+};
+
+/**
+ * TASK-391 (REQ-091 §14) — remove the rental from a course's REMAINING sessions: the future live rows go, the course
+ * is marked so a later make-up inherits nothing, and 🔴 NO MONEY MOVES (a paid-upfront post stands; collected rows
+ * stand). `{ removed: n }` is the count for the notice. Refusals are the server's: `404`, `409 RENTAL_NOT_ON_COURSE`.
+ */
+export const removeCourseRental = async (courseId: string): Promise<{ removed: number }> => {
+  if (useMock) return mock.removeCourseRental(courseId);
+  const { data } = await api.delete<{ removed: number }>(`/courses/${courseId}/rental`);
   return data;
 };
 

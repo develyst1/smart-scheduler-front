@@ -848,6 +848,8 @@ export const payBookingRental = (bookingId: string) => {
   _bookingRentals.set(bookingId, rental);
   return delay({ rental });
 };
+export const removeCourseRental = (_courseId: string) => delay({ removed: 3 });
+
 export const removeBookingRental = (bookingId: string) => {
   _bookingRentals.delete(bookingId);
   return delay({ removed: true as const });
