@@ -451,6 +451,12 @@ export const createBooking = (input: CreateBookingInput) => {
 };
 
 /** ย้าย/แก้คาบด้วยมือ (UC-003) — ครู/วัน/เวลา */
+export const updateBookingOther = async (id: string, _patch: unknown): Promise<Booking> => {
+  const b = bookings.find((x) => x.id === id);
+  return delay(b as Booking);
+};
+export const createOtherSeries = async (input: { dates: string[] }) => delay({ created: input.dates.length, bookingIds: input.dates.map((d) => `mock-${d}`) });
+
 export const moveBooking = (
   id: string,
   patch: {

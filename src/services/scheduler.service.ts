@@ -71,6 +71,8 @@ import type {
   PackageSize,
 } from "@/types/app/scheduler";
 import { ApiClientError } from "@/lib/api/client";
+import type { OtherKind, OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
+import type { OtherSeriesResponse } from "@/types/api/contract";
 import * as mock from "./scheduler.mock.service";
 
 const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -525,6 +527,10 @@ export interface CreateBookingInput {
   otherPriceItemId?: string;
   /** AC-18/19 — the teachers BEYOND `teacherId`; `teacherId` is always the first. `OTHER` only (AC-20). */
   additionalTeacherIds?: string[];
+  // ── REQ-095 Stage 1 (TASK-394/395) — `OTHER` only: the kind, the head count, ONE rates map (teacherId → SATANG). ──
+  otherKind?: OtherKind;
+  headCount?: number;
+  teacherRates?: Record<string, number>;
 }
 
 /** Existing id → { id }; otherwise an inline new student (+ optional parent phone). */
@@ -607,8 +613,51 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
     otherPriceItemId: isOther ? input.otherPriceItemId : undefined,
     additionalTeacherIds:
       isOther && input.additionalTeacherIds?.length ? input.additionalTeacherIds : undefined,
+    // TASK-395 — the three ECA/Free/KOL facts, on the wire only for `OTHER` and only when set (the same gate as above).
+    otherKind: isOther ? input.otherKind : undefined,
+    headCount: isOther ? input.headCount : undefined,
+    teacherRates: isOther ? input.teacherRates : undefined,
   });
   return dtoToBooking(data.booking);
+};
+
+/**
+ * REQ-095 (TASK-395) — edit the three facts on an existing `OTHER` booking: `PATCH /bookings/:id/other` — its OWN
+ * route (a plain `PATCH /bookings/:id` is a MOVE and notifies the teacher). The body is only what changed
+ * (`otherSchedulePatch`); `teacherRates` REPLACES the map when sent.
+ */
+export const updateBookingOther = async (id: string, patch: OtherScheduleFacts) => {
+  if (useMock) return mock.updateBookingOther(id, patch);
+  const { data } = await api.patch<MoveBookingResponse>(`/bookings/${id}/other`, patch);
+  return dtoToBooking(data.booking);
+};
+
+/** REQ-095 (TASK-395) — a SERIES of `OTHER` bookings, one per date, ONE call, all or nothing. `endTime` is the server's (+1h). */
+export interface OtherSeriesInput {
+  title: string;
+  otherKind: OtherKind;
+  headCount: number;
+  note?: string;
+  teacherId: string;
+  additionalTeacherIds?: string[];
+  teacherRates?: Record<string, number>;
+  startTime: string;
+  dates: string[];
+}
+export const createOtherSeries = async (input: OtherSeriesInput): Promise<OtherSeriesResponse> => {
+  if (useMock) return mock.createOtherSeries(input);
+  const { data } = await api.post<OtherSeriesResponse>("/bookings/other-series", {
+    title: input.title,
+    otherKind: input.otherKind,
+    headCount: input.headCount,
+    ...(input.note ? { note: input.note } : {}),
+    teacherId: input.teacherId,
+    ...(input.additionalTeacherIds?.length ? { additionalTeacherIds: input.additionalTeacherIds } : {}),
+    ...(input.teacherRates ? { teacherRates: input.teacherRates } : {}),
+    startTime: input.startTime,
+    dates: input.dates,
+  });
+  return data;
 };
 
 /** ย้าย/แก้คาบด้วยมือ (UC-003) — ครู/วัน/เวลา. ชนช่อง → 409 SLOT_TAKEN. */

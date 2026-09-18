@@ -6,6 +6,7 @@ import type { BookingType } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR } from "@/types/app/scheduler";
 import { CAL_SURFACE_STYLE } from "./calendar-status";
 import { useT } from "@/lib/i18n";
+import { OTHER_KINDS } from "@/lib/scheduler/other-schedule";
 import { STATUS_LEGEND } from "./Calendar.config";
 import CellDisplayMenu from "./CellDisplayMenu";
 
@@ -105,6 +106,16 @@ export default function CalendarLegendBar() {
         </span>
         {t("calendar.rentalLegendPaid")}
       </span>
+      <span aria-hidden className="mx-1 h-4 w-px bg-muted-200" />
+      {/* REQ-095 (TASK-395) — the three OTHER kinds, the same tag as the cell. */}
+      {OTHER_KINDS.map((k) => (
+        <span key={k} className="flex items-center gap-1 text-[11px] text-muted-600">
+          <span className="inline-flex items-center rounded-sm border border-cal-ink/40 bg-white px-1 py-px text-[9px] font-semibold uppercase leading-tight tracking-wide text-cal-ink">
+            {t(`calendar.otherKindTag_${k}`)}
+          </span>
+          {t(`booking.otherKind_${k}`)}
+        </span>
+      ))}
       <div className="ml-auto">
         <CellDisplayMenu />
       </div>

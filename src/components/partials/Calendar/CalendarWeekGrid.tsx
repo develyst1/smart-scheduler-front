@@ -12,7 +12,7 @@ import { BOOKING_STATUS_COLOR, OFF_CALENDAR_STATUSES, TIME_SLOTS } from "@/types
 import { useI18n } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
-import BookingCellBody, { BookingTypeStripe, LastStamp, RentalStamp, SharedTeachersMarker } from "@/components/common/BookingCellBody";
+import BookingCellBody, { BookingTypeStripe, LastStamp, OtherKindTag, RentalStamp, SharedTeachersMarker } from "@/components/common/BookingCellBody";
 import { useCellDisplay } from "@/lib/scheduler/cell-display";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE } from "./calendar-status";
@@ -144,6 +144,8 @@ export default function CalendarWeekGrid({
                           <LastStamp booking={b} size="sm" />
                           {/* REQ-091 — the server's rental row: red unpaid, green paid. */}
                           <RentalStamp booking={b} size="sm" />
+                          {/* REQ-095 — the OTHER kind, from the server's `other.kind`. */}
+                          <OtherKindTag booking={b} size="sm" />
                           {/* Branch (badge) — a primary identifier, kept as a labelled chip like the day cell. */}
                           {display.badge && (b.badges ?? []).length > 0 && (
                             <span className="flex shrink-0 flex-wrap justify-end gap-1">

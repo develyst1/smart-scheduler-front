@@ -12,6 +12,9 @@ import {
   getBookingsByDate,
   getBookingsInRange,
   moveBooking,
+  updateBookingOther,
+  createOtherSeries,
+  type OtherSeriesInput,
   type MoveBookingInput,
   createCoursePackage,
   createVoucher,
@@ -76,6 +79,7 @@ import {
   type ExtraSessionInput,
 } from "@/services/scheduler.service";
 import type { EndCourseReason, PlanChange, RecordRentalInput, TeacherType } from "@/types/app/scheduler";
+import type { OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
 
 export const TEACHERS_KEY = ["teachers"] as const;
 export const BOOKINGS_KEY = ["bookings"] as const;
@@ -492,6 +496,19 @@ export const useDetectConflict = () =>
   });
 
 /** ย้าย/แก้คาบด้วยมือ (UC-003) — ครู/วัน/เวลา */
+/** REQ-095 (TASK-395) — the OTHER facts editor (its own route, no notice) and the series; the calendar re-reads as for every write. */
+export const useUpdateBookingOther = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: OtherScheduleFacts }) => updateBookingOther(id, patch),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+export const useCreateOtherSeries = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (input: OtherSeriesInput) => createOtherSeries(input), onSuccess: () => invalidateAll(qc) });
+};
+
 export const useMoveBooking = () => {
   const qc = useQueryClient();
   return useMutation({

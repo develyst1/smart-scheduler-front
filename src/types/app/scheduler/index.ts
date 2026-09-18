@@ -1,4 +1,5 @@
 import type { ExpiryWarning } from "@/types/api/contract";
+import type { OtherFacts } from "@/lib/scheduler/other-schedule";
 
 // ───────────────────────────── Teachers ─────────────────────────────
 
@@ -201,6 +202,8 @@ export interface Booking {
   cancelReason?: string | null;
   /** REQ-091 (TASK-372) — the session's rental row, or null. The `R` chip (red unpaid / green paid) reads only this. */
   rental?: BookingRental | null;
+  /** REQ-095 (TASK-395) — the ECA · Free · KOL facts (`OTHER` only), or null. Display + the details editor read only this. */
+  other?: OtherFacts | null;
 }
 
 // ──────────────────────────── Badges ────────────────────────────

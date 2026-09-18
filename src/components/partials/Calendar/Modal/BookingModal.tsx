@@ -22,7 +22,7 @@ import {
   Loader,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle } from "lucide-react";
+import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -70,6 +70,10 @@ import {
   canSubmitResume,
 } from "@/lib/scheduler/pause-booking";
 import RentalSection from "./RentalSection";
+import OtherScheduleFields from "./OtherScheduleFields";
+import OtherSeriesDialog from "./OtherSeriesDialog";
+import OtherDetailsDialog from "./OtherDetailsDialog";
+import { emptyOtherSchedule, otherScheduleFacts, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import CancelBookingDialog from "./CancelBookingDialog";
 import { useConfirm } from "@/components/common/useConfirm";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
@@ -178,6 +182,8 @@ function ViewBooking({
   const [moving, setMoving] = useState(false);
   const [noticeError, setNoticeError] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
+  // REQ-095 (TASK-395) — the OTHER facts editor (its own route); behind `calendar.booking-edit`.
+  const [otherDetailsOpen, setOtherDetailsOpen] = useState(false);
   // SPEC-075 / REQ-076 (TASK-261) — พัก / นำกลับมาลงตาราง.
   const pause = usePauseBooking();
   const resume = useResumeBooking();
@@ -491,7 +497,27 @@ function ViewBooking({
       {booking.note && (
         <p className="text-sm text-muted-500">{t("booking.noteLabel")}: {booking.note}</p>
       )}
+      {/* REQ-095 (TASK-395) — the ECA/Free/KOL facts on an OTHER booking, from the server's `other`; the pencil edits them
+          through their own route. A lesson booking has `other === null` and shows nothing. */}
+      {booking.bookingType === "OTHER" && booking.other && (
+        <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-500">
+          <span>
+            {t("booking.otherKind")}: <strong>{booking.other.kind ? t(`booking.otherKind_${booking.other.kind}`) : "—"}</strong>
+          </span>
+          <span>
+            {t("booking.otherHeadCount")}: <strong>{booking.other.headCount ?? "—"}</strong>
+          </span>
+          {can("action:calendar.booking-edit") && (
+            <Button size="compact-xs" variant="subtle" leftSection={<Pencil size={12} />} onClick={() => setOtherDetailsOpen(true)}>
+              {t("booking.otherEditDetails")}
+            </Button>
+          )}
+        </p>
+      )}
       </div>
+      {booking.bookingType === "OTHER" && otherDetailsOpen && (
+        <OtherDetailsDialog booking={booking} teachers={teachers} opened={otherDetailsOpen} onClose={() => setOtherDetailsOpen(false)} />
+      )}
 
       {/* REQ-091 (TASK-372) — the per-session rental ROW: add (unpaid) · mark paid (two taps, posts money) · remove
           while unpaid. Replaces the ⋯ menu's "Add rental" (REQ-028's standalone `RentalModal` with hours + refId):
@@ -952,6 +978,9 @@ function CreateForm({
   // SPEC-070 / REQ-078 — the อื่นๆ branch. All of its RULES live in `lib/scheduler/other-booking.ts`; this is
   // only the draft the controls edit.
   const [other, setOther] = useState<OtherBookingDraft>(() => emptyOtherBooking(createSlot.teacherId));
+  // REQ-095 (TASK-395) — the ECA/Free/KOL facts: kind · head count · rate per teacher (baht as typed; satang on the wire).
+  const [otherSched, setOtherSched] = useState<OtherScheduleDraft>(emptyOtherSchedule);
+  const [seriesOpen, setSeriesOpen] = useState(false);
 
   const isVoucher = bookingType === "VOUCHER";
   const isOther = bookingType === "OTHER";
@@ -1043,6 +1072,7 @@ function CreateForm({
     setDiscountProblems([]);
     setAttendeeNote("");
     setOther(emptyOtherBooking(createSlot.teacherId));
+    setOtherSched(emptyOtherSchedule());
   };
 
   // Preselect ONLY when there is exactly one thing to pick — and it still lands in state as a choice, so the
@@ -1122,6 +1152,8 @@ function CreateForm({
         otherPriceMinor: otherEval.otherPriceMinor,
         otherPriceItemId: otherEval.otherPriceItemId,
         additionalTeacherIds: additional,
+        // TASK-395 — each of the three only when set; the rates map only when at least one rate was typed.
+        ...otherScheduleFacts(otherSched, otherDraft.teacherIds),
       };
     }
   } else {
@@ -1315,6 +1347,25 @@ function CreateForm({
             onChange={onOtherTitleChange(setOther)}
             required={!otherDraft.hasStudent}
           />
+
+          {/* REQ-095 Stage 1 (TASK-395) — kind · head count · rate per teacher (stored, not posted — the hint says so). */}
+          <OtherScheduleFields value={otherSched} onChange={setOtherSched} teacherIds={other.teacherIds} teachers={teachers} />
+          {/* The SERIES door — its own key; the dialog copies what is typed here and adds the dates. */}
+          {can("action:calendar.other-series") && (
+            <Button variant="light" size="xs" leftSection={<CalendarPlus size={14} />} className="self-start" onClick={() => setSeriesOpen(true)}>
+              {t("booking.otherSeries")}
+            </Button>
+          )}
+          {seriesOpen && (
+            <OtherSeriesDialog
+              opened={seriesOpen}
+              onClose={() => {
+                setSeriesOpen(false);
+                onClose();
+              }}
+              seed={{ title: other.title, teacherIds: other.teacherIds, startTime, date: createSlot.date, schedule: otherSched }}
+            />
+          )}
 
           <Select
             label={t("booking.time")}

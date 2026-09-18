@@ -47,8 +47,8 @@ describe("§1 — ONE gate, everywhere", () => {
     expect(codeOf("src/auth.ts")).toContain("actions: Array.isArray(data.user.actions) ? data.user.actions : [],");
   });
 
-  it("the snapshot: 48 keys in 8 areas (46 + TASK-390's course-rental + TASK-392's student-archive); every key a site uses exists; exactly two keys have no FE site", () => {
-    expect(KEYS.length).toBe(48);
+  it("the snapshot: 49 keys in 8 areas (46 + course-rental + student-archive + TASK-394's other-series); every key a site uses exists; exactly two keys have no FE site", () => {
+    expect(KEYS.length).toBe(49);
     const areas = [...new Set(KEYS.map((k) => k.slice("action:".length, k.indexOf("."))))];
     expect(areas).toEqual(["calendar", "bookings", "people", "teachers", "link-requests", "badges", "settings", "sales"]);
     for (const k of KEYS) expect(k).toMatch(/^action:[a-z-]+\.[a-z-]+$/);
@@ -61,8 +61,8 @@ describe("§1 — ONE gate, everywhere", () => {
     expect(KEYS.filter((k) => !used.has(k))).toEqual(["action:people.student-create", "action:teachers.calendar-link"]);
   });
 
-  it("the sweep: 71 key literals across 30 files (68 + TASK-391's remove-rental + TASK-393's archive and restore)", () => {
-    expect(sites.length).toBe(71);
+  it("the sweep: 73 key literals across 30 files (71 + TASK-395's series door and details editor)", () => {
+    expect(sites.length).toBe(73);
     expect(new Set(sites.map((s) => s.file)).size).toBe(30);
     // hidden, never disabled: no site turns the gate into a `disabled` prop
     for (const f of SITE_FILES) expect({ f, hit: /disabled=\{!can\(/.test(readFileSync(f, "utf8")) }).toEqual({ f, hit: false });

@@ -257,6 +257,12 @@ export interface BookingDTO {
    * the key type-checks; the mapper reads it `?? null`.
    */
   rental?: { code: string; remark: string | null; paid: boolean } | null;
+  /**
+   * REQ-095 Stage 1 (TASK-394) — the ECA · Free · KOL facts on an `OTHER` booking: the kind, the head count, ONE
+   * `teacherRates` map (teacherId → satang, primary + extras), and `ratePostedAt` (null until a later stage posts).
+   * `null` on every lesson type. Optional so a mock without the key type-checks; the mapper reads it `?? null`.
+   */
+  other?: { kind: "ECA" | "FREE" | "KOL" | null; headCount: number | null; teacherRates: Record<string, number>; ratePostedAt: string | null } | null;
   // Conflict resolution (B.1)
   pendingSlot: boolean;
   incomingBookingId: string | null;
@@ -509,6 +515,12 @@ export interface CreateBookingRequest {
   voucherId?: string;
   note?: string;
   badgeValueIds?: string[];
+}
+
+/** REQ-095 (TASK-394) — `POST /bookings/other-series`: one OTHER row per date, all or nothing (`409 SLOT_TAKEN` names the date). */
+export interface OtherSeriesResponse {
+  created: number;
+  bookingIds: string[];
 }
 
 export interface CreateBookingResponse {

@@ -44,6 +44,8 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     cancelReason: dto.cancelReason ?? null,
     // TASK-372 — the rental row as sent; a payload without the key ⇒ null (no rental), never undefined.
     rental: dto.rental ?? null,
+    // TASK-395 — the OTHER facts as sent; absent ⇒ null.
+    other: dto.other ?? null,
     // Conflict resolution (B.1)
     pendingSlot: dto.pendingSlot || undefined,
     incomingBookingId: dto.incomingBookingId ?? undefined,

@@ -118,6 +118,26 @@ export function RentalStamp({ booking, size = "md" }: { booking: Booking; size?:
   );
 }
 
+/**
+ * REQ-095 Stage 1 (TASK-395) — the KIND tag on an OTHER cell (`ECA` / `Free` / `KOL`), from the server's `other.kind`
+ * only; null ⇒ nothing. On the name row beside the other stamps, both grids; the legend shows the same three.
+ */
+export function OtherKindTag({ booking, size = "md" }: { booking: Booking; size?: "sm" | "md" }) {
+  const t = useT();
+  const kind = booking.other?.kind;
+  if (booking.bookingType !== "OTHER" || !kind) return null;
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-sm border border-cal-ink/40 bg-white px-1 font-semibold uppercase leading-tight tracking-wide text-cal-ink ${
+        size === "sm" ? "text-[9px] py-px" : "text-[10px] py-0.5"
+      }`}
+      title={t(`booking.otherKind_${kind}`)}
+    >
+      {t(`calendar.otherKindTag_${kind}`)}
+    </span>
+  );
+}
+
 /** The leading edge-stripe that carries the type as a second, quieter channel (status stays primary). */
 export function BookingTypeStripe({ type }: { type: BookingType }) {
   return (

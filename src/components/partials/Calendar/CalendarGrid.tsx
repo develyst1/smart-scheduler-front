@@ -17,6 +17,7 @@ import {
   SharedTeachersMarker,
   LastStamp,
   RentalStamp,
+  OtherKindTag,
 } from "@/components/common/BookingCellBody";
 
 interface Props {
@@ -151,6 +152,8 @@ function Row({
                   <LastStamp booking={booking} />
                   {/* REQ-091 — the server's rental row: red unpaid, green paid. */}
                   <RentalStamp booking={booking} />
+                  {/* REQ-095 — the OTHER kind, from the server's `other.kind`. */}
+                  <OtherKindTag booking={booking} />
                   {/* Branch (badge) — a primary identifier here, so it stays a labelled chip, never a bare dot. */}
                   {display.badge && (booking.badges ?? []).length > 0 && (
                     <span className="flex shrink-0 flex-wrap justify-end gap-1">

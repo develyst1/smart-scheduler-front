@@ -23,7 +23,7 @@ export const LEAVE_OVERRIDE_FORBIDDEN_SENTENCE = "ไม่มีสิทธิ
 
 /**
  * 🔴 TEST-ONLY SNAPSHOT of the BE's `ACTION_KEYS` (`lib/permissions.ts`, TASK-385 — 46: 44 route keys + the two
- * body-level ones; TASK-390 added the 47th, `bookings.course-rental`; TASK-392 the 48th, `people.student-archive`). Nothing at runtime reads it. `action-gate.test.ts` walks `src` for every `can("action:…")` literal
+ * body-level ones; TASK-390 added the 47th, `bookings.course-rental`; TASK-392 the 48th, `people.student-archive`; TASK-394 the 49th, `calendar.other-series`). Nothing at runtime reads it. `action-gate.test.ts` walks `src` for every `can("action:…")` literal
  * and refuses one that is not here; the report states this list equals the BE's, key for key, and updating it is a
  * task, not a drift. `area` = the part between `action:` and the dot.
  */
@@ -37,6 +37,7 @@ export const ACTION_KEYS_SNAPSHOT = [
   "action:calendar.note",
   "action:calendar.rental",
   "action:calendar.rental-sale",
+  "action:calendar.other-series", // TASK-394/395 — the SERIES; a single OTHER stays under `book`
   "action:bookings.bulk-confirm",
   "action:bookings.course-create",
   "action:bookings.course-edit",
