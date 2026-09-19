@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Alert, Badge, Button, Card, Checkbox, Group, Loader, Modal, PasswordInput, Select, Stack, Table, Text, TextInput } from "@mantine/core";
-import { AlertTriangle, KeyRound, LayoutList, ListChecks, Pencil, ShieldCheck, UserPlus, UserX, UserCheck } from "lucide-react";
+import { AlertTriangle, GraduationCap, KeyRound, LayoutList, ListChecks, Pencil, ShieldCheck, UserPlus, UserX, UserCheck } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
@@ -11,6 +11,8 @@ import { useConfirm } from "@/components/common/useConfirm";
 import { formatDateDisplay } from "@/lib/ui/format";
 import { useCreateUser, useResetUserPassword, useSetUserActions, useSetUserDisabled, useSetUserMenus, useSetUserRole, useUpdateUser, useUsers } from "@/hooks/scheduler/useUsers";
 import { useRoles } from "@/hooks/scheduler/useRoles";
+import { useTeachers } from "@/hooks/scheduler";
+import { teacherSelectData } from "@/components/common/TeacherOption";
 import { ActionsChecklist, MenusChecklist } from "./GrantChecklists";
 import { usePermissions } from "@/hooks/scheduler/useMe";
 import { MENU_KEYS } from "@/lib/rbac/menus";
@@ -126,6 +128,28 @@ export default function UsersContent() {
   );
 }
 
+/**
+ * REQ-097 (TASK-407) — the `Teacher` picker on create/edit: the bookable teachers from `GET /teachers`, "none" by
+ * default; the link is one user per teacher (the server's `409 TEACHER_LINKED`, shown as its sentence in the dialog).
+ */
+function TeacherPicker({ value, onChange }: { value: string | null; onChange: (id: string | null) => void }) {
+  const t = useT();
+  const { data: teachers = [] } = useTeachers();
+  return (
+    <Select
+      label={t("users.teacherLink")}
+      description={t("users.teacherLinkHint")}
+      placeholder={t("users.teacherNone")}
+      value={value}
+      onChange={onChange}
+      data={teacherSelectData(teachers.filter((x) => x.bookable || x.id === value))}
+      searchable
+      clearable
+      nothingFoundMessage={t("common.noData")}
+    />
+  );
+}
+
 function UserRow({
   user,
   isSelf,
@@ -187,6 +211,11 @@ function UserRow({
         {isSelf && (
           <Text span size="xs" c="dimmed" ml={6}>
             {t("users.you")}
+          </Text>
+        )}
+        {user.teacherName && (
+          <Text size="xs" c="teal" className="flex items-center gap-1" data-teacher={user.teacherId ?? undefined}>
+            <GraduationCap size={12} /> {t("users.teacherLine", { name: user.teacherName })}
           </Text>
         )}
       </Table.Td>
@@ -281,6 +310,7 @@ function CreateUserModal({ opened, onClose }: { opened: boolean; onClose: () => 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [teacherId, setTeacherId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const mismatch = confirm.length > 0 && confirm !== password;
 
@@ -290,13 +320,14 @@ function CreateUserModal({ opened, onClose }: { opened: boolean; onClose: () => 
     setPassword("");
     setConfirm("");
     setIsSuperAdmin(false);
+    setTeacherId(null);
     setError(null);
     onClose();
   };
   const submit = async () => {
     setError(null);
     try {
-      await create.mutateAsync({ username, password, displayName, isSuperAdmin });
+      await create.mutateAsync({ username, password, displayName, isSuperAdmin, ...(teacherId ? { teacherId } : {}) });
       notify({ title: t("users.createdOk", { name: displayName.trim() }), color: "success" });
       close();
     } catch (e) {
@@ -337,6 +368,7 @@ function CreateUserModal({ opened, onClose }: { opened: boolean; onClose: () => 
           autoComplete="new-password"
           required
         />
+        <TeacherPicker value={teacherId} onChange={setTeacherId} />
         <Checkbox label={t("users.superAdminToggle")} checked={isSuperAdmin} onChange={(e) => setIsSuperAdmin(e.currentTarget.checked)} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={close}>
@@ -360,6 +392,7 @@ function EditUserModal({ user, onClose }: { user: UserDTO | null; onClose: () =>
   const update = useUpdateUser();
   const [displayName, setDisplayName] = useState("");
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [teacherId, setTeacherId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [seededFor, setSeededFor] = useState<string | null>(null);
   // Seed the form from the row on open (render-time, not an effect: the row is a prop, the form is a copy of it).
@@ -367,6 +400,7 @@ function EditUserModal({ user, onClose }: { user: UserDTO | null; onClose: () =>
     setSeededFor(user.id);
     setDisplayName(user.displayName);
     setIsSuperAdmin(user.isSuperAdmin);
+    setTeacherId(user.teacherId ?? null);
     setError(null);
   }
   if (!user && seededFor !== null) setSeededFor(null);
@@ -381,6 +415,8 @@ function EditUserModal({ user, onClose }: { user: UserDTO | null; onClose: () =>
         input: {
           ...(displayName.trim() !== user.displayName ? { displayName } : {}),
           ...(isSuperAdmin !== user.isSuperAdmin ? { isSuperAdmin } : {}),
+          // TASK-407 — null CLEARS the link (rides only when it changed).
+          ...(teacherId !== (user.teacherId ?? null) ? { teacherId } : {}),
         },
       });
       notify({ title: t("users.savedOk"), color: "success" });
@@ -399,6 +435,7 @@ function EditUserModal({ user, onClose }: { user: UserDTO | null; onClose: () =>
           </Alert>
         )}
         <TextInput label={t("users.displayName")} value={displayName} onChange={(e) => setDisplayName(e.currentTarget.value)} required />
+        <TeacherPicker value={teacherId} onChange={setTeacherId} />
         <Checkbox label={t("users.superAdminToggle")} checked={isSuperAdmin} onChange={(e) => setIsSuperAdmin(e.currentTarget.checked)} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onClose}>

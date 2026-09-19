@@ -10,6 +10,8 @@ import { useCancelledTrayCollapsed, useShowCancelled } from "@/lib/scheduler/can
 import { useLoadPhase } from "@/lib/ui/load-phase";
 import { useT } from "@/lib/i18n";
 import { useBadges, useCalendar, usePausedBookings, useTeachers } from "@/hooks/scheduler";
+import { useCan, useMe } from "@/hooks/scheduler/useMe";
+import { columnTeacherIds, isScoped } from "@/lib/scheduler/teacher-scope";
 import { dtoToBooking } from "@/lib/api/mappers";
 import type { Booking } from "@/types/app/scheduler";
 import CalendarHeader, { type CalendarView } from "./CalendarHeader";
@@ -19,9 +21,23 @@ import BookingModal from "./Modal/BookingModal";
 import PausedTray from "./PausedTray";
 import CalendarGridSkeleton from "./CalendarGridSkeleton";
 import CampDayBanner from "./CampDayBanner";
+import ReportLeaveDialog from "./Modal/ReportLeaveDialog";
 
+/**
+ * REQ-097 (TASK-407) — a LINKED account (`me.teacherId`) sees ITS calendar: the server returns only my column and my
+ * rows; this page renders what comes (the columns from the payload, no empty coaches), drops the teacher picker, and
+ * offers `Report leave` by the 55th key. 🔴 The load path while scoped is the server's `TEACHER_ALLOWED` set exactly:
+ * `GET /calendar` · `GET /bookings?status=PAUSED` · `GET /teachers` · `GET /badges` (+ `/me`) — nothing that lists
+ * students, parents or courses may be mounted here, or the page errors on load with `403 SCOPE_TEACHER`.
+ */
 export default function CalendarContent() {
   const t = useT();
+  const { me } = useMe();
+  const can = useCan();
+  const scoped = isScoped(me);
+  // Linked users only: the act alone is not the identity (an unlinked holder of the key is the server's 403).
+  const canReportLeave = scoped && can("action:calendar.teacher-leave");
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [view, setView] = useState<CalendarView>("week");
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
@@ -77,12 +93,16 @@ export default function CalendarContent() {
   );
 
   // กรองครูตามประเภท + รายชื่อ — ว่าง = แสดงทั้งหมด
-  const filteredTeachers = teachers.filter(
-    (t) =>
-      (selectedTypes.length === 0 || selectedTypes.includes(t.type)) &&
-      (selectedTeacherIds.length === 0 || selectedTeacherIds.includes(t.id)) &&
-      (view === "week" || bookableOnDate(t, date)),
-  );
+  // TASK-407 — scoped: the columns are the ones the payload came back with (mine), the filters do not apply.
+  const scopedIds = scoped ? columnTeacherIds(calendar) : null;
+  const filteredTeachers = scopedIds
+    ? teachers.filter((t) => scopedIds.includes(t.id))
+    : teachers.filter(
+        (t) =>
+          (selectedTypes.length === 0 || selectedTypes.includes(t.type)) &&
+          (selectedTeacherIds.length === 0 || selectedTeacherIds.includes(t.id)) &&
+          (view === "week" || bookableOnDate(t, date)),
+      );
 
   const [isOpen, { open: onOpen, close: onClose }] = useDisclosure(false);
   const [selected, setSelected] = useState<Booking | undefined>();
@@ -135,7 +155,10 @@ export default function CalendarContent() {
         onChangeBadgeValueIds={setSelectedBadgeValueIds}
         studentQuery={studentQuery}
         onChangeStudentQuery={setStudentQuery}
+        scoped={scoped}
+        onReportLeave={canReportLeave ? () => setLeaveOpen(true) : undefined}
       />
+      {leaveOpen && <ReportLeaveDialog opened initialDate={date} onClose={() => setLeaveOpen(false)} />}
 
       {/* 🔴 SPEC-075 / REQ-076 AC-9/AC-10 (TASK-261) — the พัก tray sits BESIDE the grid, never inside it.
           A paused booking has no scheduled slot, and anything dateless dropped into a dated grid is invisible
@@ -239,6 +262,7 @@ export default function CalendarContent() {
         bookings={view === "day" ? dayBookings : weekBookings}
         onOverbook={openOverbook}
         onWalkIn={openWalkIn}
+        scoped={scoped}
       />
     </div>
   );

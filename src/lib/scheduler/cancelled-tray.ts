@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import { END_COURSE_REASONS, type EndCourseReason } from "@/types/app/scheduler";
+import { CANCEL_REASON_CODES, type CancelReasonCode } from "@/types/app/scheduler";
 
 /**
  * TASK-369 (`REQ-089 §5` / `§5.1`) — the CANCELLED tray's two per-user flags, stored the way the paused tray's and
@@ -88,9 +88,10 @@ export function useCancelledTrayCollapsed() {
 export const cancelReasonDisplay = (
   cancelReason: string | null | undefined,
   note: string | null | undefined,
-): { key: `endCourse.${EndCourseReason}` } | { text: string } | null => {
-  if (cancelReason && (END_COURSE_REASONS as readonly string[]).includes(cancelReason)) {
-    return { key: `endCourse.${cancelReason as EndCourseReason}` };
+): { key: `endCourse.${CancelReasonCode}` } | { text: string } | null => {
+  // TASK-407 — the wider READ set: the three admin reasons + `TEACHER_LEAVE` (the teacher's own leave writes it).
+  if (cancelReason && (CANCEL_REASON_CODES as readonly string[]).includes(cancelReason)) {
+    return { key: `endCourse.${cancelReason as CancelReasonCode}` };
   }
   const text = note?.trim();
   return text ? { text } : null;

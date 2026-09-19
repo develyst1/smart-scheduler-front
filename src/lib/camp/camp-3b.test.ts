@@ -156,7 +156,7 @@ describe("§5 — the reminder flag through the existing Settings page; the regi
     expect(codeOf("src/services/settings.mock.service.ts")).toContain('{ key: "camp_reminder_enabled", label: "ส่งแจ้งเตือน LINE วันแคมป์ (08:15)", type: "enum", unit: "option", default: "off", options: ["off", "on"] }');
   });
   it("snapshot unchanged: 54 actions, 13 menus; the undo uses the mark's key", () => {
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(54);
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(55); // TASK-407 added the 55th (teacher-leave) after this task
     expect(MENU_KEYS.length).toBe(13);
     expect(undo).not.toContain("action:"); // the door is the roster's menu (day-mark); the dialog asks nothing more
     const camp = dictionaries.en.camp as Record<string, string>;

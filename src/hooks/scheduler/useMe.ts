@@ -34,6 +34,7 @@ export const useMe = () => {
           menus: su.menus,
           actions: Array.isArray(su.actions) ? su.actions : [],
           roleName: null, // the seed has no role name; `/me` fills it at once
+          teacherId: null, // REQ-097 — the seed has no link either; the doors follow `/me` (one request later)
         }
       : undefined;
   const q = useQuery({
@@ -52,7 +53,7 @@ export const useMe = () => {
     return () => window.removeEventListener(FORBIDDEN_EVENT, onForbidden);
   }, [refetch]);
   const access: MenuAccess | undefined = q.data
-    ? { isSuperAdmin: q.data.isSuperAdmin === true, menus: q.data.menus, actions: Array.isArray(q.data.actions) ? q.data.actions : [] }
+    ? { isSuperAdmin: q.data.isSuperAdmin === true, menus: q.data.menus, actions: Array.isArray(q.data.actions) ? q.data.actions : [], teacherId: q.data.teacherId ?? null }
     : undefined;
   return { me: q.data, access, isLoading: status === "loading" || (status === "authenticated" && !q.data), error: q.error };
 };

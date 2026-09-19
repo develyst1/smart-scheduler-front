@@ -43,12 +43,12 @@ describe("§1 — ONE gate, everywhere", () => {
     expect(useMe).toContain("export const useCan = (): ((action: ActionKey) => boolean) => {");
     expect(useMe).toContain("return (action) => can(access, action);");
     expect(useMe).toContain("actions: Array.isArray(q.data.actions) ? q.data.actions : []");
-    expect(codeOf("src/types/api/contract.ts")).toContain("isSuperAdmin: boolean; menus: string[]; actions: string[]; roleName: string | null };");
+    expect(codeOf("src/types/api/contract.ts")).toContain("isSuperAdmin: boolean; menus: string[]; actions: string[]; roleName: string | null; teacherId: string | null };"); // TASK-407 + teacherId
     expect(codeOf("src/auth.ts")).toContain("actions: Array.isArray(data.user.actions) ? data.user.actions : [],");
   });
 
   it("the snapshot: 54 keys in 9 areas (50 + TASK-401's four `camp.*`); every key a site uses exists; exactly two keys have no FE site", () => {
-    expect(KEYS.length).toBe(54);
+    expect(KEYS.length).toBe(55); // + TASK-406/407's `calendar.teacher-leave`
     const areas = [...new Set(KEYS.map((k) => k.slice("action:".length, k.indexOf("."))))];
     expect(areas).toEqual(["calendar", "bookings", "people", "teachers", "link-requests", "badges", "camp", "settings", "sales"]); // camp after badges, as the BE
     for (const k of KEYS) expect(k).toMatch(/^action:[a-z-]+\.[a-z-]+$/);
@@ -62,8 +62,8 @@ describe("§1 — ONE gate, everywhere", () => {
   });
 
   it("the sweep: 86 key literals across 33 files (78 + TASK-402's camp doors: open/edit/close a week, sell ×2, redeem ×2, mark)", () => {
-    expect(sites.length).toBe(86);
-    expect(new Set(sites.map((s) => s.file)).size).toBe(33);
+    expect(sites.length).toBe(87); // + TASK-407's `Report leave` door (CalendarContent)
+    expect(new Set(sites.map((s) => s.file)).size).toBe(34);
     // hidden, never disabled: no site turns the gate into a `disabled` prop
     for (const f of SITE_FILES) expect({ f, hit: /disabled=\{!can\(/.test(readFileSync(f, "utf8")) }).toEqual({ f, hit: false });
     // the sites the report lists, one per area, are really there
@@ -82,7 +82,9 @@ describe("§1 — ONE gate, everywhere", () => {
 
   it("a few shapes that matter: status is ONE act on four buttons; the ⋯ menu goes when empty; the two grids' `+`; the discount by key", () => {
     const modal = codeOf("src/components/partials/Calendar/Modal/BookingModal.tsx");
-    expect(modal).toContain('const canStatus = can("action:calendar.status");');
+    // TASK-407 — under a linked account the key is `attend` alone: `canAttend` keeps it, `canStatus` needs `!scoped`.
+    expect(modal).toContain('const canAttend = can("action:calendar.status");');
+    expect(modal).toContain("const canStatus = canAttend && !scoped;");
     expect(modal).toContain("{canStatus && (");
     expect(modal).toContain('{booking.status === "PENDING" && canStatus && (');
     expect(modal).toContain("const menuHasItems =");
@@ -153,7 +155,7 @@ describe("§3 — the sentences, and the copy", () => {
   it("copy: users +8 (54 × 2); nothing else moved", () => {
     const en = dictionaries.en.users as Record<string, string>;
     const th = dictionaries.th.users as Record<string, string>;
-    expect(Object.keys(en).length).toBe(58); // + Stage 4's role column 4
+    expect(Object.keys(en).length).toBe(62); // + Stage 4's role column 4 + TASK-407's teacher link 4
     for (const k of ["colActions", "actionsAll", "actionsCount", "actionsTitle", "actionsBody", "actionsSavedOk", "areaSales", "areaMenuNotGranted"]) {
       expect(en[k]?.length).toBeGreaterThan(0);
       expect(th[k]?.length).toBeGreaterThan(0);

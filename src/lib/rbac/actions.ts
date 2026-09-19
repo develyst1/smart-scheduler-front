@@ -12,18 +12,28 @@ import type { MenuAccess } from "./menus";
 /** The shape of an action key — the registry (BE) owns the actual names. */
 export type ActionKey = `action:${string}.${string}`;
 
-/** "May this user do this act?" — a super admin may do all; anyone else needs the grant. Pure. */
+/**
+ * REQ-097 (TASK-406/407) — a LINKED account (`teacherId` set) is scoped by the server to its own calendar: every write
+ * but `attend` and the own-leave is `403 SCOPE_TEACHER` regardless of role (a linked super admin too). These two are
+ * the only act keys whose doors may show under the flag; the rest are hidden by the same gate that hides an ungranted
+ * one. The FE mirrors the server's set; it decides nothing.
+ */
+export const TEACHER_SCOPE_ACTIONS: readonly ActionKey[] = ["action:calendar.status", "action:calendar.teacher-leave"];
+
+/** "May this user do this act?" — a super admin may do all; anyone else needs the grant; a scoped account only its two. Pure. */
 export const can = (me: MenuAccess | null | undefined, action: ActionKey): boolean =>
-  !!me && (me.isSuperAdmin || me.actions.includes(action));
+  !!me && (!me.teacherId || TEACHER_SCOPE_ACTIONS.includes(action)) && (me.isSuperAdmin || me.actions.includes(action));
 
 /** The two body-level refusals and the route-level one — the server's own sentences, told apart by the client. */
 export const ACTION_FORBIDDEN_SENTENCE = "ไม่มีสิทธิ์ทำรายการนี้";
 export const DISCOUNT_FORBIDDEN_SENTENCE = "ไม่มีสิทธิ์ให้ส่วนลด";
 export const LEAVE_OVERRIDE_FORBIDDEN_SENTENCE = "ไม่มีสิทธิ์ยกเว้นกฎแจ้งลาล่วงหน้า";
+/** REQ-097 — the route-level refusal for a linked account outside its set (the server's sentence, told apart by code). */
+export const SCOPE_TEACHER_CODE = "SCOPE_TEACHER";
 
 /**
  * 🔴 TEST-ONLY SNAPSHOT of the BE's `ACTION_KEYS` (`lib/permissions.ts`, TASK-385 — 46: 44 route keys + the two
- * body-level ones; TASK-390 added the 47th, `bookings.course-rental`; TASK-392 the 48th, `people.student-archive`; TASK-394 the 49th, `calendar.other-series`; TASK-397 the 50th, `calendar.group-series`; TASK-401 the four `camp.*` ⇒ 54). Nothing at runtime reads it. `action-gate.test.ts` walks `src` for every `can("action:…")` literal
+ * body-level ones; TASK-390 added the 47th, `bookings.course-rental`; TASK-392 the 48th, `people.student-archive`; TASK-394 the 49th, `calendar.other-series`; TASK-397 the 50th, `calendar.group-series`; TASK-401 the four `camp.*` ⇒ 54; TASK-406 the 55th, `calendar.teacher-leave`). Nothing at runtime reads it. `action-gate.test.ts` walks `src` for every `can("action:…")` literal
  * and refuses one that is not here; the report states this list equals the BE's, key for key, and updating it is a
  * task, not a drift. `area` = the part between `action:` and the dot.
  */
@@ -39,6 +49,7 @@ export const ACTION_KEYS_SNAPSHOT = [
   "action:calendar.rental-sale",
   "action:calendar.other-series", // TASK-394/395 — the SERIES; a single OTHER stays under `book`
   "action:calendar.group-series", // TASK-397/398 — a DUO/Group series; seats are sold under `bookings.course-create`
+  "action:calendar.teacher-leave", // TASK-406/407 — a LINKED account's own leave (`POST /teachers/me/leave`); the link is the identity
   "action:bookings.bulk-confirm",
   "action:bookings.course-create",
   "action:bookings.course-edit",

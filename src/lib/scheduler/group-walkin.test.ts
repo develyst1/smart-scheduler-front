@@ -77,7 +77,7 @@ describe("§2 — the walk-in seat", () => {
     expect(modal).toMatch(/const existing = walkIn\s+\? undefined\s+: await detect\.mutateAsync\(\{/);
     // 🚫 no second single-session form
     expect(modal).not.toMatch(/WalkInForm|GroupSeatForm/);
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(54); // no new key from THIS task (TASK-402's four came after)
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(55); // no new key from THIS task (TASK-402's four and TASK-407's one came after)
   });
 
   it("the roster shows a `1h` chip on a walk-in seat — from `courseId: null`, one word both languages", () => {

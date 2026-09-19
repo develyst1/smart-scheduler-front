@@ -144,7 +144,7 @@ describe("§2 — the Users page: assignment and the two-tone checklists", () =>
     const header = codeOf("src/components/layout/AdminLayout/Header/Header.tsx");
     expect(header).toContain("const roleName = useMe().me?.roleName ?? null;");
     expect(header).toContain('{roleName && <span className="text-xs text-muted-400">{roleName}</span>}');
-    expect(codeOf("src/types/api/contract.ts")).toContain("roleName: string | null };");
+    expect(codeOf("src/types/api/contract.ts")).toContain("roleName: string | null; teacherId: string | null };"); // TASK-407 + teacherId
   });
 });
 
@@ -201,7 +201,7 @@ describe("copy", () => {
     expect(dictionaries.en.nav.roles).toBe("Roles");
     expect(dictionaries.th.nav.roles).toBe("บทบาท");
     const u = dictionaries.en.users as Record<string, string>;
-    expect(Object.keys(u).length).toBe(58);
+    expect(Object.keys(u).length).toBe(62); // + TASK-407's teacher link 4
     for (const k of ["colRoleName", "roleNone", "fromRole", "roleSavedOk"]) {
       expect(u[k]?.length).toBeGreaterThan(0);
       expect((dictionaries.th.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);

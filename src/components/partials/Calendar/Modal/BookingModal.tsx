@@ -102,6 +102,8 @@ interface Props {
   onOverbook: (b: Booking) => void;
   /** TASK-400 — open the create form as a walk-in seat into this GROUP row. */
   onWalkIn: (b: Booking) => void;
+  /** REQ-097 (TASK-407) — a linked account: the details + `Check in` only; every other door absent, not disabled. */
+  scoped?: boolean;
 }
 
 /** คาบที่ย้ายด้วยมือได้ (UC-003) — ไม่รวมที่มาเรียน/ลา/ยกเลิกแล้ว */
@@ -116,6 +118,7 @@ export default function BookingModal({
   bookings,
   onOverbook,
   onWalkIn,
+  scoped = false,
 }: Props) {
   const t = useT();
   const isCreate = !booking;
@@ -157,6 +160,7 @@ export default function BookingModal({
           onOverbook={onOverbook}
           onWalkIn={onWalkIn}
           onClose={onClose}
+          scoped={scoped}
         />
       ) : null}
     </Modal>
@@ -172,6 +176,7 @@ function ViewBooking({
   onOverbook,
   onWalkIn,
   onClose,
+  scoped = false,
 }: {
   booking: Booking;
   teacherName: string;
@@ -179,6 +184,7 @@ function ViewBooking({
   onOverbook: (b: Booking) => void;
   onWalkIn: (b: Booking) => void;
   onClose: () => void;
+  scoped?: boolean;
 }) {
   const t = useT();
   const confirm = useConfirmBooking();
@@ -188,7 +194,10 @@ function ViewBooking({
   // REQ-092 Stage 3 (TASK-386) — every mutate control asks `can()`; not granted ⇒ hidden. The four status changes
   // (confirm · attended · sick leave · cancel) are ONE act, `calendar.status` (the BE keeps the route one key).
   const can = useCan();
-  const canStatus = can("action:calendar.status");
+  // REQ-097 (TASK-407) — under the flag `calendar.status` is `attend` ALONE (the server's `403 SCOPE_TEACHER` on the
+  // other three): `Check in` keeps the key, confirm · sick leave · cancel hide with the rest.
+  const canAttend = can("action:calendar.status");
+  const canStatus = canAttend && !scoped;
 
   const [moving, setMoving] = useState(false);
   const [noticeError, setNoticeError] = useState<string | null>(null);
@@ -605,7 +614,8 @@ function ViewBooking({
           while unpaid. Replaces the ⋯ menu's "Add rental" (REQ-028's standalone `RentalModal` with hours + refId):
           one door for a session's rental, on the modal itself; the standalone modal stays on the Bookings page for
           walk-ins. */}
-      <RentalSection booking={booking} />
+      {/* TASK-407 — not while scoped: the section reads `GET /sellable-packages`, outside the server's allowed set. */}
+      {!scoped && <RentalSection booking={booking} />}
 
       {activeBadgeTypes.length > 0 && can("action:calendar.badges") && (
         <div className="flex flex-col gap-2">
@@ -693,7 +703,7 @@ function ViewBooking({
           {t("common.close")}
         </Button>
 
-        {canStatus && (
+        {canAttend && (
           <Button
             variant="default"
             leftSection={<BadgeCheck size={16} className="text-success" />}

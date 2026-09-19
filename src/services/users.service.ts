@@ -14,10 +14,14 @@ export interface CreateUserInput {
   password: string;
   displayName: string;
   isSuperAdmin?: boolean;
+  /** REQ-097 (TASK-407) — link the account to a teacher (super admin); the server refuses a second user per teacher (`409 TEACHER_LINKED`). */
+  teacherId?: string | null;
 }
 export interface UpdateUserInput {
   displayName?: string;
   isSuperAdmin?: boolean;
+  /** null clears the link; absent leaves it. */
+  teacherId?: string | null;
 }
 
 export const listUsers = async (): Promise<UserDTO[]> => {
@@ -35,6 +39,7 @@ export const createUser = async (input: CreateUserInput): Promise<UserDTO> => {
     password: input.password,
     displayName: input.displayName.trim(),
     ...(input.isSuperAdmin ? { isSuperAdmin: true } : {}),
+    ...(input.teacherId ? { teacherId: input.teacherId } : {}),
   });
   return data.user;
 };
@@ -44,6 +49,7 @@ export const updateUser = async (id: string, input: UpdateUserInput): Promise<Us
   const { data } = await api.patch<{ user: UserDTO }>(`/users/${id}`, {
     ...(input.displayName !== undefined ? { displayName: input.displayName.trim() } : {}),
     ...(input.isSuperAdmin !== undefined ? { isSuperAdmin: input.isSuperAdmin } : {}),
+    ...(input.teacherId !== undefined ? { teacherId: input.teacherId } : {}),
   });
   return data.user;
 };

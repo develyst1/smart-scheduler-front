@@ -30,6 +30,7 @@ import {
   getTeachers,
   getTeacherTypeOrder,
   markAttended,
+  reportOwnLeave,
   bulkConfirm,
   getEligibleStudents,
   markSickLeave,
@@ -402,6 +403,14 @@ export const useMarkAttended = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => markAttended(id),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+/** REQ-097 (TASK-407) — the teacher's own leave; the calendar and the bookings re-read (the rows went CANCELLED). */
+export const useReportOwnLeave = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { date: string; sessionIds?: string[]; reason: string }) => reportOwnLeave(body),
     onSuccess: () => invalidateAll(qc),
   });
 };

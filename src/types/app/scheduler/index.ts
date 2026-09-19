@@ -429,6 +429,13 @@ export interface PlanSession {
 /** REQ-036 — the three reasons a course may be ended early. **The contract; there is no fourth.** */
 export const END_COURSE_REASONS = ["PROGRAM_CHANGED", "CUSTOMER_CANCELLED", "ADMIN_ERROR"] as const;
 export type EndCourseReason = (typeof END_COURSE_REASONS)[number];
+/**
+ * REQ-097 (TASK-406/407) — what `cancelReason` may CARRY on a cancelled row: the three an admin picks + `TEACHER_LEAVE`,
+ * written only by the teacher's own leave (`POST /teachers/me/leave`). 🚫 Never offered in a dialog — the dialogs read
+ * `END_COURSE_REASONS`; this wider set is for READING a row (the tray's label).
+ */
+export const CANCEL_REASON_CODES = [...END_COURSE_REASONS, "TEACHER_LEAVE"] as const;
+export type CancelReasonCode = (typeof CANCEL_REASON_CODES)[number];
 
 /** `POST /courses/:id/cancel/preview` — what the SERVER will actually remove. R2: the count shown to staff is
  *  this one, never a client re-count; the two have disagreed before. */

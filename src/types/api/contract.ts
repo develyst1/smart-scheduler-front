@@ -702,7 +702,8 @@ export interface LoginResponse {
 
 /** REQ-092 Stage 2 (TASK-381) — `GET /me`: who the token is, the menus they may open and (Stage 3) the acts they may do (a super admin: all). */
 export interface MeResponse {
-  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; menus: string[]; actions: string[]; roleName: string | null };
+  /** REQ-097 (TASK-406) — `teacherId` set ⇒ the account is linked to a teacher and the server scopes it; the FE shows, never decides. */
+  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; menus: string[]; actions: string[]; roleName: string | null; teacherId: string | null };
 }
 
 /** REQ-092 Stage 3 (TASK-385) — `GET /permissions`: the registry. The ONLY source of action names and labels. */
@@ -727,6 +728,16 @@ export interface UserDTO {
   roleId: string | null;
   roleName: string | null;
   grants: { fromRole: string[]; own: string[] };
+  /** REQ-097 (TASK-406) — the linked teacher (one user per teacher; `409 TEACHER_LINKED`), or null. */
+  teacherId: string | null;
+  teacherName: string | null;
+}
+
+/** REQ-097 (TASK-406) — `POST /teachers/me/leave` ⇒ what the server cancelled and whom it told. */
+export interface OwnLeaveResult {
+  cancelled: number;
+  bookingIds: string[];
+  familiesNotified: number;
 }
 
 /** REQ-092 Stage 4 (TASK-387) — a role: a named bundle of keys (registry order, menus then actions), LIVE for its holders. */

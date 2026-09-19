@@ -196,7 +196,7 @@ describe("copy", () => {
     both("rbac", 4);
     both("header", 11);
     both("login", 7);
-    both("users", 58); // 46 + the Stage-3 `Actions` checklist's 8 + Stage 4's role column 4
+    both("users", 62); // 46 + the Stage-3 `Actions` checklist's 8 + Stage 4's role column 4 + TASK-407's teacher link 4
     for (const i of [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS]) {
       const k = i.labelKey.replace("nav.", "");
       expect(dictionaries.en.nav[k as keyof typeof dictionaries.en.nav]?.length).toBeGreaterThan(0);

@@ -75,7 +75,7 @@ describe("§2 — the course card", () => {
 
   it("the 47th key and the copy: `action:bookings.course-rental` in the snapshot (TASK-390's name); rental keys +9 ×2", () => {
     expect(ACTION_KEYS_SNAPSHOT).toContain("action:bookings.course-rental");
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(54); // 47 + student-archive + other-series + group-series + TASK-402's four camp keys
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(55); // 47 + student-archive + other-series + group-series + TASK-402's four camp keys + TASK-407's teacher-leave
     for (const k of ["paidUpfront", "payPerSession", "toCollect", "removeFromCourse", "removeFromCourseTitle", "removeFromCourseBody", "removeFromCourseConfirm", "removedFromCourseOk"]) {
       expect((dictionaries.en.rental as Record<string, string>)[k]?.length).toBeGreaterThan(0);
       expect((dictionaries.th.rental as Record<string, string>)[k]?.length).toBeGreaterThan(0);

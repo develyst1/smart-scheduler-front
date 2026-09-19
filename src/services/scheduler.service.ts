@@ -59,6 +59,7 @@ import type {
   TeachersResponse,
   TeacherTypeOrderResponse,
   UpdateBookingStatusResponse,
+  OwnLeaveResult,
   VoucherSummary,
   VouchersResponse,
 } from "@/types/api/contract";
@@ -470,6 +471,17 @@ export const markAttended = async (id: string) => {
     action: "attend",
   });
   return dtoToBooking(data.booking);
+};
+
+/**
+ * REQ-097 (TASK-406/407) — a LINKED account reports its OWN leave for a date: the server cancels my rows that day (or
+ * the ticked subset) with `TEACHER_LEAVE`, re-owes each child's make-up, tells the families and the other coaches.
+ * ONE call; `409 SESSION_DELIVERED` names the session (nothing cancelled), `403 SCOPE_TEACHER` for an unlinked account.
+ */
+export const reportOwnLeave = async (body: { date: string; sessionIds?: string[]; reason: string }): Promise<OwnLeaveResult> => {
+  if (useMock) return mock.reportOwnLeave(body);
+  const { data } = await api.post<OwnLeaveResult>("/teachers/me/leave", body);
+  return data;
 };
 
 /** SPEC-011: confirm many PENDING bookings in one call. Partial-success — per-booking outcome in input order. */

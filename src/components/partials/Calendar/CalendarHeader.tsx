@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 import { ActionIcon, Button, CloseButton, MultiSelect, Paper, SegmentedControl, TextInput, Tooltip } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users, Tag, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users, Tag, Search, CalendarOff } from "lucide-react";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import type { BadgeType, TeacherType, TeacherView } from "@/types/app/scheduler";
 import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
@@ -29,6 +29,10 @@ interface Props {
   onChangeBadgeValueIds?: (ids: string[]) => void;
   studentQuery?: string;
   onChangeStudentQuery?: (q: string) => void;
+  /** REQ-097 (TASK-407) — a linked account: no teacher/type pickers (the calendar is mine already). */
+  scoped?: boolean;
+  /** REQ-097 — `Report leave`, present only for a linked account holding the key. */
+  onReportLeave?: () => void;
 }
 
 const THAI_DAYS = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
@@ -49,6 +53,8 @@ export default function CalendarHeader({
   onChangeBadgeValueIds,
   studentQuery = "",
   onChangeStudentQuery,
+  scoped = false,
+  onReportLeave,
 }: Props) {
   const { lang, t } = useI18n();
   // Grouped select data: one group per badge type, active values only.
@@ -132,6 +138,12 @@ export default function CalendarHeader({
           >
             {t("calendar.today")}
           </Button>
+
+          {onReportLeave && (
+            <Button variant="light" color="orange" size="sm" radius="md" leftSection={<CalendarOff size={15} />} onClick={onReportLeave}>
+              {t("teacherLeave.door")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -159,6 +171,8 @@ export default function CalendarHeader({
             aria-label={t("calendar.studentSearch")}
           />
 
+          {!scoped && (
+          <>
           <MultiSelect
             label={t("calendar.teacher")}
             placeholder={selectedTeacherIds.length > 0 ? undefined : t("calendar.allTeachers")}
@@ -209,6 +223,8 @@ export default function CalendarHeader({
             }}
             aria-label={t("calendar.filterType")}
           />
+          </>
+          )}
 
           {badgeSelectData.length > 0 && (
             <MultiSelect

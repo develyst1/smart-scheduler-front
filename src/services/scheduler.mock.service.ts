@@ -323,6 +323,17 @@ export const markAttended = (id: string) => {
   return delay(clone(b) as Booking);
 };
 
+/** REQ-097 — the mock cancels the named rows (or every row on the date) with `TEACHER_LEAVE`. */
+export const reportOwnLeave = (body: { date: string; sessionIds?: string[]; reason: string }) => {
+  const rows = bookings.filter((b) => b.date === body.date && b.status !== "CANCELLED" && (!body.sessionIds || body.sessionIds.includes(b.id)));
+  for (const b of rows) {
+    b.status = "CANCELLED";
+    b.cancelReason = "TEACHER_LEAVE";
+    b.note = body.reason;
+  }
+  return delay({ cancelled: rows.length, bookingIds: rows.map((b) => b.id), familiesNotified: rows.length });
+};
+
 export const getEligibleStudents = (
   type: "COURSE_PACKAGE" | "VOUCHER",
   q?: string,

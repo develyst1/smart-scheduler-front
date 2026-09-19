@@ -32,6 +32,8 @@ export interface MenuAccess {
   isSuperAdmin: boolean;
   menus: readonly string[];
   actions: readonly string[];
+  /** REQ-097 (TASK-407) — set when the account is linked to a teacher: the server scopes every route; `can()` follows. */
+  teacherId?: string | null;
 }
 
 /** The ONE answer to "may this user open this menu?": a super admin may open all; anyone else needs the grant. Pure. */
