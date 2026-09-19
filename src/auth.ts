@@ -44,6 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             role: "super_admin",
             menus: [...MENU_KEYS],
             actions: [...ACTION_KEYS_SNAPSHOT],
+            teacherId: null,
             backendToken: "mock-token",
           };
         }
@@ -67,6 +68,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             // REQ-092 Stage 2 (TASK-382) — the login body's menus SEED the nav; `/me` on load is the truth.
             menus: Array.isArray(data.user.menus) ? data.user.menus : [],
             actions: Array.isArray(data.user.actions) ? data.user.actions : [],
+            // REQ-097 (TASK-406/408) — the link rides the login body too (the same `userDTO`); the seed reads it.
+            teacherId: typeof data.user.teacherId === "string" ? data.user.teacherId : null,
             backendToken: data.token,
           };
         } catch {

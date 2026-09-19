@@ -697,7 +697,7 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   /** REQ-092 Stage 1 — the REAL user: the row's id, the display name the header shows, the super-admin flag. */
-  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; role: Role; menus: string[]; actions: string[] };
+  user: { id: string; username: string; displayName: string; isSuperAdmin: boolean; role: Role; menus: string[]; actions: string[]; teacherId?: string | null };
 }
 
 /** REQ-092 Stage 2 (TASK-381) — `GET /me`: who the token is, the menus they may open and (Stage 3) the acts they may do (a super admin: all). */

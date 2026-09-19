@@ -34,7 +34,7 @@ export const useMe = () => {
           menus: su.menus,
           actions: Array.isArray(su.actions) ? su.actions : [],
           roleName: null, // the seed has no role name; `/me` fills it at once
-          teacherId: null, // REQ-097 — the seed has no link either; the doors follow `/me` (one request later)
+          teacherId: su.teacherId ?? null, // REQ-097 (TASK-408) — the login body carries the link, so a scoped account's doors never flash
         }
       : undefined;
   const q = useQuery({

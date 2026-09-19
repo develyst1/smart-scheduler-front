@@ -108,6 +108,15 @@ interface Props {
 
 /** คาบที่ย้ายด้วยมือได้ (UC-003) — ไม่รวมที่มาเรียน/ลา/ยกเลิกแล้ว */
 const MOVABLE_STATUSES: Booking["status"][] = ["PENDING", "CONFIRMED", "EXTENDED"];
+/**
+ * TASK-409 (REQ-094 reopen) — the statuses `Confirm + LINE` is offered for: a PENDING booking and an EXTENDED make-up
+ * alike (the owner's ruling: a make-up is confirmed first, like a new booking; the BE's single confirm checks only
+ * `confirmedAt`, so it already accepted EXTENDED). Before this list the door was `=== "PENDING"`, so the purple could
+ * never be confirmed on the modal and the CONFIRMED-only day-end never cut it. One list, not a second `===`.
+ */
+export const CONFIRMABLE_STATUSES: Booking["status"][] = ["PENDING", "EXTENDED"];
+/** The door's own predicate — value-tested both ways (EXTENDED ⇒ shown, CONFIRMED ⇒ not). Pure. */
+export const canOfferConfirm = (status: Booking["status"]): boolean => CONFIRMABLE_STATUSES.includes(status);
 
 export default function BookingModal({
   isOpen,
@@ -714,7 +723,7 @@ function ViewBooking({
             {t("booking.attendBtn")}
           </Button>
         )}
-        {booking.status === "PENDING" && canStatus && (
+        {canOfferConfirm(booking.status) && canStatus && (
           <Button
             color="blue"
             leftSection={<Bell size={16} />}

@@ -22,6 +22,7 @@ export const authConfig = {
         // REQ-092 Stage 2 — the menus from the login body seed the first paint; `useMe()` refetches `/me` at once.
         token.menus = user.menus;
         token.actions = user.actions;
+        token.teacherId = user.teacherId ?? null;
       }
       return token;
     },
@@ -35,6 +36,7 @@ export const authConfig = {
         session.user.isSuperAdmin = token.isSuperAdmin === true;
         session.user.menus = token.menus;
         session.user.actions = token.actions;
+        session.user.teacherId = token.teacherId ?? null;
       }
       return session;
     },

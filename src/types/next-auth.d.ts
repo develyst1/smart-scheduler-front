@@ -17,6 +17,8 @@ declare module "next-auth" {
       /** REQ-092 Stage 2 — the menus from the login body (a seed; `/me` is the truth). Absent on an older token. */
       menus?: string[];
       actions?: string[];
+      /** REQ-097 (TASK-406/408) — the linked teacher from the login body; seeds the scope before `/me` lands. */
+      teacherId?: string | null;
     } & DefaultSession["user"];
   }
 
@@ -28,6 +30,7 @@ declare module "next-auth" {
     isSuperAdmin?: boolean;
     menus?: string[];
     actions?: string[];
+    teacherId?: string | null;
   }
 }
 
@@ -41,5 +44,6 @@ declare module "next-auth/jwt" {
     isSuperAdmin?: boolean;
     menus?: string[];
     actions?: string[];
+    teacherId?: string | null;
   }
 }

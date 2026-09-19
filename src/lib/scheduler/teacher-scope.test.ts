@@ -71,6 +71,11 @@ describe("§2 — ONE gate: a linked account passes only `attend` and the own-le
     expect(i).toBe(ACTION_KEYS_SNAPSHOT.indexOf("action:calendar.group-series") + 1);
     expect(ACTION_KEYS_SNAPSHOT.length).toBe(55);
     expect(useMe).toContain("teacherId: q.data.teacherId ?? null }");
+    // TASK-408 follow-up — the login body carries the link; the SEED reads it, so a scoped account's doors never flash before `/me`
+    expect(useMe).toContain("teacherId: su.teacherId ?? null,");
+    expect(codeOf("src/auth.ts")).toContain('teacherId: typeof data.user.teacherId === "string" ? data.user.teacherId : null,');
+    expect(codeOf("src/auth.config.ts")).toContain("token.teacherId = user.teacherId ?? null;");
+    expect(codeOf("src/auth.config.ts")).toContain("session.user.teacherId = token.teacherId ?? null;");
   });
 });
 
@@ -102,7 +107,7 @@ describe("§3 — the calendar page under the flag", () => {
     expect(modal).toContain('const canAttend = can("action:calendar.status");');
     expect(modal).toContain("const canStatus = canAttend && !scoped;");
     expect(modal).toMatch(/\{canAttend && \(\s*<Button\s+variant="default"\s+leftSection=\{<BadgeCheck/);
-    expect(modal).toContain('{booking.status === "PENDING" && canStatus && (');
+    expect(modal).toContain("{canOfferConfirm(booking.status) && canStatus && ("); // TASK-409 — PENDING + EXTENDED through one list
     expect(modal).toMatch(/\{canStatus && \(\s*<Menu\.Item\s+leftSection=\{<CalendarX2/);
     expect(modal).toContain("canOverbook || canMove || canStatus ||");
     expect(modal).not.toMatch(/disabled=\{[^}]*scoped/); // hidden, never disabled

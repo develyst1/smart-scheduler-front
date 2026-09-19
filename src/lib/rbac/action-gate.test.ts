@@ -86,7 +86,7 @@ describe("§1 — ONE gate, everywhere", () => {
     expect(modal).toContain('const canAttend = can("action:calendar.status");');
     expect(modal).toContain("const canStatus = canAttend && !scoped;");
     expect(modal).toContain("{canStatus && (");
-    expect(modal).toContain('{booking.status === "PENDING" && canStatus && (');
+    expect(modal).toContain("{canOfferConfirm(booking.status) && canStatus && ("); // TASK-409 — PENDING + EXTENDED through one list
     expect(modal).toContain("const menuHasItems =");
     expect(modal).toContain("{menuHasItems && (");
     expect(modal).toContain('const canOverbook = booking.status === "SICK_LEAVE" && can("action:calendar.book");');
