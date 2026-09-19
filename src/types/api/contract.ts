@@ -438,6 +438,8 @@ export interface CampDayEntry {
   half: "AM" | "PM" | "FULL";
   units: number;
   status: "PLANNED" | "ATTENDED" | "ABSENT" | "CANCELLED";
+  /** TASK-403 — set by the undo (ATTENDED|ABSENT → PLANNED with a reason); `null` otherwise. */
+  undoReason: string | null;
 }
 export interface CampWeekDays {
   week: CampWeek;
@@ -451,6 +453,22 @@ export interface CampPackageDay {
   half: "AM" | "PM" | "FULL";
   units: number;
   status: "PLANNED" | "ATTENDED" | "ABSENT" | "CANCELLED";
+  undoReason: string | null;
+}
+/** TASK-403 — `GET /camp/days/:id/checkin` (lazy: minted on first view). `url` = `/checkin/camp?token=…`; the QR image is the FE's. */
+export interface CampDayCheckin {
+  dayId: string;
+  token: string;
+  url: string;
+  expiresAt: string;
+  studentName: string;
+  date: string;
+  half: "AM" | "PM" | "FULL";
+}
+/** `POST /checkin/camp { token }` (public) — the camp shape beside the session's. */
+export interface CampCheckinResult {
+  already: boolean;
+  day: { dayId: string; weekId: string; date: string; half: "AM" | "PM" | "FULL"; units: number; status: "PLANNED" | "ATTENDED" | "ABSENT" | "CANCELLED"; undoReason: string | null; studentName?: string; weekName?: string };
 }
 /** `credit` is in UNITS (a full day = 2, a half = 1): the card renders `floor(credit / 2)` days + `credit % 2` half. No expiry — there is none. */
 export interface CampPackage {

@@ -5,11 +5,17 @@ import { useSearchParams } from "next/navigation";
 import { Button, Loader, Paper, Title } from "@mantine/core";
 import { CheckCircle2, Clock3, XCircle } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { formatTimeDisplay } from "@/lib/ui/format";
+import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
+import { CAMP_TOKEN_EXPIRED, checkinEndpointFor, type CheckinKind } from "@/lib/camp/units";
+import type { CampCheckinResult } from "@/types/api/contract";
 
 // Public check-in flow (C.1) — no auth. The `token` query param is the credential,
 // so we call the backend directly (bypassing the axios client that attaches a JWT
 // and bounces to /login on 401). Endpoint: POST {API}/checkin  (public).
+//
+// TASK-404 — ONE page, TWO token kinds: the URL path says which (`/checkin` = a session, `/checkin/camp` = a camp
+// day ⇒ POST {API}/checkin/camp ⇒ `{ already, day }`). The token never says; the camp's own expiry is `410
+// CAMP_TOKEN_EXPIRED` (the session keeps its 400 sentence) — both draw the clock.
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
@@ -32,9 +38,10 @@ interface CheckinResult {
 type Phase =
   | { kind: "loading" }
   | { kind: "success"; result: CheckinResult }
-  | { kind: "error"; message: string };
+  | { kind: "camp"; result: CampCheckinResult }
+  | { kind: "error"; message: string; code?: string };
 
-export default function CheckinContent() {
+export default function CheckinContent({ kind = "session" }: { kind?: CheckinKind }) {
   const t = useT();
   const params = useSearchParams();
   const token = params.get("token")?.trim() ?? "";
@@ -47,7 +54,7 @@ export default function CheckinContent() {
     }
     setPhase({ kind: "loading" });
     try {
-      const res = await fetch(`${API_BASE}/checkin`, {
+      const res = await fetch(`${API_BASE}${checkinEndpointFor(kind)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
@@ -55,14 +62,15 @@ export default function CheckinContent() {
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         const message = data?.error?.message ?? t("checkin.cannotNow");
-        setPhase({ kind: "error", message });
+        setPhase({ kind: "error", message, code: data?.error?.code });
         return;
       }
-      setPhase({ kind: "success", result: data as CheckinResult });
+      if (kind === "camp") setPhase({ kind: "camp", result: data as CampCheckinResult });
+      else setPhase({ kind: "success", result: data as CheckinResult });
     } catch {
       setPhase({ kind: "error", message: t("checkin.connectFail") });
     }
-  }, [token, t]);
+  }, [token, t, kind]);
 
   useEffect(() => {
     void submit();
@@ -73,7 +81,8 @@ export default function CheckinContent() {
       <Paper withBorder shadow="sm" radius="lg" p="xl" className="w-full max-w-sm">
         {phase.kind === "loading" && <LoadingView />}
         {phase.kind === "success" && <SuccessView result={phase.result} />}
-        {phase.kind === "error" && <ErrorView message={phase.message} onRetry={submit} />}
+        {phase.kind === "camp" && <CampSuccessView result={phase.result} />}
+        {phase.kind === "error" && <ErrorView message={phase.message} code={phase.code} onRetry={submit} />}
       </Paper>
     </div>
   );
@@ -126,10 +135,33 @@ function SuccessView({ result }: { result: CheckinResult }) {
   );
 }
 
-function ErrorView({ message, onRetry }: { message: string; onRetry: () => void }) {
+/** TASK-404 — the camp day's shape: date · session · status, and the undone line when a mark was taken back. */
+function CampSuccessView({ result }: { result: CampCheckinResult }) {
+  const t = useT();
+  const d = result.day;
+  return (
+    <div className="flex flex-col items-center gap-3 text-center" data-camp-checkin>
+      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-success">
+        <CheckCircle2 size={32} />
+      </span>
+      <Title order={3}>{result.already ? t("checkin.alreadyTitle") : t("checkin.successTitle")}</Title>
+      <div className="w-full rounded-lg bg-muted-100 p-4 text-left text-sm">
+        {d.studentName && <BookingLine label={t("checkin.student")} value={d.studentName} />}
+        <BookingLine label={t("checkin.campTitle")} value={d.weekName ?? t("checkin.campTitle")} />
+        <BookingLine label={t("checkin.date")} value={formatDateDisplay(d.date)} />
+        <BookingLine label={t("checkin.half")} value={d.half === "FULL" ? t("camp.halfFull") : d.half} />
+        <BookingLine label={t("checkin.status")} value={t(`camp.status_${d.status}`)} />
+      </div>
+      {d.undoReason && <p className="text-xs text-muted-500">{t("checkin.undone", { reason: d.undoReason })}</p>}
+      <p className="mt-1 text-xs text-muted-400">{t("checkin.closeHint")}</p>
+    </div>
+  );
+}
+
+function ErrorView({ message, code, onRetry }: { message: string; code?: string; onRetry: () => void }) {
   const t = useT();
   const isWindow =
-    message.includes("เช็คอินได้") || message.includes("หมดอายุ") || /check in|expired/i.test(message);
+    code === CAMP_TOKEN_EXPIRED || message.includes("เช็คอินได้") || message.includes("หมดอายุ") || /check in|expired/i.test(message);
   return (
     <div className="flex flex-col items-center gap-3 text-center">
       <span className="flex h-14 w-14 items-center justify-center rounded-full bg-danger/10 text-danger">

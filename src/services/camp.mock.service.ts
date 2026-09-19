@@ -1,7 +1,7 @@
 // REQ-095 Stage 3a — offline camp. In-memory rows; the same shapes as the real service. The mock is not a rule engine:
 // it plans what it is asked and echoes the units arithmetic only so the card renders.
-import type { CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDays } from "@/types/api/contract";
-import { datesBetween, type CampHalf, type CampMark, type SellCampInput } from "@/lib/camp/units";
+import type { CampDayCheckin, CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDays } from "@/types/api/contract";
+import { datesBetween, type CampDayStatusWrite, type CampHalf, type SellCampInput } from "@/lib/camp/units";
 import type { CreateCampWeekInput, UpdateCampWeekInput } from "./camp.service";
 
 const delay = <T>(v: T, ms = 100) => new Promise<T>((r) => setTimeout(() => r(v), ms));
@@ -56,7 +56,7 @@ export const getCampWeekDays = (id: string) => {
   const w = weeks.find((x) => x.id === id)!;
   const days = w.dates.map((date) => {
     const entries: CampDayEntry[] = packages.flatMap((p) =>
-      p.days.filter((d) => d.weekId === id && d.date === date).map((d) => ({ dayId: d.dayId, packageId: p.id, studentId: p.studentId, studentName: `student ${p.studentId}`, kind: p.kind, half: d.half, units: d.units, status: d.status })),
+      p.days.filter((d) => d.weekId === id && d.date === date).map((d) => ({ dayId: d.dayId, packageId: p.id, studentId: p.studentId, studentName: `student ${p.studentId}`, kind: p.kind, half: d.half, units: d.units, status: d.status, undoReason: d.undoReason })),
     );
     return { date, entries, count: entries.filter((e) => e.status !== "CANCELLED").length, capacity: w.capacity };
   });
@@ -100,17 +100,26 @@ export const redeemCampDays = (packageId: string, weekId: string, dates: string[
   const p = packages.find((x) => x.id === packageId)!;
   const w = weeks.find((x) => x.id === weekId);
   for (const date of dates) {
-    p.days.push({ dayId: `d-${seq++}`, weekId, weekName: w?.name ?? weekId, date, half, units: half === "FULL" ? 2 : 1, status: "PLANNED" });
+    p.days.push({ dayId: `d-${seq++}`, weekId, weekName: w?.name ?? weekId, date, half, units: half === "FULL" ? 2 : 1, status: "PLANNED", undoReason: null });
     if (w) w.dayCounts[date] = (w.dayCounts[date] ?? 0) + 1;
   }
   recompute(p);
   return delay({ planned: dates.length, package: clone(p) });
 };
 
-export const markCampDay = (dayId: string, status: CampMark) => {
+export const markCampDay = (dayId: string, status: CampDayStatusWrite, reason?: string) => {
   const p = packages.find((x) => x.days.some((d) => d.dayId === dayId))!;
   const d = p.days.find((x) => x.dayId === dayId)!;
   d.status = status;
+  if (status === "PLANNED") d.undoReason = (reason ?? "").trim();
   recompute(p);
   return delay(clone(p));
+};
+
+/** Stage 3b — a fake token per day; the URL shape is the server's. */
+export const getCampDayCheckin = (dayId: string): Promise<CampDayCheckin> => {
+  const p = packages.find((x) => x.days.some((d) => d.dayId === dayId))!;
+  const d = p.days.find((x) => x.dayId === dayId)!;
+  const token = `mock-${dayId}`;
+  return delay({ dayId, token, url: `/checkin/camp?token=${token}`, expiresAt: new Date(Date.now() + 86_400_000).toISOString(), studentName: `student ${p.studentId}`, date: d.date, half: d.half });
 };

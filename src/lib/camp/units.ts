@@ -88,3 +88,24 @@ export const sellCampBody = (input: SellCampInput) => ({
 
 /** The redeem body — `dates` sorted, the half as chosen. */
 export const redeemBody = (weekId: string, dates: readonly string[], half: CampHalf) => ({ weekId, dates: [...dates].sort(), half });
+
+// ── REQ-095 Stage 3b (TASK-403/404) — the UNDO and the day's check-in ─────────────────────────────────────────────
+/** The two statuses an undo may leave — back to PLANNED. The server refuses the rest with `CAMP_DAY_TRANSITION`. */
+export const CAMP_UNDO_FROM = ["ATTENDED", "ABSENT"] as const;
+export const canUndoCampDay = (status: string): boolean => (CAMP_UNDO_FROM as readonly string[]).includes(status);
+
+/** A mark's status, or `PLANNED` — the undo. */
+export type CampDayStatusWrite = CampMark | "PLANNED";
+
+/**
+ * The body of `PATCH /camp/days/:id`. 🔴 `reason` rides ONLY on the undo (`status: "PLANNED"`): a mark WITH a reason
+ * is the server's `400`, an undo WITHOUT one too (3..200 — the server's bounds, shown as its sentence).
+ */
+export const markBody = (status: CampDayStatusWrite, reason?: string): { status: CampDayStatusWrite; reason?: string } =>
+  status === "PLANNED" ? { status, reason: (reason ?? "").trim() } : { status };
+
+/** The public check-in page serves two token kinds; the URL PATH says which, never the token. */
+export type CheckinKind = "session" | "camp";
+export const checkinEndpointFor = (kind: CheckinKind): "/checkin" | "/checkin/camp" => (kind === "camp" ? "/checkin/camp" : "/checkin");
+/** The camp token's own refusal — the clock icon, not the cross (the session's page keeps its 400 sentence match). */
+export const CAMP_TOKEN_EXPIRED = "CAMP_TOKEN_EXPIRED";

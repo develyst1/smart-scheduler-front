@@ -237,6 +237,8 @@ const en = {
         admin_only: "Admin only",
         admin_and_teacher: "Admin and teacher",
       },
+      // TASK-404 — the camp reminder flag (REQ-095 Stage 3b); the server owns the key and the default
+      camp_reminder_enabled: { off: "Off", on: "On" },
     },
     help: {
       notify_on_leave:
@@ -248,6 +250,8 @@ const en = {
         "Sessions taught by a full-time or part-time teacher — parents can take leave themselves until {n} hours before the session; after that only an admin can.",
       leave_cutoff_hours_freelance:
         "Sessions taught by a freelance teacher — parents can take leave themselves until {n} hours before the session; after that only an admin can.",
+      // TASK-404 — the one-line note under the camp reminder flag until the owner approves the LINE copy.
+      camp_reminder_enabled: "Reminder copy pending owner approval",
     },
     edit: "Edit",
     save: "Save",
@@ -419,6 +423,22 @@ const en = {
     noCredit: "This student has no camp credit.",
     package: "Package",
     kids: "{n} kids",
+    // Stage 3b (TASK-404) — undo + the day's QR
+    undo: "Undo (back to planned)",
+    undoTitle: "Undo the mark",
+    undoLine: "{name} · {date} is marked {status}. Put it back to planned — the credit returns.",
+    undoReason: "Reason",
+    undoReasonHint: "Why the mark was wrong (3–200 characters)",
+    undoneOk: "{name} — back to planned",
+    undoneLine: "undone: {reason}",
+    qr: "Check-in QR",
+    qrTitle: "Camp check-in",
+  },
+  // TASK-404 — the shared QR dialog
+  qr: {
+    copy: "Copy link",
+    copied: "Copied",
+    expires: "Valid until {at}",
   },
 
   // REQ-092 Stage 4 (TASK-388) — the Roles page: the builder and the matrix. Every refusal sentence is the server's.
@@ -1630,6 +1650,12 @@ const en = {
     closeHint: "You can close this page",
     failTitle: "Check-in failed",
     retry: "Try again",
+    // TASK-404 — the camp day's shape on the same page
+    campTitle: "Camp day",
+    date: "Date",
+    half: "Session",
+    status: "Status",
+    undone: "Earlier mark undone: {reason}",
   },
 };
 
@@ -1839,6 +1865,7 @@ const th: typeof en = {
         admin_only: "แจ้งแอดมินอย่างเดียว",
         admin_and_teacher: "แจ้งทั้งแอดมินและครู",
       },
+      camp_reminder_enabled: { off: "ปิด", on: "เปิด" },
     },
     help: {
       notify_on_leave: "ใครได้รับแจ้งเมื่อมีการลา ครูที่ได้รับแจ้งคือครูของคาบนั้น",
@@ -1847,6 +1874,7 @@ const th: typeof en = {
         "คาบที่สอนโดยครูประจำ/พาร์ทไทม์ — ผู้ปกครองแจ้งลาเองได้จนถึง {n} ชั่วโมงก่อนคาบเริ่ม หลังจากนั้นต้องให้แอดมินทำให้",
       leave_cutoff_hours_freelance:
         "คาบที่สอนโดยครูฟรีแลนซ์ — ผู้ปกครองแจ้งลาเองได้จนถึง {n} ชั่วโมงก่อนคาบเริ่ม หลังจากนั้นต้องให้แอดมินทำให้",
+      camp_reminder_enabled: "ข้อความแจ้งเตือนรอเจ้าของอนุมัติ",
     },
     edit: "แก้ไข",
     save: "บันทึก",
@@ -2013,6 +2041,20 @@ const th: typeof en = {
     noCredit: "นักเรียนคนนี้ไม่มีเครดิตแคมป์",
     package: "แพ็กเกจ",
     kids: "{n} คน",
+    undo: "ยกเลิกการบันทึก (กลับเป็นวางแผน)",
+    undoTitle: "ยกเลิกการบันทึก",
+    undoLine: "{name} · {date} บันทึกเป็น{status} จะเปลี่ยนกลับเป็นวางแผน — เครดิตคืนกลับ",
+    undoReason: "เหตุผล",
+    undoReasonHint: "บันทึกผิดเพราะอะไร (3–200 ตัวอักษร)",
+    undoneOk: "{name} — กลับเป็นวางแผนแล้ว",
+    undoneLine: "ยกเลิกการบันทึก: {reason}",
+    qr: "QR เช็คอิน",
+    qrTitle: "เช็คอินวันแคมป์",
+  },
+  qr: {
+    copy: "คัดลอกลิงก์",
+    copied: "คัดลอกแล้ว",
+    expires: "ใช้ได้ถึง {at}",
   },
 
   roles: {
@@ -3070,6 +3112,11 @@ const th: typeof en = {
     closeHint: "ปิดหน้านี้ได้เลย",
     failTitle: "เช็คอินไม่สำเร็จ",
     retry: "ลองอีกครั้ง",
+    campTitle: "วันแคมป์",
+    date: "วันที่",
+    half: "ช่วง",
+    status: "สถานะ",
+    undone: "ยกเลิกการบันทึกก่อนหน้า: {reason}",
   },
 };
 

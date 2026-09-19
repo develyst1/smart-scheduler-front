@@ -4,8 +4,8 @@
 // `CAMP_DAY_TAKEN`, `CAMP_WEEK_CLOSED`, `CAMP_DAY_STARTED`, `CAMP_DAY_TRANSITION`, `STUDENT_ARCHIVED`); the dialogs
 // show the sentence and keep what was typed. Prices come from `GET /camp/prices` — never a constant here.
 import { api, useMockData } from "@/lib/api/client";
-import { redeemBody, sellCampBody, type CampHalf, type CampMark, type SellCampInput } from "@/lib/camp/units";
-import type { CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDays } from "@/types/api/contract";
+import { markBody, redeemBody, sellCampBody, type CampDayStatusWrite, type CampHalf, type SellCampInput } from "@/lib/camp/units";
+import type { CampDayCheckin, CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDays } from "@/types/api/contract";
 import * as mock from "./camp.mock.service";
 
 export const getCampPrices = async (): Promise<CampPrices> => {
@@ -81,8 +81,16 @@ export const redeemCampDays = async (packageId: string, weekId: string, dates: s
   return data;
 };
 
-export const markCampDay = async (dayId: string, status: CampMark): Promise<CampPackage> => {
-  if (useMockData) return mock.markCampDay(dayId, status);
-  const { data } = await api.patch<{ package: CampPackage }>(`/camp/days/${dayId}`, { status });
+/** A mark (`status` alone) or, with `status: "PLANNED"`, the UNDO — then `reason` rides (TASK-403: required only there). */
+export const markCampDay = async (dayId: string, status: CampDayStatusWrite, reason?: string): Promise<CampPackage> => {
+  if (useMockData) return mock.markCampDay(dayId, status, reason);
+  const { data } = await api.patch<{ package: CampPackage }>(`/camp/days/${dayId}`, markBody(status, reason));
   return data.package;
+};
+
+/** Lazy — the server mints the day's token on the first view; the same URL comes back until it expires. */
+export const getCampDayCheckin = async (dayId: string): Promise<CampDayCheckin> => {
+  if (useMockData) return mock.getCampDayCheckin(dayId);
+  const { data } = await api.get<CampDayCheckin>(`/camp/days/${dayId}/checkin`);
+  return data;
 };

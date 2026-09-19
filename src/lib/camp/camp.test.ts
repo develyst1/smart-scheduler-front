@@ -86,7 +86,7 @@ describe("§2 — the wire and the doors", () => {
     expect(svc).toContain('api.get<{ packages: CampPackage[] }>("/camp/packages", { params: { studentId } })');
     expect(svc).toContain('"/camp/packages", sellCampBody(input))');
     expect(svc).toContain("`/camp/packages/${packageId}/days`, redeemBody(weekId, dates, half))");
-    expect(svc).toContain("api.patch<{ package: CampPackage }>(`/camp/days/${dayId}`, { status })");
+    expect(svc).toContain("api.patch<{ package: CampPackage }>(`/camp/days/${dayId}`, markBody(status, reason))"); // TASK-404 — the body via the pure `markBody` (reason only on the undo)
     const hooks = codeOf("src/hooks/scheduler/useCamp.ts");
     expect(hooks).toContain("void qc.invalidateQueries({ queryKey: CAMP_KEY });");
     expect(hooks).toContain("void qc.invalidateQueries({ queryKey: CALENDAR_KEY });");
@@ -152,7 +152,7 @@ describe("§2 — the wire and the doors", () => {
   it("copy: camp 60 · nav.camp — both languages; the Camp card door on every student row", () => {
     const en = dictionaries.en.camp as Record<string, string>;
     const th = dictionaries.th.camp as Record<string, string>;
-    expect(Object.keys(en).length).toBe(60);
+    expect(Object.keys(en).length).toBe(69); // TASK-402: 60 · TASK-404: +9 (undo ×7, qr ×2)
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     expect(dictionaries.en.nav.camp).toBe("Camp");
     expect(dictionaries.th.nav.camp.length).toBeGreaterThan(0);

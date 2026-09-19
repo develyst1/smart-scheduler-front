@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createCampWeek,
+  getCampDayCheckin,
   getCampPrices,
   getCampWeekDays,
   listCampPackages,
@@ -14,7 +15,7 @@ import {
   type CreateCampWeekInput,
   type UpdateCampWeekInput,
 } from "@/services/camp.service";
-import type { CampHalf, CampMark, SellCampInput } from "@/lib/camp/units";
+import type { CampDayStatusWrite, CampHalf, SellCampInput } from "@/lib/camp/units";
 import { CALENDAR_KEY } from "./useScheduler";
 
 /** REQ-095 Stage 3a (TASK-402) — the Camp menu's data. Every write re-reads the weeks, the roster and the packages; the calendar too (its day banner). */
@@ -51,7 +52,14 @@ export const useRedeemCamp = () => {
     onSuccess: () => invalidate(qc),
   });
 };
+/** A mark, or the undo (`status: "PLANNED"` + `reason`) — one route, one hook (TASK-404). */
 export const useMarkCampDay = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ dayId, status }: { dayId: string; status: CampMark }) => markCampDay(dayId, status), onSuccess: () => invalidate(qc) });
+  return useMutation({
+    mutationFn: ({ dayId, status, reason }: { dayId: string; status: CampDayStatusWrite; reason?: string }) => markCampDay(dayId, status, reason),
+    onSuccess: () => invalidate(qc),
+  });
 };
+/** The day's check-in QR — fetched only while its dialog is open (`dayId` null ⇒ nothing minted). */
+export const useCampDayCheckin = (dayId: string | null) =>
+  useQuery({ queryKey: [...CAMP_KEY, "checkin", dayId], queryFn: () => getCampDayCheckin(dayId as string), enabled: !!dayId, staleTime: 60_000 });

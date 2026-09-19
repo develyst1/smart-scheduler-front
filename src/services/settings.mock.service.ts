@@ -47,6 +47,8 @@ const SPECS: MockSpec[] = [
     default: "admin_only",
     options: ["admin_only", "admin_and_teacher"],
   },
+  // TASK-403/404 — the camp reminder flag (08:15 LINE); the copy is a server placeholder until approved.
+  { key: "camp_reminder_enabled", label: "ส่งแจ้งเตือน LINE วันแคมป์ (08:15)", type: "enum", unit: "option", default: "off", options: ["off", "on"] },
 ];
 
 const overrides = new Map<string, number | string>();
