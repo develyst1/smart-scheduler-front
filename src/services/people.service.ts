@@ -1,13 +1,15 @@
 // People (parents + students) data access — REQ-019 / SPEC-016. The only place that talks to the
 // scheduling API for the People screen. API JSON already matches the app shapes (no mapper needed).
 import { api, useMockData } from "@/lib/api/client";
-import type { Parent, ParentDetail, ParentsResponse, Student } from "@/types/app/people";
+import type { ArchiveParentResult, Parent, ParentDetail, ParentsResponse, Student, UnarchiveParentResult } from "@/types/app/people";
 import * as mock from "./people.mock.service";
 
 export interface ParentsQuery {
   q?: string;
   limit?: number;
   offset?: number;
+  /** REQ-098 (TASK-411) — `1` ⇒ ONLY the archived parents (the restore view); absent ⇒ the working list. */
+  archived?: 1;
 }
 
 export const listParents = async (query: ParentsQuery = {}): Promise<ParentsResponse> => {
@@ -125,6 +127,22 @@ export const archiveStudent = async (id: string): Promise<Student> => {
   const { data } = await api.post<{ student: Student }>(`/students/${id}/archive`, {});
   return data.student;
 };
+/**
+ * REQ-098 (TASK-411/412) — archive / restore a PARENT. The server cascades (every child archived, the LINE link
+ * cleared) and refuses with the count (`409 PARENT_HAS_SESSIONS`); the restore gives the children back, NOT the LINE
+ * link. One key for both (`action:people.parent-archive`). The five writes on an archived parent are `409 PARENT_ARCHIVED`.
+ */
+export const archiveParent = async (id: string): Promise<ArchiveParentResult> => {
+  if (useMockData) return mock.archiveParent(id);
+  const { data } = await api.post<ArchiveParentResult>(`/parents/${id}/archive`, {});
+  return data;
+};
+export const unarchiveParent = async (id: string): Promise<UnarchiveParentResult> => {
+  if (useMockData) return mock.unarchiveParent(id);
+  const { data } = await api.post<UnarchiveParentResult>(`/parents/${id}/unarchive`, {});
+  return data;
+};
+
 export const unarchiveStudent = async (id: string): Promise<Student> => {
   if (useMockData) return mock.unarchiveStudent(id);
   const { data } = await api.post<{ student: Student }>(`/students/${id}/unarchive`, {});

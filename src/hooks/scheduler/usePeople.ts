@@ -12,6 +12,8 @@ import {
   deleteStudent,
   archiveStudent,
   unarchiveStudent,
+  archiveParent,
+  unarchiveParent,
   setParentSuspended,
   type ParentsQuery,
   type ParentInput,
@@ -96,6 +98,18 @@ export const useUnarchiveStudent = () => {
   const qc = useQueryClient();
   return useMutation({ mutationFn: (id: string) => unarchiveStudent(id), onSuccess: () => qc.invalidateQueries({ queryKey: PARENTS_KEY }) });
 };
+/** REQ-098 (TASK-412) — the PARENT's two doors; both lists (working + archived) share `PARENTS_KEY`, so both re-read. */
+export const useArchiveParent = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => archiveParent(id), onSuccess: () => qc.invalidateQueries({ queryKey: PARENTS_KEY }) });
+};
+export const useUnarchiveParent = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => unarchiveParent(id), onSuccess: () => qc.invalidateQueries({ queryKey: PARENTS_KEY }) });
+};
+/** The restore view — `GET /parents?archived=1`, fetched ONLY while the `Show archived` toggle is on. */
+export const useArchivedParents = (query: ParentsQuery, enabled: boolean) =>
+  useQuery({ queryKey: [...PARENTS_KEY, "archived", query], queryFn: () => listParents(query), enabled, placeholderData: keepPreviousData });
 
 export const useDeleteStudent = () => {
   const qc = useQueryClient();

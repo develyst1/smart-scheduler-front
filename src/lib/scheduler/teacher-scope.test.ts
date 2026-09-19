@@ -69,7 +69,7 @@ describe("§2 — ONE gate: a linked account passes only `attend` and the own-le
   it("the 55th key sits in the calendar area after `group-series`; `/me` carries `teacherId` into the access object", () => {
     const i = ACTION_KEYS_SNAPSHOT.indexOf("action:calendar.teacher-leave");
     expect(i).toBe(ACTION_KEYS_SNAPSHOT.indexOf("action:calendar.group-series") + 1);
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(55);
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(56); // + TASK-412's parent-archive
     expect(useMe).toContain("teacherId: q.data.teacherId ?? null }");
     // TASK-408 follow-up — the login body carries the link; the SEED reads it, so a scoped account's doors never flash before `/me`
     expect(useMe).toContain("teacherId: su.teacherId ?? null,");

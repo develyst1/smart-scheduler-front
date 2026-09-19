@@ -33,7 +33,7 @@ export const SCOPE_TEACHER_CODE = "SCOPE_TEACHER";
 
 /**
  * 🔴 TEST-ONLY SNAPSHOT of the BE's `ACTION_KEYS` (`lib/permissions.ts`, TASK-385 — 46: 44 route keys + the two
- * body-level ones; TASK-390 added the 47th, `bookings.course-rental`; TASK-392 the 48th, `people.student-archive`; TASK-394 the 49th, `calendar.other-series`; TASK-397 the 50th, `calendar.group-series`; TASK-401 the four `camp.*` ⇒ 54; TASK-406 the 55th, `calendar.teacher-leave`). Nothing at runtime reads it. `action-gate.test.ts` walks `src` for every `can("action:…")` literal
+ * body-level ones; TASK-390 added the 47th, `bookings.course-rental`; TASK-392 the 48th, `people.student-archive`; TASK-394 the 49th, `calendar.other-series`; TASK-397 the 50th, `calendar.group-series`; TASK-401 the four `camp.*` ⇒ 54; TASK-406 the 55th, `calendar.teacher-leave`; TASK-411 the 56th, `people.parent-archive`). Nothing at runtime reads it. `action-gate.test.ts` walks `src` for every `can("action:…")` literal
  * and refuses one that is not here; the report states this list equals the BE's, key for key, and updating it is a
  * task, not a drift. `area` = the part between `action:` and the dot.
  */
@@ -72,6 +72,7 @@ export const ACTION_KEYS_SNAPSHOT = [
   "action:people.parent-suspend",
   "action:people.parent-line-unlink",
   "action:people.student-archive", // TASK-392/393 — archive + restore, one key
+  "action:people.parent-archive", // TASK-411/412 (REQ-098) — archive + restore a PARENT (the children go with it), one key
   "action:teachers.create",
   "action:teachers.edit",
   "action:teachers.archive",

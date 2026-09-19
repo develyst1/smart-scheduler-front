@@ -51,8 +51,10 @@ export const listParents = (query: ParentsQuery = {}): Promise<ParentsResponse> 
   const q = query.q?.trim().toLowerCase();
   const limit = query.limit ?? 20;
   const offset = query.offset ?? 0;
+  // REQ-098 — the default list hides archived parents; `archived: 1` lists only them.
+  const pool = parents.filter((p) => (query.archived ? !!p.archivedAt : !p.archivedAt));
   const filtered = q
-    ? parents.filter(
+    ? pool.filter(
         (p) =>
           (p.name ?? "").toLowerCase().includes(q) ||
           p.phone.includes(q) ||
@@ -60,7 +62,7 @@ export const listParents = (query: ParentsQuery = {}): Promise<ParentsResponse> 
             (s) => s.name.toLowerCase().includes(q) || (s.nickname ?? "").toLowerCase().includes(q),
           ),
       )
-    : parents;
+    : pool;
   return delay({ parents: clone(filtered.slice(offset, offset + limit)), total: filtered.length });
 };
 
@@ -106,6 +108,24 @@ export const createStudentForParent = (parentId: string, input: CreateStudentInp
 
 // REQ-093 — the mock archive: flip the stamp; the list/detail split is the server's, so the mock only echoes the row.
 export const archiveStudent = (id: string): Promise<Student> => delay({ id, parentId: null, name: "student", nickname: null, gender: null, birthDate: null, nationality: null, note: null, archivedAt: new Date().toISOString() });
+export const archiveParent = (id: string) => {
+  const p = parents.find((x) => x.id === id)!;
+  p.archivedAt = new Date().toISOString();
+  const n = p.students.length;
+  p.archivedStudents = [...(p.archivedStudents ?? []), ...p.students.map((s) => ({ ...s, archivedAt: p.archivedAt }))];
+  p.students = [];
+  const cleared = p.lineUserId ? 1 : 0;
+  p.lineUserId = null;
+  return delay({ parent: clone(p), archivedStudents: n, clearedLineAccounts: cleared });
+};
+export const unarchiveParent = (id: string) => {
+  const p = parents.find((x) => x.id === id)!;
+  p.archivedAt = null;
+  const back = p.archivedStudents ?? [];
+  p.students = back.map((s) => ({ ...s, archivedAt: null }));
+  p.archivedStudents = [];
+  return delay({ parent: clone(p), restoredStudents: back.length });
+};
 export const unarchiveStudent = (id: string): Promise<Student> => delay({ id, parentId: null, name: "student", nickname: null, gender: null, birthDate: null, nationality: null, note: null, archivedAt: null });
 
 export const deleteStudent = (id: string): Promise<{ deleted: true }> => {

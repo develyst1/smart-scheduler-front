@@ -28,6 +28,9 @@ import { useLoadPhase } from "@/lib/ui/load-phase";
 import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import {
   useArchiveStudent,
+  useArchiveParent,
+  useUnarchiveParent,
+  useArchivedParents,
   useClearParentLineLink,
   useDeleteStudent,
   useUnarchiveStudent,
@@ -37,6 +40,7 @@ import {
 } from "@/hooks/scheduler";
 import { THAI_NATIONALITY, type Parent, type Student } from "@/types/app/people";
 import { useShowArchived } from "@/lib/people/show-archived";
+import { archivedParentsQuery } from "@/lib/people/parent-archive";
 import CampCardModal from "@/components/partials/Camp/CampCardModal";
 import { Tent } from "lucide-react";
 import { useCan } from "@/hooks/scheduler/useMe";
@@ -95,6 +99,34 @@ export default function PeopleContent() {
   const [campTarget, setCampTarget] = useState<Student | null>(null);
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const { shown: showArchived, toggle: toggleShowArchived } = useShowArchived();
+  // REQ-098 (TASK-412) — the PARENT's archive: the same toggle drives a SECOND list (`GET /parents?archived=1`, only
+  // while shown), the same search; a red door on the card (two taps: the children go with it, the LINE link is
+  // cleared — the server's cascade), a Restore on the archived card (its confirm says the LINE link is NOT restored).
+  const archiveParent = useArchiveParent();
+  const unarchiveParent = useUnarchiveParent();
+  const [parentArchiveTarget, setParentArchiveTarget] = useState<{ parent: Parent; restore: boolean } | null>(null);
+  const [parentArchiveError, setParentArchiveError] = useState<string | null>(null);
+  const { data: archivedData } = useArchivedParents(archivedParentsQuery(debounced.trim() || undefined), showArchived);
+  const archivedParents = archivedData?.parents ?? [];
+  const runParentArchive = async () => {
+    if (!parentArchiveTarget) return;
+    const { parent, restore } = parentArchiveTarget;
+    const label = parent.name || parent.phone;
+    setParentArchiveError(null);
+    try {
+      if (restore) {
+        const r = await unarchiveParent.mutateAsync(parent.id);
+        notify({ title: t("people.parentRestoredOk", { name: label, n: r.restoredStudents }), color: "success" });
+      } else {
+        const r = await archiveParent.mutateAsync(parent.id);
+        notify({ title: t("people.parentArchivedOk", { name: label, n: r.archivedStudents, line: r.clearedLineAccounts }), color: "success" });
+      }
+      setParentArchiveTarget(null);
+    } catch (e) {
+      // 🔴 The server's sentence (`PARENT_HAS_SESSIONS` with its count, `PARENT_ARCHIVED` "restore instead") — nothing invented.
+      setParentArchiveError(e instanceof ApiClientError ? e.message : (e as Error).message);
+    }
+  };
   // SPEC-071 / TASK-243 — which family's LINE link is open in the dialog. `null` = closed, so nothing is fetched.
   const [lineTarget, setLineTarget] = useState<Parent | null>(null);
 
@@ -300,6 +332,22 @@ export default function PeopleContent() {
                           {t("people.suspend")}
                         </Button>
                       )}
+                      {can("action:people.parent-archive") && (
+                        <Tooltip label={t("people.archiveParent")} withinPortal>
+                          <ActionIcon
+                            size="input-xs"
+                            variant="light"
+                            color="red"
+                            aria-label={t("people.archiveParent")}
+                            onClick={() => {
+                              setParentArchiveError(null);
+                              setParentArchiveTarget({ parent: p, restore: false });
+                            }}
+                          >
+                            <Archive size={15} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
                     </Group>
                   </div>
 
@@ -420,6 +468,51 @@ export default function PeopleContent() {
         </>
       )}
 
+      {/* REQ-098 — the archived PARENTS, under the same toggle as the archived children: dimmed cards, the badge, a
+          Restore door (the same key). The list is the server's `?archived=1` read, the same search; nothing here
+          decides who is archived. */}
+      {showArchived && archivedParents.length > 0 && (
+        <Stack gap="sm" data-archived-parents={archivedParents.length}>
+          <p className="text-xs font-medium text-muted-500">{t("people.archivedParents", { n: archivedParents.length })}</p>
+          {archivedParents.map((p) => (
+            <Card key={p.id} padding="md" withBorder className="opacity-70">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold">{p.name || t("people.parentName")}</p>
+                    <Badge color="gray" variant="light" leftSection={<Archive size={12} />}>
+                      {t("people.archivedBadge")}
+                    </Badge>
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-500">
+                    <span className="inline-flex items-center gap-1">
+                      <Phone size={12} /> {p.phone}
+                    </span>
+                    {(p.archivedStudents?.length ?? 0) > 0 && (
+                      <span>{t("people.archivedWithStudents", { n: p.archivedStudents!.length, names: p.archivedStudents!.map((s) => s.nickname || s.name).join(", ") })}</span>
+                    )}
+                  </div>
+                </div>
+                {can("action:people.parent-archive") && (
+                  <Button
+                    size="compact-sm"
+                    variant="light"
+                    color="green"
+                    leftSection={<ArchiveRestore size={13} />}
+                    onClick={() => {
+                      setParentArchiveError(null);
+                      setParentArchiveTarget({ parent: p, restore: true });
+                    }}
+                  >
+                    {t("people.restore")}
+                  </Button>
+                )}
+              </div>
+            </Card>
+          ))}
+        </Stack>
+      )}
+
       <ParentFormModal
         opened={parentModal.open}
         parent={parentModal.parent}
@@ -462,6 +555,41 @@ export default function PeopleContent() {
               <Button color="red" leftSection={<Archive size={15} />} loading={archiveStudent.isPending} onClick={runArchive}>
                 {t("people.archiveStudentConfirm")}
               </Button>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
+
+      {/* REQ-098 — the PARENT's second tap, both ways. Archive: the children go with it and the LINE link is cleared (the
+          server's cascade); Restore: the children come back, the LINE link does NOT (the family re-links). A 409 shows
+          the server's sentence HERE and the dialog stays. */}
+      <Modal
+        opened={parentArchiveTarget !== null}
+        onClose={() => setParentArchiveTarget(null)}
+        centered
+        title={t(parentArchiveTarget?.restore ? "people.restoreParentTitle" : "people.archiveParentTitle", { name: parentArchiveTarget?.parent.name || parentArchiveTarget?.parent.phone || "" })}
+      >
+        {parentArchiveTarget && (
+          <Stack gap="sm">
+            {parentArchiveError && (
+              <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
+                {parentArchiveError}
+              </Alert>
+            )}
+            <Text size="sm">{t(parentArchiveTarget.restore ? "people.restoreParentBody" : "people.archiveParentBody")}</Text>
+            <Group justify="flex-end" gap="sm">
+              <Button variant="default" onClick={() => setParentArchiveTarget(null)}>
+                {t("common.cancel")}
+              </Button>
+              {parentArchiveTarget.restore ? (
+                <Button color="green" leftSection={<ArchiveRestore size={15} />} loading={unarchiveParent.isPending} onClick={runParentArchive}>
+                  {t("people.restoreParentConfirm")}
+                </Button>
+              ) : (
+                <Button color="red" leftSection={<Archive size={15} />} loading={archiveParent.isPending} onClick={runParentArchive}>
+                  {t("people.archiveParentConfirm")}
+                </Button>
+              )}
             </Group>
           </Stack>
         )}

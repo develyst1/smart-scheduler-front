@@ -104,7 +104,7 @@ describe("§2 — the wire and the doors", () => {
     expect(NAV_ITEMS.find((i) => i.key === "camp")).toMatchObject({ href: "/scheduler/camp", menuKey: "menu:camp", labelKey: "nav.camp" });
     expect(NAV_ITEMS.findIndex((i) => i.key === "camp")).toBe(NAV_ITEMS.findIndex((i) => i.key === "badges") + 1);
     for (const k of ["action:camp.week-open", "action:camp.sell", "action:camp.redeem", "action:camp.day-mark"]) expect(ACTION_KEYS_SNAPSHOT).toContain(k);
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(55); // + TASK-407's teacher-leave
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(56); // + TASK-407's teacher-leave + TASK-412's parent-archive
     expect(content).toContain('{can("action:camp.week-open") && (');
     expect(roster).toContain('{can("action:camp.sell") && (');
     expect(roster).toContain('{can("action:camp.redeem") && week.status === "OPEN" && (');

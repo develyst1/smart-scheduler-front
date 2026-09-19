@@ -33,6 +33,20 @@ export interface Parent {
   students: Student[];
   /** REQ-093 (TASK-392) — the archived children, split from the same read; absent on an older payload. */
   archivedStudents?: Student[];
+  /** REQ-098 (TASK-411) — set when the PARENT is archived (the default list hides them; `?archived=1` lists only them). */
+  archivedAt?: string | null;
+  archivedBy?: string | null;
+}
+
+/** REQ-098 — what the two doors return: the counts the success notice names. */
+export interface ArchiveParentResult {
+  parent: Parent;
+  archivedStudents: number;
+  clearedLineAccounts: number;
+}
+export interface UnarchiveParentResult {
+  parent: Parent;
+  restoredStudents: number;
 }
 
 /** SPEC-071 / TASK-243 — detail adds the account count used in the confirmation copy. */
