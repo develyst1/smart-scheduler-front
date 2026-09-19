@@ -274,6 +274,8 @@ export interface BookingDTO {
   group?: {
     key: string | null;
     kind: "DUO" | "GROUP" | null;
+    /** TASK-399 — the CARD's price group for this group (`balance-duo` | `balance-group`). The FE never maps kind → group. */
+    priceGroup: string | null;
     name: string | null;
     seatCap: number | null;
     seats: Array<{ bookingId: string; studentId: string | null; studentName: string | null; status: string; courseId: string | null }>;
@@ -410,6 +412,68 @@ export interface PostedSaleResponse {
   posted: PostedSale | null;
 }
 
+// ── REQ-095 Stage 3a / SPEC-082 (TASK-401/402) — Balance camp ──
+export interface CampWeekLiteDTO {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  status: "OPEN" | "CLOSED";
+  dayCounts: Record<string, number>;
+}
+export interface CampWeek extends CampWeekLiteDTO {
+  capacity: number | null;
+  teacherIds: string[];
+  openedBy: string;
+  openedAt: string;
+  closedAt: string | null;
+  dates: string[];
+}
+export interface CampDayEntry {
+  dayId: string;
+  packageId: string;
+  studentId: string;
+  studentName: string;
+  kind: "FULL" | "HALF";
+  half: "AM" | "PM" | "FULL";
+  units: number;
+  status: "PLANNED" | "ATTENDED" | "ABSENT" | "CANCELLED";
+}
+export interface CampWeekDays {
+  week: CampWeek;
+  days: Array<{ date: string; entries: CampDayEntry[]; count: number; capacity: number | null }>;
+}
+export interface CampPackageDay {
+  dayId: string;
+  weekId: string;
+  weekName: string;
+  date: string;
+  half: "AM" | "PM" | "FULL";
+  units: number;
+  status: "PLANNED" | "ATTENDED" | "ABSENT" | "CANCELLED";
+}
+/** `credit` is in UNITS (a full day = 2, a half = 1): the card renders `floor(credit / 2)` days + `credit % 2` half. No expiry — there is none. */
+export interface CampPackage {
+  id: string;
+  studentId: string;
+  kind: "FULL" | "HALF";
+  plan: "FULL_WEEK" | "DAILY";
+  totalUnits: number;
+  usedUnits: number;
+  plannedUnits: number;
+  credit: number;
+  saleId: string | null;
+  note: string | null;
+  discount: { kind: string; value: number; reason: string; actor: string | null } | null;
+  days: CampPackageDay[];
+  createdBy: string | null;
+  createdAt: string;
+}
+/** `GET /camp/prices` — the four items, never a constant on the FE. */
+export interface CampPrices {
+  items: Array<{ externalRef: string; kind: "FULL" | "HALF"; plan: "FULL_WEEK" | "DAILY"; priceMinor: number }>;
+}
+
 export interface CalendarResponse {
   view: "day" | "week";
   range: { from: IsoDate; to: IsoDate };
@@ -428,6 +492,8 @@ export interface CalendarResponse {
    * the grid (`PAUSED` stays in its tray; precedence on the grid is the server's).
    */
   cancelled?: BookingDTO[];
+  /** REQ-095 Stage 3a (TASK-401) — the camp weeks touching the range: a DAY BANNER on the calendar, never cells. */
+  campWeeks?: CampWeekLiteDTO[];
 }
 
 export interface TeachersResponse {

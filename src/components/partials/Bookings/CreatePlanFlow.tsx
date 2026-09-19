@@ -15,7 +15,7 @@ import {
   useTeachers,
   useSellablePackages,
 } from "@/hooks/scheduler";
-import { courseSizesFor, isUnpriced, packageFor } from "@/lib/scheduler/sellable";
+import { courseSizesFor, courseSizesForGroup, isUnpriced, packageFor, packageForGroup } from "@/lib/scheduler/sellable";
 import { formatPriceMinor } from "@/types/app/pricing";
 import { ApiClientError, errorProblems } from "@/lib/api/client";
 import DiscountSection from "@/components/common/DiscountSection";
@@ -42,7 +42,7 @@ interface Props {
    * prefilled and LOCKED, and `groupKey` rides in the body. 🚫 No second course form — this one, with three fields
    * held. `409 GROUP_FULL` / `SLOT_TAKEN` are the server's sentences in the same error slot.
    */
-  group?: { groupKey: string; name: string; teacherId: string; startDate: string; startTime: string };
+  group?: { groupKey: string; name: string; teacherId: string; startDate: string; startTime: string; priceGroup: string | null };
 }
 
 /** TASK-098 — the purchase-time create flow: picker → generate preview → the shared PlanModal (create mode)
@@ -91,9 +91,11 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   const subjectOptions = selectedTeacher?.subjectOptions ?? [];
   const bookableTeachers = teachers.filter((tc) => bookableOnDate(tc, startDate));
 
-  const sellableSizes = courseSizesFor(card, subjectId);
+  // TASK-400 — inside a group the card is the GROUP's (`priceGroup` from the server), not the program's: the sizes
+  // and the full price a discount is of. Solo stays by program, as today.
+  const sellableSizes = group ? courseSizesForGroup(card, group.priceGroup) : courseSizesFor(card, subjectId);
   const unpriced = isUnpriced(card, subjectId);
-  const chosen = packageFor(card, subjectId, size);
+  const chosen = group ? packageForGroup(card, group.priceGroup, size) : packageFor(card, subjectId, size);
   const sizeOptions = sellableSizes.map((s) => ({
     value: String(s),
     label: t("course.sizeOption", {

@@ -10,6 +10,7 @@ import {
   PieChart,
   Link2,
   Settings2,
+  Tent,
   UserCog,
   ShieldCheck,
 } from "lucide-react";
@@ -74,6 +75,8 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Tag,
     menuKey: "menu:badges",
   },
+  // REQ-095 Stage 3a (TASK-402) — Balance camp: weeks · roster · sell · redeem · mark. After Badges, before the reports.
+  { key: "camp", labelKey: "nav.camp", href: "/scheduler/camp", icon: Tent, menuKey: "menu:camp" },
   { key: "som", labelKey: "nav.som", href: "/scheduler/som", icon: PieChart, menuKey: "menu:som" },
   {
     key: "attention",

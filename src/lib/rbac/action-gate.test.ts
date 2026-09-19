@@ -47,10 +47,10 @@ describe("§1 — ONE gate, everywhere", () => {
     expect(codeOf("src/auth.ts")).toContain("actions: Array.isArray(data.user.actions) ? data.user.actions : [],");
   });
 
-  it("the snapshot: 50 keys in 8 areas (46 + course-rental + student-archive + other-series + TASK-397's group-series); every key a site uses exists; exactly two keys have no FE site", () => {
-    expect(KEYS.length).toBe(50);
+  it("the snapshot: 54 keys in 9 areas (50 + TASK-401's four `camp.*`); every key a site uses exists; exactly two keys have no FE site", () => {
+    expect(KEYS.length).toBe(54);
     const areas = [...new Set(KEYS.map((k) => k.slice("action:".length, k.indexOf("."))))];
-    expect(areas).toEqual(["calendar", "bookings", "people", "teachers", "link-requests", "badges", "settings", "sales"]);
+    expect(areas).toEqual(["calendar", "bookings", "people", "teachers", "link-requests", "badges", "camp", "settings", "sales"]); // camp after badges, as the BE
     for (const k of KEYS) expect(k).toMatch(/^action:[a-z-]+\.[a-z-]+$/);
     // every literal at a site is a registry key — a typo cannot open a control
     const unknown = sites.filter((s) => !KEYS.includes(s.key));
@@ -61,9 +61,9 @@ describe("§1 — ONE gate, everywhere", () => {
     expect(KEYS.filter((k) => !used.has(k))).toEqual(["action:people.student-create", "action:teachers.calendar-link"]);
   });
 
-  it("the sweep: 77 key literals across 30 files (73 + TASK-398's group door, sell, swap and the roster's editor)", () => {
-    expect(sites.length).toBe(77);
-    expect(new Set(sites.map((s) => s.file)).size).toBe(30);
+  it("the sweep: 86 key literals across 33 files (78 + TASK-402's camp doors: open/edit/close a week, sell ×2, redeem ×2, mark)", () => {
+    expect(sites.length).toBe(86);
+    expect(new Set(sites.map((s) => s.file)).size).toBe(33);
     // hidden, never disabled: no site turns the gate into a `disabled` prop
     for (const f of SITE_FILES) expect({ f, hit: /disabled=\{!can\(/.test(readFileSync(f, "utf8")) }).toEqual({ f, hit: false });
     // the sites the report lists, one per area, are really there

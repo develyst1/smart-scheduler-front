@@ -18,6 +18,7 @@ import CalendarWeekGrid from "./CalendarWeekGrid";
 import BookingModal from "./Modal/BookingModal";
 import PausedTray from "./PausedTray";
 import CalendarGridSkeleton from "./CalendarGridSkeleton";
+import CampDayBanner from "./CampDayBanner";
 
 export default function CalendarContent() {
   const t = useT();
@@ -86,7 +87,7 @@ export default function CalendarContent() {
   const [isOpen, { open: onOpen, close: onClose }] = useDisclosure(false);
   const [selected, setSelected] = useState<Booking | undefined>();
   const [createSlot, setCreateSlot] = useState<
-    { teacherId: string; time: string; date: string } | undefined
+    { teacherId: string; time: string; date: string; groupSeat?: { groupId: string; name: string } } | undefined
   >();
 
   const openView = (booking: Booking) => {
@@ -104,6 +105,12 @@ export default function CalendarContent() {
   const openOverbook = (b: Booking) => {
     setSelected(undefined);
     setCreateSlot({ teacherId: b.teacherId, time: b.startTime, date: b.date });
+  };
+
+  // TASK-400 — a walk-in seat: the same create form, locked to the GROUP row, `groupId` in the body.
+  const openWalkIn = (b: Booking) => {
+    setSelected(undefined);
+    setCreateSlot({ teacherId: b.teacherId, time: b.startTime, date: b.date, groupSeat: { groupId: b.id, name: b.group?.name ?? b.displayName } });
   };
 
   const loading = loadingTeachers || loadingCalendar;
@@ -177,12 +184,16 @@ export default function CalendarContent() {
           {calPhase === "skeleton" ? (
             <CalendarGridSkeleton view={view === "day" ? "day" : "week"} teacherCount={filteredTeachers.length} />
           ) : calPhase === "quiet" ? null : view === "day" ? (
+            <>
+            {/* REQ-095 Stage 3a — the camp weeks covering this day, as a banner above the grid (no cells). */}
+            <CampDayBanner campWeeks={calendar?.campWeeks} date={date} />
             <CalendarGrid
               teachers={filteredTeachers}
               bookings={dayBookings}
               onSelectBooking={openView}
               onCreate={openCreate}
             />
+            </>
           ) : (
             <CalendarWeekGrid
               teachers={filteredTeachers}
@@ -227,6 +238,7 @@ export default function CalendarContent() {
         teachers={teachers}
         bookings={view === "day" ? dayBookings : weekBookings}
         onOverbook={openOverbook}
+        onWalkIn={openWalkIn}
       />
     </div>
   );

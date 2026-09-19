@@ -10,7 +10,18 @@ import { useT } from "@/lib/i18n";
  * with ticks and the tick count. Dates as `YYYY-MM-DD`; the dialogs sort them for the wire. 🚫 No rule here: the count
  * is shown, not judged (the server's 1–60 is the server's).
  */
-export default function MultiDateField({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
+export default function MultiDateField({
+  value,
+  onChange,
+  minDate,
+  maxDate,
+}: {
+  value: string[];
+  onChange: (next: string[]) => void;
+  /** TASK-402 — the camp week's own range: the picker offers only its dates. */
+  minDate?: string;
+  maxDate?: string;
+}) {
   const t = useT();
   return (
     <div>
@@ -24,7 +35,10 @@ export default function MultiDateField({ value, onChange }: { value: string[]; o
         type="multiple"
         value={value.map((d) => new Date(d))}
         onChange={(v) => onChange((v as unknown as (Date | string)[]).map((d) => dayjs(d).format("YYYY-MM-DD")))}
-        numberOfColumns={2}
+        numberOfColumns={minDate && maxDate && minDate.slice(0, 7) === maxDate.slice(0, 7) ? 1 : 2}
+        minDate={minDate ? new Date(minDate) : undefined}
+        maxDate={maxDate ? new Date(maxDate) : undefined}
+        defaultDate={minDate ? new Date(minDate) : undefined}
       />
     </div>
   );

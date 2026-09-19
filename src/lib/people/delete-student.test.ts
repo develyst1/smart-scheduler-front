@@ -33,8 +33,10 @@ describe("two taps — the red action on every student row, then a dialog that n
     // which is stripped here before the negative runs; a suspend/history/parent condition would still trip it.
     // REQ-093 / TASK-393 put the red ARCHIVE icon between Edit and Delete under its own key — that whole block is
     // stripped too (it is the archive control, not a condition on delete).
+    // TASK-402 put the Camp card icon BEFORE Edit, so the gap starts at the EDIT tooltip's close, not the first one.
+    const editClose = rows.indexOf("</Tooltip>", rows.indexOf('<Tooltip label={t("people.edit")}'));
     const gap = rows
-      .slice(rows.indexOf("</Tooltip>"), rows.indexOf('<Tooltip label={t("people.deleteStudent")}'))
+      .slice(editClose, rows.indexOf('<Tooltip label={t("people.deleteStudent")}'))
       .replace(/\{can\("action:people\.student-archive"\) && \([\s\S]*?<\/Tooltip>\s*\)\}/, "")
       .replace(/\{can\("action:people\.student-delete"\) && \(/g, "");
     expect(gap.length).toBeGreaterThan(0);

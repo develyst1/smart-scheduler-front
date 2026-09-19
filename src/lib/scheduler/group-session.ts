@@ -31,6 +31,8 @@ export interface GroupSeat {
 export interface GroupFacts {
   key: string | null;
   kind: GroupKind | null;
+  /** The card's price group for this group, from the server — the course form inside the group picks its card by THIS name. */
+  priceGroup: string | null;
   name: string | null;
   seatCap: number | null;
   seats: GroupSeat[];

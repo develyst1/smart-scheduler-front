@@ -22,6 +22,17 @@ export const packageFor = (
  * True when the program is configured but sells nothing — i.e. the API listed it under `unpricedSubjects`.
  * Distinct from "no program chosen yet", which must not show an error.
  */
+/**
+ * REQ-095 Stage 2b (TASK-400) — the course form INSIDE a group prices by the GROUP's card: the packages whose
+ * `priceGroup` is the group's `priceGroup` (from the server — never kind → group here, never a price). DUO shows
+ * 4/6/10, Group 6/10 — whatever the card lists; an unknown group ⇒ nothing, and the form says so like an unpriced subject.
+ */
+export const courseSizesForGroup = (data: SellablePackagesResponse | undefined, priceGroup: string | null | undefined): number[] =>
+  !data || !priceGroup ? [] : data.packages.filter((p) => p.size !== 1 && p.priceGroup === priceGroup).map((p) => p.size).sort((a, b) => a - b);
+
+export const packageForGroup = (data: SellablePackagesResponse | undefined, priceGroup: string | null | undefined, size: number) =>
+  !priceGroup ? undefined : data?.packages.find((p) => p.size === size && p.priceGroup === priceGroup);
+
 export const isUnpriced = (data: SellablePackagesResponse | undefined, subjectId: string): boolean =>
   !!subjectId && !!data?.unpricedSubjects.some((s) => s.id === subjectId);
 

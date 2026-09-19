@@ -528,6 +528,8 @@ export interface CreateBookingInput {
   otherPriceItemId?: string;
   /** AC-18/19 — the teachers BEYOND `teacherId`; `teacherId` is always the first. `OTHER` only (AC-20). */
   additionalTeacherIds?: string[];
+  /** REQ-095 Stage 2b (TASK-400) — a WALK-IN seat into a group: `SINGLE_SESSION` + the group row's teacher/date/time. */
+  groupId?: string;
   // ── REQ-095 Stage 1 (TASK-394/395) — `OTHER` only: the kind, the head count, ONE rates map (teacherId → SATANG). ──
   otherKind?: OtherKind;
   headCount?: number;
@@ -605,6 +607,8 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
     // payload has to be added HERE too — the compiler cannot catch an omission from an object literal.
     discount: input.discount,
     attendeeNote: input.attendeeNote,
+    // TASK-400 — the walk-in seat's group, on the wire only for a single session (the literal is the wire).
+    groupId: input.bookingType === "SINGLE_SESSION" ? input.groupId : undefined,
     // SPEC-070 / TASK-226 — the four อื่นๆ fields, added HERE and not only to the type, because of the line
     // above: this literal is the wire, and the compiler cannot see an omission from it. 🔴 Gated on the type so
     // a lesson booking never carries one — the BE refuses them outright rather than ignoring them, so sending

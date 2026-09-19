@@ -32,8 +32,8 @@ const ALL = [...MENU_KEYS];
 const TWO = ["menu:calendar", "menu:reports"];
 
 describe("§1 — the registry and the nav", () => {
-  it("MENU_KEYS: twelve `menu:<navKey>` keys, in the nav's order (visible entries, then the hidden pages) — the BE's mirror", () => {
-    expect(MENU_KEYS.length).toBe(12);
+  it("MENU_KEYS: thirteen `menu:<navKey>` keys, in the nav's order (visible entries, then the hidden pages) — the BE's mirror", () => {
+    expect(MENU_KEYS.length).toBe(13); // 12 + TASK-401's `menu:camp`
     expect(ALL).toEqual([
       "menu:calendar",
       "menu:teachers",
@@ -41,6 +41,7 @@ describe("§1 — the registry and the nav", () => {
       "menu:link-requests",
       "menu:bookings",
       "menu:badges",
+      "menu:camp",
       "menu:som",
       "menu:attention",
       "menu:reports",

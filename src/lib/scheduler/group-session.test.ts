@@ -109,7 +109,9 @@ describe("§2 — the group cell (rendered)", () => {
     expect(dictionaries.en.bookingType.GROUP.length).toBeGreaterThan(0);
     expect(dictionaries.th.bookingType.GROUP.length).toBeGreaterThan(0);
     // 🚫 no seat filtering on the grid: no `groupId` read anywhere in the calendar partials
-    for (const f of ["CalendarGrid.tsx", "CalendarWeekGrid.tsx", "CalendarContent.tsx"]) expect(codeOf(`src/components/partials/Calendar/${f}`)).not.toContain("groupId");
+    for (const f of ["CalendarGrid.tsx", "CalendarWeekGrid.tsx"]) expect(codeOf(`src/components/partials/Calendar/${f}`)).not.toContain("groupId");
+    // TASK-400's walk-in slot names a `groupId` on the content page — the door, never a filter over the rows
+    expect(codeOf("src/components/partials/Calendar/CalendarContent.tsx")).not.toMatch(/filter\([^\n]*groupId|groupId[^\n]*\.filter\(/);
   });
 });
 
@@ -133,8 +135,8 @@ describe("§3 — the doors and the bodies", () => {
 
   it("sell a course into the group: the EXISTING course form, the three fields locked, `groupKey` in the body; by the course-create key", () => {
     expect(modal).toContain('{can("action:bookings.course-create") && (');
-    expect(modal).toContain("group={{ groupKey: booking.group.key, name: booking.group.name ?? booking.displayName, teacherId: booking.teacherId, startDate: booking.date, startTime: booking.startTime }}");
-    expect(flow).toContain("group?: { groupKey: string; name: string; teacherId: string; startDate: string; startTime: string };");
+    expect(modal).toContain("group={{ groupKey: booking.group.key, name: booking.group.name ?? booking.displayName, teacherId: booking.teacherId, startDate: booking.date, startTime: booking.startTime, priceGroup: booking.group.priceGroup }}"); // + TASK-400's price group
+    expect(flow).toContain("group?: { groupKey: string; name: string; teacherId: string; startDate: string; startTime: string; priceGroup: string | null };"); // + TASK-400
     expect(flow).toContain("setTeacherId(group.teacherId);");
     expect(flow).toContain("setStartDate(group.startDate);");
     expect(flow).toContain("setStartTime(group.startTime);");
@@ -171,7 +173,7 @@ describe("§3 — the doors and the bodies", () => {
   });
 
   it("copy: booking +22 · calendar +2 · bookingType +1 — both languages; the snapshot is 50", () => {
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(50);
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(54); // + TASK-402's four camp keys
     for (const k of ["groupKind_DUO", "groupKind_GROUP", "groupCreate", "groupCreateTitle", "groupName", "groupKindLabel", "groupSeatCap", "groupSeatCapDuo", "groupSeatCapHint", "groupSeriesCreatedOk", "groupSeats", "groupRoster", "groupRosterEmpty", "groupSell", "groupSellInto", "groupSwap", "groupSwapTitle", "groupSwapFromHereOn", "groupSwapNoNotice", "groupSwapOk", "inGroup"]) {
       expect((dictionaries.en.booking as Record<string, string>)[k]?.length).toBeGreaterThan(0);
       expect((dictionaries.th.booking as Record<string, string>)[k]?.length).toBeGreaterThan(0);

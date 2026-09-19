@@ -13,6 +13,7 @@ export const MENU_KEYS = [
   "menu:link-requests",
   "menu:bookings",
   "menu:badges",
+  "menu:camp", // TASK-401/402 — the Camp menu, after Badges (the operational menus, before the reports)
   "menu:som",
   "menu:attention",
   "menu:reports",

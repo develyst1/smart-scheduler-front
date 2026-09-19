@@ -37,6 +37,8 @@ import {
 } from "@/hooks/scheduler";
 import { THAI_NATIONALITY, type Parent, type Student } from "@/types/app/people";
 import { useShowArchived } from "@/lib/people/show-archived";
+import CampCardModal from "@/components/partials/Camp/CampCardModal";
+import { Tent } from "lucide-react";
 import { useCan } from "@/hooks/scheduler/useMe";
 import ParentFormModal from "./ParentFormModal";
 import StudentFormModal from "./StudentFormModal";
@@ -89,6 +91,8 @@ export default function PeopleContent() {
   const archiveStudent = useArchiveStudent();
   const unarchiveStudent = useUnarchiveStudent();
   const [archiveTarget, setArchiveTarget] = useState<Student | null>(null);
+  // REQ-095 Stage 3a (TASK-402) — the student's Camp card (packages, credit in days, sell, a link to redeem).
+  const [campTarget, setCampTarget] = useState<Student | null>(null);
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const { shown: showArchived, toggle: toggleShowArchived } = useShowArchived();
   // SPEC-071 / TASK-243 — which family's LINE link is open in the dialog. `null` = closed, so nothing is fetched.
@@ -319,6 +323,11 @@ export default function PeopleContent() {
                                 {meta && <span className="ml-2 text-xs text-muted-400">· {meta}</span>}
                               </div>
                               <Group gap={2} wrap="nowrap">
+                                <Tooltip label={t("camp.card")} withinPortal>
+                                  <ActionIcon variant="subtle" color="teal" aria-label={t("camp.card")} onClick={() => setCampTarget(s)}>
+                                    <Tent size={15} />
+                                  </ActionIcon>
+                                </Tooltip>
                                 {can("action:people.student-edit") && (
                                   <Tooltip label={t("people.edit")} withinPortal>
                                     <ActionIcon
@@ -427,6 +436,10 @@ export default function PeopleContent() {
 
       {/* TASK-365 — the second tap: names the student, says it is permanent, red confirm beside a plain cancel
           (the TASK-355 unlink pattern). A 409 shows the server's sentence HERE and the dialog stays open. */}
+      {campTarget && (
+        <CampCardModal student={{ id: campTarget.id, name: campTarget.nickname || campTarget.name }} opened={campTarget !== null} onClose={() => setCampTarget(null)} />
+      )}
+
       {/* REQ-093 — the SECOND tap of ARCHIVE. History and money stay; a 409 (sessions ahead) shows the server's sentence HERE. */}
       <Modal
         opened={archiveTarget !== null}

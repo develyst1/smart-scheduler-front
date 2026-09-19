@@ -22,7 +22,7 @@ import {
   Loader,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil, Users, Repeat, GraduationCap } from "lucide-react";
+import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil, Users, Repeat, GraduationCap, Ticket } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -95,10 +95,13 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   booking?: Booking;
-  createSlot?: { teacherId: string; time: string; date: string };
+  /** TASK-400 — `groupSeat`: a WALK-IN seat into a group row — the single-session form locked to the row, `groupId` in the body. */
+  createSlot?: { teacherId: string; time: string; date: string; groupSeat?: { groupId: string; name: string } };
   teachers: TeacherView[];
   bookings: Booking[];
   onOverbook: (b: Booking) => void;
+  /** TASK-400 — open the create form as a walk-in seat into this GROUP row. */
+  onWalkIn: (b: Booking) => void;
 }
 
 /** คาบที่ย้ายด้วยมือได้ (UC-003) — ไม่รวมที่มาเรียน/ลา/ยกเลิกแล้ว */
@@ -112,6 +115,7 @@ export default function BookingModal({
   teachers,
   bookings,
   onOverbook,
+  onWalkIn,
 }: Props) {
   const t = useT();
   const isCreate = !booking;
@@ -151,6 +155,7 @@ export default function BookingModal({
           teacherName={teacher?.name ?? "-"}
           teachers={teachers}
           onOverbook={onOverbook}
+          onWalkIn={onWalkIn}
           onClose={onClose}
         />
       ) : null}
@@ -165,12 +170,14 @@ function ViewBooking({
   teacherName,
   teachers,
   onOverbook,
+  onWalkIn,
   onClose,
 }: {
   booking: Booking;
   teacherName: string;
   teachers: TeacherView[];
   onOverbook: (b: Booking) => void;
+  onWalkIn: (b: Booking) => void;
   onClose: () => void;
 }) {
   const t = useT();
@@ -532,7 +539,13 @@ function ViewBooking({
                   <a href={`/scheduler/bookings?q=${encodeURIComponent(s.studentName ?? "")}`} className="truncate underline decoration-dotted underline-offset-2">
                     {s.studentName ?? "—"}
                   </a>
-                  <StatusChip status={s.status as Booking["status"]} />
+                  <span className="flex shrink-0 items-center gap-1">
+                    {/* TASK-400 — a walk-in seat has no course: one word, from `courseId: null`. */}
+                    {s.courseId === null && (
+                      <span className="rounded-sm border border-muted-300 px-1 text-[10px] font-semibold uppercase text-muted-600">{t("booking.walkInChip")}</span>
+                    )}
+                    <StatusChip status={s.status as Booking["status"]} />
+                  </span>
                 </li>
               ))}
             </ul>
@@ -541,6 +554,12 @@ function ViewBooking({
             {can("action:bookings.course-create") && (
               <Button size="compact-xs" variant="light" leftSection={<GraduationCap size={13} />} onClick={() => setSellOpen(true)}>
                 {t("booking.groupSell")}
+              </Button>
+            )}
+            {/* TASK-400 — a walk-in seat: the existing single-session form, locked to this row (the calendar opens it). */}
+            {can("action:calendar.book") && (
+              <Button size="compact-xs" variant="light" leftSection={<Ticket size={13} />} onClick={() => onWalkIn(booking)}>
+                {t("booking.walkInSeat")}
               </Button>
             )}
             {can("action:calendar.booking-edit") && (
@@ -578,7 +597,7 @@ function ViewBooking({
         <CreatePlanFlow
           opened={sellOpen}
           onClose={() => setSellOpen(false)}
-          group={{ groupKey: booking.group.key, name: booking.group.name ?? booking.displayName, teacherId: booking.teacherId, startDate: booking.date, startTime: booking.startTime }}
+          group={{ groupKey: booking.group.key, name: booking.group.name ?? booking.displayName, teacherId: booking.teacherId, startDate: booking.date, startTime: booking.startTime, priceGroup: booking.group.priceGroup }}
         />
       )}
 
@@ -1006,7 +1025,7 @@ function CreateForm({
   bookings,
   onClose,
 }: {
-  createSlot: { teacherId: string; time: string; date: string };
+  createSlot: { teacherId: string; time: string; date: string; groupSeat?: { groupId: string; name: string } };
   teachers: TeacherView[];
   bookings: Booking[];
   onClose: () => void;
@@ -1015,6 +1034,10 @@ function CreateForm({
   const create = useCreateBooking();
   const detect = useDetectConflict();
   const can = useCan();
+  // TASK-400 — a WALK-IN seat into a group row: the single-session form only, teacher / date / time LOCKED to the row,
+  // `groupId` in the body. The slot IS taken (by the group row) — the server seats or refuses (`GROUP_FULL`, the
+  // 400 mismatch, `404`), so the client's own slot check is skipped: it would only find the group.
+  const walkIn = createSlot.groupSeat ?? null;
 
   const [bookingType, setBookingType] = useState<BookingType>("SINGLE_SESSION");
   // Trial / Single — free student picker + teacher + subject + time.
@@ -1237,6 +1260,8 @@ function CreateForm({
       badgeValueIds,
       discount: discountPayload(discount, singleFullMinor),
       attendeeNote: attendeeNote.trim() || undefined,
+      // TASK-400 — into the group, only on a walk-in seat.
+      groupId: walkIn?.groupId,
     };
   }
 
@@ -1244,11 +1269,13 @@ function CreateForm({
     if (!valid || !input) return;
     setSubmitError(null);
     try {
-      const existing = await detect.mutateAsync({
-        teacherId: input.teacherId,
-        date: input.date,
-        startTime: input.startTime,
-      });
+      const existing = walkIn
+        ? undefined
+        : await detect.mutateAsync({
+            teacherId: input.teacherId,
+            date: input.date,
+            startTime: input.startTime,
+          });
       if (existing && existing.status !== "SICK_LEAVE") {
         setBlocked(existing);
         return;
@@ -1296,15 +1323,21 @@ function CreateForm({
 
   return (
     <Stack gap="md">
-      <Tabs value={bookingType} onChange={(v) => v && changeTab(v as BookingType)}>
-        <Tabs.List grow>
-          {BOOKING_TABS.map((k) => (
-            <Tabs.Tab key={k} value={k}>
-              {t(`bookingType.${k}`)}
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
-      </Tabs>
+      {walkIn ? (
+        <Alert color="teal" icon={<Users size={16} />} variant="light">
+          {t("booking.walkInInto", { name: walkIn.name })}
+        </Alert>
+      ) : (
+        <Tabs value={bookingType} onChange={(v) => v && changeTab(v as BookingType)}>
+          <Tabs.List grow>
+            {BOOKING_TABS.map((k) => (
+              <Tabs.Tab key={k} value={k}>
+                {t(`bookingType.${k}`)}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+        </Tabs>
+      )}
 
       {leaveOccupant && (
         <Alert color="orange" icon={<ArrowLeftRight size={18} />} title={t("booking.overbookBannerTitle")}>
@@ -1585,6 +1618,7 @@ function CreateForm({
               setTeacherId(v ?? "");
               setSubjectId("");
             }}
+            disabled={!!walkIn}
             data={teacherSelectData(teachers.filter((tc) => bookableOnDate(tc, createSlot.date)))}
             allowDeselect={false}
             searchable
@@ -1608,6 +1642,7 @@ function CreateForm({
               label={t("booking.time")}
               value={startTime}
               onChange={(v) => setStartTime(v ?? "")}
+              disabled={!!walkIn}
               data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
               allowDeselect={false}
               searchable

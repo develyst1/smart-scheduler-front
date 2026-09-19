@@ -174,9 +174,9 @@ describe("§3 — the matrix", () => {
     const rowA = html.slice(html.indexOf("alice"), html.indexOf("bob"));
     expect((rowA.match(/data-cell="role"/g) ?? []).length).toBe(2); // menu:calendar + action:calendar.book
     expect((rowA.match(/data-cell="own"/g) ?? []).length).toBe(1); // action:sales.discount
-    expect((rowA.match(/data-cell="none"/g) ?? []).length).toBe(12 + 3 - 3);
+    expect((rowA.match(/data-cell="none"/g) ?? []).length).toBe(13 + 3 - 3); // 13 menus since TASK-402
     const rowB = html.slice(html.indexOf("bob"));
-    expect((rowB.match(/data-cell="all"/g) ?? []).length).toBe(15);
+    expect((rowB.match(/data-cell="all"/g) ?? []).length).toBe(16);
     expect(rowB).not.toContain('data-cell="none"');
     // glyphs by source
     expect(rowA).toContain("▲");
