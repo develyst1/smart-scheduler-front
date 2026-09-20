@@ -604,6 +604,8 @@ export interface StudentListItem {
   parentId: string | null;
   parentName: string | null;
   label: string; // "name (phone)" — ready for display
+  /** REQ-099 (TASK-414) — `YYYY-MM-DD` or null; absent on an older payload. Rendered `DD-MM-YYYY` or `—`. */
+  birthDate?: string | null;
 }
 export type StudentsResponse = StudentListItem[];
 

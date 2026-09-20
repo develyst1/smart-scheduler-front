@@ -41,6 +41,9 @@ import {
 import { THAI_NATIONALITY, type Parent, type Student } from "@/types/app/people";
 import { useShowArchived } from "@/lib/people/show-archived";
 import { archivedParentsQuery } from "@/lib/people/parent-archive";
+import { EMPTY_BIRTHDAY, birthdayQuery, formatDob, type BirthdayState } from "@/lib/people/birthday-filter";
+import { useBirthdayStudents } from "@/hooks/scheduler/useStudents";
+import BirthdayFilter from "./BirthdayFilter";
 import CampCardModal from "@/components/partials/Camp/CampCardModal";
 import { Tent } from "lucide-react";
 import { useCan } from "@/hooks/scheduler/useMe";
@@ -108,6 +111,12 @@ export default function PeopleContent() {
   const [parentArchiveError, setParentArchiveError] = useState<string | null>(null);
   const { data: archivedData } = useArchivedParents(archivedParentsQuery(debounced.trim() || undefined), showArchived);
   const archivedParents = archivedData?.parents ?? [];
+  // REQ-099 (TASK-415) — the BIRTHDAY control: set ⇒ the families view is replaced by the server's student list
+  // (`GET /students` with the pure `birthdayQuery`; the same search `q`); cleared ⇒ the families come back. The
+  // order and the filtering are the server's — nothing here sorts or filters by month or null.
+  const [birthday, setBirthday] = useState<BirthdayState>(EMPTY_BIRTHDAY);
+  const birthdayParams = birthdayQuery(birthday, debounced);
+  const { data: birthdayRows, isLoading: loadingBirthday } = useBirthdayStudents(birthdayParams);
   const runParentArchive = async () => {
     if (!parentArchiveTarget) return;
     const { parent, restore } = parentArchiveTarget;
@@ -215,6 +224,7 @@ export default function PeopleContent() {
           <p className="max-w-2xl text-sm text-muted-500">{t("people.subtitle")}</p>
         </div>
         <Group gap="md">
+          <BirthdayFilter value={birthday} onChange={setBirthday} />
           <Switch size="sm" label={t("people.showArchived")} checked={showArchived} onChange={toggleShowArchived} />
           {can("action:people.parent-create") && (
             <Button leftSection={<UserPlus size={16} />} onClick={() => setParentModal({ open: true, parent: null })}>
@@ -238,7 +248,40 @@ export default function PeopleContent() {
           🔴 `parents.length || PAGE_SIZE` — `keepPreviousData` still holds the page being replaced, so asking
           for that many matches the height already on screen exactly. `PAGE_SIZE` covers the first load, where
           there is nothing to match. */}
-      {phase === "skeleton" ? (
+      {birthdayParams !== null ? (
+        /* REQ-099 — the student list in the server's order: name · nickname · DOB or — · the family's phone. */
+        <Card padding="md" withBorder data-birthday-list={birthdayRows?.length ?? 0}>
+          {loadingBirthday && !birthdayRows ? (
+            <Loader size="sm" />
+          ) : (birthdayRows?.length ?? 0) === 0 ? (
+            <Text ta="center" c="dimmed" size="sm">
+              {t("people.birthdayEmpty")}
+            </Text>
+          ) : (
+            <Stack gap={0}>
+              <p className="mb-2 text-xs text-muted-400">{t("people.birthdayFound", { n: birthdayRows!.length })}</p>
+              {birthdayRows!.map((s) => (
+                <div key={s.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-0.5 border-t border-muted-100 py-1.5 text-sm">
+                  <span className="min-w-0">
+                    <span className="font-medium">{s.name}</span>
+                    {s.nickname && s.nickname !== s.name && <span className="ml-1 text-muted-500">({s.nickname})</span>}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-4 text-xs text-muted-500">
+                    <span className="tabular-nums" data-dob={s.birthDate ?? "none"}>
+                      {formatDob(s.birthDate)}
+                    </span>
+                    {s.phone && (
+                      <span className="inline-flex items-center gap-1">
+                        <Phone size={12} /> {s.phone}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </Stack>
+          )}
+        </Card>
+      ) : phase === "skeleton" ? (
         <ParentCardSkeletons count={parents.length || PAGE_SIZE} />
       ) : phase === "quiet" ? null : parents.length === 0 ? (
         <Card padding="xl">

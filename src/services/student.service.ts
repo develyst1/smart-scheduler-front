@@ -28,3 +28,16 @@ export const searchStudents = async (q?: string, limit = 50): Promise<StudentsRe
   });
   return data;
 };
+
+/**
+ * REQ-099 (TASK-414/415) — the birthday list: the SAME `GET /students` with the query the pure `birthdayQuery` built
+ * (a month range, or `noDob=true`, never both; `q` carried). The order is the server's. 🚫 No filtering or sort here.
+ */
+export const listStudentsByBirthday = async (params: Record<string, string | number>): Promise<StudentsResponse> => {
+  if (useMock) {
+    const rows = MOCK_STUDENTS.filter((s) => !s.suspended).map(({ suspended: _suspended, ...rest }) => ({ ...rest, birthDate: rest.id === "ms1" ? "2018-11-05" : null }));
+    return params.noDob ? rows.filter((s) => !s.birthDate) : rows.filter((s) => !!s.birthDate);
+  }
+  const { data } = await api.get<StudentsResponse>("/students", { params });
+  return data;
+};
