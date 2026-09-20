@@ -6,6 +6,7 @@ import type {
   TeacherDTO,
 } from "@/types/api/contract";
 import type { Booking, CoursePackageView, Teacher } from "@/types/app/scheduler";
+import { studentLabel } from "@/lib/scheduler/duo";
 
 export function dtoToBooking(dto: BookingDTO): Booking {
   return {
@@ -13,7 +14,11 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     // 🔴 TASK-227 (REQ-078 AC-10) — carried straight through, NEVER re-derived. The BE computed it once for
     // every booking type; the moment this becomes `dto.displayName || dto.student?.name` the property stops
     // being a property and goes back to being 31 separate opinions.
-    displayName: dto.displayName,
+    displayName: studentLabel(dto.displayName, dto.coStudent),
+    // TASK-421 — the ONE exception to "carried straight through", in the ONE place: a DUO row (`coStudent` set)
+    // reads `A & B` through the pure `studentLabel`; a Private is byte-identical to the server's field (asserted).
+    coStudent: dto.coStudent ?? null,
+    classRateMinor: dto.course?.classRateMinor ?? null,
     // `null` when there is no student (อื่นๆ). This means THE CHILD — not "what this booking is called".
     studentName: dto.student?.name ?? null,
     // TASK-141/142 — the BE always sent this; the flatten dropped it. Kept for the surfaces that mean the
@@ -87,7 +92,11 @@ export function dtoToTeacher(dto: TeacherDTO): Teacher {
 export function dtoToCourseView(row: CourseSummary & { student: StudentRef }): CoursePackageView {
   return {
     id: row.id,
-    studentName: row.student.name,
+    // TASK-421 — a DUO course names both children (the pure `studentLabel`); a Private is the one name as before.
+    studentName: studentLabel(row.student.name, row.coStudent),
+    courseKind: row.courseKind ?? "PRIVATE",
+    coStudent: row.coStudent ?? null,
+    classRateMinor: row.classRateMinor ?? null,
     size: row.size,
     usedSessions: row.usedSessions,
     leaveUsed: row.leaveUsed,

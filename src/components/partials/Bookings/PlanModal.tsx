@@ -23,6 +23,7 @@ import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
 import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
+import { studentLabel } from "@/lib/scheduler/duo";
 import { ApiClientError } from "@/lib/api/client";
 import { StatusChip } from "@/components/common/BookingBadges";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
@@ -275,7 +276,7 @@ export default function PlanModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={plan ? t("plan.title", { name: plan.student?.name ?? "—" }) : t("plan.loading")}
+      title={plan ? t("plan.title", { name: studentLabel(plan.student?.name ?? "—", plan.coStudent) }) : t("plan.loading")}
       centered
       radius="lg"
       size="1100px"

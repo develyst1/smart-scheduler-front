@@ -150,6 +150,14 @@ export interface CourseSummary {
    * `paid_at` — "n to collect").
    */
   rental?: { code: string; remark: string | null; paidUpfront: boolean; unpaidSessions: number } | null;
+  /**
+   * REQ-095 §13 (TASK-420) — DUO = ONE course, TWO kids: `courseKind`, the second child (the same shape as
+   * `student`) and the teaching rate (satang; the DUO's `classRateMinor`, null on a Private). Optional — an older
+   * payload / embed may omit them; readers treat absent as PRIVATE.
+   */
+  courseKind?: "PRIVATE" | "DUO";
+  coStudent?: StudentRef | null;
+  classRateMinor?: number | null;
 }
 
 /** Badge value as embedded on a booking. */
@@ -216,6 +224,8 @@ export interface BookingDTO {
   /** TASK-224 (REQ-078) — `null` on an อื่นๆ booking with no student. Deliberately nullable rather than a
    *  placeholder: the compiler then points at every caller that genuinely needs the student OBJECT. */
   student: StudentRef | null;
+  /** REQ-095 §13 (TASK-420) — a DUO course row's SECOND child (the same `studentRef` shape); null elsewhere. */
+  coStudent?: StudentRef | null;
   /** The FIRST teacher — unchanged meaning, still always present. See `teachers` for all of them. */
   teacher: Pick<TeacherDTO, "id" | "name" | "nickname" | "type">;
   /** TASK-224 — `null` on an อื่นๆ booking: it has no program, and says so rather than naming a fiction

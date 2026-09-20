@@ -31,6 +31,7 @@ import {
   getTeacherTypeOrder,
   markAttended,
   reportOwnLeave,
+  updateCourseRate,
   bulkConfirm,
   getEligibleStudents,
   markSickLeave,
@@ -534,6 +535,11 @@ export const useSwapGroupTeacher = () => {
   });
 };
 
+/** REQ-095 §13 (TASK-421) — the DUO course's rate from the course card; the list re-reads. */
+export const useUpdateCourseRate = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ({ courseId, classRateMinor }: { courseId: string; classRateMinor: number }) => updateCourseRate(courseId, classRateMinor), onSuccess: () => invalidateAll(qc) });
+};
 export const useMoveBooking = () => {
   const qc = useQueryClient();
   return useMutation({

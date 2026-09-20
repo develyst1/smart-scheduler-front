@@ -9,7 +9,8 @@ import { useT } from "@/lib/i18n";
 import { useCreateGroupSeries, useTeachers } from "@/hooks/scheduler";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { teacherRatesMinor, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
-import { DUO_CAP, GROUP_CAP_MAX, GROUP_CAP_MIN, GROUP_KINDS, seatCapFor, type GroupKind } from "@/lib/scheduler/group-session";
+import { DUO_CAP, GROUP_CAP_MAX, GROUP_CAP_MIN, seatCapFor, type GroupKind } from "@/lib/scheduler/group-session";
+import { CREATABLE_GROUP_KINDS } from "@/lib/scheduler/duo";
 import { TIME_SLOTS } from "@/types/app/scheduler";
 import OtherScheduleFields from "./OtherScheduleFields";
 import MultiDateField from "./MultiDateField";
@@ -34,7 +35,8 @@ export default function GroupSeriesDialog({
   const { data: teachers = [] } = useTeachers();
   const create = useCreateGroupSeries();
   const [name, setName] = useState("");
-  const [kind, setKind] = useState<GroupKind>("DUO");
+  // TASK-421 — a DUO is a COURSE now (two kids, one course); the creator offers Group only. Existing DUO series still render.
+  const [kind, setKind] = useState<GroupKind>("GROUP");
   const [capTyped, setCapTyped] = useState<number | "">(GROUP_CAP_MIN);
   const [teacherIds, setTeacherIds] = useState<string[]>(seed.teacherIds);
   const [startTime, setStartTime] = useState(seed.startTime);
@@ -81,8 +83,8 @@ export default function GroupSeriesDialog({
           <Select
             label={t("booking.groupKindLabel")}
             value={kind}
-            onChange={(v) => setKind((v as GroupKind | null) ?? "DUO")}
-            data={GROUP_KINDS.map((k) => ({ value: k, label: t(`booking.groupKind_${k}`) }))}
+            onChange={(v) => setKind((v as GroupKind | null) ?? "GROUP")}
+            data={CREATABLE_GROUP_KINDS.map((k) => ({ value: k, label: t(`booking.groupKind_${k}`) }))}
             allowDeselect={false}
           />
           <NumberInput

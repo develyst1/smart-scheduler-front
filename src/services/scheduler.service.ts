@@ -41,6 +41,7 @@ import type {
   BulkConfirmResult,
   CalendarResponse,
   CourseListItem,
+  CourseSummary,
   CoursesResponse,
   CourseStatusCounts,
   Paged,
@@ -698,6 +699,8 @@ export interface MoveBookingInput {
   date?: string;
   startTime?: string;
   note?: string;
+  /** REQ-095 §13 (TASK-420/421) — a DUO session's teaching rate (writes the COURSE's column); alone is a valid body. */
+  classRateMinor?: number;
 }
 
 export const moveBooking = async (
@@ -776,6 +779,8 @@ export interface CreateCourseInput {
    * the date, `400 GROUP_MISMATCH`), extending the group past its last row when the course runs longer.
    */
   groupKey?: string;
+  /** REQ-095 §13 (TASK-420/421) — DUO: the second child + the teaching rate (satang). ONLY when the toggle is on; never with `groupKey` (the server's 400). */
+  duo?: { coStudentId: string; classRateMinor: number };
 }
 
 export const createCoursePackage = async (
@@ -803,8 +808,17 @@ export const createCoursePackage = async (
       : undefined,
     // TASK-398 — into a group, only when selling into one (absent otherwise; the literal is the wire).
     groupKey: input.groupKey,
+    // TASK-421 — the DUO block, only when the toggle is on (absent otherwise).
+    duo: input.duo,
   });
   return data;
+};
+
+/** REQ-095 §13 (TASK-420/421) — the DUO course's teaching rate (satang); a Private ⇒ the server's `400 NOT_DUO`. */
+export const updateCourseRate = async (courseId: string, classRateMinor: number): Promise<CourseListItem> => {
+  if (useMock) return mock.updateCourseRate(courseId, classRateMinor);
+  const { data } = await api.patch<{ course: CourseListItem }>(`/courses/${courseId}`, { classRateMinor });
+  return data.course;
 };
 
 /**

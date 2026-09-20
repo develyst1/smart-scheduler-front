@@ -53,8 +53,9 @@ describe("§1 — the card by price group (pure)", () => {
   });
 
   it("the course form inside a group reads the GROUP's card: sizes and the full price by `group.priceGroup`; solo untouched", () => {
-    expect(flow).toContain("const sellableSizes = group ? courseSizesForGroup(card, group.priceGroup) : courseSizesFor(card, subjectId);");
-    expect(flow).toContain("const chosen = group ? packageForGroup(card, group.priceGroup, size) : packageFor(card, subjectId, size);");
+    // TASK-421 — a third branch (the DUO card) sits between the group's and the program's; the group branch is byte-unchanged
+    expect(flow).toContain("const sellableSizes = group ? courseSizesForGroup(card, group.priceGroup) : duoOn ? courseSizesForGroup(card, priceGroupFor(true, null)) : courseSizesFor(card, subjectId);");
+    expect(flow).toContain("const chosen = group ? packageForGroup(card, group.priceGroup, size) : duoOn ? packageForGroup(card, priceGroupFor(true, null), size) : packageFor(card, subjectId, size);");
     expect(modal).toContain("priceGroup: booking.group.priceGroup }}");
     expect(codeOf("src/types/api/contract.ts")).toContain("priceGroup: string | null;");
   });

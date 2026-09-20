@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Skeleton, Modal, SegmentedControl, TextInput, UnstyledButton } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban, CalendarClock, PackageX } from "lucide-react";
-import { useSetCourseAdminUnlock, useCoursePackages, useRemoveCourseRental } from "@/hooks/scheduler";
+import { useSetCourseAdminUnlock, useCoursePackages, useRemoveCourseRental, useUpdateCourseRate } from "@/hooks/scheduler";
+import DuoRateLine from "./DuoRateLine";
 import { COURSE_STATUSES, type CourseStatus } from "@/types/app/scheduler";
 import { isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import { notify } from "@/lib/ui/notify";
@@ -65,6 +66,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   // empty state before the first page arrives.
   const phase = useLoadPhase(busy, data !== undefined);
   const setUnlock = useSetCourseAdminUnlock();
+  const updateRate = useUpdateCourseRate();
   // REQ-092 Stage 3 — the expiry date is `bookings.course-expiry`; unlock/relock is a course PATCH = `bookings.course-edit`.
   const can = useCan();
   const canExpiry = can("action:bookings.course-expiry");
@@ -186,7 +188,25 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
             <Stack gap="md">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-semibold">{c.studentName}</p>
+                  <p className="font-semibold">
+                    {c.studentName}
+                    {c.courseKind === "DUO" && (
+                      <Badge size="xs" variant="light" color="teal" ml={6} data-duo-tag>
+                        {t("course.duoTag")}
+                      </Badge>
+                    )}
+                  </p>
+                  {c.courseKind === "DUO" && (
+                    <DuoRateLine
+                      rateMinor={c.classRateMinor ?? null}
+                      editable={canEdit}
+                      saving={updateRate.isPending && updateRate.variables?.courseId === c.id}
+                      onSave={async (classRateMinor) => {
+                        await updateRate.mutateAsync({ courseId: c.id, classRateMinor });
+                        notify({ title: t("course.rateSavedOk"), color: "success" });
+                      }}
+                    />
+                  )}
                   <p className="text-xs text-muted-400">
                     {t("course.sizeLine", { size: c.size })} ·{" "}
                     {/* 🔴 SPEC-076 / REQ-082 AC-1 (TASK-265) — editable on ANY course, and deliberately NOT

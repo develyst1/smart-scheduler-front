@@ -215,6 +215,9 @@ export interface Booking {
   /** REQ-095 §11 (TASK-419) — a CAMP hour's owner (the week's day object, the week); null elsewhere. Set ⇒ the row is the week's, no booking doors. */
   campWeekDayId?: string | null;
   campWeekId?: string | null;
+  /** REQ-095 §13 (TASK-421) — a DUO course row's second child (as sent) and the COURSE's teaching rate (satang) for the move dialog's box. */
+  coStudent?: { id: string; name: string; nickname: string | null } | null;
+  classRateMinor?: number | null;
 }
 
 // ──────────────────────────── Badges ────────────────────────────
@@ -337,6 +340,10 @@ export interface CoursePackage {
   dropReason?: string | null;
   /** REQ-091 Deploy B (TASK-374) — the whole-course rental (derived server-side from the rows), or null. Display only. */
   rental?: { code: string; remark: string | null; paidUpfront: boolean; unpaidSessions: number } | null;
+  /** REQ-095 §13 (TASK-421) — DUO: the kind, the second child (as sent), the rate (satang). `studentName` already reads `A & B`. */
+  courseKind?: "PRIVATE" | "DUO";
+  coStudent?: { id: string; name: string; nickname: string | null } | null;
+  classRateMinor?: number | null;
 }
 
 export interface CoursePackageView extends CoursePackage {
@@ -506,6 +513,8 @@ export interface EntitlementPlan {
   kind: EntitlementKind;
   id: string;
   student: PlanSessionRef | null;
+  /** REQ-095 §13 (TASK-421) — a DUO course's second child when the plan reader sends it (optional: an older payload). */
+  coStudent?: PlanSessionRef | null;
   sessions: PlanSession[];
   liveEndDate: string | null; // server-derived (max date over LIVE sessions)
   /** SPEC-028 §12.1 — there is a session to reschedule (course: canInsert; voucher: false). */

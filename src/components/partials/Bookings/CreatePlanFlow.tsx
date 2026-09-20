@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Alert, Button, Group, Modal, Select, Stack, TextInput } from "@mantine/core";
+import { Alert, Button, Group, Modal, NumberInput, Select, Stack, TextInput } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { CalendarPlus, Info, AlertTriangle, Users } from "lucide-react";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
@@ -20,6 +20,7 @@ import { formatPriceMinor } from "@/types/app/pricing";
 import { ApiClientError, errorProblems } from "@/lib/api/client";
 import DiscountSection from "@/components/common/DiscountSection";
 import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
+import { duoBody, duoReady, emptyDuo, priceGroupFor, type DuoDraft } from "@/lib/scheduler/duo";
 import { Checkbox, SegmentedControl } from "@mantine/core";
 import RentalTierPicker, { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
 import { useT } from "@/lib/i18n";
@@ -56,6 +57,10 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   const create = useCreateCoursePackage();
 
   const [student, setStudent] = useState<StudentSelectValue | null>(null);
+  // REQ-095 §13 (TASK-421) — Private / DUO: ONE course, two kids. DUO ⇒ a second child (must differ — the server's
+  // DUO_SAME_CHILD, hinted here) + the teaching rate; the card is the DUO card (`balance-duo`), never a group.
+  const [duo, setDuo] = useState<DuoDraft>(emptyDuo());
+  const [coStudent, setCoStudent] = useState<StudentSelectValue | null>(null);
   const [teacherId, setTeacherId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [size, setSize] = useState<PackageSize>(6);
@@ -93,9 +98,11 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
 
   // TASK-400 — inside a group the card is the GROUP's (`priceGroup` from the server), not the program's: the sizes
   // and the full price a discount is of. Solo stays by program, as today.
-  const sellableSizes = group ? courseSizesForGroup(card, group.priceGroup) : courseSizesFor(card, subjectId);
-  const unpriced = isUnpriced(card, subjectId);
-  const chosen = group ? packageForGroup(card, group.priceGroup, size) : packageFor(card, subjectId, size);
+  // TASK-421 — a DUO prices by the DUO card (`priceGroupFor`), a Private by the program: the same card lookup either way.
+  const duoOn = !group && duo.on;
+  const sellableSizes = group ? courseSizesForGroup(card, group.priceGroup) : duoOn ? courseSizesForGroup(card, priceGroupFor(true, null)) : courseSizesFor(card, subjectId);
+  const unpriced = !duoOn && isUnpriced(card, subjectId);
+  const chosen = group ? packageForGroup(card, group.priceGroup, size) : duoOn ? packageForGroup(card, priceGroupFor(true, null), size) : packageFor(card, subjectId, size);
   const sizeOptions = sellableSizes.map((s) => ({
     value: String(s),
     label: t("course.sizeOption", {
@@ -108,6 +115,9 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   useEffect(() => {
     if (sellableSizes.length > 0 && !sellableSizes.includes(size)) setSize(sellableSizes[0] as PackageSize);
   }, [subjectId, sellableSizes.join(","), size]);
+  useEffect(() => {
+    setDuo((d) => ({ ...d, coStudentId: coStudent?.id ?? null }));
+  }, [coStudent?.id]);
 
   // TASK-398 — the group's three, seeded on open (and re-seeded if a different group opens the same form).
   useEffect(() => {
@@ -144,6 +154,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   const discountEval = evaluateDiscount(discount, chosen?.priceMinor ?? 0);
   const valid =
     student?.name.trim() &&
+    duoReady(duo, student?.id) &&
     teacherId &&
     subjectId &&
     !!chosen &&
@@ -279,6 +290,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       rental: rentalOn && rentalCode ? { code: rentalCode, remark: rentalRemark.trim() || undefined, paidUpfront: rentalPaidUpfront } : undefined,
       // TASK-398 — into a group: the key rides only when selling into one.
       groupKey: group?.groupKey,
+      // TASK-421 — the DUO block ONLY when the toggle is on (both fields; the rate in satang); never beside a groupKey.
+      duo: group ? undefined : duoBody(duo),
       // SPEC-045 (REQ-054) — the program is a COURSE-level fact, sent once as `subjectId` above. Per-row
       // `subjectId` is deliberately NOT sent: it was the door through which a brand-new course could be born
       // mixed-program (and its derived program then became whatever `bookings[0]` happened to be). The BE falls
@@ -368,7 +381,42 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
           {t("plan.createHint")}
         </Alert>
 
+        {!group && (
+          <SegmentedControl
+            fullWidth
+            value={duo.on ? "DUO" : "PRIVATE"}
+            onChange={(v) => setDuo((d) => ({ ...d, on: v === "DUO" }))}
+            data={[
+              { value: "PRIVATE", label: t("course.kindPrivate") },
+              { value: "DUO", label: t("course.kindDuo") },
+            ]}
+            data-course-kind={duo.on ? "DUO" : "PRIVATE"}
+          />
+        )}
         <StudentSelect value={student} onChange={setStudent} required />
+        {duoOn && (
+          <>
+            <StudentSelect value={coStudent} onChange={setCoStudent} label={t("course.coStudent")} required />
+            {coStudent?.id && student?.id && coStudent.id === student.id && (
+              <Alert color="orange" variant="light" icon={<AlertTriangle size={15} />}>
+                {t("course.duoSameChild")}
+              </Alert>
+            )}
+            <NumberInput
+              label={t("course.classRate")}
+              description={t("course.classRateHint")}
+              value={duo.rateBaht}
+              onChange={(v) => setDuo((d) => ({ ...d, rateBaht: typeof v === "number" ? v : "" }))}
+              min={0}
+              step={50}
+              allowDecimal={false}
+              allowNegative={false}
+              suffix=" ฿"
+              className="max-w-xs"
+              required
+            />
+          </>
+        )}
 
         {error && (
           <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">

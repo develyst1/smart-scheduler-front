@@ -76,6 +76,7 @@ import OtherDetailsDialog from "./OtherDetailsDialog";
 import GroupSeriesDialog from "./GroupSeriesDialog";
 import GroupSwapDialog from "./GroupSwapDialog";
 import CreatePlanFlow from "@/components/partials/Bookings/CreatePlanFlow";
+import { rateChange } from "@/lib/scheduler/duo";
 import { seatsLabel } from "@/lib/scheduler/group-session";
 import { emptyOtherSchedule, otherScheduleFacts, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import CancelBookingDialog from "./CancelBookingDialog";
@@ -919,6 +920,10 @@ function MoveBookingForm({
   const [teacherId, setTeacherId] = useState(booking.teacherId);
   const [date, setDate] = useState(booking.date);
   const [startTime, setStartTime] = useState(booking.startTime);
+  // REQ-095 §13 (TASK-421) — a DUO session (`coStudent` set) carries the COURSE's teaching rate; the box is prefilled
+  // from it (satang → baht) and `classRateMinor` rides ONLY when it differs (a valid body on its own).
+  const isDuo = !!booking.coStudent;
+  const [rateBaht, setRateBaht] = useState<number | "">(typeof booking.classRateMinor === "number" ? booking.classRateMinor / 100 : "");
 
   const bookableTeachers = teachers.filter((tc) => bookableOnDate(tc, date));
   const teacherOff = !!teacherId && !bookableTeachers.some((tc) => tc.id === teacherId);
@@ -934,6 +939,7 @@ function MoveBookingForm({
     if (teacherId !== booking.teacherId) patch.teacherId = teacherId;
     if (date !== booking.date) patch.date = date;
     if (startTime !== booking.startTime) patch.startTime = startTime;
+    if (isDuo) Object.assign(patch, rateChange(rateBaht, booking.classRateMinor));
 
     if (Object.keys(patch).length === 0) {
       notify({ title: t("booking.noChange"), color: "default" });
@@ -996,6 +1002,21 @@ function MoveBookingForm({
           data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
         />
       </div>
+      {isDuo && (
+        <NumberInput
+          label={t("course.classRate")}
+          description={t("course.classRateMoveHint")}
+          value={rateBaht}
+          onChange={(v) => setRateBaht(typeof v === "number" ? v : "")}
+          min={0}
+          step={50}
+          allowDecimal={false}
+          allowNegative={false}
+          suffix=" ฿"
+          className="max-w-xs"
+          data-duo-rate
+        />
+      )}
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="subtle" color="gray" onClick={onCancel} className="w-full sm:w-auto">

@@ -26,7 +26,7 @@ import type {
   TeacherType,
   TeacherView,
 } from "@/types/app/scheduler";
-import type { BulkConfirmResult, CatalogItem, PostedSale } from "@/types/api/contract";
+import type { BulkConfirmResult, CatalogItem, CourseListItem, PostedSale } from "@/types/api/contract";
 import { ApiClientError } from "@/lib/api/client";
 
 const delay = <T>(value: T, ms = 200) =>
@@ -468,6 +468,10 @@ export const updateBookingOther = async (id: string, _patch: unknown): Promise<B
 };
 export const createGroupSeries = async (input: { dates: string[] }) => delay({ groupKey: "mock-group", created: input.dates.length, bookingIds: input.dates.map((d) => `mock-g-${d}`) });
 export const swapGroupTeacher = async (id: string, _input: unknown): Promise<Booking> => delay(bookings.find((x) => x.id === id) as Booking);
+
+/** TASK-421 — the DUO rate on the mock: echo a course-shaped row. */
+export const updateCourseRate = async (courseId: string, classRateMinor: number): Promise<CourseListItem> =>
+  delay({ id: courseId, size: 6, usedSessions: 0, leaveUsed: 0, leaveQuota: 2, leaveRemaining: 2, maxWeek: 8, leaveLocked: false, adminUnlocked: false, endedAt: null, endReason: null, status: "ACTIVE", expiryDate: "2026-12-31", courseKind: "DUO", classRateMinor, student: { id: "s1", name: "A", nickname: "A" }, coStudent: { id: "s2", name: "B", nickname: "B" } } as CourseListItem);
 
 export const createOtherSeries = async (input: { dates: string[] }) => delay({ created: input.dates.length, bookingIds: input.dates.map((d) => `mock-${d}`) });
 
