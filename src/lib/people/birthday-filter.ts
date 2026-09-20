@@ -22,7 +22,7 @@ export const birthdayActive = (s: BirthdayState): boolean => s.noDob || (s.from 
 /** The query for `GET /students`: the two months, OR `noDob: "true"` (a boolean-string on the wire) — never both; `q` carried. */
 export const birthdayQuery = (s: BirthdayState, q?: string): Record<string, string | number> | null => {
   if (!birthdayActive(s)) return null;
-  const base = q?.trim() ? { q: q.trim() } : {};
+  const base: Record<string, string | number> = q?.trim() ? { q: q.trim() } : {};
   if (s.noDob) return { ...base, noDob: "true", limit: 200 };
   return { ...base, birthMonthFrom: s.from as number, birthMonthTo: s.to as number, limit: 200 };
 };
