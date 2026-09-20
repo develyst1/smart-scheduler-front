@@ -62,8 +62,8 @@ describe("§1 — ONE gate, everywhere", () => {
   });
 
   it("the sweep: 86 key literals across 33 files (78 + TASK-402's camp doors: open/edit/close a week, sell ×2, redeem ×2, mark)", () => {
-    expect(sites.length).toBe(89); // + TASK-407's `Report leave` door (CalendarContent) + TASK-412's parent archive/restore doors (People)
-    expect(new Set(sites.map((s) => s.file)).size).toBe(34);
+    expect(sites.length).toBe(90); // + TASK-407's `Report leave` door (CalendarContent) + TASK-412's parent archive/restore doors (People) + TASK-419's camp `Swap teacher` (CampBlockPanel)
+    expect(new Set(sites.map((s) => s.file)).size).toBe(35);
     // hidden, never disabled: no site turns the gate into a `disabled` prop
     for (const f of SITE_FILES) expect({ f, hit: /disabled=\{!can\(/.test(readFileSync(f, "utf8")) }).toEqual({ f, hit: false });
     // the sites the report lists, one per area, are really there

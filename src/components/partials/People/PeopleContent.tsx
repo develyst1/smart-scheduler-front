@@ -116,7 +116,7 @@ export default function PeopleContent() {
   // order and the filtering are the server's — nothing here sorts or filters by month or null.
   const [birthday, setBirthday] = useState<BirthdayState>(EMPTY_BIRTHDAY);
   const birthdayParams = birthdayQuery(birthday, debounced);
-  const { data: birthdayRows, isLoading: loadingBirthday } = useBirthdayStudents(birthdayParams);
+  const { data: birthdayRows, isLoading: loadingBirthday, error: birthdayError } = useBirthdayStudents(birthdayParams);
   const runParentArchive = async () => {
     if (!parentArchiveTarget) return;
     const { parent, restore } = parentArchiveTarget;
@@ -224,7 +224,7 @@ export default function PeopleContent() {
           <p className="max-w-2xl text-sm text-muted-500">{t("people.subtitle")}</p>
         </div>
         <Group gap="md">
-          <BirthdayFilter value={birthday} onChange={setBirthday} />
+          <BirthdayFilter value={birthday} onChange={setBirthday} error={birthdayError ? (birthdayError instanceof ApiClientError ? birthdayError.message : String(birthdayError)) : null} />
           <Switch size="sm" label={t("people.showArchived")} checked={showArchived} onChange={toggleShowArchived} />
           {can("action:people.parent-create") && (
             <Button leftSection={<UserPlus size={16} />} onClick={() => setParentModal({ open: true, parent: null })}>

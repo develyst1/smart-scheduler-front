@@ -22,6 +22,8 @@ import PausedTray from "./PausedTray";
 import CalendarGridSkeleton from "./CalendarGridSkeleton";
 import CampDayBanner from "./CampDayBanner";
 import ReportLeaveDialog from "./Modal/ReportLeaveDialog";
+import CampBlockPanel from "./Modal/CampBlockPanel";
+import { isCampRow, mergeCampCells, type CampBlock } from "@/lib/camp/grid";
 
 /**
  * REQ-097 (TASK-407) — a LINKED account (`me.teacherId`) sees ITS calendar: the server returns only my column and my
@@ -110,7 +112,16 @@ export default function CalendarContent() {
     { teacherId: string; time: string; date: string; groupSeat?: { groupId: string; name: string } } | undefined
   >();
 
+  // REQ-095 §11 (TASK-419) — a CAMP row NEVER opens the booking modal (the server owns it: `409 CAMP_ROW_OWNED`); it
+  // opens the camp panel, from the grid's merged block or from any list that hands a single row here.
+  const [campBlock, setCampBlock] = useState<CampBlock | null>(null);
+  const openCamp = (block: CampBlock) => setCampBlock(block);
   const openView = (booking: Booking) => {
+    if (isCampRow(booking)) {
+      const [item] = mergeCampCells([booking]);
+      if (item?.kind === "camp") setCampBlock(item);
+      return;
+    }
     setSelected(booking);
     setCreateSlot(undefined);
     onOpen();
@@ -159,6 +170,7 @@ export default function CalendarContent() {
         onReportLeave={canReportLeave ? () => setLeaveOpen(true) : undefined}
       />
       {leaveOpen && <ReportLeaveDialog opened initialDate={date} onClose={() => setLeaveOpen(false)} />}
+      {campBlock && <CampBlockPanel block={campBlock} teachers={teachers} onClose={() => setCampBlock(null)} />}
 
       {/* 🔴 SPEC-075 / REQ-076 AC-9/AC-10 (TASK-261) — the พัก tray sits BESIDE the grid, never inside it.
           A paused booking has no scheduled slot, and anything dateless dropped into a dated grid is invisible
@@ -215,6 +227,7 @@ export default function CalendarContent() {
               bookings={dayBookings}
               onSelectBooking={openView}
               onCreate={openCreate}
+              onSelectCamp={openCamp}
             />
             </>
           ) : (
@@ -224,6 +237,7 @@ export default function CalendarContent() {
               bookings={weekBookings}
               onSelectBooking={openView}
               onCreate={openCreate}
+              onSelectCamp={openCamp}
             />
           )}
         </div>

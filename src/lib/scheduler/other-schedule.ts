@@ -53,7 +53,8 @@ export const otherScheduleFacts = (d: OtherScheduleDraft, teacherIds: readonly s
 
 /** The server's facts on a booking DTO (`other`), as the FE reads them. */
 export interface OtherFacts {
-  kind: OtherKind | null;
+  /** TASK-419 — `CAMP` arrives on a camp hour (owned by its week); the form never offers it (`OTHER_KINDS` stays three). */
+  kind: OtherKind | "CAMP" | null;
   headCount: number | null;
   /** teacherId → SATANG. */
   teacherRates: Record<string, number>;
@@ -62,7 +63,8 @@ export interface OtherFacts {
 
 /** A draft seeded from the server's facts (satang → baht for the inputs). Pure. */
 export const draftFromFacts = (facts: OtherFacts | null | undefined, teacherIds: readonly string[]): OtherScheduleDraft => ({
-  kind: facts?.kind ?? null,
+  // a CAMP row never reaches the form (its doors are hidden); read defensively as "no kind"
+  kind: facts?.kind === "CAMP" ? null : (facts?.kind ?? null),
   headCount: typeof facts?.headCount === "number" ? facts.headCount : "",
   ratesBaht: Object.fromEntries(teacherIds.map((id) => [id, typeof facts?.teacherRates?.[id] === "number" ? facts.teacherRates[id] / 100 : ""])),
 });

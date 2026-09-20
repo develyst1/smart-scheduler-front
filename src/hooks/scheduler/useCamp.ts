@@ -12,10 +12,12 @@ import {
   redeemCampDays,
   sellCampPackage,
   updateCampWeek,
+  updateCampWeekDay,
   type CreateCampWeekInput,
   type UpdateCampWeekInput,
 } from "@/services/camp.service";
 import type { CampDayStatusWrite, CampHalf, SellCampInput } from "@/lib/camp/units";
+import type { CampDayPatch } from "@/lib/camp/grid";
 import { CALENDAR_KEY } from "./useScheduler";
 
 /** REQ-095 Stage 3a (TASK-402) — the Camp menu's data. Every write re-reads the weeks, the roster and the packages; the calendar too (its day banner). */
@@ -40,6 +42,14 @@ export const useCreateCampWeek = () => {
 export const useUpdateCampWeek = () => {
   const qc = useQueryClient();
   return useMutation({ mutationFn: ({ id, input }: { id: string; input: UpdateCampWeekInput }) => updateCampWeek(id, input), onSuccess: () => invalidate(qc) });
+};
+/** TASK-419 — one day's teachers/window (the swap door, the editor's per-day rows); the grid re-reads (the blocks moved). */
+export const useUpdateCampWeekDay = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ weekId, date, body }: { weekId: string; date: string; body: CampDayPatch }) => updateCampWeekDay(weekId, date, body),
+    onSuccess: () => invalidate(qc),
+  });
 };
 export const useSellCamp = () => {
   const qc = useQueryClient();

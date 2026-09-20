@@ -212,6 +212,9 @@ export interface Booking {
   /** A SEAT row's group (`groupId` / `groupName`); null on everything else. */
   groupId?: string | null;
   groupName?: string | null;
+  /** REQ-095 §11 (TASK-419) — a CAMP hour's owner (the week's day object, the week); null elsewhere. Set ⇒ the row is the week's, no booking doors. */
+  campWeekDayId?: string | null;
+  campWeekId?: string | null;
 }
 
 // ──────────────────────────── Badges ────────────────────────────

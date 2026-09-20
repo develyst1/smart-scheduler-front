@@ -265,7 +265,10 @@ export interface BookingDTO {
    * `teacherRates` map (teacherId → satang, primary + extras), and `ratePostedAt` (null until a later stage posts).
    * `null` on every lesson type. Optional so a mock without the key type-checks; the mapper reads it `?? null`.
    */
-  other?: { kind: "ECA" | "FREE" | "KOL" | null; headCount: number | null; teacherRates: Record<string, number>; ratePostedAt: string | null } | null;
+  other?: { kind: "ECA" | "FREE" | "KOL" | "CAMP" | null; headCount: number | null; teacherRates: Record<string, number>; ratePostedAt: string | null } | null;
+  /** REQ-095 §11 (TASK-418) — a CAMP hour's owner: the week's day object and the week; null on every other row. */
+  campWeekDayId?: string | null;
+  campWeekId?: string | null;
   /**
    * REQ-095 Stage 2a (TASK-397) — a GROUP row's facts: the key, DUO/GROUP, the name, the cap, the SEATS (ordinary
    * booking rows, hidden from the grid server-side), the rates. `null` on every other type. A SEAT row carries
@@ -424,6 +427,9 @@ export interface CampWeekLiteDTO {
 export interface CampWeek extends CampWeekLiteDTO {
   capacity: number | null;
   teacherIds: string[];
+  /** TASK-418 — the effective window (`HH:MM`; 10:00 / 15:00 when the week sets none). Editable on PATCH. */
+  windowStart?: string;
+  windowEnd?: string;
   openedBy: string;
   openedAt: string;
   closedAt: string | null;
@@ -443,7 +449,24 @@ export interface CampDayEntry {
 }
 export interface CampWeekDays {
   week: CampWeek;
-  days: Array<{ date: string; entries: CampDayEntry[]; count: number; capacity: number | null }>;
+  /** TASK-418 — each day + its DAY OBJECT (`campWeekDayId`, the teachers, the window, `editedAt`) beside the kids' entries. */
+  days: Array<{
+    date: string;
+    entries: CampDayEntry[];
+    count: number;
+    capacity: number | null;
+    campWeekDayId?: string;
+    teacherIds?: string[];
+    startTime?: string;
+    endTime?: string;
+    editedAt?: string | null;
+  }>;
+}
+/** TASK-418 — `PATCH /camp/weeks/:id/days/:date` ⇒ the day as saved + what the sync did to the grid. */
+export interface CampWeekDayResult {
+  day: { date: string; campWeekDayId: string; teacherIds: string[]; startTime: string; endTime: string; editedAt: string | null };
+  inserted: number;
+  deleted: number;
 }
 export interface CampPackageDay {
   dayId: string;

@@ -5,7 +5,8 @@
 // show the sentence and keep what was typed. Prices come from `GET /camp/prices` — never a constant here.
 import { api, useMockData } from "@/lib/api/client";
 import { markBody, redeemBody, sellCampBody, type CampDayStatusWrite, type CampHalf, type SellCampInput } from "@/lib/camp/units";
-import type { CampDayCheckin, CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDays } from "@/types/api/contract";
+import type { CampDayCheckin, CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDayResult, CampWeekDays } from "@/types/api/contract";
+import type { CampDayPatch } from "@/lib/camp/grid";
 import * as mock from "./camp.mock.service";
 
 export const getCampPrices = async (): Promise<CampPrices> => {
@@ -26,6 +27,9 @@ export interface CreateCampWeekInput {
   endDate: string;
   capacity?: number | null;
   teacherIds?: string[];
+  /** TASK-418 — the week's default window (`HH:MM`, whole hours); absent ⇒ the server's 10:00 / 15:00. */
+  windowStart?: string;
+  windowEnd?: string;
 }
 export const createCampWeek = async (input: CreateCampWeekInput): Promise<CampWeek> => {
   if (useMockData) return mock.createCampWeek(input);
@@ -35,6 +39,8 @@ export const createCampWeek = async (input: CreateCampWeekInput): Promise<CampWe
     endDate: input.endDate,
     ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
     ...(input.teacherIds?.length ? { teacherIds: input.teacherIds } : {}),
+    ...(input.windowStart ? { windowStart: input.windowStart } : {}),
+    ...(input.windowEnd ? { windowEnd: input.windowEnd } : {}),
   });
   return data.week;
 };
@@ -44,6 +50,9 @@ export interface UpdateCampWeekInput {
   capacity?: number | null;
   teacherIds?: string[];
   status?: "OPEN" | "CLOSED";
+  /** TASK-418 — a week-level window change re-derives only the days not edited by hand (the server's rule). */
+  windowStart?: string;
+  windowEnd?: string;
 }
 /** By presence — only what changed rides. */
 export const updateCampWeek = async (id: string, input: UpdateCampWeekInput): Promise<CampWeek> => {
@@ -53,8 +62,21 @@ export const updateCampWeek = async (id: string, input: UpdateCampWeekInput): Pr
     ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
     ...(input.teacherIds !== undefined ? { teacherIds: input.teacherIds } : {}),
     ...(input.status !== undefined ? { status: input.status } : {}),
+    ...(input.windowStart !== undefined ? { windowStart: input.windowStart } : {}),
+    ...(input.windowEnd !== undefined ? { windowEnd: input.windowEnd } : {}),
   });
   return data.week;
+};
+
+/**
+ * TASK-418/419 — ONE day of a week: its teachers and/or its window (`camp.week-open`). The server syncs the grid
+ * rows (each slot-checked — `409 SLOT_TAKEN` names date · hour · teacher, nothing written), refuses a bad window
+ * (`400`), a closed week (`409`), a date outside the week (`404`). The swap door and the editor both come here.
+ */
+export const updateCampWeekDay = async (weekId: string, date: string, body: CampDayPatch): Promise<CampWeekDayResult> => {
+  if (useMockData) return mock.updateCampWeekDay(weekId, date, body);
+  const { data } = await api.patch<CampWeekDayResult>(`/camp/weeks/${weekId}/days/${date}`, body);
+  return data;
 };
 
 export const getCampWeekDays = async (id: string): Promise<CampWeekDays> => {

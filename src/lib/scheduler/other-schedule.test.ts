@@ -113,7 +113,7 @@ describe("§2 — the form, the series, the editor", () => {
     expect(codeOf("src/components/partials/Calendar/CalendarGrid.tsx")).toContain("<OtherKindTag booking={booking} />");
     expect(codeOf("src/components/partials/Calendar/CalendarWeekGrid.tsx")).toContain('<OtherKindTag booking={b} size="sm" />');
     const legend = codeOf("src/components/partials/Calendar/CalendarLegendBar.tsx");
-    expect(legend).toContain("{OTHER_KINDS.map((k) => (");
+    expect(legend).toContain('{[...OTHER_KINDS, "CAMP" as const].map((k) => ('); // TASK-419 — the 4th, CAMP, listed beside the form's three (never in OTHER_KINDS)
     expect(legend).toContain("t(`calendar.otherKindTag_${k}`)");
     for (const k of OTHER_KINDS) {
       expect((dictionaries.en.calendar as Record<string, string>)[`otherKindTag_${k}`]?.length).toBeGreaterThan(0);

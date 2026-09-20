@@ -1,6 +1,7 @@
 // REQ-095 Stage 3a — offline camp. In-memory rows; the same shapes as the real service. The mock is not a rule engine:
 // it plans what it is asked and echoes the units arithmetic only so the card renders.
-import type { CampDayCheckin, CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDays } from "@/types/api/contract";
+import type { CampDayCheckin, CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDayResult, CampWeekDays } from "@/types/api/contract";
+import type { CampDayPatch } from "@/lib/camp/grid";
 import { datesBetween, type CampDayStatusWrite, type CampHalf, type SellCampInput } from "@/lib/camp/units";
 import type { CreateCampWeekInput, UpdateCampWeekInput } from "./camp.service";
 
@@ -49,7 +50,25 @@ export const updateCampWeek = (id: string, input: UpdateCampWeekInput) => {
   if (input.capacity !== undefined) w.capacity = input.capacity;
   if (input.teacherIds !== undefined) w.teacherIds = input.teacherIds;
   if (input.status !== undefined) w.status = input.status;
+  if (input.windowStart !== undefined) w.windowStart = input.windowStart;
+  if (input.windowEnd !== undefined) w.windowEnd = input.windowEnd;
   return delay(clone(w));
+};
+
+const dayObjects = new Map<string, CampWeekDayResult["day"]>();
+const dayObjectFor = (w: CampWeek, date: string) => {
+  const key = `${w.id}|${date}`;
+  if (!dayObjects.has(key)) dayObjects.set(key, { date, campWeekDayId: `cwd-${w.id}-${date}`, teacherIds: [...w.teacherIds], startTime: w.windowStart ?? "10:00", endTime: w.windowEnd ?? "15:00", editedAt: null });
+  return dayObjects.get(key)!;
+};
+export const updateCampWeekDay = (weekId: string, date: string, body: CampDayPatch): Promise<CampWeekDayResult> => {
+  const w = weeks.find((x) => x.id === weekId)!;
+  const d = dayObjectFor(w, date);
+  if (body.teacherIds) d.teacherIds = [...body.teacherIds];
+  if (body.startTime) d.startTime = body.startTime;
+  if (body.endTime) d.endTime = body.endTime;
+  d.editedAt = new Date().toISOString();
+  return delay({ day: clone(d), inserted: 0, deleted: 0 });
 };
 
 export const getCampWeekDays = (id: string) => {
@@ -58,7 +77,7 @@ export const getCampWeekDays = (id: string) => {
     const entries: CampDayEntry[] = packages.flatMap((p) =>
       p.days.filter((d) => d.weekId === id && d.date === date).map((d) => ({ dayId: d.dayId, packageId: p.id, studentId: p.studentId, studentName: `student ${p.studentId}`, kind: p.kind, half: d.half, units: d.units, status: d.status, undoReason: d.undoReason })),
     );
-    return { date, entries, count: entries.filter((e) => e.status !== "CANCELLED").length, capacity: w.capacity };
+    return { ...dayObjectFor(w, date), date, entries, count: entries.filter((e) => e.status !== "CANCELLED").length, capacity: w.capacity };
   });
   return delay<CampWeekDays>(clone({ week: w, days }));
 };

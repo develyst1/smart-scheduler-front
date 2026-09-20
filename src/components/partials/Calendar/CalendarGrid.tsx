@@ -11,6 +11,9 @@ import { useT } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
 import { useCan } from "@/hooks/scheduler/useMe";
+import { useMemo } from "react";
+import { mergeCampCells, type CampBlock } from "@/lib/camp/grid";
+import CampBlockCell from "./CampBlockCell";
 import {
   BOOKING_TYPE_ICON,
   BOOKING_TYPE_VAR,
@@ -26,6 +29,8 @@ interface Props {
   bookings: Booking[];
   onSelectBooking: (booking: Booking) => void;
   onCreate: (teacherId: string, time: string) => void;
+  /** REQ-095 §11 (TASK-419) — a merged camp block opens the camp PANEL, never the booking modal. */
+  onSelectCamp?: (block: CampBlock) => void;
 }
 
 // พื้น/ขอบการ์ด + dot ตามสถานะ — `./calendar-status`, shared with the week grid AND the legend.
@@ -33,7 +38,7 @@ interface Props {
 // tradeoff the owner saw in both previews before choosing it, not an oversight.
 // 🚫 Do not re-declare either map here (see that file).
 
-export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCreate }: Props) {
+export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCreate, onSelectCamp }: Props) {
   const t = useT();
   // Display-only preference (SPEC-046) — shared with the week grid via the cell-display store. It hides lines,
   // it never filters bookings, so the day cell honours the SAME toggles the week cell does.
@@ -58,6 +63,23 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
         !b.pendingSlot &&
         !OFF_CALENDAR_STATUSES.includes(b.status),
     );
+  // TASK-419 — contiguous CAMP hours of one teacher fold into ONE block (render-only, `mergeCampCells`): the block sits
+  // in its first hour's cell and SPANS the rows it covers; the covered hours render no cell at all, so the CSS grid's
+  // auto-placement keeps every other column in step. The data stays per hour.
+  const campCells = useMemo(() => {
+    const m = new Map<string, { start?: CampBlock; covered?: true }>();
+    for (const tc of activeTeachers) {
+      const mine = bookings
+        .filter((b) => b.teacherId === tc.id && !b.pendingSlot && !OFF_CALENDAR_STATUSES.includes(b.status))
+        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+      for (const item of mergeCampCells(mine)) {
+        if (item.kind !== "camp") continue;
+        m.set(`${tc.id}|${item.startTime}`, { start: item });
+        for (const r of item.rows.slice(1)) m.set(`${tc.id}|${r.startTime.slice(0, 5)}`, { covered: true });
+      }
+    }
+    return m;
+  }, [bookings, activeTeachers]);
 
   return (
     <div className="rounded-2xl border border-muted-200 bg-content1 shadow-sm">
@@ -92,6 +114,8 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
             onSelectBooking={onSelectBooking}
             onCreate={onCreate}
             display={display}
+            campCell={(teacherId) => campCells.get(`${teacherId}|${time}`)}
+            onSelectCamp={onSelectCamp}
           />
         ))}
         </div>
@@ -107,6 +131,8 @@ function Row({
   onSelectBooking,
   onCreate,
   display,
+  campCell,
+  onSelectCamp,
 }: {
   time: string;
   teachers: TeacherView[];
@@ -114,6 +140,8 @@ function Row({
   onSelectBooking: (b: Booking) => void;
   onCreate: (teacherId: string, time: string) => void;
   display: CellDisplay;
+  campCell: (teacherId: string) => { start?: CampBlock; covered?: true } | undefined;
+  onSelectCamp?: (block: CampBlock) => void;
 }) {
   const t = useT();
   const can = useCan();
@@ -124,6 +152,15 @@ function Row({
         {time}
       </div>
       {teachers.map((tc) => {
+        const camp = campCell(tc.id);
+        if (camp?.covered) return null; // spanned by the block above
+        if (camp?.start) {
+          return (
+            <div key={tc.id} className="min-h-20 border-l border-t border-muted-100 p-1.5" style={{ gridRow: `span ${camp.start.hours}` }}>
+              <CampBlockCell block={camp.start} onSelect={(b) => onSelectCamp?.(b)} />
+            </div>
+          );
+        }
         const booking = findBooking(tc.id, time);
         const accent = booking ? BOOKING_STATUS_COLOR[booking.status] : "default";
         return (

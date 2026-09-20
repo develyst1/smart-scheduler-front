@@ -50,6 +50,9 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     group: dto.group ?? null,
     groupId: dto.groupId ?? null,
     groupName: dto.groupName ?? null,
+    // TASK-419 — a CAMP hour's owner ids as sent; absent ⇒ null.
+    campWeekDayId: dto.campWeekDayId ?? null,
+    campWeekId: dto.campWeekId ?? null,
     // Conflict resolution (B.1)
     pendingSlot: dto.pendingSlot || undefined,
     incomingBookingId: dto.incomingBookingId ?? undefined,

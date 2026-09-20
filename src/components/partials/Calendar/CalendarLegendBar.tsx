@@ -110,7 +110,8 @@ export default function CalendarLegendBar() {
       </span>
       <span aria-hidden className="mx-1 h-4 w-px bg-muted-200" />
       {/* REQ-095 (TASK-395) — the three OTHER kinds, the same tag as the cell. */}
-      {OTHER_KINDS.map((k) => (
+      {/* TASK-419 — the 4th OTHER kind, CAMP, is the week's (never on the form), so it is listed beside the three, not in them. */}
+      {[...OTHER_KINDS, "CAMP" as const].map((k) => (
         <span key={k} className="flex items-center gap-1 text-[11px] text-muted-600">
           <span className="inline-flex items-center rounded-sm border border-cal-ink/40 bg-white px-1 py-px text-[9px] font-semibold uppercase leading-tight tracking-wide text-cal-ink">
             {t(`calendar.otherKindTag_${k}`)}

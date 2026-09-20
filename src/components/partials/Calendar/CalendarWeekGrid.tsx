@@ -15,6 +15,8 @@ import CalendarLegendBar from "./CalendarLegendBar";
 import BookingCellBody, { BookingTypeStripe, GroupSeatsLine, LastStamp, OtherKindTag, RentalStamp, SharedTeachersMarker } from "@/components/common/BookingCellBody";
 import { useCellDisplay } from "@/lib/scheduler/cell-display";
 import { useCan } from "@/hooks/scheduler/useMe";
+import { mergeCampCells, type CampBlock } from "@/lib/camp/grid";
+import CampBlockCell from "./CampBlockCell";
 import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE } from "./calendar-status";
 
 interface Props {
@@ -23,6 +25,8 @@ interface Props {
   bookings: Booking[];
   onSelectBooking: (booking: Booking) => void;
   onCreate: (teacherId: string, time: string, date: string) => void;
+  /** REQ-095 §11 (TASK-419) — a merged camp block opens the camp PANEL, never the booking modal. */
+  onSelectCamp?: (block: CampBlock) => void;
 }
 
 // พื้น/ขอบ + dot ตามสถานะ — `./calendar-status`, shared with the day grid AND the legend that explains both.
@@ -35,6 +39,7 @@ export default function CalendarWeekGrid({
   bookings,
   onSelectBooking,
   onCreate,
+  onSelectCamp,
 }: Props) {
   const { lang, t } = useI18n();
   // Display-only preference (SPEC-046 re-cut) — it hides lines, it never filters bookings.
@@ -101,7 +106,8 @@ export default function CalendarWeekGrid({
             </div>
 
             {weekDays.map((day) => {
-              const items = cellBookings(tc.id, day);
+              // TASK-419 — contiguous CAMP hours fold into ONE item (render-only); every other row stays its own.
+              const items = mergeCampCells(cellBookings(tc.id, day));
               const canBook = bookableOnDate(tc, day);
               return (
                 <div
@@ -110,7 +116,9 @@ export default function CalendarWeekGrid({
                     canBook ? "" : "bg-muted-50/80"
                   }`}
                 >
-                  {items.map((b) => {
+                  {items.map((item) => {
+                    if (item.kind === "camp") return <CampBlockCell key={item.id} block={item} size="sm" onSelect={(blk) => onSelectCamp?.(blk)} />;
+                    const b = item.booking;
                     const accent = BOOKING_STATUS_COLOR[b.status];
                     return (
                       <button
