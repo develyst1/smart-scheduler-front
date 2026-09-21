@@ -215,9 +215,10 @@ export interface Booking {
   /** REQ-095 §11 (TASK-419) — a CAMP hour's owner (the week's day object, the week); null elsewhere. Set ⇒ the row is the week's, no booking doors. */
   campWeekDayId?: string | null;
   campWeekId?: string | null;
-  /** REQ-095 §13 (TASK-421) — a DUO course row's second child (as sent) and the COURSE's teaching rate (satang) for the move dialog's box. */
+  /** REQ-095 §13 (TASK-421) — a DUO course row's second child (as sent). */
   coStudent?: { id: string; name: string; nickname: string | null } | null;
-  classRateMinor?: number | null;
+  /** REQ-095 §13.3 (TASK-424) — the server's three rate facts on a course row (as sent); null elsewhere. Rendered, never computed. */
+  rate?: { effectiveMinor: number; overrideMinor: number | null; defaultMinor: number | null } | null;
 }
 
 // ──────────────────────────── Badges ────────────────────────────

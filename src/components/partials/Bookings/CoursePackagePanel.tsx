@@ -196,8 +196,8 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                       </Badge>
                     )}
                   </p>
-                  {c.courseKind === "DUO" && (
-                    <DuoRateLine
+                  {/* TASK-424 — the DEFAULT coach rate, ANY course (the session popup owns the per-session override). */}
+                  <DuoRateLine
                       rateMinor={c.classRateMinor ?? null}
                       editable={canEdit}
                       saving={updateRate.isPending && updateRate.variables?.courseId === c.id}
@@ -206,7 +206,6 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                         notify({ title: t("course.rateSavedOk"), color: "success" });
                       }}
                     />
-                  )}
                   <p className="text-xs text-muted-400">
                     {t("course.sizeLine", { size: c.size })} ·{" "}
                     {/* 🔴 SPEC-076 / REQ-082 AC-1 (TASK-265) — editable on ANY course, and deliberately NOT

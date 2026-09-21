@@ -47,9 +47,32 @@ export const duoBody = (d: DuoDraft): { coStudentId: string; classRateMinor: num
 export const duoReady = (d: DuoDraft, primaryId: string | null | undefined): boolean =>
   !d.on || (!!d.coStudentId && d.coStudentId !== (primaryId ?? null) && d.rateBaht !== "");
 
-/** `classRateMinor` for a move/edit body — only when the typed baht differs from the course's satang; else nothing. */
+/** `classRateMinor` for the COURSE default body — only when the typed baht differs from the course's satang; else nothing (never null: the default is set, not cleared). */
 export const rateChange = (typedBaht: number | "", currentMinor: number | null | undefined): { classRateMinor: number } | undefined =>
   typedBaht === "" || bahtToMinor(typedBaht) === (currentMinor ?? null) ? undefined : { classRateMinor: bahtToMinor(typedBaht) };
+
+/**
+ * REQ-095 §13.3 (TASK-423/424) — the server's THREE facts on a course row. 🔴 The FE never computes `override ?? default`:
+ * `effectiveMinor` is rendered as sent (0 is a rate — ฿0, not blank); the tag reads `overrideMinor != null` alone.
+ */
+export interface SessionRate {
+  effectiveMinor: number;
+  overrideMinor: number | null;
+  defaultMinor: number | null;
+}
+export const rateTag = (rate: SessionRate | null | undefined): "override" | "default" | null => (rate ? (rate.overrideMinor !== null && rate.overrideMinor !== undefined ? "override" : "default") : null);
+
+/**
+ * THIS session's body: `{ classRateMinor: n }` when the typed baht differs from the EFFECTIVE rate; `{ classRateMinor: null }`
+ * on `Clear` when an override is set (back to the default); nothing otherwise (blank typed = leave as is).
+ */
+export const sessionRateChange = (typedBaht: number | "", rate: SessionRate | null | undefined, clear: boolean): { classRateMinor: number | null } | undefined => {
+  if (!rate) return undefined;
+  if (clear) return rate.overrideMinor !== null && rate.overrideMinor !== undefined ? { classRateMinor: null } : undefined;
+  if (typedBaht === "") return undefined;
+  const minor = bahtToMinor(typedBaht);
+  return minor === rate.effectiveMinor ? undefined : { classRateMinor: minor };
+};
 
 /** The kinds `Create group` offers (TASK-421: Group only — a DUO is a course now); existing DUO series still render. */
 export const CREATABLE_GROUP_KINDS = ["GROUP"] as const;

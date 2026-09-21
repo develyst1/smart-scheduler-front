@@ -76,7 +76,7 @@ import OtherDetailsDialog from "./OtherDetailsDialog";
 import GroupSeriesDialog from "./GroupSeriesDialog";
 import GroupSwapDialog from "./GroupSwapDialog";
 import CreatePlanFlow from "@/components/partials/Bookings/CreatePlanFlow";
-import { rateChange } from "@/lib/scheduler/duo";
+import { rateTag, sessionRateChange } from "@/lib/scheduler/duo";
 import { seatsLabel } from "@/lib/scheduler/group-session";
 import { emptyOtherSchedule, otherScheduleFacts, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import CancelBookingDialog from "./CancelBookingDialog";
@@ -920,10 +920,12 @@ function MoveBookingForm({
   const [teacherId, setTeacherId] = useState(booking.teacherId);
   const [date, setDate] = useState(booking.date);
   const [startTime, setStartTime] = useState(booking.startTime);
-  // REQ-095 §13 (TASK-421) — a DUO session (`coStudent` set) carries the COURSE's teaching rate; the box is prefilled
-  // from it (satang → baht) and `classRateMinor` rides ONLY when it differs (a valid body on its own).
-  const isDuo = !!booking.coStudent;
-  const [rateBaht, setRateBaht] = useState<number | "">(typeof booking.classRateMinor === "number" ? booking.classRateMinor / 100 : "");
+  // REQ-095 §13.3 (TASK-424) — a COURSE session carries the server's three rate facts; the box edits THIS session's
+  // override: prefilled from `effectiveMinor` (satang → baht; 0 is a rate), `classRateMinor` rides ONLY when it differs,
+  // `Clear` sends null (back to the default). The (default)/(override) tag reads the facts — no arithmetic here.
+  const rate = booking.rate ?? null;
+  const [rateBaht, setRateBaht] = useState<number | "">(rate ? rate.effectiveMinor / 100 : "");
+  const [rateClear, setRateClear] = useState(false);
 
   const bookableTeachers = teachers.filter((tc) => bookableOnDate(tc, date));
   const teacherOff = !!teacherId && !bookableTeachers.some((tc) => tc.id === teacherId);
@@ -939,7 +941,7 @@ function MoveBookingForm({
     if (teacherId !== booking.teacherId) patch.teacherId = teacherId;
     if (date !== booking.date) patch.date = date;
     if (startTime !== booking.startTime) patch.startTime = startTime;
-    if (isDuo) Object.assign(patch, rateChange(rateBaht, booking.classRateMinor));
+    Object.assign(patch, sessionRateChange(rateBaht, rate, rateClear));
 
     if (Object.keys(patch).length === 0) {
       notify({ title: t("booking.noChange"), color: "default" });
@@ -1002,20 +1004,35 @@ function MoveBookingForm({
           data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
         />
       </div>
-      {isDuo && (
-        <NumberInput
-          label={t("course.classRate")}
-          description={t("course.classRateMoveHint")}
-          value={rateBaht}
-          onChange={(v) => setRateBaht(typeof v === "number" ? v : "")}
-          min={0}
-          step={50}
-          allowDecimal={false}
-          allowNegative={false}
-          suffix=" ฿"
-          className="max-w-xs"
-          data-duo-rate
-        />
+      {rate && (
+        <div className="flex flex-wrap items-end gap-2" data-session-rate={rateTag(rate)}>
+          <NumberInput
+            label={
+              <span>
+                {t("course.sessionRate")}{" "}
+                <span className="text-xs font-normal text-muted-500">({t(rateTag(rate) === "override" ? "course.rateOverride" : "course.rateDefault")})</span>
+              </span>
+            }
+            description={t("course.sessionRateHint", { baht: typeof rate.defaultMinor === "number" ? rate.defaultMinor / 100 : "—" })}
+            value={rateClear ? "" : rateBaht}
+            onChange={(v) => {
+              setRateClear(false);
+              setRateBaht(typeof v === "number" ? v : "");
+            }}
+            min={0}
+            step={50}
+            allowDecimal={false}
+            allowNegative={false}
+            suffix=" ฿"
+            className="max-w-xs"
+            disabled={rateClear}
+          />
+          {rateTag(rate) === "override" && (
+            <Button size="xs" variant={rateClear ? "filled" : "subtle"} color="gray" onClick={() => setRateClear((c) => !c)}>
+              {t("course.rateClear")}
+            </Button>
+          )}
+        </div>
       )}
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

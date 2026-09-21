@@ -226,6 +226,8 @@ export interface BookingDTO {
   student: StudentRef | null;
   /** REQ-095 §13 (TASK-420) — a DUO course row's SECOND child (the same `studentRef` shape); null elsewhere. */
   coStudent?: StudentRef | null;
+  /** REQ-095 §13.3 (TASK-423) — the coach rate facts, non-null on COURSE_PACKAGE rows only: effective · this session's override · the course default. */
+  rate?: { effectiveMinor: number; overrideMinor: number | null; defaultMinor: number | null } | null;
   /** The FIRST teacher — unchanged meaning, still always present. See `teachers` for all of them. */
   teacher: Pick<TeacherDTO, "id" | "name" | "nickname" | "type">;
   /** TASK-224 — `null` on an อื่นๆ booking: it has no program, and says so rather than naming a fiction

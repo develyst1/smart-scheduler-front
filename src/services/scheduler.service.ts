@@ -699,8 +699,8 @@ export interface MoveBookingInput {
   date?: string;
   startTime?: string;
   note?: string;
-  /** REQ-095 §13 (TASK-420/421) — a DUO session's teaching rate (writes the COURSE's column); alone is a valid body. */
-  classRateMinor?: number;
+  /** REQ-095 §13.3 (TASK-423/424) — THIS session's coach-rate override; `null` clears it (back to the course default); alone is a valid body. */
+  classRateMinor?: number | null;
 }
 
 export const moveBooking = async (
@@ -814,7 +814,7 @@ export const createCoursePackage = async (
   return data;
 };
 
-/** REQ-095 §13 (TASK-420/421) — the DUO course's teaching rate (satang); a Private ⇒ the server's `400 NOT_DUO`. */
+/** REQ-095 §13.3 (TASK-423/424) — the course's DEFAULT coach rate (satang), any course; never null (the default is set, not cleared). */
 export const updateCourseRate = async (courseId: string, classRateMinor: number): Promise<CourseListItem> => {
   if (useMock) return mock.updateCourseRate(courseId, classRateMinor);
   const { data } = await api.patch<{ course: CourseListItem }>(`/courses/${courseId}`, { classRateMinor });

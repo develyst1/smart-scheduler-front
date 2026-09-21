@@ -14,11 +14,12 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     // 🔴 TASK-227 (REQ-078 AC-10) — carried straight through, NEVER re-derived. The BE computed it once for
     // every booking type; the moment this becomes `dto.displayName || dto.student?.name` the property stops
     // being a property and goes back to being 31 separate opinions.
-    displayName: studentLabel(dto.displayName, dto.coStudent),
-    // TASK-421 — the ONE exception to "carried straight through", in the ONE place: a DUO row (`coStudent` set)
-    // reads `A & B` through the pure `studentLabel`; a Private is byte-identical to the server's field (asserted).
+    displayName: dto.displayName,
+    // TASK-424 — back to "carried straight through": since TASK-423 the SERVER joins `A & B` on every surface; the
+    // pure `studentLabel` (the course view, the plan title) and the server's string agree — pinned by value.
     coStudent: dto.coStudent ?? null,
-    classRateMinor: dto.course?.classRateMinor ?? null,
+    // TASK-424 — the three rate facts as sent (course rows); the move box renders `effectiveMinor`, never a sum of its own.
+    rate: dto.rate ?? null,
     // `null` when there is no student (อื่นๆ). This means THE CHILD — not "what this booking is called".
     studentName: dto.student?.name ?? null,
     // TASK-141/142 — the BE always sent this; the flatten dropped it. Kept for the surfaces that mean the
