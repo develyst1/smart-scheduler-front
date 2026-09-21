@@ -173,7 +173,7 @@ describe("§3 — the doors and the bodies", () => {
   });
 
   it("copy: booking +22 · calendar +2 · bookingType +1 — both languages; the snapshot is 50", () => {
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(56); // + TASK-402's four camp keys + TASK-407's teacher-leave + TASK-412's parent-archive
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(57) /* TASK-427: + teachers.budget-view */; // + TASK-402's four camp keys + TASK-407's teacher-leave + TASK-412's parent-archive
     for (const k of ["groupKind_DUO", "groupKind_GROUP", "groupCreate", "groupCreateTitle", "groupName", "groupKindLabel", "groupSeatCap", "groupSeatCapDuo", "groupSeatCapHint", "groupSeriesCreatedOk", "groupSeats", "groupRoster", "groupRosterEmpty", "groupSell", "groupSellInto", "groupSwap", "groupSwapTitle", "groupSwapFromHereOn", "groupSwapNoNotice", "groupSwapOk", "inGroup"]) {
       expect((dictionaries.en.booking as Record<string, string>)[k]?.length).toBeGreaterThan(0);
       expect((dictionaries.th.booking as Record<string, string>)[k]?.length).toBeGreaterThan(0);

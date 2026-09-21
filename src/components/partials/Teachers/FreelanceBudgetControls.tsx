@@ -20,8 +20,10 @@ export default function FreelanceBudgetControls({ teacher }: { teacher: TeacherV
   const [budgetOpen, setBudgetOpen] = useState(false);
   const [topUpOpen, setTopUpOpen] = useState(false);
   // REQ-092 Stage 3 — set + top up are one act (`teachers.budget`); without it the row shows no budget buttons.
+  // REQ-102 (TASK-427) — and BOTH keys now: the writes need `teachers.budget-view` too (the API answers 403 otherwise),
+  // and without it the figures the dialogs prefill from are null. Hidden, never disabled.
   const can = useCan();
-  if (!can("action:teachers.budget")) return null;
+  if (!can("action:teachers.budget") || !can("action:teachers.budget-view")) return null;
 
   return (
     <>

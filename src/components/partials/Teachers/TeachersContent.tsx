@@ -23,6 +23,8 @@ import TeacherWorkDaysSelect from "./TeacherWorkDaysSelect";
 import TeacherRowActions from "./TeacherRowActions";
 import TeacherFormModal from "./TeacherFormModal";
 import { useCan } from "@/hooks/scheduler/useMe";
+// REQ-102 (TASK-427) — a NULL figure (masked server-side for a user without `teachers.budget-view`) draws `—`, never ฿0.
+import { minorOrDash, moneyOrDash } from "@/lib/scheduler/money-or-dash";
 import ArchivedTeachers from "./ArchivedTeachers";
 import FreelanceBudgetControls from "./FreelanceBudgetControls";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
@@ -319,7 +321,9 @@ function FreelanceRow({
   // งบฟรีแลนซ์รายเดือน (สตางค์) มาจาก back-office EXPENSE item — ตัดตอนจอง (SPEC-001).
   const remainingMinor = teacher.remainingMinor ?? null;
   const budgetMinor = teacher.budgetMinor ?? null;
-  const hasBudget = remainingMinor != null || budgetMinor != null;
+  // TASK-427 — the block is a FREELANCE thing: shown for every freelancer, the figures as `—` when the server nulled
+  // them (no key) — never hidden, never ฿0. A non-freelancer has no budget and no block, as before.
+  const hasBudget = teacher.type === "FREELANCE" || remainingMinor != null || budgetMinor != null;
   // rawOver = งบหมดจริง (ก่อนคิด override) → ใช้โชว์สวิตช์ override ให้กดปิดได้แม้เปิดค้างอยู่
   const rawOver = remainingMinor != null && remainingMinor <= 0;
   const nearCap =
@@ -327,7 +331,8 @@ function FreelanceRow({
     remainingMinor != null &&
     teacher.reorderMinor != null &&
     remainingMinor <= teacher.reorderMinor;
-  const reached = rawOver;
+  // TASK-427 — the booleans stay when the figures are masked: `overLimit` is the server's own flag (quota ≤ 0).
+  const reached = rawOver || !!teacher.overLimit;
 
   const pct =
     budgetMinor != null && budgetMinor > 0
@@ -359,7 +364,7 @@ function FreelanceRow({
         <div className="min-w-0 flex-1">
           <p className="font-medium">{teacher.name}</p>
           <p className="text-xs text-muted-400">
-            ({teacher.nickname}) · {format(teacher.workDays)} · ฿{thb(teacher.hourlyRate ?? 0)}{t("teachers.perHour")}
+            ({teacher.nickname}) · {format(teacher.workDays)} · {moneyOrDash(teacher.hourlyRate)}{t("teachers.perHour")}
           </p>
           <SubjectChips subjects={teacher.subjects} />
         </div>
@@ -408,10 +413,8 @@ function FreelanceRow({
                   rawOver ? "text-danger" : nearCap ? "text-warning" : "text-muted-600"
                 }`}
               >
-                ฿{bahtOfSatang(remainingMinor ?? 0)}
-                {budgetMinor != null && (
-                  <span className="text-muted-400"> / ฿{bahtOfSatang(budgetMinor)}</span>
-                )}
+                <span data-budget-remaining={remainingMinor ?? "masked"}>{minorOrDash(remainingMinor)}</span>
+                <span className="text-muted-400"> / {minorOrDash(budgetMinor)}</span>
               </span>
             </div>
             <Progress size="md" radius="xl" value={pct} color={barColor} />

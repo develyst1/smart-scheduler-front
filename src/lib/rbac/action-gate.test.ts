@@ -48,7 +48,7 @@ describe("§1 — ONE gate, everywhere", () => {
   });
 
   it("the snapshot: 54 keys in 9 areas (50 + TASK-401's four `camp.*`); every key a site uses exists; exactly two keys have no FE site", () => {
-    expect(KEYS.length).toBe(56); // + TASK-406/407's `calendar.teacher-leave` + TASK-411/412's `people.parent-archive`
+    expect(KEYS.length).toBe(57) /* TASK-427: + teachers.budget-view */; // + TASK-406/407's `calendar.teacher-leave` + TASK-411/412's `people.parent-archive`
     const areas = [...new Set(KEYS.map((k) => k.slice("action:".length, k.indexOf("."))))];
     expect(areas).toEqual(["calendar", "bookings", "people", "teachers", "link-requests", "badges", "camp", "settings", "sales"]); // camp after badges, as the BE
     for (const k of KEYS) expect(k).toMatch(/^action:[a-z-]+\.[a-z-]+$/);
@@ -62,7 +62,7 @@ describe("§1 — ONE gate, everywhere", () => {
   });
 
   it("the sweep: 86 key literals across 33 files (78 + TASK-402's camp doors: open/edit/close a week, sell ×2, redeem ×2, mark)", () => {
-    expect(sites.length).toBe(90); // + TASK-407's `Report leave` door (CalendarContent) + TASK-412's parent archive/restore doors (People) + TASK-419's camp `Swap teacher` (CampBlockPanel)
+    expect(sites.length).toBe(91); /* TASK-427: the budget doors ask both keys */ // + TASK-407's `Report leave` door (CalendarContent) + TASK-412's parent archive/restore doors (People) + TASK-419's camp `Swap teacher` (CampBlockPanel)
     expect(new Set(sites.map((s) => s.file)).size).toBe(35);
     // hidden, never disabled: no site turns the gate into a `disabled` prop
     for (const f of SITE_FILES) expect({ f, hit: /disabled=\{!can\(/.test(readFileSync(f, "utf8")) }).toEqual({ f, hit: false });
