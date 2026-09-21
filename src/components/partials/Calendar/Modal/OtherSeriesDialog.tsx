@@ -10,6 +10,7 @@ import { useCreateOtherSeries, useTeachers } from "@/hooks/scheduler";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { OTHER_KINDS, teacherRatesMinor, type OtherKind, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import { TIME_SLOTS } from "@/types/app/scheduler";
+import { seriesHref } from "@/lib/scheduler/other-series";
 import OtherScheduleFields from "./OtherScheduleFields";
 import MultiDateField from "./MultiDateField";
 
@@ -59,7 +60,9 @@ export default function OtherSeriesDialog({
         startTime,
         dates: [...dates].sort(),
       });
-      notify({ title: t("booking.otherSeriesCreatedOk", { n: String(res.created) }), color: "success" });
+      // TASK-429 — the toast offers the Manage-plan page from the server's `seriesKey` (absent on an older payload ⇒ no link).
+      const href = seriesHref(res.seriesKey);
+      notify({ title: t("booking.otherSeriesCreatedOk", { n: String(res.created) }), color: "success", ...(href ? { link: { href, label: t("otherSeries.managePlan") } } : {}) });
       onClose();
     } catch (e) {
       // `SLOT_TAKEN` names the date; the ticks stay so the admin un-ticks it and retries.

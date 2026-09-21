@@ -84,7 +84,7 @@ describe("§2 — every reader draws `—`; the doors ask both keys; the 57th ke
     expect(controls).toContain('if (!can("action:teachers.budget") || !can("action:teachers.budget-view")) return null;');
     expect(controls).not.toMatch(/disabled=\{[^}]*budget/);
     expect(ACTION_KEYS_SNAPSHOT.indexOf("action:teachers.budget-view")).toBe(ACTION_KEYS_SNAPSHOT.indexOf("action:teachers.budget") + 1);
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(57);
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(58) /* TASK-427 + TASK-429: budget-view, other-cancel-all */;
     // the not-bookable rule is untouched: booleans only
     expect(codeOf("src/lib/scheduler/teacher.ts")).toContain("bookable: teacher.active && !overLimit && !teacher.setupIncomplete,");
   });

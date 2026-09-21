@@ -26,7 +26,7 @@ describe("§1 — the query (pure) and the key", () => {
     expect(archivedParentsQuery("som")).toEqual({ q: "som", archived: 1, limit: 100 });
     expect("offset" in archivedParentsQuery("x")).toBe(false);
     expect(ACTION_KEYS_SNAPSHOT.indexOf("action:people.parent-archive")).toBe(ACTION_KEYS_SNAPSHOT.indexOf("action:people.student-archive") + 1);
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(57) /* TASK-427: + teachers.budget-view */;
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(58) /* TASK-427 + TASK-429: budget-view, other-cancel-all */;
   });
 });
 

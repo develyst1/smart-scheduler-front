@@ -87,7 +87,8 @@ describe("§2 — the form, the series, the editor", () => {
     const catchBlock = series.slice(series.indexOf("} catch (e) {"), series.indexOf("return ("));
     expect(catchBlock).toContain("setError(e instanceof ApiClientError ? e.message : (e as Error).message);");
     expect(catchBlock).not.toContain("setDates");
-    expect(series).toContain('notify({ title: t("booking.otherSeriesCreatedOk", { n: String(res.created) }), color: "success" });');
+    // TASK-429 — the toast now carries the Manage-plan link from the server's `seriesKey` (absent ⇒ no link)
+    expect(series).toContain('notify({ title: t("booking.otherSeriesCreatedOk", { n: String(res.created) }), color: "success", ...(href ? { link: { href, label: t("otherSeries.managePlan") } } : {}) });');
     // 🚫 no client rule on the dates beyond "at least one is ticked" for the button
     expect(series).not.toMatch(/dates\.length\s*(<=?|>=?)\s*[1-9]\d*|max\(60/); // `> 0` (a tick exists) is the only comparison allowed
   });

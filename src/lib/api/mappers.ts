@@ -20,6 +20,8 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     coStudent: dto.coStudent ?? null,
     // TASK-424 — the three rate facts as sent (course rows); the move box renders `effectiveMinor`, never a sum of its own.
     rate: dto.rate ?? null,
+    // TASK-429 — the series key as sent; absent ⇒ null (a legacy row shows no Manage-plan link).
+    otherSeriesKey: dto.otherSeriesKey ?? null,
     // `null` when there is no student (อื่นๆ). This means THE CHILD — not "what this booking is called".
     studentName: dto.student?.name ?? null,
     // TASK-141/142 — the BE always sent this; the flatten dropped it. Kept for the surfaces that mean the

@@ -22,6 +22,7 @@ import PausedTray from "./PausedTray";
 import CalendarGridSkeleton from "./CalendarGridSkeleton";
 import CampDayBanner from "./CampDayBanner";
 import ReportLeaveDialog from "./Modal/ReportLeaveDialog";
+import SeriesInRange from "./SeriesInRange";
 import CampBlockPanel from "./Modal/CampBlockPanel";
 import { isCampRow, mergeCampCells, type CampBlock } from "@/lib/camp/grid";
 
@@ -170,6 +171,8 @@ export default function CalendarContent() {
         onReportLeave={canReportLeave ? () => setLeaveOpen(true) : undefined}
       />
       {leaveOpen && <ReportLeaveDialog opened initialDate={date} onClose={() => setLeaveOpen(false)} />}
+      {/* REQ-101 (TASK-429) — the ECA/Free/KOL series touching the visible week, each linking to its Manage-plan page. Not under a linked account (outside its allowed set). */}
+      {!scoped && <SeriesInRange from={weekDays[0]} to={weekDays[6]} />}
       {campBlock && <CampBlockPanel block={campBlock} teachers={teachers} onClose={() => setCampBlock(null)} />}
 
       {/* 🔴 SPEC-075 / REQ-076 AC-9/AC-10 (TASK-261) — the พัก tray sits BESIDE the grid, never inside it.

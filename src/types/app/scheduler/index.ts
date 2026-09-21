@@ -219,6 +219,8 @@ export interface Booking {
   coStudent?: { id: string; name: string; nickname: string | null } | null;
   /** REQ-095 §13.3 (TASK-424) — the server's three rate facts on a course row (as sent); null elsewhere. Rendered, never computed. */
   rate?: { effectiveMinor: number; overrideMinor: number | null; defaultMinor: number | null } | null;
+  /** REQ-101 (TASK-429) — an OTHER row's series key (as sent); set ⇒ the modal offers `Manage plan`. */
+  otherSeriesKey?: string | null;
 }
 
 // ──────────────────────────── Badges ────────────────────────────

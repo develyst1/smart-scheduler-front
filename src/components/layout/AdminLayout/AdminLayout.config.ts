@@ -135,8 +135,16 @@ export const navItemsFor = (me: MenuAccess | null | undefined): NavItem[] => NAV
 export const LANDING_HREF = "/scheduler/calendar";
 
 /** The nav entry (visible or hidden) a path belongs to, or `undefined` for a route outside the nav. */
-export const navItemForPath = (pathname: string | null | undefined): NavItem | undefined =>
-  [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS].find((i) => pathname?.startsWith(i.href));
+/**
+ * REQ-101 (TASK-429) — sub-pages that belong to a menu without being one: the Manage-plan page `/scheduler/other/:key`
+ * is the calendar's (`menu:calendar` guards it, `/other-series/*` is under that menu on the server too).
+ */
+export const ROUTE_ALIASES: Record<string, string> = { "/scheduler/other": "/scheduler/calendar" };
+
+export const navItemForPath = (pathname: string | null | undefined): NavItem | undefined => {
+  const alias = Object.entries(ROUTE_ALIASES).find(([prefix]) => pathname?.startsWith(prefix))?.[1];
+  return [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS].find((i) => pathname?.startsWith(i.href) || (alias !== undefined && i.href === alias));
+};
 
 /**
  * REQ-026 Stage 1 — hidden from the sidebar, **not deleted**. The route, page and components all still exist

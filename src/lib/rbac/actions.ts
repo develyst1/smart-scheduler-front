@@ -33,7 +33,7 @@ export const SCOPE_TEACHER_CODE = "SCOPE_TEACHER";
 
 /**
  * 🔴 TEST-ONLY SNAPSHOT of the BE's `ACTION_KEYS` (`lib/permissions.ts`, TASK-385 — 46: 44 route keys + the two
- * body-level ones; TASK-390 added the 47th, `bookings.course-rental`; TASK-392 the 48th, `people.student-archive`; TASK-394 the 49th, `calendar.other-series`; TASK-397 the 50th, `calendar.group-series`; TASK-401 the four `camp.*` ⇒ 54; TASK-406 the 55th, `calendar.teacher-leave`; TASK-411 the 56th, `people.parent-archive`; TASK-426 the 57th, `teachers.budget-view`). Nothing at runtime reads it. `action-gate.test.ts` walks `src` for every `can("action:…")` literal
+ * body-level ones; TASK-390 added the 47th, `bookings.course-rental`; TASK-392 the 48th, `people.student-archive`; TASK-394 the 49th, `calendar.other-series`; TASK-397 the 50th, `calendar.group-series`; TASK-401 the four `camp.*` ⇒ 54; TASK-406 the 55th, `calendar.teacher-leave`; TASK-411 the 56th, `people.parent-archive`; TASK-426 the 57th, `teachers.budget-view`; TASK-428 the 58th, `calendar.other-cancel-all`). Nothing at runtime reads it. `action-gate.test.ts` walks `src` for every `can("action:…")` literal
  * and refuses one that is not here; the report states this list equals the BE's, key for key, and updating it is a
  * task, not a drift. `area` = the part between `action:` and the dot.
  */
@@ -49,6 +49,7 @@ export const ACTION_KEYS_SNAPSHOT = [
   "action:calendar.rental-sale",
   "action:calendar.other-series", // TASK-394/395 — the SERIES; a single OTHER stays under `book`
   "action:calendar.group-series", // TASK-397/398 — a DUO/Group series; seats are sold under `bookings.course-create`
+  "action:calendar.other-cancel-all", // TASK-428/429 (REQ-101) — the Manage-plan page's destructive door, its own key
   "action:calendar.teacher-leave", // TASK-406/407 — a LINKED account's own leave (`POST /teachers/me/leave`); the link is the identity
   "action:bookings.bulk-confirm",
   "action:bookings.course-create",

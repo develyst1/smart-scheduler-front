@@ -228,6 +228,8 @@ export interface BookingDTO {
   coStudent?: StudentRef | null;
   /** REQ-095 §13.3 (TASK-423) — the coach rate facts, non-null on COURSE_PACKAGE rows only: effective · this session's override · the course default. */
   rate?: { effectiveMinor: number; overrideMinor: number | null; defaultMinor: number | null } | null;
+  /** REQ-101 (TASK-428) — an OTHER row's series (the Manage-plan page's key); null on legacy rows before the backfill and on CAMP rows. */
+  otherSeriesKey?: string | null;
   /** The FIRST teacher — unchanged meaning, still always present. See `teachers` for all of them. */
   teacher: Pick<TeacherDTO, "id" | "name" | "nickname" | "type">;
   /** TASK-224 — `null` on an อื่นๆ booking: it has no program, and says so rather than naming a fiction
@@ -661,6 +663,41 @@ export interface CreateBookingRequest {
 export interface OtherSeriesResponse {
   created: number;
   bookingIds: string[];
+  /** REQ-101 (TASK-428) — the series' key: the Manage-plan page's address. Optional on an older payload. */
+  seriesKey?: string;
+}
+
+/** REQ-101 / SPEC-088 (TASK-428) — `GET /other-series/:key`: the header facts from the first live row + every row (all statuses, date order). */
+export interface OtherSeriesRowDTO {
+  bookingId: string;
+  date: string;
+  status: BookingStatus;
+  teacherId: string;
+  additionalTeacherIds: string[];
+}
+export interface OtherSeries {
+  key: string;
+  title: string;
+  kind: "ECA" | "FREE" | "KOL" | null;
+  headCount: number | null;
+  startTime: string;
+  teacherId: string;
+  additionalTeacherIds: string[];
+  /** teacherId → satang */
+  teacherRates: Record<string, number>;
+  rows: OtherSeriesRowDTO[];
+}
+/** `GET /other-series?from&to` — one line per key touching the range. */
+export interface OtherSeriesListItem {
+  key: string;
+  title: string;
+  kind: "ECA" | "FREE" | "KOL" | null;
+  startTime: string;
+  teacherId: string;
+  firstDate: string;
+  lastDate: string;
+  liveCount: number;
+  total: number;
 }
 
 /** REQ-095 Stage 2a (TASK-397) — `POST /bookings/group-series`: the group's key + one row per date. */

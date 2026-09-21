@@ -22,7 +22,7 @@ import {
   Loader,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil, Users, Repeat, GraduationCap, Ticket } from "lucide-react";
+import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil, Users, Repeat, GraduationCap, Ticket, ListChecks } from "lucide-react";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -77,6 +77,7 @@ import GroupSeriesDialog from "./GroupSeriesDialog";
 import GroupSwapDialog from "./GroupSwapDialog";
 import CreatePlanFlow from "@/components/partials/Bookings/CreatePlanFlow";
 import { rateTag, sessionRateChange } from "@/lib/scheduler/duo";
+import { seriesHref } from "@/lib/scheduler/other-series";
 import { seatsLabel } from "@/lib/scheduler/group-session";
 import { emptyOtherSchedule, otherScheduleFacts, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import CancelBookingDialog from "./CancelBookingDialog";
@@ -600,6 +601,12 @@ function ViewBooking({
           {can("action:calendar.booking-edit") && (
             <Button size="compact-xs" variant="subtle" leftSection={<Pencil size={12} />} onClick={() => setOtherDetailsOpen(true)}>
               {t("booking.otherEditDetails")}
+            </Button>
+          )}
+          {/* REQ-101 (TASK-429) — the row → series link, only when the server sent a key (a legacy row before the backfill shows nothing). */}
+          {seriesHref(booking.otherSeriesKey) && (
+            <Button component="a" href={seriesHref(booking.otherSeriesKey) as string} size="compact-xs" variant="light" leftSection={<ListChecks size={12} />} data-manage-plan={booking.otherSeriesKey ?? undefined}>
+              {t("otherSeries.managePlan")}
             </Button>
           )}
         </p>
