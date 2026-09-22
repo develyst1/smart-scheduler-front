@@ -191,14 +191,15 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
             <Stack gap="md" className="flex-1">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold">
+                  {/* a <div>, not a <p>: Mantine's Badge renders a <div>, which a <p> may not contain (hydration error) */}
+                  <div className="font-semibold">
                     {c.studentName}
                     {c.courseKind === "DUO" && (
                       <Badge size="xs" variant="light" color="teal" ml={6} data-duo-tag>
                         {t("course.duoTag")}
                       </Badge>
                     )}
-                  </p>
+                  </div>
                   <p className="text-xs text-muted-400">{t("course.sizeLine", { size: c.size })}</p>
                   {c.subject?.name && (
                     <p className="mt-0.5 text-xs text-muted-400">
