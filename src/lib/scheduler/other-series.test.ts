@@ -60,7 +60,8 @@ describe("§1 — seriesDoors, by value", () => {
 
 describe("§2 — the page, the wire, the links, the key", () => {
   it("the page asks its four grants at the site and the pure doors add the rows; a row opens the EXISTING modal by id; 409s are the server's sentence", () => {
-    expect(page).toContain('seriesDoors({ status: can("action:calendar.status"), cancelAll: can("action:calendar.other-cancel-all"), edit: can("action:calendar.booking-edit"), series: can("action:calendar.other-series") }, series)');
+    // TASK-442 — the OTHER face's grants unchanged; the GROUP face asks course-confirm + group-series (`groupSeriesDoors`)
+    expect(page).toContain(': seriesDoors({ status: can("action:calendar.status"), cancelAll: can("action:calendar.other-cancel-all"), edit: can("action:calendar.booking-edit"), series: can("action:calendar.other-series") }, series)');
     for (const d of ["confirmAll", "cancelAll", "addTeacher", "addDates", "editHeader", "swapPrimary", "removeTeacher"]) expect(page).toContain(`{doors.${d} && (`);
     expect(page).not.toMatch(/disabled=\{[^}]*(can\(|doors\.)/); // hidden, never disabled
     expect(page).toContain("const b = byId.get(r.bookingId);");
@@ -69,42 +70,42 @@ describe("§2 — the page, the wire, the links, the key", () => {
     expect(page).not.toContain("<BookingModal");
     // 📌 the close must be THE row handler's own (an earlier `onClose();` elsewhere satisfied an indexOf pin)
     expect(page).toMatch(/if \(!b\) return;\s*onClose\(\);\s*onOpenBooking\(b\);/);
-    expect(page).toContain('useAllBookings(series && first && last ? { type: "OTHER", teacherId: series.teacherId, from: first, to: last, limit: 200 } : { limit: 1 })');
+    expect(page).toContain('useAllBookings(series && first && last ? { type: isGroup ? "GROUP" : "OTHER", teacherId: series.teacherId, from: first, to: last, limit: 200 } : { limit: 1 })'); // TASK-442: the group's rows are GROUP bookings
     expect(dialogs.match(/setError\(errOf\(e\)\);/g)?.length).toBe(4); // every dialog shows the sentence and keeps the input
     expect(dialogs).not.toMatch(/SLOT_TAKEN|ALREADY_ON_ROW|PRIMARY_TEACHER|DATE_EXISTS/); // no code-switching: the sentence as given
   });
-  it("the wire: the eight routes; cancel-all through `cancelAllBody`; teacher bodies through `withFromDate`; dates sorted; the header PATCH without startTime", () => {
-    expect(svc).toContain("api.get<OtherSeries>(`/other-series/${encodeURIComponent(key)}`)");
-    expect(svc).toContain('api.get<OtherSeriesListItem[]>("/other-series", { params: { from, to } })');
-    expect(svc).toContain("`/other-series/${encodeURIComponent(key)}/confirm-all`, {}");
-    expect(svc).toContain("`/other-series/${encodeURIComponent(key)}/cancel-all`, body");
-    expect(svc).toContain("`/other-series/${encodeURIComponent(key)}/teachers`, body");
-    expect(svc).toContain("api.delete<{ removed: number }>(`/other-series/${encodeURIComponent(key)}/teachers/${teacherId}`, { params: fromDate ? { fromDate } : {} })");
-    expect(svc).toContain("api.patch<{ moved: number }>(`/other-series/${encodeURIComponent(key)}/teacher`, body)");
-    expect(svc).toContain("`/other-series/${encodeURIComponent(key)}/dates`, { dates: [...dates].sort() }");
-    expect(svc).toContain("api.patch<{ updated: number }>(`/other-series/${encodeURIComponent(key)}`, patch)");
+  it("the wire: the eight routes (TASK-442: through `seriesPath`, the ref's kind picking `/other-series` | `/group-series`); cancel-all through `cancelAllBody`; teacher bodies through `withFromDate`; dates sorted; the header PATCH without startTime", () => {
+    expect(svc).toContain("api.get<OtherSeries>(seriesPath(ref))");
+    expect(svc).toContain('api.get<OtherSeriesListItem[]>(kind === "group" ? "/group-series" : "/other-series", { params: { from, to } })');
+    expect(svc).toContain('seriesPath(ref, "/confirm-all"), {}');
+    expect(svc).toContain('seriesPath(ref, "/cancel-all"), body');
+    expect(svc).toContain('seriesPath(ref, "/teachers"), body');
+    expect(svc).toContain("api.delete<{ removed: number }>(seriesPath(ref, `/teachers/${teacherId}`), { params: fromDate ? { fromDate } : {} })");
+    expect(svc).toContain('api.patch<{ moved: number }>(seriesPath(ref, "/teacher"), body)');
+    expect(svc).toContain('seriesPath(ref, "/dates"), { dates: [...dates].sort() }');
+    expect(svc).toContain("api.patch<{ updated: number }>(seriesPath(ref), patch)");
     expect(svc).not.toContain("startTime"); // a time change is per-row moves
     expect(dialogs).toContain("body: cancelAllBody(reason, note)");
-    expect(dialogs).toContain("body: withFromDate({ from: series.teacherId, to }, fromDate)"); // `from` is always the primary
+    expect(dialogs).toContain("body: withFromDate(swapBody(seriesRef, series.teacherId, to), fromDate)"); // OTHER: `from` is always the primary; GROUP: `{ to }`
     expect(dialogs).toContain("{END_COURSE_REASONS.map((r) => (");
     expect(dialogs).toContain("useState<string>(fromDateDefault())");
   });
   it("TASK-435 — ONE modal, two entry points: the OTHER block's button (only with a key AND a host) and a `Series in range` row; the page, `seriesHref`, the alias and the toast link are GONE", () => {
     // (1) the OTHER block's button: the key gates it (a legacy row shows nothing), it closes the booking modal and opens the series modal
     expect(modal).toContain("{booking.otherSeriesKey && onManagePlan && (");
-    expect(modal).toContain("onManagePlan(booking.otherSeriesKey as string);");
-    expect(modal).toMatch(/onClose\(\);\s*onManagePlan\(booking\.otherSeriesKey as string\);/); // closes the booking modal first — one instance
+    expect(modal).toContain('onManagePlan({ kind: "other", key: booking.otherSeriesKey as string });');
+    expect(modal).toMatch(/onClose\(\);\s*onManagePlan\(\{ kind: "other", key: booking\.otherSeriesKey as string \}\);/); // closes the booking modal first — one instance
     expect(modal).toContain('{t("otherSeries.managePlan")}');
     expect(modal).not.toMatch(/component="a"[^\n]*manage-plan|seriesHref/);
     expect(codeOf("src/lib/api/mappers.ts")).toContain("otherSeriesKey: dto.otherSeriesKey ?? null,");
     // (2) a Series-in-range row is a BUTTON opening the same modal
-    expect(strip).toContain("useOtherSeriesList(from, to, open)"); // fetched only while open
-    expect(strip).toContain('<button key={s.key} type="button" onClick={() => onOpen(s.key)}');
+    expect(strip).toContain('useOtherSeriesList("other", from, to, open)'); // fetched only while open (TASK-442: the group list beside it)
+    expect(strip).toContain('<button key={`${ref.kind}:${s.key}`} type="button" onClick={() => onOpen(ref)}');
     expect(strip).not.toMatch(/href=|seriesHref/);
     // the calendar owns the ONE instance and feeds both entry points
-    expect(content).toContain("{!scoped && <SeriesInRange from={weekDays[0]} to={weekDays[6]} onOpen={setSeriesKey} />}");
-    expect(content).toContain("{seriesKey && <OtherSeriesModal seriesKey={seriesKey} opened onClose={() => setSeriesKey(null)} onOpenBooking={openView} />}");
-    expect(content).toContain("onManagePlan={setSeriesKey}");
+    expect(content).toContain("{!scoped && <SeriesInRange from={weekDays[0]} to={weekDays[6]} onOpen={setSeriesRef} />}");
+    expect(content).toContain("{seriesRef && <OtherSeriesModal series={seriesRef} opened onClose={() => setSeriesRef(null)} onOpenBooking={openView} />}");
+    expect(content).toContain("onManagePlan={setSeriesRef}");
     expect(content.match(/<BookingModal/g)?.length).toBe(1);
     // retired: the page, seriesHref, the alias, the toast link
     expect(existsSync("src/app/(admin)/scheduler/other")).toBe(false);
@@ -118,7 +119,7 @@ describe("§2 — the page, the wire, the links, the key", () => {
     expect(ACTION_KEYS_SNAPSHOT.length).toBe(59); /* + TASK-432 coach-rate */
     const en = dictionaries.en.otherSeries as Record<string, string>;
     const th = dictionaries.th.otherSeries as Record<string, string>;
-    expect(Object.keys(en).length).toBe(32);
+    expect(Object.keys(en).length).toBe(36); /* TASK-442: + confirmGroup · confirmedGroup · cancelAllGroupBody · cancelledGroup */
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
   });
 });

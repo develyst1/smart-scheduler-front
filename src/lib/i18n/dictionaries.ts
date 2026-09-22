@@ -447,6 +447,8 @@ const en = {
     perDay: "Per day (teachers · window)",
     applyToEveryDay: "Apply week's teachers & window to every day",
     dayEdited: "(edited)",
+    // REQ-104 §2 item 4 (TASK-444) — the per-coach rate box on a day (key 59 only)
+    rateCol: "Rate per coach (฿)",
   },
   // REQ-097 (TASK-407) — the teacher's own leave (a linked account)
   teacherLeave: {
@@ -494,7 +496,13 @@ const en = {
     noTimeHint: "The time is not edited here — move the rows one by one.",
     headerSaved: "Series saved",
     inRange: "Series in range",
-    inRangeEmpty: "No ECA / Free / KOL series this week.",
+    inRangeEmpty: "No series this week.",
+    // REQ-104 §2 (TASK-442) — the GROUP face: confirm-whole-group confirms the seated COURSES too; cancel-all cascades to
+    // the seats and each family is told. `seats`/`students` are counted from the DTO; `families` is the server's number.
+    confirmGroup: "Confirm whole group ({n} pending)",
+    confirmedGroup: "{confirmed} dates confirmed · {courses} courses confirmed · {skipped} skipped",
+    cancelAllGroupBody: "{live} live dates will be cancelled; {kept} attended dates are kept. {seats} seats across {students} students on those dates will be cancelled and each family told by the system. The coaches are told too.",
+    cancelledGroup: "{n} dates cancelled · {seats} seats cancelled · {families} families told",
   },
   // TASK-404 — the shared QR dialog
   qr: {
@@ -1770,6 +1778,11 @@ const en = {
     time: "Time",
     timeSuffix: "",
     pointsAwarded: "+{n} points",
+    // REQ-104 §2 item 5a (TASK-444) — the remaining line, from the response (no arithmetic); absent on `already` and on a trial/single.
+    remaining: "Remaining",
+    remainingDays: "{remaining}/{total} days",
+    remainingSessions: "{used}/{total} sessions",
+    remainingHours: "{used}/{total} hours",
     closeHint: "You can close this page",
     failTitle: "Check-in failed",
     retry: "Try again",
@@ -2185,6 +2198,7 @@ const th: typeof en = {
     perDay: "รายวัน (ครู · ช่วงเวลา)",
     applyToEveryDay: "ใช้ครูและช่วงเวลาของสัปดาห์กับทุกวัน",
     dayEdited: "(แก้แล้ว)",
+    rateCol: "เรทครู (฿)",
   },
   teacherLeave: {
     door: "แจ้งลาสอน",
@@ -2230,7 +2244,12 @@ const th: typeof en = {
     noTimeHint: "เวลาไม่แก้ที่นี่ — ย้ายทีละคาบ",
     headerSaved: "บันทึกชุดแล้ว",
     inRange: "ชุดตารางอื่นๆ ในช่วงนี้",
-    inRangeEmpty: "สัปดาห์นี้ไม่มีชุด ECA / ฟรี / KOL",
+    inRangeEmpty: "สัปดาห์นี้ไม่มีชุดตาราง",
+    // REQ-104 §2 (TASK-442) — หน้า GROUP: ยืนยันทั้งกลุ่มยืนยันคอร์สของเด็กที่นั่งด้วย; ยกเลิกทั้งชุดจะยกเลิกที่นั่งและแจ้งทุกครอบครัว
+    confirmGroup: "ยืนยันทั้งกลุ่ม (รอยืนยัน {n})",
+    confirmedGroup: "ยืนยันแล้ว {confirmed} วัน · คอร์ส {courses} คอร์ส · ข้าม {skipped}",
+    cancelAllGroupBody: "จะยกเลิก {live} วันที่ใช้งานอยู่ วันที่มาเรียนแล้ว {kept} วันคงไว้ ที่นั่ง {seats} ที่ของนักเรียน {students} คนในวันเหล่านั้นจะถูกยกเลิก และระบบจะแจ้งทุกครอบครัวรวมถึงครูให้",
+    cancelledGroup: "ยกเลิกแล้ว {n} วัน · ที่นั่ง {seats} ที่ · แจ้งครอบครัวแล้ว {families} ครอบครัว",
   },
   qr: {
     copy: "คัดลอกลิงก์",
@@ -3347,6 +3366,10 @@ const th: typeof en = {
     time: "เวลา",
     timeSuffix: " น.",
     pointsAwarded: "+{n} แต้มสะสม",
+    remaining: "คงเหลือ",
+    remainingDays: "{remaining}/{total} วัน",
+    remainingSessions: "{used}/{total} ครั้ง",
+    remainingHours: "{used}/{total} ชม.",
     closeHint: "ปิดหน้านี้ได้เลย",
     failTitle: "เช็คอินไม่สำเร็จ",
     retry: "ลองอีกครั้ง",

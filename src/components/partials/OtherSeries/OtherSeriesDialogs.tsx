@@ -8,10 +8,10 @@ import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { notify } from "@/lib/ui/notify";
 import { bahtToMinor } from "@/lib/scheduler/discount";
-import { cancelAllBody, fromDateDefault, withFromDate } from "@/lib/scheduler/other-series";
+import { cancelAllBody, fromDateDefault, swapBody, withFromDate, type SeriesRef } from "@/lib/scheduler/other-series";
 import { COACH_RATE_KEY, withoutRates } from "@/lib/scheduler/duo";
 import { useCan } from "@/hooks/scheduler/useMe";
-import { draftFromFacts, teacherRatesMinor, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
+import { draftFromFacts, teacherRatesMinor, type OtherKind, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import { END_COURSE_REASONS, type EndCourseReason, type TeacherView } from "@/types/app/scheduler";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import MultiDateField from "@/components/partials/Calendar/Modal/MultiDateField";
@@ -26,8 +26,12 @@ import type { OtherSeries } from "@/types/api/contract";
  */
 const errOf = (e: unknown) => (e instanceof ApiClientError ? e.message : (e as Error).message);
 
-/** Key 58 — the closed reasons (the admin's three, `END_COURSE_REASONS`) + a note; ATTENDED rows stay ("kept"). */
-export function CancelAllDialog({ seriesKey, attended, live, onClose }: { seriesKey: string; attended: number; live: number; onClose: () => void }) {
+/**
+ * Key 58 — the closed reasons (the admin's three, `END_COURSE_REASONS`) + a note; ATTENDED rows stay ("kept").
+ * REQ-104 (TASK-442) — on a GROUP the line says the cascade: `cascade` = the live seats on the live dates COUNTED from the
+ * DTO (`seatCascade`); the toast prints the SERVER's `seatsCancelled` / `familiesTold` — never a client number for families.
+ */
+export function CancelAllDialog({ series: ref, attended, live, cascade, onClose }: { series: SeriesRef; attended: number; live: number; cascade?: { seats: number; students: number }; onClose: () => void }) {
   const t = useT();
   const cancel = useCancelAllOtherSeries();
   const [reason, setReason] = useState<EndCourseReason | null>(null);
@@ -37,8 +41,14 @@ export function CancelAllDialog({ seriesKey, attended, live, onClose }: { series
     if (!reason) return;
     setError(null);
     try {
-      const r = await cancel.mutateAsync({ key: seriesKey, body: cancelAllBody(reason, note) });
-      notify({ title: t("otherSeries.cancelledAll", { n: r.cancelled }), color: "default" });
+      const r = await cancel.mutateAsync({ ref, body: cancelAllBody(reason, note) });
+      notify({
+        title:
+          ref.kind === "group"
+            ? t("otherSeries.cancelledGroup", { n: r.cancelled, seats: r.seatsCancelled ?? 0, families: r.familiesTold ?? 0 })
+            : t("otherSeries.cancelledAll", { n: r.cancelled }),
+        color: "default",
+      });
       onClose();
     } catch (e) {
       setError(errOf(e));
@@ -52,7 +62,9 @@ export function CancelAllDialog({ seriesKey, attended, live, onClose }: { series
             {error}
           </Alert>
         )}
-        <Text size="sm">{t("otherSeries.cancelAllBody", { live, kept: attended })}</Text>
+        <Text size="sm" data-cascade={cascade ? `${cascade.seats}/${cascade.students}` : undefined}>
+          {ref.kind === "group" && cascade ? t("otherSeries.cancelAllGroupBody", { live, kept: attended, seats: cascade.seats, students: cascade.students }) : t("otherSeries.cancelAllBody", { live, kept: attended })}
+        </Text>
         <Radio.Group label={t("endCourse.reasonLabel")} value={reason} onChange={(v) => setReason(v as EndCourseReason)}>
           <Stack gap={6} mt={4}>
             {END_COURSE_REASONS.map((r) => (
@@ -75,7 +87,7 @@ export function CancelAllDialog({ seriesKey, attended, live, onClose }: { series
 }
 
 /** Add (a picker + optional rate) · Remove (an extra) · Swap the primary — each with `fromDate` defaulting to today. */
-export function TeacherDialog({ seriesKey, series, teachers, mode, teacherId, onClose }: { seriesKey: string; series: OtherSeries; teachers: TeacherView[]; mode: "add" | "remove" | "swap"; teacherId?: string; onClose: () => void }) {
+export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, onClose }: { seriesRef: SeriesRef; series: OtherSeries; teachers: TeacherView[]; mode: "add" | "remove" | "swap"; teacherId?: string; onClose: () => void }) {
   const t = useT();
   const add = useAddOtherSeriesTeacher();
   const remove = useRemoveOtherSeriesTeacher();
@@ -95,13 +107,14 @@ export function TeacherDialog({ seriesKey, series, teachers, mode, teacherId, on
     setError(null);
     try {
       if (mode === "add" && to) {
-        const r = await add.mutateAsync({ key: seriesKey, body: withoutRates(withFromDate({ teacherId: to, ...(rateBaht !== "" ? { rateMinor: bahtToMinor(rateBaht) } : {}) }, fromDate), canRate) });
+        const r = await add.mutateAsync({ ref: seriesRef, body: withoutRates(withFromDate({ teacherId: to, ...(rateBaht !== "" ? { rateMinor: bahtToMinor(rateBaht) } : {}) }, fromDate), canRate) });
         notify({ title: t("otherSeries.teacherAdded", { name: name(to), n: r.added }), color: "success" });
       } else if (mode === "remove" && teacherId) {
-        const r = await remove.mutateAsync({ key: seriesKey, teacherId, ...(fromDate !== fromDateDefault() ? { fromDate } : {}) });
+        const r = await remove.mutateAsync({ ref: seriesRef, teacherId, ...(fromDate !== fromDateDefault() ? { fromDate } : {}) });
         notify({ title: t("otherSeries.teacherRemoved", { name: name(teacherId), n: r.removed }), color: "default" });
       } else if (mode === "swap" && to) {
-        const r = await swap.mutateAsync({ key: seriesKey, body: withFromDate({ from: series.teacherId, to }, fromDate) });
+        // REQ-104 — OTHER sends `{ from, to }` (`from` = the primary); a GROUP sends `{ to }` alone (the server delegates to the group swap, the seats follow).
+        const r = await swap.mutateAsync({ ref: seriesRef, body: withFromDate(swapBody(seriesRef, series.teacherId, to), fromDate) });
         notify({ title: t("otherSeries.teacherSwapped", { from: name(series.teacherId), to: name(to), n: r.moved }), color: "success" });
       } else return;
       onClose();
@@ -144,7 +157,7 @@ export function TeacherDialog({ seriesKey, series, teachers, mode, teacherId, on
 }
 
 /** `POST …/dates` — the shared multi-date picker; a clash or `DATE_EXISTS` is the server's sentence, the ticks stay. */
-export function AddDatesDialog({ seriesKey, existing, onClose }: { seriesKey: string; existing: string[]; onClose: () => void }) {
+export function AddDatesDialog({ seriesRef, existing, onClose }: { seriesRef: SeriesRef; existing: string[]; onClose: () => void }) {
   const t = useT();
   const addDates = useAddOtherSeriesDates();
   const [dates, setDates] = useState<string[]>([]);
@@ -152,7 +165,7 @@ export function AddDatesDialog({ seriesKey, existing, onClose }: { seriesKey: st
   const submit = async () => {
     setError(null);
     try {
-      const r = await addDates.mutateAsync({ key: seriesKey, dates });
+      const r = await addDates.mutateAsync({ ref: seriesRef, dates });
       notify({ title: t("otherSeries.datesAdded", { n: r.created }), color: "success" });
       onClose();
     } catch (e) {
@@ -185,12 +198,14 @@ export function AddDatesDialog({ seriesKey, existing, onClose }: { seriesKey: st
 }
 
 /** `PATCH …/:key` — title · kind (the human kinds only) · heads · rates; only what changed rides; no `startTime`. */
-export function EditHeaderDialog({ seriesKey, series, teachers, onClose }: { seriesKey: string; series: OtherSeries; teachers: TeacherView[]; onClose: () => void }) {
+export function EditHeaderDialog({ seriesRef, series, teachers, onClose }: { seriesRef: SeriesRef; series: OtherSeries; teachers: TeacherView[]; onClose: () => void }) {
   const t = useT();
   const update = useUpdateOtherSeries();
   const teacherIds = [series.teacherId, ...series.additionalTeacherIds];
   const [title, setTitle] = useState(series.title);
-  const [draft, setDraft] = useState<OtherScheduleDraft>(draftFromFacts({ kind: series.kind, headCount: series.headCount, teacherRates: series.teacherRates ?? {}, ratePostedAt: null }, teacherIds));
+  // REQ-104 — a GROUP's kind is fixed (DUO/Group): the kind select is hidden and `otherKind` never rides (the server's 400).
+  const isGroup = seriesRef.kind === "group";
+  const [draft, setDraft] = useState<OtherScheduleDraft>(draftFromFacts({ kind: isGroup ? null : (series.kind as OtherKind | null), headCount: series.headCount, teacherRates: series.teacherRates ?? {}, ratePostedAt: null }, teacherIds));
   const [error, setError] = useState<string | null>(null);
   const can = useCan();
   const canRate = can(COACH_RATE_KEY);
@@ -201,7 +216,7 @@ export function EditHeaderDialog({ seriesKey, series, teachers, onClose }: { ser
     const patch = withoutRates(
       {
         ...(title.trim() !== series.title ? { title: title.trim() } : {}),
-        ...(draft.kind && draft.kind !== series.kind ? { otherKind: draft.kind } : {}),
+        ...(!isGroup && draft.kind && draft.kind !== series.kind ? { otherKind: draft.kind } : {}),
         ...((draft.headCount === "" ? null : draft.headCount) !== series.headCount ? { headCount: draft.headCount === "" ? null : draft.headCount } : {}),
         ...(sameRates ? {} : { teacherRates: rates ?? {} }),
       },
@@ -212,7 +227,7 @@ export function EditHeaderDialog({ seriesKey, series, teachers, onClose }: { ser
       return;
     }
     try {
-      await update.mutateAsync({ key: seriesKey, patch });
+      await update.mutateAsync({ ref: seriesRef, patch });
       notify({ title: t("otherSeries.headerSaved"), color: "success" });
       onClose();
     } catch (e) {
@@ -228,7 +243,7 @@ export function EditHeaderDialog({ seriesKey, series, teachers, onClose }: { ser
           </Alert>
         )}
         <Textarea label={t("booking.otherTitle")} value={title} onChange={(e) => setTitle(e.currentTarget.value)} autosize minRows={1} required />
-        <OtherScheduleFields value={draft} onChange={setDraft} teacherIds={teacherIds} teachers={teachers} kindRequired />
+        <OtherScheduleFields value={draft} onChange={setDraft} teacherIds={teacherIds} teachers={teachers} kindRequired={!isGroup} hideKind={isGroup} />
         <Text size="xs" c="dimmed">
           {t("otherSeries.noTimeHint")}
         </Text>

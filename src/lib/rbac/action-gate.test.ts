@@ -62,7 +62,7 @@ describe("§1 — ONE gate, everywhere", () => {
   });
 
   it("the sweep: 86 key literals across 33 files (78 + TASK-402's camp doors: open/edit/close a week, sell ×2, redeem ×2, mark)", () => {
-    expect(sites.length).toBe(97); /* TASK-440: the voucher card's Cancel-voucher door (course-cancel) · TASK-432: the course card's coach-rate gate */ /* TASK-427: the budget doors ask both keys · TASK-429: the Manage-plan page asks its four grants */ // + TASK-407's `Report leave` door (CalendarContent) + TASK-412's parent archive/restore doors (People) + TASK-419's camp `Swap teacher` (CampBlockPanel)
+    expect(sites.length).toBe(101); /* TASK-442: the series modal's GROUP grants (course-confirm · group-series, + the two shared keys asked once per face) · TASK-440: the voucher card's Cancel-voucher door (course-cancel) · TASK-432: the course card's coach-rate gate */ /* TASK-427: the budget doors ask both keys · TASK-429: the Manage-plan page asks its four grants */ // + TASK-407's `Report leave` door (CalendarContent) + TASK-412's parent archive/restore doors (People) + TASK-419's camp `Swap teacher` (CampBlockPanel)
     expect(new Set(sites.map((s) => s.file)).size).toBe(37); /* + OtherSeriesContent · TASK-440: + VoucherPanel */
     // hidden, never disabled: no site turns the gate into a `disabled` prop
     for (const f of SITE_FILES) expect({ f, hit: /disabled=\{!can\(/.test(readFileSync(f, "utf8")) }).toEqual({ f, hit: false });

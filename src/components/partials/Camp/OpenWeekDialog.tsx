@@ -11,7 +11,10 @@ import { useTeachers } from "@/hooks/scheduler";
 import { useCampWeekDays, useCreateCampWeek, useUpdateCampWeek, useUpdateCampWeekDay } from "@/hooks/scheduler/useCamp";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { formatDateDisplay } from "@/lib/ui/format";
-import { CAMP_HOURS, CAMP_WINDOW_DEFAULT, changedDayPatches, type CampDayFacts } from "@/lib/camp/grid";
+import { CAMP_HOURS, CAMP_WINDOW_DEFAULT, changedDayPatches, dayRates, type CampDayFacts } from "@/lib/camp/grid";
+import { useCan } from "@/hooks/scheduler/useMe";
+import { COACH_RATE_KEY, withoutRates } from "@/lib/scheduler/duo";
+import { bahtToMinor } from "@/lib/scheduler/discount";
 import type { CampWeek } from "@/types/api/contract";
 
 /**
@@ -45,8 +48,16 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
   const [days, setDays] = useState<CampDayFacts[] | null>(null);
   const originals: CampDayFacts[] = (roster?.days ?? [])
     .filter((d) => d.campWeekDayId)
-    .map((d) => ({ date: d.date, campWeekDayId: d.campWeekDayId as string, teacherIds: d.teacherIds ?? [], startTime: d.startTime ?? CAMP_WINDOW_DEFAULT.start, endTime: d.endTime ?? CAMP_WINDOW_DEFAULT.end, editedAt: d.editedAt ?? null }));
+    .map((d) => ({ date: d.date, campWeekDayId: d.campWeekDayId as string, teacherIds: d.teacherIds ?? [], startTime: d.startTime ?? CAMP_WINDOW_DEFAULT.start, endTime: d.endTime ?? CAMP_WINDOW_DEFAULT.end, editedAt: d.editedAt ?? null, teacherRates: d.teacherRates }));
   const rows = days ?? originals;
+  // REQ-104 §2 item 4 (TASK-444) — the per-coach rate box: only with key 59 AND when the server sent the rates (masked ⇒ `null` ⇒ no box);
+  // `withoutRates` strips the field from every PATCH without the key (the server 403s regardless).
+  const can = useCan();
+  const canRate = can(COACH_RATE_KEY);
+  const showRates = canRate && rows.some((d) => d.teacherRates !== null && d.teacherRates !== undefined);
+  const coachName = (id: string) => teachers.find((x) => x.id === id)?.nickname ?? id;
+  const setRate = (date: string, teacherId: string, baht: number | "") =>
+    setDays(rows.map((d) => (d.date === date ? { ...d, teacherRates: { ...(d.teacherRates ?? {}), [teacherId]: baht === "" ? 0 : bahtToMinor(baht) } } : d)));
   const [error, setError] = useState<string | null>(null);
   const busy = create.isPending || update.isPending || updateDay.isPending;
   const ready = !!name.trim() && !!startDate && !!endDate;
@@ -72,7 +83,7 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
         if (Object.keys(weekBody).length) await update.mutateAsync({ id: week.id, input: weekBody });
         // Only the CHANGED days, one call each — the server syncs the grid per day and names the first clash.
         const patches = days ? changedDayPatches(originals, days) : [];
-        for (const p of patches) await updateDay.mutateAsync({ weekId: week.id, date: p.date, body: p.body });
+        for (const p of patches) await updateDay.mutateAsync({ weekId: week.id, date: p.date, body: withoutRates(p.body, canRate) });
         notify({ title: t("camp.weekSavedOk", { name: name.trim() }), color: "success" });
       } else {
         await create.mutateAsync({
@@ -145,6 +156,7 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
                     <Table.Th>{t("camp.teachers")}</Table.Th>
                     <Table.Th>{t("camp.windowStart")}</Table.Th>
                     <Table.Th>{t("camp.windowEnd")}</Table.Th>
+                    {showRates && <Table.Th>{t("camp.rateCol")}</Table.Th>}
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -167,6 +179,18 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
                       <Table.Td>
                         <Select size="xs" data={hourData} value={d.endTime.slice(0, 5)} onChange={(v) => v && setDay(d.date, { endTime: v })} allowDeselect={false} />
                       </Table.Td>
+                      {showRates && (
+                        <Table.Td data-rates={d.date}>
+                          {/* One box per coach ON the day, prefilled from the server (`0` ⇒ `0`, not blank); a masked day shows nothing. */}
+                          {dayRates(d) && (
+                            <Stack gap={2}>
+                              {d.teacherIds.map((id) => (
+                                <NumberInput key={id} size="xs" prefix={`${coachName(id)} `} value={(dayRates(d)?.[id] ?? 0) / 100} onChange={(v) => setRate(d.date, id, typeof v === "number" ? v : "")} min={0} step={50} allowDecimal={false} allowNegative={false} suffix=" ฿" data-rate-box={id} />
+                              ))}
+                            </Stack>
+                          )}
+                        </Table.Td>
+                      )}
                     </Table.Tr>
                   ))}
                 </Table.Tbody>

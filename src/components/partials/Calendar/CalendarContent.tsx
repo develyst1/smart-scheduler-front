@@ -24,6 +24,7 @@ import CampDayBanner from "./CampDayBanner";
 import ReportLeaveDialog from "./Modal/ReportLeaveDialog";
 import SeriesInRange from "./SeriesInRange";
 import OtherSeriesModal from "@/components/partials/OtherSeries/OtherSeriesModal";
+import type { SeriesRef } from "@/lib/scheduler/other-series";
 import CampBlockPanel from "./Modal/CampBlockPanel";
 import { isCampRow, mergeCampCells, type CampBlock } from "@/lib/camp/grid";
 
@@ -119,7 +120,8 @@ export default function CalendarContent() {
   const [campBlock, setCampBlock] = useState<CampBlock | null>(null);
   // REQ-101 §6 (TASK-435) — the Manage-plan MODAL: ONE instance on the calendar, opened from the OTHER block's button or a
   // `Series in range` row; a row inside it hands the booking to the SINGLE BookingModal above (`openView`) and closes.
-  const [seriesKey, setSeriesKey] = useState<string | null>(null);
+  // REQ-104 (TASK-442) — a `SeriesRef`: the OTHER face or the GROUP face of the same modal (a GROUP row's block opens it too).
+  const [seriesRef, setSeriesRef] = useState<SeriesRef | null>(null);
   const openCamp = (block: CampBlock) => setCampBlock(block);
   const openView = (booking: Booking) => {
     if (isCampRow(booking)) {
@@ -176,8 +178,8 @@ export default function CalendarContent() {
       />
       {leaveOpen && <ReportLeaveDialog opened initialDate={date} onClose={() => setLeaveOpen(false)} />}
       {/* REQ-101 (TASK-429) — the ECA/Free/KOL series touching the visible week, each linking to its Manage-plan page. Not under a linked account (outside its allowed set). */}
-      {!scoped && <SeriesInRange from={weekDays[0]} to={weekDays[6]} onOpen={setSeriesKey} />}
-      {seriesKey && <OtherSeriesModal seriesKey={seriesKey} opened onClose={() => setSeriesKey(null)} onOpenBooking={openView} />}
+      {!scoped && <SeriesInRange from={weekDays[0]} to={weekDays[6]} onOpen={setSeriesRef} />}
+      {seriesRef && <OtherSeriesModal series={seriesRef} opened onClose={() => setSeriesRef(null)} onOpenBooking={openView} />}
       {campBlock && <CampBlockPanel block={campBlock} teachers={teachers} onClose={() => setCampBlock(null)} />}
 
       {/* 🔴 SPEC-075 / REQ-076 AC-9/AC-10 (TASK-261) — the พัก tray sits BESIDE the grid, never inside it.
@@ -285,7 +287,7 @@ export default function CalendarContent() {
         onOverbook={openOverbook}
         onWalkIn={openWalkIn}
         scoped={scoped}
-        onManagePlan={setSeriesKey}
+        onManagePlan={setSeriesRef}
       />
     </div>
   );

@@ -6,8 +6,8 @@ import { Button, Loader, Paper, Title } from "@mantine/core";
 import { CheckCircle2, Clock3, XCircle } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
-import { CAMP_TOKEN_EXPIRED, checkinEndpointFor, type CheckinKind } from "@/lib/camp/units";
-import type { CampCheckinResult } from "@/types/api/contract";
+import { CAMP_TOKEN_EXPIRED, checkinEndpointFor, remainingLine, type CheckinKind } from "@/lib/camp/units";
+import type { CampCheckinResult, CheckinRemaining } from "@/types/api/contract";
 
 // Public check-in flow (C.1) — no auth. The `token` query param is the credential,
 // so we call the backend directly (bypassing the axios client that attaches a JWT
@@ -33,6 +33,8 @@ interface CheckinResult {
   already: boolean;
   booking: BookingRef | null;
   crmAwarded?: number;
+  /** REQ-104 §2 item 5a (TASK-443) — a course's sessions or a voucher's hours; `null` on a trial/single. */
+  remaining?: CheckinRemaining | null;
 }
 
 type Phase =
@@ -130,8 +132,20 @@ function SuccessView({ result }: { result: CheckinResult }) {
       {!result.already && result.crmAwarded ? (
         <p className="text-sm text-success">{t("checkin.pointsAwarded", { n: result.crmAwarded })}</p>
       ) : null}
+      <RemainingLine line={result.already ? null : remainingLine({ kind: "session", remaining: result.remaining })} />
       <p className="mt-1 text-xs text-muted-400">{t("checkin.closeHint")}</p>
     </div>
+  );
+}
+
+/** REQ-104 §2 item 5a (TASK-444) — `Remaining : 3.5/10 days` · `7/10 sessions` · `… hours`, from the response; nothing on `already` or a trial/single. */
+function RemainingLine({ line }: { line: { key: string; args: Record<string, number> } | null }) {
+  const t = useT();
+  if (!line) return null;
+  return (
+    <p className="text-sm tabular-nums" data-remaining>
+      {t("checkin.remaining")} : {t(line.key, line.args)}
+    </p>
   );
 }
 
@@ -153,6 +167,7 @@ function CampSuccessView({ result }: { result: CampCheckinResult }) {
         <BookingLine label={t("checkin.status")} value={t(`camp.status_${d.status}`)} />
       </div>
       {d.undoReason && <p className="text-xs text-muted-500">{t("checkin.undone", { reason: d.undoReason })}</p>}
+      <RemainingLine line={result.already ? null : remainingLine({ kind: "camp", credit: result.credit })} />
       <p className="mt-1 text-xs text-muted-400">{t("checkin.closeHint")}</p>
     </div>
   );

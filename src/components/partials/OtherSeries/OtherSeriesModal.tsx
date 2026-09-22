@@ -10,7 +10,7 @@ import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { useAllBookings, useTeachers } from "@/hooks/scheduler";
 import { useConfirmAllOtherSeries, useOtherSeries } from "@/hooks/scheduler/useOtherSeries";
-import { seriesDoors, statusCounts } from "@/lib/scheduler/other-series";
+import { groupSeriesDoors, kindLabelKey, pendingSeats, seatCascade, seriesDoors, statusCounts, type SeriesRef } from "@/lib/scheduler/other-series";
 import { COACH_RATE_KEY } from "@/lib/scheduler/duo";
 import { StatusChip } from "@/components/common/BookingBadges";
 import type { Booking } from "@/types/app/scheduler";
@@ -25,11 +25,18 @@ import { AddDatesDialog, CancelAllDialog, EditHeaderDialog, TeacherDialog } from
  * the OTHER block's `Manage plan` button and a `Series in range` row. A row click hands the booking to the calendar's
  * SINGLE `BookingModal` (`onOpenBooking`) and closes this one — one instance, no modal-over-modal. Every 409 is the
  * server's sentence; the data refetches only on 2xx.
+ *
+ * REQ-104 §2 (TASK-441/442) — the SAME modal on a DUO/Group series (`series.kind === "group"`, `/group-series/:key`): the
+ * group's kind chip (DUO/Group), the cap, each row with its SEATS (name · status; a cancelled seat greyed), `Confirm whole
+ * group` behind `bookings.course-confirm` (it confirms the seated COURSES), `Cancel all` behind key 58 with the cascade
+ * line (the seats cancelled, each family told — the server does it; the dialog counts the DTO and prints the server's
+ * numbers after). The primary swap sends `{ to }`; the header PATCH has no kind. Entry: a GROUP row's block, `Series in range`.
  */
-export default function OtherSeriesModal({ seriesKey, opened, onClose, onOpenBooking }: { seriesKey: string; opened: boolean; onClose: () => void; onOpenBooking: (b: Booking) => void }) {
+export default function OtherSeriesModal({ series: ref, opened, onClose, onOpenBooking }: { series: SeriesRef; opened: boolean; onClose: () => void; onOpenBooking: (b: Booking) => void }) {
   const t = useT();
   const can = useCan();
-  const { data: series, isLoading, error } = useOtherSeries(seriesKey);
+  const isGroup = ref.kind === "group";
+  const { data: series, isLoading, error } = useOtherSeries(ref);
   const { data: teachers = [] } = useTeachers();
   const confirmAll = useConfirmAllOtherSeries();
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -41,12 +48,17 @@ export default function OtherSeriesModal({ seriesKey, opened, onClose, onOpenBoo
   // series' teacher, type and date span; matched by id — never by title.
   const first = series?.rows[0]?.date;
   const last = series?.rows[series.rows.length - 1]?.date;
-  const { data: page } = useAllBookings(series && first && last ? { type: "OTHER", teacherId: series.teacherId, from: first, to: last, limit: 200 } : { limit: 1 });
+  const { data: page } = useAllBookings(series && first && last ? { type: isGroup ? "GROUP" : "OTHER", teacherId: series.teacherId, from: first, to: last, limit: 200 } : { limit: 1 });
   const byId = useMemo(() => new Map((page?.items ?? []).map((b) => [b.id, b])), [page]);
 
   // REQ-092 — every door asks `can()` at its site; the pure `seriesDoors` adds the row conditions (key 58 alone gates cancel-all).
-  const doors = seriesDoors({ status: can("action:calendar.status"), cancelAll: can("action:calendar.other-cancel-all"), edit: can("action:calendar.booking-edit"), series: can("action:calendar.other-series") }, series);
+  // REQ-104 — on a GROUP the confirm door is the COURSE key (confirm-whole-group confirms courses) and widens to a PENDING seat.
+  const doors = isGroup
+    ? groupSeriesDoors({ status: can("action:bookings.course-confirm"), cancelAll: can("action:calendar.other-cancel-all"), edit: can("action:calendar.booking-edit"), series: can("action:calendar.group-series") }, series)
+    : seriesDoors({ status: can("action:calendar.status"), cancelAll: can("action:calendar.other-cancel-all"), edit: can("action:calendar.booking-edit"), series: can("action:calendar.other-series") }, series);
   const counts = statusCounts(series?.rows ?? []);
+  const cascade = isGroup ? seatCascade(series?.rows ?? []) : undefined;
+  const kindKey = kindLabelKey(ref, series?.kind ?? null);
   const name = (id: string) => teachers.find((x) => x.id === id)?.nickname ?? id;
   // REQ-102 §8 (TASK-432) — the rates print only with key 59; the server sends `teacherRates: null` without it (never ฿0).
   const canRate = can(COACH_RATE_KEY);
@@ -54,8 +66,11 @@ export default function OtherSeriesModal({ seriesKey, opened, onClose, onOpenBoo
 
   const runConfirmAll = async () => {
     try {
-      const r = await confirmAll.mutateAsync(seriesKey);
-      notify({ title: t("otherSeries.confirmedAll", { confirmed: r.confirmed, skipped: r.skipped }), color: "success" });
+      const r = await confirmAll.mutateAsync(ref);
+      notify({
+        title: isGroup ? t("otherSeries.confirmedGroup", { confirmed: r.confirmed, courses: r.courses ?? 0, skipped: r.skipped }) : t("otherSeries.confirmedAll", { confirmed: r.confirmed, skipped: r.skipped }),
+        color: "success",
+      });
     } catch (e) {
       notify({ title: e instanceof ApiClientError ? e.message : (e as Error).message, color: "danger" });
     }
@@ -68,7 +83,7 @@ export default function OtherSeriesModal({ seriesKey, opened, onClose, onOpenBoo
       {error instanceof ApiClientError ? error.message : t("otherSeries.notFound")}
     </Alert>
   ) : (
-    <Stack gap="md" data-series={series.key}>
+    <Stack gap="md" data-series={series.key} data-series-kind={ref.kind}>
       <Card withBorder padding="lg">
         <Group justify="space-between" align="flex-start" wrap="wrap">
           <div className="min-w-0">
@@ -76,9 +91,9 @@ export default function OtherSeriesModal({ seriesKey, opened, onClose, onOpenBoo
               <Text fw={700} size="lg">
                 {series.title}
               </Text>
-              {series.kind && (
-                <Badge variant="outline" color="gray">
-                  {t(`booking.otherKind_${series.kind}`)}
+              {kindKey && (
+                <Badge variant="outline" color={isGroup ? "grape" : "gray"}>
+                  {t(kindKey)}
                 </Badge>
               )}
               {doors.editHeader && (
@@ -124,7 +139,7 @@ export default function OtherSeriesModal({ seriesKey, opened, onClose, onOpenBoo
             )}
             {doors.confirmAll && (
               <Button size="xs" color="blue" leftSection={<CheckCheck size={13} />} loading={confirmAll.isPending} onClick={() => void runConfirmAll()}>
-                {t("otherSeries.confirmAll", { n: counts.pending })}
+                {isGroup ? t("otherSeries.confirmGroup", { n: counts.pending + pendingSeats(series.rows) }) : t("otherSeries.confirmAll", { n: counts.pending })}
               </Button>
             )}
             {doors.cancelAll && (
@@ -166,15 +181,38 @@ export default function OtherSeriesModal({ seriesKey, opened, onClose, onOpenBoo
         </Stack>
       </Card>
 
-      {cancelOpen && <CancelAllDialog seriesKey={series.key} attended={counts.attended} live={counts.live} onClose={() => setCancelOpen(false)} />}
-      {teacherDlg && <TeacherDialog seriesKey={series.key} series={series} teachers={teachers} mode={teacherDlg.mode} teacherId={teacherDlg.teacherId} onClose={() => setTeacherDlg(null)} />}
-      {datesOpen && <AddDatesDialog seriesKey={series.key} existing={series.rows.map((r) => r.date)} onClose={() => setDatesOpen(false)} />}
-      {editOpen && <EditHeaderDialog seriesKey={series.key} series={series} teachers={teachers} onClose={() => setEditOpen(false)} />}
+      {/* REQ-104 — the GROUP face: each row's SEATS (the server's `rows[].seats`, every status; a cancelled one greyed). */}
+      {isGroup && (
+        <Card withBorder padding="sm" data-seats>
+          <Stack gap={6}>
+            {series.rows.map((r) => (
+              <div key={r.bookingId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" data-row-seats={r.bookingId}>
+                <span className="tabular-nums text-muted-600">{formatDateDisplay(r.date)}</span>
+                {(r.seats ?? []).length === 0 ? (
+                  <span className="text-xs text-muted-500">{t("booking.groupRosterEmpty")}</span>
+                ) : (
+                  (r.seats ?? []).map((s) => (
+                    <span key={s.bookingId} className={`inline-flex items-center gap-1 ${s.status === "CANCELLED" ? "opacity-50" : ""}`} data-seat={s.bookingId} data-seat-status={s.status}>
+                      <span>{s.displayName ?? "—"}</span>
+                      <StatusChip status={s.status as Booking["status"]} />
+                    </span>
+                  ))
+                )}
+              </div>
+            ))}
+          </Stack>
+        </Card>
+      )}
+
+      {cancelOpen && <CancelAllDialog series={ref} attended={counts.attended} live={counts.live} cascade={cascade} onClose={() => setCancelOpen(false)} />}
+      {teacherDlg && <TeacherDialog seriesRef={ref} series={series} teachers={teachers} mode={teacherDlg.mode} teacherId={teacherDlg.teacherId} onClose={() => setTeacherDlg(null)} />}
+      {datesOpen && <AddDatesDialog seriesRef={ref} existing={series.rows.map((r) => r.date)} onClose={() => setDatesOpen(false)} />}
+      {editOpen && <EditHeaderDialog seriesRef={ref} series={series} teachers={teachers} onClose={() => setEditOpen(false)} />}
     </Stack>
   );
 
   return (
-    <Modal opened={opened} onClose={onClose} size="xl" centered title={t("otherSeries.managePlan")} data-series-modal={seriesKey}>
+    <Modal opened={opened} onClose={onClose} size="xl" centered title={t("otherSeries.managePlan")} data-series-modal={ref.key}>
       {body}
     </Modal>
   );

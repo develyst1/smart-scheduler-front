@@ -16,6 +16,20 @@ export type CampHalf = (typeof CAMP_HALVES)[number];
 export const CAMP_MARKS = ["ATTENDED", "ABSENT", "CANCELLED"] as const;
 export type CampMark = (typeof CAMP_MARKS)[number];
 
+/**
+ * REQ-104 §2 item 5a (TASK-443/444) — the scan page's ONE `Remaining` line, from the response, no arithmetic: a camp scan
+ * prints `credit.remainingDays/totalDays days` (`3.5` as sent); a session scan prints `remaining.used/total` in its unit
+ * (a course's sessions, a voucher's hours) — `null` (a trial/single) ⇒ no line; an older payload without the field ⇒ no line.
+ * Nothing on `already` (the caller's rule: the line rides a fresh check-in only).
+ */
+export const remainingLine = (
+  r: { kind: "camp"; credit?: { remainingDays: number; totalDays: number } | null } | { kind: "session"; remaining?: { used: number; total: number; unit: "sessions" | "hours" } | null },
+): { key: string; args: Record<string, number> } | null => {
+  if (r.kind === "camp") return r.credit ? { key: "checkin.remainingDays", args: { remaining: r.credit.remainingDays, total: r.credit.totalDays } } : null;
+  if (!r.remaining) return null;
+  return { key: r.remaining.unit === "hours" ? "checkin.remainingHours" : "checkin.remainingSessions", args: { used: r.remaining.used, total: r.remaining.total } };
+};
+
 /** Units → whole days + whether a half is left over. `credit` is the server's number; never derived here. */
 export const creditDays = (units: number): { days: number; half: boolean } => {
   const u = Math.max(0, Math.floor(units));

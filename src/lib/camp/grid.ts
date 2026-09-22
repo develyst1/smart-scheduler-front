@@ -82,17 +82,36 @@ export interface CampDayFacts {
   startTime: string;
   endTime: string;
   editedAt: string | null;
+  /** REQ-104 §2 item 4 (TASK-443/444) — teacherId → SATANG; `null` = masked without key 59 (no box); absent = older payload. */
+  teacherRates?: Record<string, number> | null;
 }
-export type CampDayPatch = { teacherIds?: string[]; startTime?: string; endTime?: string };
+export type CampDayPatch = { teacherIds?: string[]; startTime?: string; endTime?: string; teacherRates?: Record<string, number> };
 
 const sameSet = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x) => b.includes(x));
 
-/** `PATCH /camp/weeks/:id/days/:date` — only the fields that differ from the server's day; unchanged ⇒ null (no call). */
-export const dayPatch = (original: Pick<CampDayFacts, "teacherIds" | "startTime" | "endTime">, edited: Pick<CampDayFacts, "teacherIds" | "startTime" | "endTime">): CampDayPatch | null => {
+/**
+ * The day's rates restricted to the coaches ON the day (the server's 400 for anyone else), a missing rate read as `0`
+ * (the server's default — the box shows `0`, not blank). `null` (masked) ⇒ nothing to compare.
+ */
+export const dayRates = (day: Pick<CampDayFacts, "teacherIds" | "teacherRates">): Record<string, number> | null => {
+  if (day.teacherRates === null || day.teacherRates === undefined) return null;
+  return Object.fromEntries(day.teacherIds.map((id) => [id, day.teacherRates?.[id] ?? 0]));
+};
+
+/**
+ * `PATCH /camp/weeks/:id/days/:date` — only the fields that differ from the server's day; unchanged ⇒ null (no call).
+ * `teacherRates` rides only when a rate on the edited day differs (by coach, on the day's coaches) — and never when the
+ * server masked them (`null`): the caller also strips it without key 59 (`withoutRates`), the server 403s regardless.
+ */
+export const dayPatch = (original: Pick<CampDayFacts, "teacherIds" | "startTime" | "endTime" | "teacherRates">, edited: Pick<CampDayFacts, "teacherIds" | "startTime" | "endTime" | "teacherRates">): CampDayPatch | null => {
+  const before = dayRates(original);
+  const after = dayRates(edited);
+  const ratesChanged = after !== null && JSON.stringify(after) !== JSON.stringify(before === null ? {} : Object.fromEntries(edited.teacherIds.map((id) => [id, before[id] ?? 0])));
   const body: CampDayPatch = {
     ...(sameSet(original.teacherIds, edited.teacherIds) ? {} : { teacherIds: [...edited.teacherIds] }),
     ...(hhmm(original.startTime) === hhmm(edited.startTime) ? {} : { startTime: hhmm(edited.startTime) }),
     ...(hhmm(original.endTime) === hhmm(edited.endTime) ? {} : { endTime: hhmm(edited.endTime) }),
+    ...(ratesChanged && after ? { teacherRates: after } : {}),
   };
   return Object.keys(body).length ? body : null;
 };

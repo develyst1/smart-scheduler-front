@@ -476,11 +476,13 @@ export interface CampWeekDays {
     startTime?: string;
     endTime?: string;
     editedAt?: string | null;
+    /** REQ-104 §2 item 4 (TASK-443) — teacherId → SATANG per coach on the day (`0` = no rate set); `null` = MASKED without key 59 (render nothing); absent on an older payload. */
+    teacherRates?: Record<string, number> | null;
   }>;
 }
 /** TASK-418 — `PATCH /camp/weeks/:id/days/:date` ⇒ the day as saved + what the sync did to the grid. */
 export interface CampWeekDayResult {
-  day: { date: string; campWeekDayId: string; teacherIds: string[]; startTime: string; endTime: string; editedAt: string | null };
+  day: { date: string; campWeekDayId: string; teacherIds: string[]; startTime: string; endTime: string; editedAt: string | null; teacherRates?: Record<string, number> | null };
   inserted: number;
   deleted: number;
 }
@@ -508,6 +510,14 @@ export interface CampDayCheckin {
 export interface CampCheckinResult {
   already: boolean;
   day: { dayId: string; weekId: string; date: string; half: "AM" | "PM" | "FULL"; units: number; status: "PLANNED" | "ATTENDED" | "ABSENT" | "CANCELLED"; undoReason: string | null; studentName?: string; weekName?: string };
+  /** REQ-104 §2 item 5a (TASK-443) — the remaining camp credit in DAYS (`3.5` possible); the page prints it, computes nothing. Optional: an older payload. */
+  credit?: { remainingDays: number; totalDays: number };
+}
+/** REQ-104 §2 item 5a (TASK-443) — `POST /checkin`'s remaining line: a course's sessions or a voucher's hours; `null` on a trial/single ⇒ no line. */
+export interface CheckinRemaining {
+  used: number;
+  total: number;
+  unit: "sessions" | "hours";
 }
 /** `credit` is in UNITS (a full day = 2, a half = 1): the card renders `floor(credit / 2)` days + `credit % 2` half. No expiry — there is none. */
 export interface CampPackage {
@@ -676,6 +686,15 @@ export interface OtherSeriesResponse {
   seriesKey?: string;
 }
 
+/** REQ-104 (TASK-441) — a GROUP series row's seats: every seat, any status (the modal greys a cancelled one). */
+export interface SeriesSeatDTO {
+  bookingId: string;
+  studentId: string | null;
+  displayName: string | null;
+  status: BookingStatus;
+}
+/** The series' kind: an OTHER series' ECA/Free/KOL, or a GROUP series' DUO/Group (`/group-series`). */
+export type SeriesKind = "ECA" | "FREE" | "KOL" | "DUO" | "GROUP";
 /** REQ-101 / SPEC-088 (TASK-428) — `GET /other-series/:key`: the header facts from the first live row + every row (all statuses, date order). */
 export interface OtherSeriesRowDTO {
   bookingId: string;
@@ -683,11 +702,13 @@ export interface OtherSeriesRowDTO {
   status: BookingStatus;
   teacherId: string;
   additionalTeacherIds: string[];
+  /** REQ-104 (TASK-441) — `GET /group-series/:key` only; absent on an OTHER series. */
+  seats?: SeriesSeatDTO[];
 }
 export interface OtherSeries {
   key: string;
   title: string;
-  kind: "ECA" | "FREE" | "KOL" | null;
+  kind: SeriesKind | null;
   headCount: number | null;
   startTime: string;
   teacherId: string;
@@ -700,7 +721,7 @@ export interface OtherSeries {
 export interface OtherSeriesListItem {
   key: string;
   title: string;
-  kind: "ECA" | "FREE" | "KOL" | null;
+  kind: SeriesKind | null;
   startTime: string;
   teacherId: string;
   firstDate: string;

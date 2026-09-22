@@ -163,7 +163,7 @@ describe("§4 — the week editor and the tag/legend", () => {
     expect(svc).toContain("...(input.windowStart ? { windowStart: input.windowStart } : {}),");
     expect(svc).toContain("...(input.windowStart !== undefined ? { windowStart: input.windowStart } : {}),");
     expect(editor).toContain("const patches = days ? changedDayPatches(originals, days) : [];");
-    expect(editor).toContain("for (const p of patches) await updateDay.mutateAsync({ weekId: week.id, date: p.date, body: p.body });");
+    expect(editor).toContain("for (const p of patches) await updateDay.mutateAsync({ weekId: week.id, date: p.date, body: withoutRates(p.body, canRate) });"); // TASK-444: the rates stripped without key 59
     expect(editor).toContain("if (Object.keys(weekBody).length) await update.mutateAsync({ id: week.id, input: weekBody });");
     expect(editor).toContain('disabled={!!week} required />'); // both date pickers locked on the edit face
     expect(editor.match(/disabled=\{!!week\}/g)?.length).toBe(2);

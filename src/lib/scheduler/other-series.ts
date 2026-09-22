@@ -78,3 +78,56 @@ export const fromDateDefault = (today: Date = new Date()): string => {
 
 /** The teacher bodies — `fromDate` rides only when it differs from the default (the server defaults to today too). */
 export const withFromDate = <T extends object>(body: T, fromDate: string, today = fromDateDefault()): T & { fromDate?: string } => (fromDate && fromDate !== today ? { ...body, fromDate } : body);
+
+// ──────────── REQ-104 §2 items 1–3 (TASK-441/442) — the GROUP face of the ONE series modal ────────────
+
+/** Which series the modal shows: an ECA/Free/KOL series (`/other-series/:key`) or a DUO/Group series (`/group-series/:key`). */
+export interface SeriesRef {
+  kind: "other" | "group";
+  key: string;
+}
+
+/** The API prefix per kind — the nine group routes are the OTHER routes' twins one-for-one. */
+export const seriesPath = (ref: SeriesRef, suffix = ""): string =>
+  `/${ref.kind === "group" ? "group-series" : "other-series"}/${encodeURIComponent(ref.key)}${suffix}`;
+
+/** The kind chip's copy key: the group's DUO/Group family vs the OTHER ECA/Free/KOL family. */
+export const kindLabelKey = (ref: Pick<SeriesRef, "kind">, kind: string | null): string | null =>
+  kind ? `booking.${ref.kind === "group" ? "groupKind" : "otherKind"}_${kind}` : null;
+
+/**
+ * The primary swap body — the OTHER route wants `{ from, to }` (`from` = the primary); the GROUP route `{ to }` alone
+ * (a group has ONE primary; the server delegates to the group swap so the seats follow). `fromDate` rides via `withFromDate`.
+ */
+export const swapBody = (ref: Pick<SeriesRef, "kind">, primary: string, to: string): { from?: string; to: string } =>
+  ref.kind === "group" ? { to } : { from: primary, to };
+
+export interface SeriesSeat {
+  studentId: string | null;
+  status: string;
+}
+const isLive = (status: string) => status !== "CANCELLED" && status !== "ATTENDED";
+
+/**
+ * What cancel-all on a GROUP will cascade to, COUNTED from the DTO (every seat, any status, per row): the live seats on
+ * the live rows, and how many distinct students they belong to. 🚫 No cascade logic — the server cancels the seats and
+ * tells each family; `familiesTold` is the SERVER's number (the response), never computed here (siblings share one).
+ */
+export const seatCascade = (rows: readonly (Pick<OtherSeriesRow, "status"> & { seats?: readonly SeriesSeat[] })[]) => {
+  const live = rows.filter((r) => isLive(r.status)).flatMap((r) => (r.seats ?? []).filter((s) => isLive(s.status)));
+  return { seats: live.length, students: new Set(live.map((s) => s.studentId ?? "")).size };
+};
+
+/** Confirm-whole-group acts on the PENDING group rows AND every PENDING seat on a LIVE row (its course confirmed by the server). */
+export const pendingSeats = (rows: readonly (Pick<OtherSeriesRow, "status"> & { seats?: readonly SeriesSeat[] })[]): number =>
+  rows.filter((r) => isLive(r.status)).reduce((n, r) => n + (r.seats ?? []).filter((s) => s.status === "PENDING").length, 0);
+
+/**
+ * The GROUP doors: the OTHER doors with the confirm door widened — a group with every ROW confirmed but a PENDING seat
+ * still has something to confirm. `grants.status` is `bookings.course-confirm` here (the modal picks the grant per kind:
+ * the group's confirm-all confirms COURSES, so it is the course key, not `calendar.status`). Cancel-all: key 58, a live row.
+ */
+export const groupSeriesDoors = (grants: SeriesGrants, series: { rows: readonly (OtherSeriesRow & { seats?: readonly SeriesSeat[] })[] } | null | undefined): SeriesDoors => {
+  const doors = seriesDoors(grants, series);
+  return { ...doors, confirmAll: grants.status && (doors.confirmAll || pendingSeats(series?.rows ?? []) > 0) };
+};

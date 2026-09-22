@@ -23,6 +23,7 @@ import {
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil, Users, Repeat, GraduationCap, Ticket, ListChecks } from "lucide-react";
+import type { SeriesRef } from "@/lib/scheduler/other-series";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -105,8 +106,9 @@ interface Props {
   onWalkIn: (b: Booking) => void;
   /** REQ-097 (TASK-407) — a linked account: the details + `Check in` only; every other door absent, not disabled. */
   scoped?: boolean;
-  /** REQ-101 §6 (TASK-435) — the OTHER block's `Manage plan`: opens the series MODAL on the calendar (no navigation). Absent ⇒ no button. */
-  onManagePlan?: (seriesKey: string) => void;
+  /** REQ-101 §6 (TASK-435) — the OTHER block's `Manage plan`: opens the series MODAL on the calendar (no navigation). Absent ⇒ no button.
+   *  REQ-104 (TASK-442) — a GROUP row's block too (`{ kind: "group", key: group.key }`). */
+  onManagePlan?: (series: SeriesRef) => void;
 }
 
 /** คาบที่ย้ายด้วยมือได้ (UC-003) — ไม่รวมที่มาเรียน/ลา/ยกเลิกแล้ว */
@@ -200,7 +202,7 @@ function ViewBooking({
   onWalkIn: (b: Booking) => void;
   onClose: () => void;
   scoped?: boolean;
-  onManagePlan?: (seriesKey: string) => void;
+  onManagePlan?: (series: SeriesRef) => void;
 }) {
   const t = useT();
   const confirm = useConfirmBooking();
@@ -592,6 +594,22 @@ function ViewBooking({
                 {t("booking.groupSwap")}
               </Button>
             )}
+            {/* REQ-104 §2 (TASK-442) — `Manage plan` on a GROUP row: the SAME series modal, the group face (`/group-series/:key`);
+                only with the server's key AND a host (the calendar); closes this modal first — one instance. */}
+            {booking.group.key && onManagePlan && (
+              <Button
+                size="compact-xs"
+                variant="light"
+                leftSection={<ListChecks size={12} />}
+                data-manage-plan={booking.group.key}
+                onClick={() => {
+                  onClose();
+                  onManagePlan({ kind: "group", key: booking.group?.key as string });
+                }}
+              >
+                {t("otherSeries.managePlan")}
+              </Button>
+            )}
           </Group>
         </div>
       )}
@@ -618,7 +636,7 @@ function ViewBooking({
               data-manage-plan={booking.otherSeriesKey}
               onClick={() => {
                 onClose();
-                onManagePlan(booking.otherSeriesKey as string);
+                onManagePlan({ kind: "other", key: booking.otherSeriesKey as string });
               }}
             >
               {t("otherSeries.managePlan")}
