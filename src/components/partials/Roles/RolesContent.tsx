@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { Alert, Badge, Button, Card, Group, Loader, Modal, Select, Stack, Table, Tabs, Text, TextInput, Textarea } from "@mantine/core";
+import { Alert, Badge, Button, Card, Group, Loader, Modal, MultiSelect, Stack, Table, Tabs, Text, TextInput, Textarea } from "@mantine/core";
 import { AlertTriangle, Pencil, ShieldCheck, ShieldPlus, Trash2 } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
@@ -273,21 +273,28 @@ function MatrixTab({ roles }: { roles: RoleDTO[] }) {
   const t = useT();
   const { data: users = [], isLoading } = useUsers();
   const { data: registry } = usePermissions();
-  const [roleFilter, setRoleFilter] = useState<string>("");
-  const rows = roleFilter === "" ? users : roleFilter === "none" ? users.filter((u) => !u.roleId && !u.isSuperAdmin) : users.filter((u) => u.roleId === roleFilter);
+  // Multi-select: none picked = everyone; otherwise the union of the picked roles ("none" = no role, not a super admin).
+  const [roleFilter, setRoleFilter] = useState<string[]>([]);
+  const inFilter = (u: (typeof users)[number]) =>
+    roleFilter.some((f) => (f === "none" ? !u.roleId && !u.isSuperAdmin : u.roleId === f));
+  const rows = roleFilter.length === 0 ? users : users.filter(inFilter);
   return (
     <Stack gap="sm">
       <Group justify="space-between" wrap="wrap">
         <Text size="sm" c="dimmed">
           {t("roles.matrixHint")}
         </Text>
-        <Select
+        <MultiSelect
           size="xs"
-          w={200}
+          miw={220}
+          maw={420}
           value={roleFilter}
-          onChange={(v) => setRoleFilter(v ?? "")}
-          data={[{ value: "", label: t("roles.filterAll") }, { value: "none", label: t("users.roleNone") }, ...roles.map((r) => ({ value: r.id, label: r.name }))]}
-          allowDeselect={false}
+          onChange={setRoleFilter}
+          data={[{ value: "none", label: t("users.roleNone") }, ...roles.map((r) => ({ value: r.id, label: r.name }))]}
+          placeholder={roleFilter.length === 0 ? t("roles.filterAll") : undefined}
+          clearable
+          searchable
+          hidePickedOptions
           aria-label={t("roles.filterLabel")}
         />
       </Group>

@@ -185,7 +185,8 @@ describe("§3 — the matrix", () => {
     // the tab feeds it GET /users (no new route) and filters by role
     const tab = rolesPage.slice(rolesPage.indexOf("function MatrixTab"));
     expect(tab).toContain("const { data: users = [], isLoading } = useUsers();");
-    expect(tab).toContain("users.filter((u) => u.roleId === roleFilter)");
+    expect(tab).toContain('roleFilter.some((f) => (f === "none" ? !u.roleId && !u.isSuperAdmin : u.roleId === f))');
+    expect(tab).toContain("const rows = roleFilter.length === 0 ? users : users.filter(inFilter);");
     expect(tab).toContain("<MatrixTable users={rows} registry={registry} />");
     expect(codeOf("src/services/roles.service.ts")).not.toContain("matrix");
   });
