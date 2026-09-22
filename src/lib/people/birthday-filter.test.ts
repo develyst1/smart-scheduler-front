@@ -60,7 +60,7 @@ describe("§2 — the wire and the page", () => {
     expect(list).toContain('{t("people.birthdayEmpty")}');
     expect(page).not.toMatch(/birthDate\s*(===|!==|==|!=)\s*null/); // no null test of my own
     expect(page).not.toMatch(/getMonth\(|\.month\(/); // no month arithmetic of my own
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(58) /* TASK-427 + TASK-429: budget-view, other-cancel-all */; // no key
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(59) /* TASK-427 + TASK-429 + TASK-432: budget-view, other-cancel-all, coach-rate */; // no key
   });
   it("set ⇒ the student list INSTEAD of the families (the skeleton/families branch is the else); cleared ⇒ the families", () => {
     expect(page).toContain("{birthdayParams !== null ? (");

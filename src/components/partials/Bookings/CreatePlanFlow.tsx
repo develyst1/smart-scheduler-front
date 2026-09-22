@@ -20,7 +20,7 @@ import { formatPriceMinor } from "@/types/app/pricing";
 import { ApiClientError, errorProblems } from "@/lib/api/client";
 import DiscountSection from "@/components/common/DiscountSection";
 import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
-import { duoBody, duoReady, emptyDuo, priceGroupFor, type DuoDraft } from "@/lib/scheduler/duo";
+import { COACH_RATE_KEY, duoBody, duoReady, emptyDuo, priceGroupFor, subjectsFor, type DuoDraft } from "@/lib/scheduler/duo";
 import { Checkbox, SegmentedControl } from "@mantine/core";
 import RentalTierPicker, { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
 import { useT } from "@/lib/i18n";
@@ -60,6 +60,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   // REQ-095 §13 (TASK-421) — Private / DUO: ONE course, two kids. DUO ⇒ a second child (must differ — the server's
   // DUO_SAME_CHILD, hinted here) + the teaching rate; the card is the DUO card (`balance-duo`), never a group.
   const [duo, setDuo] = useState<DuoDraft>(emptyDuo());
+  // REQ-102 §8 (TASK-432) — the DUO rate FIELD only with key 59; the door stays; the body carries no `classRateMinor` without it.
+  const canRate = can(COACH_RATE_KEY);
   const [coStudent, setCoStudent] = useState<StudentSelectValue | null>(null);
   const [teacherId, setTeacherId] = useState("");
   const [subjectId, setSubjectId] = useState("");
@@ -93,7 +95,9 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   const [discountProblems, setDiscountProblems] = useState<string[]>([]);
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
-  const subjectOptions = selectedTeacher?.subjectOptions ?? [];
+  // REQ-095 §13.4a (TASK-438) — the Program list follows the toggle: DUO ⇒ DUO subjects only; Private ⇒ the rest
+  // (the server's `kind`; no name rule). Inside a group the toggle is absent ⇒ the Private list.
+  const subjectOptions = subjectsFor(selectedTeacher?.subjectOptions ?? [], !group && duo.on);
   const bookableTeachers = teachers.filter((tc) => bookableOnDate(tc, startDate));
 
   // TASK-400 — inside a group the card is the GROUP's (`priceGroup` from the server), not the program's: the sizes
@@ -149,12 +153,16 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
     if (subjectOptions.length === 1) setSubjectId(subjectOptions[0].id);
     else setSubjectId("");
   }, [teacherId, subjectOptions.length]);
+  // TASK-438 — toggling DUO on/off: a selection no longer in the list is cleared (the list changed under it).
+  useEffect(() => {
+    if (subjectId && !subjectOptions.some((s) => s.id === subjectId)) setSubjectId("");
+  }, [duo.on, subjectId, subjectOptions]);
 
   // REQ-063 — "refuse, never clamp": an invalid discount blocks the flow rather than being capped at the price.
   const discountEval = evaluateDiscount(discount, chosen?.priceMinor ?? 0);
   const valid =
     student?.name.trim() &&
-    duoReady(duo, student?.id) &&
+    duoReady(duo, student?.id, canRate) &&
     teacherId &&
     subjectId &&
     !!chosen &&
@@ -291,7 +299,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       // TASK-398 — into a group: the key rides only when selling into one.
       groupKey: group?.groupKey,
       // TASK-421 — the DUO block ONLY when the toggle is on (both fields; the rate in satang); never beside a groupKey.
-      duo: group ? undefined : duoBody(duo),
+      duo: group ? undefined : duoBody(duo, canRate),
       // SPEC-045 (REQ-054) — the program is a COURSE-level fact, sent once as `subjectId` above. Per-row
       // `subjectId` is deliberately NOT sent: it was the door through which a brand-new course could be born
       // mixed-program (and its derived program then became whatever `bookings[0]` happened to be). The BE falls
@@ -402,6 +410,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
                 {t("course.duoSameChild")}
               </Alert>
             )}
+            {canRate && (
             <NumberInput
               label={t("course.classRate")}
               description={t("course.classRateHint")}
@@ -415,6 +424,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
               className="max-w-xs"
               required
             />
+            )}
           </>
         )}
 

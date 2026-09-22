@@ -577,7 +577,7 @@ export default function PlanModal({
           sessions gone) via the mutation's invalidation, and we close this modal behind it. */}
       <EndCourseDialog
         opened={endOpen}
-        courseId={isCourse && !isCreate ? (plan?.id ?? null) : null}
+        target={isCourse && !isCreate && plan ? { kind: "course", id: plan.id } : null}
         onClose={() => setEndOpen(false)}
         onEnded={onClose}
       />

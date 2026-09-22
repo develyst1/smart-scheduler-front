@@ -9,6 +9,8 @@ export type TeacherType = "FULL_TIME" | "PART_TIME" | "FREELANCE";
 export interface SubjectOption {
   id: string;
   name: string;
+  /** REQ-095 §13.4a (TASK-437) — the server's kind; absent on an older payload ⇒ PRIVATE. */
+  kind?: "PRIVATE" | "DUO";
 }
 
 export interface Teacher {
@@ -458,6 +460,8 @@ export interface EndCoursePreview {
   sessions: { date: string; time: string; teacher: string | null }[];
   student: { id: string; name: string; nickname: string | null } | null;
   program: string | null;
+  /** REQ-103 (TASK-439) — `POST /vouchers/:id/cancel/preview` only: the balance the end FREEZES (kept for the customer). */
+  remaining?: number;
 }
 
 /**

@@ -10,7 +10,8 @@ import { useCreateGroupSeries, useTeachers } from "@/hooks/scheduler";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { teacherRatesMinor, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import { DUO_CAP, GROUP_CAP_MAX, GROUP_CAP_MIN, seatCapFor, type GroupKind } from "@/lib/scheduler/group-session";
-import { CREATABLE_GROUP_KINDS } from "@/lib/scheduler/duo";
+import { COACH_RATE_KEY, CREATABLE_GROUP_KINDS, withoutRates } from "@/lib/scheduler/duo";
+import { useCan } from "@/hooks/scheduler/useMe";
 import { TIME_SLOTS } from "@/types/app/scheduler";
 import OtherScheduleFields from "./OtherScheduleFields";
 import MultiDateField from "./MultiDateField";
@@ -43,6 +44,9 @@ export default function GroupSeriesDialog({
   const [schedule, setSchedule] = useState<OtherScheduleDraft>(seed.schedule);
   const [dates, setDates] = useState<string[]>(seed.date ? [seed.date] : []);
   const [error, setError] = useState<string | null>(null);
+  // REQ-102 §8 (TASK-432) — without key 59 the rate inputs are absent and `teacherRates` never rides.
+  const can = useCan();
+  const canRate = can(COACH_RATE_KEY);
 
   const seatCap = seatCapFor(kind, capTyped);
   const [primary, ...additional] = teacherIds;
@@ -52,7 +56,7 @@ export default function GroupSeriesDialog({
     if (!ready || typeof seatCap !== "number") return;
     setError(null);
     try {
-      const res = await create.mutateAsync({
+      const res = await create.mutateAsync(withoutRates({
         name: name.trim(),
         groupKind: kind,
         seatCap,
@@ -61,7 +65,7 @@ export default function GroupSeriesDialog({
         teacherRates: teacherRatesMinor(schedule.ratesBaht, teacherIds),
         startTime,
         dates,
-      });
+      }, canRate));
       notify({ title: t("booking.groupSeriesCreatedOk", { n: String(res.created) }), color: "success" });
       onClose();
     } catch (e) {

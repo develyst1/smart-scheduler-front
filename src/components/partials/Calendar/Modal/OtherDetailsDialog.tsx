@@ -8,6 +8,8 @@ import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { useUpdateBookingOther } from "@/hooks/scheduler";
 import { draftFromFacts, otherSchedulePatch, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
+import { COACH_RATE_KEY, withoutRates } from "@/lib/scheduler/duo";
+import { useCan } from "@/hooks/scheduler/useMe";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import OtherScheduleFields from "./OtherScheduleFields";
 
@@ -26,7 +28,10 @@ export default function OtherDetailsDialog({ booking, teachers, opened, onClose 
   const facts = isGroup && booking.group ? { kind: null, headCount: booking.group.seatCap, teacherRates: booking.group.teacherRates, ratePostedAt: booking.group.ratePostedAt } : booking.other;
   const [draft, setDraft] = useState<OtherScheduleDraft>(() => draftFromFacts(facts, teacherIds));
   const [error, setError] = useState<string | null>(null);
-  const patch = otherSchedulePatch(facts, draft, teacherIds);
+  // REQ-102 §8 (TASK-432) — without key 59 the rate inputs are absent and `teacherRates` never rides (the server's 403 otherwise).
+  const can = useCan();
+  const canRate = can(COACH_RATE_KEY);
+  const patch = withoutRates(otherSchedulePatch(facts, draft, teacherIds), canRate);
   const dirty = Object.keys(patch).length > 0;
 
   const submit = async () => {

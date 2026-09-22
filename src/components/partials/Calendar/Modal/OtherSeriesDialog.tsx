@@ -10,7 +10,8 @@ import { useCreateOtherSeries, useTeachers } from "@/hooks/scheduler";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { OTHER_KINDS, teacherRatesMinor, type OtherKind, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import { TIME_SLOTS } from "@/types/app/scheduler";
-import { seriesHref } from "@/lib/scheduler/other-series";
+import { COACH_RATE_KEY, withoutRates } from "@/lib/scheduler/duo";
+import { useCan } from "@/hooks/scheduler/useMe";
 import OtherScheduleFields from "./OtherScheduleFields";
 import MultiDateField from "./MultiDateField";
 
@@ -41,6 +42,9 @@ export default function OtherSeriesDialog({
   const [schedule, setSchedule] = useState<OtherScheduleDraft>(seed.schedule);
   const [dates, setDates] = useState<string[]>(seed.date ? [seed.date] : []);
   const [error, setError] = useState<string | null>(null);
+  // REQ-102 §8 (TASK-432) — without key 59 the rate inputs are absent and `teacherRates` never rides.
+  const can = useCan();
+  const canRate = can(COACH_RATE_KEY);
 
   const [primary, ...additional] = teacherIds;
   const ready = !!title.trim() && !!schedule.kind && typeof schedule.headCount === "number" && !!primary && !!startTime && dates.length > 0;
@@ -49,7 +53,7 @@ export default function OtherSeriesDialog({
     if (!ready || !schedule.kind || typeof schedule.headCount !== "number") return;
     setError(null);
     try {
-      const res = await create.mutateAsync({
+      const res = await create.mutateAsync(withoutRates({
         title: title.trim(),
         otherKind: schedule.kind,
         headCount: schedule.headCount,
@@ -59,10 +63,10 @@ export default function OtherSeriesDialog({
         teacherRates: teacherRatesMinor(schedule.ratesBaht, teacherIds),
         startTime,
         dates: [...dates].sort(),
-      });
-      // TASK-429 — the toast offers the Manage-plan page from the server's `seriesKey` (absent on an older payload ⇒ no link).
-      const href = seriesHref(res.seriesKey);
-      notify({ title: t("booking.otherSeriesCreatedOk", { n: String(res.created) }), color: "success", ...(href ? { link: { href, label: t("otherSeries.managePlan") } } : {}) });
+      }, canRate));
+      // TASK-435 — the Manage plan is a MODAL on the calendar now: the new series shows in `Series in range` and on its
+      // rows' OTHER block; the toast's page link is dropped (there is no page).
+      notify({ title: t("booking.otherSeriesCreatedOk", { n: String(res.created) }), color: "success" });
       onClose();
     } catch (e) {
       // `SLOT_TAKEN` names the date; the ticks stay so the admin un-ticks it and retries.

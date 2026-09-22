@@ -2,6 +2,8 @@
 
 import { NumberInput, Select, Stack, Text } from "@mantine/core";
 import { useT } from "@/lib/i18n";
+import { useCan } from "@/hooks/scheduler/useMe";
+import { COACH_RATE_KEY } from "@/lib/scheduler/duo";
 import { OTHER_KINDS, type OtherKind, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import type { TeacherView } from "@/types/app/scheduler";
 
@@ -31,6 +33,8 @@ export default function OtherScheduleFields({
   hideKind?: boolean;
 }) {
   const t = useT();
+  const can = useCan();
+  const canRate = can(COACH_RATE_KEY);
   const nameOf = (id: string) => {
     const tc = teachers.find((x) => x.id === id);
     return tc ? tc.nickname || tc.name : id;
@@ -60,7 +64,9 @@ export default function OtherScheduleFields({
         className="max-w-xs"
       />
       )}
-      {teacherIds.length > 0 && (
+      {/* REQ-102 §8 (TASK-432) — the per-teacher rates render ONLY with key 59 (absent, not dashed); without it the
+          draft never holds a rate, so no body carries `teacherRates`. */}
+      {teacherIds.length > 0 && canRate && (
         <div>
           <Text size="sm" fw={500}>
             {t("booking.otherRate")}

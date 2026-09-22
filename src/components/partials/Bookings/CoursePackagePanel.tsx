@@ -71,6 +71,8 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   const can = useCan();
   const canExpiry = can("action:bookings.course-expiry");
   const canEdit = can("action:bookings.course-edit");
+  // REQ-102 §6 (TASK-432) — the default-rate line renders ONLY with key 59 (absent, not dashed); the server nulls it otherwise.
+  const canRate = can("action:bookings.coach-rate");
   const canRemoveRental = can("action:bookings.course-rental");
 
   // คอร์ส + ทิศทาง (unlock/relock) ที่รอการยืนยันใน modal
@@ -197,7 +199,8 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                     )}
                   </p>
                   {/* TASK-424 — the DEFAULT coach rate, ANY course (the session popup owns the per-session override). */}
-                  <DuoRateLine
+                  {canRate && (
+                    <DuoRateLine
                       rateMinor={c.classRateMinor ?? null}
                       editable={canEdit}
                       saving={updateRate.isPending && updateRate.variables?.courseId === c.id}
@@ -206,6 +209,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                         notify({ title: t("course.rateSavedOk"), color: "success" });
                       }}
                     />
+                  )}
                   <p className="text-xs text-muted-400">
                     {t("course.sizeLine", { size: c.size })} ·{" "}
                     {/* 🔴 SPEC-076 / REQ-082 AC-1 (TASK-265) — editable on ANY course, and deliberately NOT

@@ -39,13 +39,32 @@ export interface DuoDraft {
 }
 export const emptyDuo = (): DuoDraft => ({ on: false, coStudentId: null, rateBaht: "" });
 
-/** The create body's `duo` block — ONLY when the toggle is on: both fields, the rate in satang via the ONE `bahtToMinor`. */
-export const duoBody = (d: DuoDraft): { coStudentId: string; classRateMinor: number } | undefined =>
-  d.on && d.coStudentId && d.rateBaht !== "" ? { coStudentId: d.coStudentId, classRateMinor: bahtToMinor(d.rateBaht) } : undefined;
+/**
+ * The create body's `duo` block — ONLY when the toggle is on: the second child, and the rate (satang via the ONE
+ * `bahtToMinor`) ONLY with key 59 (REQ-102 §8, TASK-432: without it the field is absent and the body carries no
+ * `classRateMinor` — the rate is optional at create; a key holder sets the default on the card later).
+ */
+export const duoBody = (d: DuoDraft, canRate = true): { coStudentId: string; classRateMinor?: number } | undefined =>
+  !d.on || !d.coStudentId ? undefined : canRate && d.rateBaht !== "" ? { coStudentId: d.coStudentId, classRateMinor: bahtToMinor(d.rateBaht) } : { coStudentId: d.coStudentId };
 
-/** Is the DUO half of the form complete? (a second child that is not the first, a rate typed) — the server still judges. */
-export const duoReady = (d: DuoDraft, primaryId: string | null | undefined): boolean =>
-  !d.on || (!!d.coStudentId && d.coStudentId !== (primaryId ?? null) && d.rateBaht !== "");
+/** Is the DUO half of the form complete? (a second child that is not the first; the rate typed ONLY when key 59 shows the field) — the server still judges. */
+export const duoReady = (d: DuoDraft, primaryId: string | null | undefined, canRate = true): boolean =>
+  !d.on || (!!d.coStudentId && d.coStudentId !== (primaryId ?? null) && (!canRate || d.rateBaht !== ""));
+
+/**
+ * REQ-102 §6/§8 (TASK-431/434/432) — key 59 `action:bookings.coach-rate` gates EVERY rate on the FE: without it the
+ * server nulls `rate` / `classRateMinor` / `teacherRates` (read null as "no key", never as ฿0) and refuses any body
+ * carrying `classRateMinor` / `teacherRates` / `rateMinor` with 403. This strips those three from a body when the key
+ * is absent — ONE guard at every body site, pinned. Independent of 57 (`teachers.budget-view`, the `—` rule).
+ */
+export const COACH_RATE_KEY = "action:bookings.coach-rate" as const;
+const RATE_FIELDS = ["classRateMinor", "teacherRates", "rateMinor"] as const;
+export const withoutRates = <T extends object>(body: T, canRate: boolean): T => {
+  if (canRate) return body;
+  const out = { ...body } as Record<string, unknown>;
+  for (const k of RATE_FIELDS) delete out[k];
+  return out as T;
+};
 
 /** `classRateMinor` for the COURSE default body — only when the typed baht differs from the course's satang; else nothing (never null: the default is set, not cleared). */
 export const rateChange = (typedBaht: number | "", currentMinor: number | null | undefined): { classRateMinor: number } | undefined =>
@@ -73,6 +92,14 @@ export const sessionRateChange = (typedBaht: number | "", rate: SessionRate | nu
   const minor = bahtToMinor(typedBaht);
   return minor === rate.effectiveMinor ? undefined : { classRateMinor: minor };
 };
+
+/**
+ * REQ-095 §13.4a (TASK-437/438) — a subject carries `kind: PRIVATE | DUO` (the server's; no name rule anywhere). The
+ * DUO create's Program dropdown lists DUO subjects ONLY; every other COURSE picker hides them; a subject without
+ * `kind` (an older payload) counts as PRIVATE. Single-session / trial pickers are untouched (not course pickers).
+ */
+export const subjectsFor = <S extends { kind?: "PRIVATE" | "DUO" | null }>(subjects: readonly S[], duoOn: boolean): S[] =>
+  subjects.filter((s) => (s.kind === "DUO") === duoOn);
 
 /** The kinds `Create group` offers (TASK-421: Group only — a DUO is a course now); existing DUO series still render. */
 export const CREATABLE_GROUP_KINDS = ["GROUP"] as const;

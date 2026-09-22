@@ -66,6 +66,8 @@ import {
   setAttendeeNote,
   previewEndCourse,
   endCourse,
+  previewEndVoucher,
+  endVoucher,
   dropCourse,
   resumeCourse,
   updateCourseExpiry,
@@ -304,6 +306,20 @@ export const useEndCourse = () => {
   return useMutation({
     mutationFn: ({ courseId, reason, note }: { courseId: string; reason: EndCourseReason; note?: string }) =>
       endCourse(courseId, { reason, note }),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/** REQ-103 (TASK-440) — the whole-voucher cancel: the server's own account of what it will remove + the frozen balance. */
+export const usePreviewEndVoucher = () =>
+  useMutation({ mutationFn: (voucherId: string) => previewEndVoucher(voucherId) });
+
+/** REQ-103 — commit it. Invalidates everything: the voucher list, the calendar and the draws all change. */
+export const useEndVoucher = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ voucherId, reason, note }: { voucherId: string; reason: EndCourseReason; note?: string }) =>
+      endVoucher(voucherId, { reason, note }),
     onSuccess: () => invalidateAll(qc),
   });
 };

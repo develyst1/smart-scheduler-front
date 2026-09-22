@@ -6,14 +6,14 @@ import { ChevronDown, ChevronRight, ListChecks } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { useOtherSeriesList } from "@/hooks/scheduler/useOtherSeries";
-import { seriesHref } from "@/lib/scheduler/other-series";
 
 /**
- * REQ-101 (TASK-429) — "Series in range": the ECA/Free/KOL series touching the visible week (`GET /other-series?from&to`,
- * fetched only while open), one line per key (title · kind · dates · live/total) linking to its Manage-plan page.
- * Sits where the Other create lives — under the calendar header. Nothing here on GROUP/CAMP.
+ * REQ-101 (TASK-429 → §6, TASK-435) — "Series in range": the ECA/Free/KOL series touching the visible week
+ * (`GET /other-series?from&to`, fetched only while open), one row per key (title · kind · dates · live/total); a row is a
+ * BUTTON opening the Manage-plan MODAL (`onOpen(key)`) — no navigation. Sits where the Other create lives — under the
+ * calendar header. Nothing here on GROUP/CAMP.
  */
-export default function SeriesInRange({ from, to }: { from: string; to: string }) {
+export default function SeriesInRange({ from, to, onOpen }: { from: string; to: string; onOpen: (key: string) => void }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const { data: items = [], isLoading } = useOtherSeriesList(from, to, open);
@@ -34,7 +34,7 @@ export default function SeriesInRange({ from, to }: { from: string; to: string }
             </Text>
           ) : (
             items.map((s) => (
-              <a key={s.key} href={seriesHref(s.key) as string} className="flex flex-wrap items-center gap-2 text-xs underline-offset-2 hover:underline" data-series-line={s.key}>
+              <button key={s.key} type="button" onClick={() => onOpen(s.key)} className="flex flex-wrap items-center gap-2 text-left text-xs underline-offset-2 hover:underline" data-series-line={s.key}>
                 <ListChecks size={12} className="shrink-0 text-muted-500" />
                 <span className="font-medium">{s.title}</span>
                 {s.kind && (
@@ -45,7 +45,7 @@ export default function SeriesInRange({ from, to }: { from: string; to: string }
                 <span className="text-muted-500">
                   {formatDateDisplay(s.firstDate)} → {formatDateDisplay(s.lastDate)} · {formatTimeDisplay(s.startTime)} · {s.liveCount}/{s.total}
                 </span>
-              </a>
+              </button>
             ))
           )}
         </div>

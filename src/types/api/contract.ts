@@ -86,6 +86,8 @@ export interface CrmLevelDTO {
 export interface SubjectRef {
   id: string;
   name: string;
+  /** REQ-095 §13.4a (TASK-437) — `PRIVATE | DUO` on `teachers[].subjects` and `sellable-packages.subjects`; absent elsewhere / older. */
+  kind?: "PRIVATE" | "DUO";
 }
 
 export interface TeacherDTO {
@@ -589,13 +591,20 @@ export interface CreateCoursePackageResponse {
   bookings: BookingDTO[];
 }
 
+/** REQ-103 (TASK-439) — the server's ONE derivation (ENDED > EXPIRED > EXHAUSTED > ACTIVE); the FE renders it, never computes it. */
+export type VoucherStatus = "ACTIVE" | "EXHAUSTED" | "EXPIRED" | "ENDED";
 export interface VoucherSummary {
   id: string;
   totalHours: number;
   usedHours: number;
+  /** Frozen (still readable) on an ENDED voucher — the card reads `ENDED · Nh left`. */
   remaining: number;
   expiryDate: IsoDate;
   student: StudentRef;
+  /** REQ-103 (TASK-439) — optional: an older payload. */
+  status?: VoucherStatus;
+  endedAt?: string | null;
+  endReason?: string | null;
 }
 export type VouchersResponse = Paged<VoucherSummary>;
 export interface CreateVoucherRequest {

@@ -3,9 +3,13 @@
 import { useEffect, useState } from "react";
 import { Button, Card, Table, Progress, Text, Badge, Group, Skeleton, Stack, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { Ticket, Search, GraduationCap } from "lucide-react";
+import { Ticket, Search, GraduationCap, Ban } from "lucide-react";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import { useVouchers } from "@/hooks/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
+import { voucherChip, voucherDoors } from "@/lib/scheduler/voucher";
+import EndCourseDialog from "./EndCourseDialog";
+import type { VoucherSummary } from "@/types/api/contract";
 import { formatDateDisplay } from "@/lib/ui/format";
 import PagerBar from "@/components/common/PagerBar";
 import { useT } from "@/lib/i18n";
@@ -15,17 +19,15 @@ import StickyScrollArea from "@/components/common/StickyScrollArea";
 
 const PAGE_SIZE = 20;
 
-function RemainingBadge({ remaining }: { remaining: number }) {
+/** REQ-103 (TASK-440) — the chip reads the server's `status` (ENDED ⇒ `Ended · Nh left`, red like the course's
+ *  CANCELLED); an older payload without `status` keeps the old `remaining === 0` rule — see `voucherChip`. */
+function StatusChip({ v }: { v: VoucherSummary }) {
   const t = useT();
-  if (remaining === 0)
-    return (
-      <Badge color={MANTINE_COLOR.danger} variant="light" radius="sm">
-        {t("voucher.used")}
-      </Badge>
-    );
+  const chip = voucherChip(v);
+  const color = chip.tone === "success" ? MANTINE_COLOR.success : chip.tone === "danger" ? MANTINE_COLOR.danger : "gray";
   return (
-    <Badge color={MANTINE_COLOR.success} variant="light" radius="sm">
-      {t("voucher.usable")}
+    <Badge color={color} variant="light" radius="sm" leftSection={v.status === "ENDED" ? <Ban size={12} /> : undefined}>
+      {t(chip.key, chip.args)}
     </Badge>
   );
 }
@@ -36,6 +38,10 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
   const [debounced] = useDebouncedValue(search, 300);
   const [page, setPage] = useState(1);
   useEffect(() => setPage(1), [debounced]);
+  // REQ-103 (TASK-440) — the whole-voucher cancel: the course's key (owner ruling B1), hidden never disabled.
+  const can = useCan();
+  const canCancel = can("action:bookings.course-cancel");
+  const [endId, setEndId] = useState<string | null>(null);
   // `useVouchers` sets `keepPreviousData`, so `isLoading` is true on the first load ONLY — a search or a page
   // change after that left the previous rows on screen with nothing saying they were being replaced.
   const { data, isLoading, isPlaceholderData } = useVouchers({
@@ -74,7 +80,7 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
         <Card padding={0}>
           {/* TASK-099 DEF-1: the added Manage column pushes past the card at 375 → scroll, don't clip
               (else the only phone-width entry to the plan modal is off-surface). */}
-          <StickyScrollArea minWidth={640}>
+          <StickyScrollArea minWidth={760}>
           <Table verticalSpacing="sm" horizontalSpacing="md" highlightOnHover className="whitespace-nowrap tabular-nums">
             <Table.Thead>
               <Table.Tr>
@@ -130,9 +136,10 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
                     </Table.Td>
                     <Table.Td>{formatDateDisplay(v.expiryDate)}</Table.Td>
                     <Table.Td>
-                      <RemainingBadge remaining={v.remaining} />
+                      <StatusChip v={v} />
                     </Table.Td>
                     <Table.Td data-pin="action">
+                      <Group gap="xs" wrap="nowrap">
                       <Button
                         size="xs"
                         variant="filled"
@@ -144,6 +151,20 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
                       >
                         {t("plan.manage")}
                       </Button>
+                      {/* REQ-103 — the door: the key AND not ENDED (`voucherDoors`); an ENDED voucher stays listed (history). */}
+                      {voucherDoors({ cancel: canCancel }, v).cancel && (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          color="red"
+                          leftSection={<Ban size={14} />}
+                          onClick={() => setEndId(v.id)}
+                          className="min-h-[44px] sm:min-h-0"
+                        >
+                          {t("voucher.cancel")}
+                        </Button>
+                      )}
+                      </Group>
                     </Table.Td>
                     </Table.Tr>
                   );
@@ -155,6 +176,14 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
       )}
 
       <PagerBar total={total} page={page} limit={PAGE_SIZE} onPage={setPage} />
+
+      {/* REQ-103 — the course-cancel dialog, on the voucher: the same component, the voucher pair. On success the
+          list re-reads (the mutation invalidates the vouchers) and the row reads `Ended · Nh left`. */}
+      <EndCourseDialog
+        opened={endId !== null}
+        target={endId ? { kind: "voucher", id: endId } : null}
+        onClose={() => setEndId(null)}
+      />
     </Stack>
   );
 }

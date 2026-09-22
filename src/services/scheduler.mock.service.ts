@@ -26,7 +26,7 @@ import type {
   TeacherType,
   TeacherView,
 } from "@/types/app/scheduler";
-import type { BulkConfirmResult, CatalogItem, CourseListItem, PostedSale } from "@/types/api/contract";
+import type { BulkConfirmResult, CatalogItem, CourseListItem, PostedSale, VoucherSummary } from "@/types/api/contract";
 import { ApiClientError } from "@/lib/api/client";
 
 const delay = <T>(value: T, ms = 200) =>
@@ -629,10 +629,10 @@ export const createCoursePackage = (input: {
   });
 };
 
-const MOCK_VOUCHERS = [
-  { id: "v1", totalHours: 10, usedHours: 4, remaining: 6, expiryDate: "2026-12-15", student: { id: "s1", name: "น้องมิ้น", nickname: "มิ้น" } },
-  { id: "v2", totalHours: 5, usedHours: 5, remaining: 0, expiryDate: "2026-09-01", student: { id: "s2", name: "น้องเอิร์ธ", nickname: "เอิร์ธ" } },
-  { id: "v3", totalHours: 15, usedHours: 2, remaining: 13, expiryDate: "2027-03-30", student: { id: "s3", name: "น้องพลอย", nickname: "พลอย" } },
+const MOCK_VOUCHERS: VoucherSummary[] = [
+  { id: "v1", totalHours: 10, usedHours: 4, remaining: 6, expiryDate: "2026-12-15", status: "ACTIVE", student: { id: "s1", name: "น้องมิ้น", nickname: "มิ้น" } },
+  { id: "v2", totalHours: 5, usedHours: 5, remaining: 0, expiryDate: "2026-09-01", status: "EXHAUSTED", student: { id: "s2", name: "น้องเอิร์ธ", nickname: "เอิร์ธ" } },
+  { id: "v3", totalHours: 15, usedHours: 2, remaining: 13, expiryDate: "2027-03-30", status: "ACTIVE", student: { id: "s3", name: "น้องพลอย", nickname: "พลอย" } },
 ];
 
 export const getVouchers = (
@@ -981,6 +981,32 @@ export const previewEndCourse = (courseId: string) =>
 
 export const endCourse = (courseId: string, input: { reason: string; note?: string }) =>
   delay({ id: courseId, ended: true, reason: input.reason });
+
+/** REQ-103 — offline stand-ins for the whole-voucher cancel; the end stamps the fixture so the card re-reads ENDED. */
+export const previewEndVoucher = (voucherId: string) => {
+  const v = MOCK_VOUCHERS.find((x) => x.id === voucherId);
+  return delay({
+    alreadyEnded: v?.status === "ENDED",
+    removedSessions: 2,
+    sessions: [
+      { date: "2026-10-03", time: "14:00", teacher: "บีม" },
+      { date: "2026-10-10", time: "14:00", teacher: "บีม" },
+    ],
+    student: v ? { id: v.student.id, name: v.student.name, nickname: v.student.nickname } : null,
+    program: null,
+    remaining: v?.remaining ?? 0,
+  });
+};
+
+export const endVoucher = (voucherId: string, input: { reason: string; note?: string }) => {
+  const v = MOCK_VOUCHERS.find((x) => x.id === voucherId);
+  if (v) {
+    v.status = "ENDED";
+    v.endedAt = new Date().toISOString();
+    v.endReason = input.reason;
+  }
+  return delay({ cancelled: true, removedSessions: 2, voucher: v ? clone(v) : null });
+};
 
 /** TASK-199 — offline stand-ins so the drop/resume dialogs are exercisable without a server. */
 export const dropCourse = (courseId: string, input: { reason?: string }) => {

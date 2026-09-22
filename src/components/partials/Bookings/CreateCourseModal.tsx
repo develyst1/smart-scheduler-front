@@ -20,6 +20,7 @@ import { formatTimeDisplay } from "@/lib/ui/format";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
+import { subjectsFor } from "@/lib/scheduler/duo";
 import { useCreateCoursePackage, useTeachers, useSellablePackages } from "@/hooks/scheduler";
 import { courseSizesFor, isUnpriced, packageFor } from "@/lib/scheduler/sellable";
 import { formatPriceMinor } from "@/types/app/pricing";
@@ -57,7 +58,8 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
-  const subjectOptions = selectedTeacher?.subjectOptions ?? [];
+  // REQ-095 §13.4a (TASK-438) — a COURSE picker: DUO subjects hidden.
+  const subjectOptions = subjectsFor(selectedTeacher?.subjectOptions ?? [], false);
   const bookableTeachers = teachers.filter((tc) => bookableOnDate(tc, startDate));
 
   // TASK-078 — what this program actually sells, and at what price. Both come from the API; the FE keeps no

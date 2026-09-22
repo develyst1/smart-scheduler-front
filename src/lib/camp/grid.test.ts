@@ -144,7 +144,7 @@ describe("§3 — the grids, the panel, the modal that never opens", () => {
     expect(panel).toContain("setError(e instanceof ApiClientError ? e.message : (e as Error).message);");
     expect(panel).toContain('href="/scheduler/camp"');
     expect(svc).toContain("api.patch<CampWeekDayResult>(`/camp/weeks/${weekId}/days/${date}`, body)");
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(58) /* TASK-427 + TASK-429: budget-view, other-cancel-all */; // no key
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(59) /* TASK-427 + TASK-429 + TASK-432: budget-view, other-cancel-all, coach-rate */; // no key
   });
   it("rendered: the block cell reads the week's name, the CAMP tag, the span and the hours", () => {
     const [block] = mergeCampCells([0, 1, 2, 3, 4].map((i) => hour(i)));

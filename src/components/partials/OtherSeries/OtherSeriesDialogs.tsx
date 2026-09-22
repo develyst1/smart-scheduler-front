@@ -9,6 +9,8 @@ import { useT } from "@/lib/i18n";
 import { notify } from "@/lib/ui/notify";
 import { bahtToMinor } from "@/lib/scheduler/discount";
 import { cancelAllBody, fromDateDefault, withFromDate } from "@/lib/scheduler/other-series";
+import { COACH_RATE_KEY, withoutRates } from "@/lib/scheduler/duo";
+import { useCan } from "@/hooks/scheduler/useMe";
 import { draftFromFacts, teacherRatesMinor, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import { END_COURSE_REASONS, type EndCourseReason, type TeacherView } from "@/types/app/scheduler";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
@@ -82,6 +84,9 @@ export function TeacherDialog({ seriesKey, series, teachers, mode, teacherId, on
   const [rateBaht, setRateBaht] = useState<number | "">("");
   const [fromDate, setFromDate] = useState<string>(fromDateDefault());
   const [error, setError] = useState<string | null>(null);
+  // REQ-102 §8 (TASK-432) — the optional rate box only with key 59; never `rateMinor` in the body without it.
+  const can = useCan();
+  const canRate = can(COACH_RATE_KEY);
   const onRow = [series.teacherId, ...series.additionalTeacherIds];
   const choices = teachers.filter((x) => x.bookable && !onRow.includes(x.id));
   const name = (id: string) => teachers.find((x) => x.id === id)?.nickname ?? id;
@@ -90,7 +95,7 @@ export function TeacherDialog({ seriesKey, series, teachers, mode, teacherId, on
     setError(null);
     try {
       if (mode === "add" && to) {
-        const r = await add.mutateAsync({ key: seriesKey, body: withFromDate({ teacherId: to, ...(rateBaht !== "" ? { rateMinor: bahtToMinor(rateBaht) } : {}) }, fromDate) });
+        const r = await add.mutateAsync({ key: seriesKey, body: withoutRates(withFromDate({ teacherId: to, ...(rateBaht !== "" ? { rateMinor: bahtToMinor(rateBaht) } : {}) }, fromDate), canRate) });
         notify({ title: t("otherSeries.teacherAdded", { name: name(to), n: r.added }), color: "success" });
       } else if (mode === "remove" && teacherId) {
         const r = await remove.mutateAsync({ key: seriesKey, teacherId, ...(fromDate !== fromDateDefault() ? { fromDate } : {}) });
@@ -123,7 +128,7 @@ export function TeacherDialog({ seriesKey, series, teachers, mode, teacherId, on
             renderOption={({ option, checked }) => <TeacherOption option={option} checked={checked} teachers={teachers} />}
           />
         )}
-        {mode === "add" && <NumberInput label={t("otherSeries.rateOptional")} value={rateBaht} onChange={(v) => setRateBaht(typeof v === "number" ? v : "")} min={0} step={50} allowDecimal={false} allowNegative={false} suffix=" ฿" className="max-w-xs" />}
+        {mode === "add" && canRate && <NumberInput label={t("otherSeries.rateOptional")} value={rateBaht} onChange={(v) => setRateBaht(typeof v === "number" ? v : "")} min={0} step={50} allowDecimal={false} allowNegative={false} suffix=" ฿" className="max-w-xs" />}
         <DatePickerInput label={t("otherSeries.fromDate")} description={t("otherSeries.fromDateHint")} value={fromDate} onChange={(v) => v && setFromDate(v)} valueFormat="D MMM YYYY" popoverProps={{ withinPortal: true }} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onClose}>
@@ -185,18 +190,23 @@ export function EditHeaderDialog({ seriesKey, series, teachers, onClose }: { ser
   const update = useUpdateOtherSeries();
   const teacherIds = [series.teacherId, ...series.additionalTeacherIds];
   const [title, setTitle] = useState(series.title);
-  const [draft, setDraft] = useState<OtherScheduleDraft>(draftFromFacts({ kind: series.kind, headCount: series.headCount, teacherRates: series.teacherRates, ratePostedAt: null }, teacherIds));
+  const [draft, setDraft] = useState<OtherScheduleDraft>(draftFromFacts({ kind: series.kind, headCount: series.headCount, teacherRates: series.teacherRates ?? {}, ratePostedAt: null }, teacherIds));
   const [error, setError] = useState<string | null>(null);
+  const can = useCan();
+  const canRate = can(COACH_RATE_KEY);
   const submit = async () => {
     setError(null);
     const rates = teacherRatesMinor(draft.ratesBaht, teacherIds);
     const sameRates = JSON.stringify(rates ?? {}) === JSON.stringify(series.teacherRates ?? {});
-    const patch = {
-      ...(title.trim() !== series.title ? { title: title.trim() } : {}),
-      ...(draft.kind && draft.kind !== series.kind ? { otherKind: draft.kind } : {}),
-      ...((draft.headCount === "" ? null : draft.headCount) !== series.headCount ? { headCount: draft.headCount === "" ? null : draft.headCount } : {}),
-      ...(sameRates ? {} : { teacherRates: rates ?? {} }),
-    };
+    const patch = withoutRates(
+      {
+        ...(title.trim() !== series.title ? { title: title.trim() } : {}),
+        ...(draft.kind && draft.kind !== series.kind ? { otherKind: draft.kind } : {}),
+        ...((draft.headCount === "" ? null : draft.headCount) !== series.headCount ? { headCount: draft.headCount === "" ? null : draft.headCount } : {}),
+        ...(sameRates ? {} : { teacherRates: rates ?? {} }),
+      },
+      canRate,
+    );
     if (Object.keys(patch).length === 0) {
       onClose();
       return;

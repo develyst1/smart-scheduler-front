@@ -780,7 +780,7 @@ export interface CreateCourseInput {
    */
   groupKey?: string;
   /** REQ-095 §13 (TASK-420/421) — DUO: the second child + the teaching rate (satang). ONLY when the toggle is on; never with `groupKey` (the server's 400). */
-  duo?: { coStudentId: string; classRateMinor: number };
+  duo?: { coStudentId: string; classRateMinor?: number };
 }
 
 export const createCoursePackage = async (
@@ -1121,6 +1121,26 @@ export const previewEndCourse = async (courseId: string): Promise<EndCoursePrevi
 export const endCourse = async (courseId: string, input: { reason: EndCourseReason; note?: string }) => {
   if (useMock) return mock.endCourse(courseId, input);
   const { data } = await api.post(`/courses/${courseId}/cancel`, {
+    reason: input.reason,
+    note: input.note,
+  });
+  return data;
+};
+
+/**
+ * REQ-103 (TASK-439/440) — cancel a WHOLE voucher: the course pair's shapes, on `/vouchers/:id`. The preview is
+ * the course preview + `remaining` (the balance the end freezes); the body is the course cancel's byte-for-byte
+ * (`reason`, `note?`). 409 `ALREADY_ENDED` — the server's sentence, as every refusal.
+ */
+export const previewEndVoucher = async (voucherId: string): Promise<EndCoursePreview> => {
+  if (useMock) return mock.previewEndVoucher(voucherId);
+  const { data } = await api.post<EndCoursePreview>(`/vouchers/${voucherId}/cancel/preview`, {});
+  return data;
+};
+
+export const endVoucher = async (voucherId: string, input: { reason: EndCourseReason; note?: string }) => {
+  if (useMock) return mock.endVoucher(voucherId, input);
+  const { data } = await api.post(`/vouchers/${voucherId}/cancel`, {
     reason: input.reason,
     note: input.note,
   });

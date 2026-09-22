@@ -78,6 +78,3 @@ export const fromDateDefault = (today: Date = new Date()): string => {
 
 /** The teacher bodies — `fromDate` rides only when it differs from the default (the server defaults to today too). */
 export const withFromDate = <T extends object>(body: T, fromDate: string, today = fromDateDefault()): T & { fromDate?: string } => (fromDate && fromDate !== today ? { ...body, fromDate } : body);
-
-/** The page's route for a series key; null without a key (a legacy row before the backfill shows no link). */
-export const seriesHref = (key: string | null | undefined): string | null => (key ? `/scheduler/other/${encodeURIComponent(key)}` : null);

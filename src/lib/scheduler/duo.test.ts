@@ -64,12 +64,16 @@ describe("§1 — the two-name label and the bodies, by value", () => {
     expect(duoBody(emptyDuo())).toBeUndefined();
     expect(duoBody({ on: false, coStudentId: "s2", rateBaht: 500 })).toBeUndefined();
     expect(duoBody({ on: true, coStudentId: null, rateBaht: 500 })).toBeUndefined();
-    expect(duoBody({ on: true, coStudentId: "s2", rateBaht: "" })).toBeUndefined();
+    // TASK-432 (REQ-102 §8) — the rate is OPTIONAL at create: a blank rate ⇒ the child alone rides
+    expect(duoBody({ on: true, coStudentId: "s2", rateBaht: "" })).toEqual({ coStudentId: "s2" });
     expect(duoBody({ on: true, coStudentId: "s2", rateBaht: 500 })).toEqual({ coStudentId: "s2", classRateMinor: 50000 });
+    // without key 59 the field is absent and NO `classRateMinor` rides, whatever was typed
+    expect(duoBody({ on: true, coStudentId: "s2", rateBaht: 500 }, false)).toEqual({ coStudentId: "s2" });
     expect(duoReady(emptyDuo(), "s1")).toBe(true); // Private: nothing to fill
     expect(duoReady({ on: true, coStudentId: "s1", rateBaht: 500 }, "s1")).toBe(false); // the same child — hinted, the server's rule
     expect(duoReady({ on: true, coStudentId: "s2", rateBaht: 500 }, "s1")).toBe(true);
-    expect(duoReady({ on: true, coStudentId: "s2", rateBaht: "" }, "s1")).toBe(false);
+    expect(duoReady({ on: true, coStudentId: "s2", rateBaht: "" }, "s1")).toBe(false); // with the key the field shows and is required
+    expect(duoReady({ on: true, coStudentId: "s2", rateBaht: "" }, "s1", false)).toBe(true); // without the key the field is absent
   });
   it("the move/edit rate rides only when it differs from the course's satang; the DUO card is picked by its group NAME, the price from the card", () => {
     expect(rateChange("", 50000)).toBeUndefined();
@@ -127,12 +131,12 @@ describe("§3 — the forms", () => {
     expect(flow).toContain('value={duo.on ? "DUO" : "PRIVATE"}');
     expect(flow).toContain("const duoOn = !group && duo.on;");
     expect(flow).toContain('<StudentSelect value={coStudent} onChange={setCoStudent} label={t("course.coStudent")} required />');
-    expect(flow).toContain("duo: group ? undefined : duoBody(duo),");
-    expect(flow).toContain("duoReady(duo, student?.id) &&");
+    expect(flow).toContain("duo: group ? undefined : duoBody(duo, canRate),"); // TASK-432 — the key decides the rate
+    expect(flow).toContain("duoReady(duo, student?.id, canRate) &&"); // TASK-432
     expect(flow).toContain('{t("course.duoSameChild")}');
     expect(flow).toContain("packageForGroup(card, priceGroupFor(true, null), size)");
     expect(svc).toContain("duo: input.duo,");
-    expect(svc).toContain("duo?: { coStudentId: string; classRateMinor: number };");
+    expect(svc).toContain("duo?: { coStudentId: string; classRateMinor?: number };"); // TASK-432 — optional at create
   });
   it("§13.3 pure: the (default)/(override) tag reads `overrideMinor` alone; THIS session's body only when it differs from the EFFECTIVE rate; Clear ⇒ null only when an override is set; no `override ?? default` anywhere", () => {
     const def = { effectiveMinor: 50000, overrideMinor: null, defaultMinor: 50000 };
@@ -158,10 +162,10 @@ describe("§3 — the forms", () => {
   });
   it("Move-session (§13.3): the box on a COURSE row (`rate` non-null), prefilled from `effectiveMinor`, the tag from the facts, `Clear` ⇒ null; relabelled THIS session's rate with the default in the hint", () => {
     const move = modal.slice(modal.indexOf("function MoveBookingForm("), modal.indexOf("function CreateForm("));
-    expect(move).toContain("const rate = booking.rate ?? null;");
+    expect(move).toContain("const rate = canRate ? (booking.rate ?? null) : null;"); // TASK-432 — no key ⇒ no box
     expect(move).toContain('useState<number | "">(rate ? rate.effectiveMinor / 100 : "")');
-    expect(move).toContain("Object.assign(patch, sessionRateChange(rateBaht, rate, rateClear));");
-    expect(move).toContain("{rate && (");
+    expect(move).toContain("Object.assign(patch, withoutRates(sessionRateChange(rateBaht, rate, rateClear) ?? {}, canRate));"); // TASK-432 — one guard
+    expect(move).toContain("{canRate && rate && ("); // TASK-432 — the key first
     expect(move).toContain('data-session-rate={rateTag(rate)}');
     expect(move).toContain('{t("course.sessionRate")}');
     expect(move).toContain('{t(rateTag(rate) === "override" ? "course.rateOverride" : "course.rateDefault")}');
@@ -169,7 +173,7 @@ describe("§3 — the forms", () => {
     expect(move).toContain('{rateTag(rate) === "override" && (');
     expect(move).not.toContain("isDuo"); // the box is a COURSE thing now, not a DUO thing
     expect(move).not.toMatch(/overrideMinor\s*\?\?|\?\?\s*rate\.defaultMinor/); // no arithmetic on the FE
-    expect(move.indexOf("Object.assign(patch, sessionRateChange")).toBeLessThan(move.indexOf("if (Object.keys(patch).length === 0) {"));
+    expect(move.indexOf("Object.assign(patch, withoutRates(sessionRateChange")).toBeLessThan(move.indexOf("if (Object.keys(patch).length === 0) {"));
     expect(svc).toContain("classRateMinor?: number | null;");
     expect(codeOf("src/components/partials/Bookings/BookingsTable.tsx")).toContain("{b.displayName}"); // the table's names are the server's
   });
@@ -193,6 +197,6 @@ describe("§3 — the forms", () => {
   it("copy counted both languages; snapshot unchanged (no key)", () => {
     for (const lang of ["en", "th"] as const)
       for (const k of ["kindPrivate", "kindDuo", "coStudent", "duoSameChild", "classRate", "classRateHint", "classRateMoveHint", "duoTag", "rateLine", "rateEdit", "rateSavedOk", "sessionRate", "sessionRateHint", "rateDefault", "rateOverride", "rateClear", "defaultRate", "defaultRateLine"]) expect((dictionaries[lang].course as Record<string, string>)[k]?.length).toBeGreaterThan(0);
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(58) /* TASK-427 + TASK-429: budget-view, other-cancel-all */;
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(59) /* TASK-427 + TASK-429 + TASK-432: budget-view, other-cancel-all, coach-rate */;
   });
 });

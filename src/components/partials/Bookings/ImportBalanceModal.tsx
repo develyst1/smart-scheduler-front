@@ -23,6 +23,7 @@ import StudentSelect, { type StudentSelectValue } from "@/components/common/Stud
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
+import { subjectsFor } from "@/lib/scheduler/duo";
 import { useImportCoursePackage, useImportVoucher, useTeachers } from "@/hooks/scheduler";
 import { previewCourseImport } from "@/services/scheduler.service";
 import { remainingSessions, remainingDates, usedExceedsSize } from "@/lib/scheduler/import-preview";
@@ -81,7 +82,8 @@ export default function ImportBalanceModal({ opened, onClose }: Props) {
   const [savedCount, setSavedCount] = useState(0);
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
-  const subjectOptions = selectedTeacher?.subjectOptions ?? [];
+  // REQ-095 §13.4a (TASK-438) — a COURSE picker: DUO subjects hidden (an import is a Private course).
+  const subjectOptions = subjectsFor(selectedTeacher?.subjectOptions ?? [], false);
   const bookableTeachers = teachers.filter((tc) => bookableOnDate(tc, startDate));
 
   useEffect(() => {

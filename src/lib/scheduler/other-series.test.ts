@@ -3,7 +3,8 @@ import { describe, expect, it } from "bun:test";
 import { dictionaries } from "@/lib/i18n/dictionaries";
 import { ACTION_KEYS_SNAPSHOT } from "@/lib/rbac/actions";
 import { navItemForPath } from "@/components/layout/AdminLayout/AdminLayout.config";
-import { cancelAllBody, fromDateDefault, seriesDoors, seriesHref, statusCounts, withFromDate } from "./other-series";
+import { existsSync } from "fs";
+import { cancelAllBody, fromDateDefault, seriesDoors, statusCounts, withFromDate } from "./other-series";
 
 /**
  * REQ-101 / SPEC-088 Part A / TASK-428/429 — the ECA/Free/KOL Manage-plan page: which doors show (the grants + the
@@ -15,7 +16,7 @@ const codeOf = (path: string) =>
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
     .replace(/^\s*\/\/.*$/gm, "");
-const page = codeOf("src/components/partials/OtherSeries/OtherSeriesContent.tsx");
+const page = codeOf("src/components/partials/OtherSeries/OtherSeriesModal.tsx");
 const dialogs = codeOf("src/components/partials/OtherSeries/OtherSeriesDialogs.tsx");
 const svc = codeOf("src/services/other-series.service.ts");
 const modal = codeOf("src/components/partials/Calendar/Modal/BookingModal.tsx");
@@ -54,10 +55,6 @@ describe("§1 — seriesDoors, by value", () => {
     expect(withFromDate({ teacherId: "t2" }, "2026-09-21", "2026-09-21")).toEqual({ teacherId: "t2" });
     expect(withFromDate({ teacherId: "t2" }, "2026-10-01", "2026-09-21")).toEqual({ teacherId: "t2", fromDate: "2026-10-01" });
     expect(withFromDate({ from: "t1", to: "t2" }, "", "2026-09-21")).toEqual({ from: "t1", to: "t2" });
-    expect(seriesHref("abc/def")).toBe("/scheduler/other/abc%2Fdef");
-    expect(seriesHref(null)).toBeNull();
-    expect(seriesHref(undefined)).toBeNull();
-    expect(seriesHref("")).toBeNull();
   });
 });
 
@@ -67,7 +64,11 @@ describe("§2 — the page, the wire, the links, the key", () => {
     for (const d of ["confirmAll", "cancelAll", "addTeacher", "addDates", "editHeader", "swapPrimary", "removeTeacher"]) expect(page).toContain(`{doors.${d} && (`);
     expect(page).not.toMatch(/disabled=\{[^}]*(can\(|doors\.)/); // hidden, never disabled
     expect(page).toContain("const b = byId.get(r.bookingId);");
-    expect(page).toContain("<BookingModal isOpen onClose={() => setSelected(undefined)} booking={selected}");
+    // TASK-435 — a row hands the booking to the calendar's SINGLE BookingModal and closes this modal (no second instance)
+    expect(page).toContain("onOpenBooking(b);");
+    expect(page).not.toContain("<BookingModal");
+    // 📌 the close must be THE row handler's own (an earlier `onClose();` elsewhere satisfied an indexOf pin)
+    expect(page).toMatch(/if \(!b\) return;\s*onClose\(\);\s*onOpenBooking\(b\);/);
     expect(page).toContain('useAllBookings(series && first && last ? { type: "OTHER", teacherId: series.teacherId, from: first, to: last, limit: 200 } : { limit: 1 })');
     expect(dialogs.match(/setError\(errOf\(e\)\);/g)?.length).toBe(4); // every dialog shows the sentence and keeps the input
     expect(dialogs).not.toMatch(/SLOT_TAKEN|ALREADY_ON_ROW|PRIMARY_TEACHER|DATE_EXISTS/); // no code-switching: the sentence as given
@@ -88,20 +89,33 @@ describe("§2 — the page, the wire, the links, the key", () => {
     expect(dialogs).toContain("{END_COURSE_REASONS.map((r) => (");
     expect(dialogs).toContain("useState<string>(fromDateDefault())");
   });
-  it("the row → page link only with a key; the create toast offers the page from `seriesKey`; the series-in-range strip under the calendar header (not for a linked account)", () => {
-    expect(modal).toContain("{seriesHref(booking.otherSeriesKey) && (");
+  it("TASK-435 — ONE modal, two entry points: the OTHER block's button (only with a key AND a host) and a `Series in range` row; the page, `seriesHref`, the alias and the toast link are GONE", () => {
+    // (1) the OTHER block's button: the key gates it (a legacy row shows nothing), it closes the booking modal and opens the series modal
+    expect(modal).toContain("{booking.otherSeriesKey && onManagePlan && (");
+    expect(modal).toContain("onManagePlan(booking.otherSeriesKey as string);");
+    expect(modal).toMatch(/onClose\(\);\s*onManagePlan\(booking\.otherSeriesKey as string\);/); // closes the booking modal first — one instance
     expect(modal).toContain('{t("otherSeries.managePlan")}');
+    expect(modal).not.toMatch(/component="a"[^\n]*manage-plan|seriesHref/);
     expect(codeOf("src/lib/api/mappers.ts")).toContain("otherSeriesKey: dto.otherSeriesKey ?? null,");
-    expect(createDlg).toContain("const href = seriesHref(res.seriesKey);");
-    expect(createDlg).toContain('...(href ? { link: { href, label: t("otherSeries.managePlan") } } : {})');
+    // (2) a Series-in-range row is a BUTTON opening the same modal
     expect(strip).toContain("useOtherSeriesList(from, to, open)"); // fetched only while open
-    expect(strip).toContain('href={seriesHref(s.key) as string}');
-    expect(content).toContain("{!scoped && <SeriesInRange from={weekDays[0]} to={weekDays[6]} />}");
-    expect(navItemForPath("/scheduler/other/abc")?.menuKey).toBe("menu:calendar"); // the guard treats the page as the calendar's
+    expect(strip).toContain('<button key={s.key} type="button" onClick={() => onOpen(s.key)}');
+    expect(strip).not.toMatch(/href=|seriesHref/);
+    // the calendar owns the ONE instance and feeds both entry points
+    expect(content).toContain("{!scoped && <SeriesInRange from={weekDays[0]} to={weekDays[6]} onOpen={setSeriesKey} />}");
+    expect(content).toContain("{seriesKey && <OtherSeriesModal seriesKey={seriesKey} opened onClose={() => setSeriesKey(null)} onOpenBooking={openView} />}");
+    expect(content).toContain("onManagePlan={setSeriesKey}");
+    expect(content.match(/<BookingModal/g)?.length).toBe(1);
+    // retired: the page, seriesHref, the alias, the toast link
+    expect(existsSync("src/app/(admin)/scheduler/other")).toBe(false);
+    expect(codeOf("src/lib/scheduler/other-series.ts")).not.toContain("seriesHref");
+    expect(codeOf("src/components/layout/AdminLayout/AdminLayout.config.ts")).not.toContain("ROUTE_ALIASES");
+    expect(navItemForPath("/scheduler/other/abc")).toBeUndefined(); // no page ⇒ nothing to guard
+    expect(createDlg).not.toMatch(/seriesHref|link:/);
   });
   it("the 58th key sits after `group-series` (the BE's slot); copy counted both languages", () => {
     expect(ACTION_KEYS_SNAPSHOT.indexOf("action:calendar.other-cancel-all")).toBe(ACTION_KEYS_SNAPSHOT.indexOf("action:calendar.group-series") + 1);
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(58);
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(59); /* + TASK-432 coach-rate */
     const en = dictionaries.en.otherSeries as Record<string, string>;
     const th = dictionaries.th.otherSeries as Record<string, string>;
     expect(Object.keys(en).length).toBe(32);

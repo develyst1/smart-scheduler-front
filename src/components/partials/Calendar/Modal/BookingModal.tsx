@@ -76,8 +76,7 @@ import OtherDetailsDialog from "./OtherDetailsDialog";
 import GroupSeriesDialog from "./GroupSeriesDialog";
 import GroupSwapDialog from "./GroupSwapDialog";
 import CreatePlanFlow from "@/components/partials/Bookings/CreatePlanFlow";
-import { rateTag, sessionRateChange } from "@/lib/scheduler/duo";
-import { seriesHref } from "@/lib/scheduler/other-series";
+import { COACH_RATE_KEY, rateTag, sessionRateChange, withoutRates } from "@/lib/scheduler/duo";
 import { seatsLabel } from "@/lib/scheduler/group-session";
 import { emptyOtherSchedule, otherScheduleFacts, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import CancelBookingDialog from "./CancelBookingDialog";
@@ -106,6 +105,8 @@ interface Props {
   onWalkIn: (b: Booking) => void;
   /** REQ-097 (TASK-407) — a linked account: the details + `Check in` only; every other door absent, not disabled. */
   scoped?: boolean;
+  /** REQ-101 §6 (TASK-435) — the OTHER block's `Manage plan`: opens the series MODAL on the calendar (no navigation). Absent ⇒ no button. */
+  onManagePlan?: (seriesKey: string) => void;
 }
 
 /** คาบที่ย้ายด้วยมือได้ (UC-003) — ไม่รวมที่มาเรียน/ลา/ยกเลิกแล้ว */
@@ -130,6 +131,7 @@ export default function BookingModal({
   onOverbook,
   onWalkIn,
   scoped = false,
+  onManagePlan,
 }: Props) {
   const t = useT();
   const isCreate = !booking;
@@ -172,6 +174,7 @@ export default function BookingModal({
           onWalkIn={onWalkIn}
           onClose={onClose}
           scoped={scoped}
+          onManagePlan={onManagePlan}
         />
       ) : null}
     </Modal>
@@ -188,6 +191,7 @@ function ViewBooking({
   onWalkIn,
   onClose,
   scoped = false,
+  onManagePlan,
 }: {
   booking: Booking;
   teacherName: string;
@@ -196,6 +200,7 @@ function ViewBooking({
   onWalkIn: (b: Booking) => void;
   onClose: () => void;
   scoped?: boolean;
+  onManagePlan?: (seriesKey: string) => void;
 }) {
   const t = useT();
   const confirm = useConfirmBooking();
@@ -603,9 +608,19 @@ function ViewBooking({
               {t("booking.otherEditDetails")}
             </Button>
           )}
-          {/* REQ-101 (TASK-429) — the row → series link, only when the server sent a key (a legacy row before the backfill shows nothing). */}
-          {seriesHref(booking.otherSeriesKey) && (
-            <Button component="a" href={seriesHref(booking.otherSeriesKey) as string} size="compact-xs" variant="light" leftSection={<ListChecks size={12} />} data-manage-plan={booking.otherSeriesKey ?? undefined}>
+          {/* REQ-101 §6 (TASK-435) — `Manage plan` opens the series MODAL (no navigation), only when the server sent a key
+              (a legacy row before the backfill shows nothing) and the host offers the modal (the calendar). */}
+          {booking.otherSeriesKey && onManagePlan && (
+            <Button
+              size="compact-xs"
+              variant="light"
+              leftSection={<ListChecks size={12} />}
+              data-manage-plan={booking.otherSeriesKey}
+              onClick={() => {
+                onClose();
+                onManagePlan(booking.otherSeriesKey as string);
+              }}
+            >
               {t("otherSeries.managePlan")}
             </Button>
           )}
@@ -930,7 +945,11 @@ function MoveBookingForm({
   // REQ-095 §13.3 (TASK-424) — a COURSE session carries the server's three rate facts; the box edits THIS session's
   // override: prefilled from `effectiveMinor` (satang → baht; 0 is a rate), `classRateMinor` rides ONLY when it differs,
   // `Clear` sends null (back to the default). The (default)/(override) tag reads the facts — no arithmetic here.
-  const rate = booking.rate ?? null;
+  // REQ-102 §6 (TASK-432) — the box renders ONLY with key 59 (absent, not dashed); the server sends `rate: null`
+  // without it and refuses any `classRateMinor` body — `withoutRates` strips it, one guard.
+  const canMove = useCan();
+  const canRate = canMove(COACH_RATE_KEY);
+  const rate = canRate ? (booking.rate ?? null) : null;
   const [rateBaht, setRateBaht] = useState<number | "">(rate ? rate.effectiveMinor / 100 : "");
   const [rateClear, setRateClear] = useState(false);
 
@@ -948,7 +967,7 @@ function MoveBookingForm({
     if (teacherId !== booking.teacherId) patch.teacherId = teacherId;
     if (date !== booking.date) patch.date = date;
     if (startTime !== booking.startTime) patch.startTime = startTime;
-    Object.assign(patch, sessionRateChange(rateBaht, rate, rateClear));
+    Object.assign(patch, withoutRates(sessionRateChange(rateBaht, rate, rateClear) ?? {}, canRate));
 
     if (Object.keys(patch).length === 0) {
       notify({ title: t("booking.noChange"), color: "default" });
@@ -1011,7 +1030,7 @@ function MoveBookingForm({
           data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
         />
       </div>
-      {rate && (
+      {canRate && rate && (
         <div className="flex flex-wrap items-end gap-2" data-session-rate={rateTag(rate)}>
           <NumberInput
             label={
