@@ -1,83 +1,97 @@
 "use client";
 
-import { Table, Text, Tooltip } from "@mantine/core";
+import { Badge, Table, Text } from "@mantine/core";
 import { useI18n, useT } from "@/lib/i18n";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 import { MENU_ROWS, NAV_BY_AREA } from "@/components/partials/Users/GrantChecklists";
 import { MATRIX_GLYPH, matrixCell } from "@/lib/rbac/matrix";
 import type { PermissionRegistry, UserDTO } from "@/types/api/contract";
 
+const LEAD_W = 240;
+const USER_W = 120;
+/** The group heading rows' tint — Mantine's theme-aware subtle surface (light gray-0 / dark-5). */
+const GROUP_BG = "var(--mantine-color-default-hover)";
+/** A quiet column's faint grey wash — translucent (Mantine gray-6 at 12%), so it reads in both themes and the row hover still shows through. */
+const DIM_BG = "rgba(134, 142, 150, 0.12)";
+
 /**
- * REQ-092 Stage 4 (TASK-388 §3) — the READ-ONLY matrix: rows = users (username · role), columns = the twelve menus
- * then the actions grouped by area (the registry's order, from `GET /permissions`); a cell = ● own · ▲ from role · a
- * dimmed ● for a super admin's everything; blank otherwise. From `GET /users`' `grants` — no new route. Sticky first
- * column, horizontal scroll (the plan-table pattern). 🚫 No editing here: the dialogs are the editors.
+ * REQ-092 Stage 4 (TASK-388 §3) — the READ-ONLY matrix, **transposed**: rows = the permissions (the twelve menus, then
+ * the actions grouped by area — the registry's order, from `GET /permissions`) under a heading row per group; columns
+ * = users (username · role). A cell = ● own · ▲ from role · a dimmed ● for a super admin's everything; blank otherwise.
+ * From `GET /users`' `grants` — no new route. Staff are far fewer than permissions, so the labels read in full down
+ * the pinned lead column and the table rarely needs a horizontal scroll; column borders keep each user's column
+ * traceable. 🚫 No editing here: the dialogs are the editors.
  * Pure of any fetch: the tab hands it the rows and the registry, so it renders in a test.
  */
 export default function MatrixTable({ users, registry }: { users: UserDTO[]; registry: PermissionRegistry }) {
   const t = useT();
   const { lang } = useI18n();
   const areas = [...new Set(registry.actions.map((a) => a.area))];
-  const actionCols = areas.map((area) => ({
-    area,
-    label: NAV_BY_AREA.get(area) ? t(NAV_BY_AREA.get(area)!.labelKey) : t("users.areaSales"),
-    actions: registry.actions.filter((a) => a.area === area),
-  }));
-  const cols = MENU_ROWS.length + registry.actions.length;
+  const groups = [
+    { id: "menus", label: t("users.colMenus"), rows: MENU_ROWS.map((m) => ({ key: m.key, label: t(m.labelKey) })) },
+    ...areas.map((area) => ({
+      id: area,
+      label: NAV_BY_AREA.get(area) ? t(NAV_BY_AREA.get(area)!.labelKey) : t("users.areaSales"),
+      rows: registry.actions.filter((a) => a.area === area).map((a) => ({ key: a.key, label: lang === "th" ? a.labelTh : a.labelEn })),
+    })),
+  ];
+  // A disabled user's column: the cells fade a little under a faint grey wash; the header stays crisp and says "Disabled".
+  const dim = (u: UserDTO) => (u.disabledAt ? "opacity-80" : undefined);
+  const dimBg = (u: UserDTO) => (u.disabledAt ? { background: DIM_BG } : undefined);
 
   return (
-    <StickyScrollArea minWidth={Math.max(900, 200 + cols * 34)}>
-      <Table verticalSpacing={4} horizontalSpacing={4} withColumnBorders className="text-center text-xs" aria-label={t("roles.matrixLabel")}>
+    <StickyScrollArea minWidth={LEAD_W + users.length * USER_W}>
+      <Table withColumnBorders highlightOnHover verticalSpacing={6} className="text-sm" aria-label={t("roles.matrixLabel")}>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th rowSpan={2} data-pin="lead" className="text-left">
-              {t("users.colUsername")}
+            <Table.Th data-pin="lead" className="align-bottom" style={{ minWidth: LEAD_W }}>
+              {t("roles.colPermission")}
             </Table.Th>
-            <Table.Th colSpan={MENU_ROWS.length}>{t("users.colMenus")}</Table.Th>
-            {actionCols.map((g) => (
-              <Table.Th key={g.area} colSpan={g.actions.length}>
-                {g.label}
+            {users.map((u) => (
+              <Table.Th key={u.id} data-user={u.id} className="whitespace-nowrap text-center align-bottom" style={{ minWidth: USER_W, ...dimBg(u) }}>
+                <div className="font-mono font-medium">{u.username}</div>
+                <Text size="xs" c="dimmed" fw={400}>
+                  {u.isSuperAdmin ? t("users.superAdmin") : (u.roleName ?? t("users.roleNone"))}
+                </Text>
+                {u.disabledAt && (
+                  <Badge size="xs" variant="light" color="gray" mt={4}>
+                    {t("users.statusDisabled")}
+                  </Badge>
+                )}
               </Table.Th>
             ))}
-          </Table.Tr>
-          <Table.Tr>
-            {MENU_ROWS.map((m) => (
-              <Table.Th key={m.key} className="font-normal">
-                <Tooltip label={t(m.labelKey)} withArrow>
-                  <span className="inline-block max-w-[3.5rem] truncate align-bottom">{t(m.labelKey)}</span>
-                </Tooltip>
-              </Table.Th>
-            ))}
-            {actionCols.flatMap((g) =>
-              g.actions.map((a) => (
-                <Table.Th key={a.key} className="font-normal">
-                  <Tooltip label={lang === "th" ? a.labelTh : a.labelEn} withArrow>
-                    <span className="inline-block max-w-[3.5rem] truncate align-bottom">{lang === "th" ? a.labelTh : a.labelEn}</span>
-                  </Tooltip>
-                </Table.Th>
-              )),
-            )}
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {users.map((u) => (
-            <Table.Tr key={u.id} className={u.disabledAt ? "opacity-60" : undefined}>
-              <Table.Td data-pin="lead" className="whitespace-nowrap text-left">
-                <span className="font-mono">{u.username}</span>
-                <Text span size="xs" c="dimmed" ml={6}>
-                  {u.isSuperAdmin ? t("users.superAdmin") : (u.roleName ?? t("users.roleNone"))}
-                </Text>
+          {groups.map((g) => [
+            <Table.Tr key={`g:${g.id}`} data-group={g.id}>
+              <Table.Td data-pin="lead" className="text-xs font-semibold uppercase tracking-wide text-muted-500" style={{ background: GROUP_BG }}>
+                {g.label}
               </Table.Td>
-              {[...MENU_ROWS.map((m) => m.key), ...actionCols.flatMap((g) => g.actions.map((a) => a.key))].map((key) => {
-                const cell = matrixCell(u, key);
-                return (
-                  <Table.Td key={key} data-cell={cell ?? "none"} className={cell === "role" ? "text-blue-600" : cell === "all" ? "text-muted-400" : cell === "own" ? "text-foreground" : undefined}>
-                    {cell ? MATRIX_GLYPH[cell] : ""}
-                  </Table.Td>
-                );
-              })}
-            </Table.Tr>
-          ))}
+              <Table.Td colSpan={Math.max(1, users.length)} style={{ background: GROUP_BG }} />
+            </Table.Tr>,
+            ...g.rows.map((row) => (
+              <Table.Tr key={row.key}>
+                <Table.Td data-pin="lead" className="pl-6">
+                  {row.label}
+                </Table.Td>
+                {users.map((u) => {
+                  const cell = matrixCell(u, row.key);
+                  return (
+                    <Table.Td
+                      key={u.id}
+                      data-user={u.id}
+                      data-cell={cell ?? "none"}
+                      className={`text-center ${cell === "role" ? "text-blue-600" : cell === "all" ? "text-muted-400" : cell === "own" ? "text-foreground" : ""} ${dim(u) ?? ""}`}
+                      style={dimBg(u)}
+                    >
+                      {cell ? MATRIX_GLYPH[cell] : ""}
+                    </Table.Td>
+                  );
+                })}
+              </Table.Tr>
+            )),
+          ])}
         </Table.Tbody>
       </Table>
     </StickyScrollArea>

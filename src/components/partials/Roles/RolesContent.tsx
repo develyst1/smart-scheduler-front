@@ -291,7 +291,14 @@ function MatrixTab({ roles }: { roles: RoleDTO[] }) {
           aria-label={t("roles.filterLabel")}
         />
       </Group>
-      {isLoading || !registry ? <Loader size="xs" /> : <MatrixTable users={rows} registry={registry} />}
+      {isLoading || !registry ? (
+        <Loader size="xs" />
+      ) : (
+        // The same bordered surface as the Roles tab's table — without it the matrix sat on the page's paper tint.
+        <Card withBorder padding={0}>
+          <MatrixTable users={rows} registry={registry} />
+        </Card>
+      )}
     </Stack>
   );
 }

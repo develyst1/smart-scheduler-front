@@ -169,18 +169,17 @@ describe("§3 — the matrix", () => {
     expect(html).toContain("alice");
     expect(html).toContain("Front desk");
     expect(html).toContain("bob");
-    // the lead column is pinned; the column count is 12 menus + 3 actions per row
+    // transposed: the permission (lead) column is pinned; each user's column holds 13 menus (since TASK-402) + 3 actions
     expect(html).toContain('data-pin="lead"');
-    const rowA = html.slice(html.indexOf("alice"), html.indexOf("bob"));
-    expect((rowA.match(/data-cell="role"/g) ?? []).length).toBe(2); // menu:calendar + action:calendar.book
-    expect((rowA.match(/data-cell="own"/g) ?? []).length).toBe(1); // action:sales.discount
-    expect((rowA.match(/data-cell="none"/g) ?? []).length).toBe(13 + 3 - 3); // 13 menus since TASK-402
-    const rowB = html.slice(html.indexOf("bob"));
-    expect((rowB.match(/data-cell="all"/g) ?? []).length).toBe(16);
-    expect(rowB).not.toContain('data-cell="none"');
+    const cellsOf = (id: string, kind: string) => (html.match(new RegExp(`data-user="${id}" data-cell="${kind}"`, "g")) ?? []).length;
+    expect(cellsOf("a", "role")).toBe(2); // menu:calendar + action:calendar.book
+    expect(cellsOf("a", "own")).toBe(1); // action:sales.discount
+    expect(cellsOf("a", "none")).toBe(13 + 3 - 3);
+    expect(cellsOf("b", "all")).toBe(16);
+    expect(cellsOf("b", "none")).toBe(0);
     // glyphs by source
-    expect(rowA).toContain("▲");
-    expect(rowA).toContain("●");
+    expect(html).toContain("▲");
+    expect(html).toContain("●");
     // read-only: no checkbox, no button in the table
     expect(html).not.toMatch(/<input|<button/);
     // the tab feeds it GET /users (no new route) and filters by role
@@ -193,10 +192,10 @@ describe("§3 — the matrix", () => {
 });
 
 describe("copy", () => {
-  it("keys counted in both languages: roles 26 · nav.roles · users +4 (58)", () => {
+  it("keys counted in both languages: roles 27 · nav.roles · users +4 (58)", () => {
     const en = dictionaries.en.roles as Record<string, string>;
     const th = dictionaries.th.roles as Record<string, string>;
-    expect(Object.keys(en).length).toBe(26);
+    expect(Object.keys(en).length).toBe(27); // + the transposed matrix's lead header (colPermission)
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     expect(dictionaries.en.nav.roles).toBe("Roles");
     expect(dictionaries.th.nav.roles).toBe("บทบาท");
