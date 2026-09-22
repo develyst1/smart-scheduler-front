@@ -59,7 +59,7 @@ export const cancelAll = (ref: SeriesRef, _body: unknown) => {
     r.status = "CANCELLED";
     for (const seat of r.seats ?? []) if (isLive(seat.status)) { seat.status = "CANCELLED"; seats += 1; families.add(seat.studentId ?? ""); }
   }
-  return delay(ref.kind === "group" ? { cancelled: live.length, seatsCancelled: seats, familiesTold: families.size } : { cancelled: live.length });
+  return delay(ref.kind === "group" ? { cancelled: live.length, seatsCancelled: seats, familyNotices: seats, householdsTold: families.size } : { cancelled: live.length });
 };
 export const addTeacher = (ref: SeriesRef, body: { teacherId: string }) => {
   const s = of(ref);

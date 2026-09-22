@@ -502,7 +502,7 @@ const en = {
     confirmGroup: "Confirm whole group ({n} pending)",
     confirmedGroup: "{confirmed} dates confirmed · {courses} courses confirmed · {skipped} skipped",
     cancelAllGroupBody: "{live} live dates will be cancelled; {kept} attended dates are kept. {seats} seats across {students} students on those dates will be cancelled and each family told by the system. The coaches are told too.",
-    cancelledGroup: "{n} dates cancelled · {seats} seats cancelled · {families} families told",
+    cancelledGroup: "{n} dates cancelled · {seats} seats cancelled · {families} families told ({notices} notices)",
   },
   // TASK-404 — the shared QR dialog
   qr: {
@@ -2249,7 +2249,7 @@ const th: typeof en = {
     confirmGroup: "ยืนยันทั้งกลุ่ม (รอยืนยัน {n})",
     confirmedGroup: "ยืนยันแล้ว {confirmed} วัน · คอร์ส {courses} คอร์ส · ข้าม {skipped}",
     cancelAllGroupBody: "จะยกเลิก {live} วันที่ใช้งานอยู่ วันที่มาเรียนแล้ว {kept} วันคงไว้ ที่นั่ง {seats} ที่ของนักเรียน {students} คนในวันเหล่านั้นจะถูกยกเลิก และระบบจะแจ้งทุกครอบครัวรวมถึงครูให้",
-    cancelledGroup: "ยกเลิกแล้ว {n} วัน · ที่นั่ง {seats} ที่ · แจ้งครอบครัวแล้ว {families} ครอบครัว",
+    cancelledGroup: "ยกเลิกแล้ว {n} วัน · ที่นั่ง {seats} ที่ · แจ้งครอบครัวแล้ว {families} ครอบครัว ({notices} ข้อความ)",
   },
   qr: {
     copy: "คัดลอกลิงก์",

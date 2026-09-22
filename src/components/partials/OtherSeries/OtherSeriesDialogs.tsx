@@ -29,7 +29,7 @@ const errOf = (e: unknown) => (e instanceof ApiClientError ? e.message : (e as E
 /**
  * Key 58 — the closed reasons (the admin's three, `END_COURSE_REASONS`) + a note; ATTENDED rows stay ("kept").
  * REQ-104 (TASK-442) — on a GROUP the line says the cascade: `cascade` = the live seats on the live dates COUNTED from the
- * DTO (`seatCascade`); the toast prints the SERVER's `seatsCancelled` / `familiesTold` — never a client number for families.
+ * DTO (`seatCascade`); the toast prints the SERVER's `seatsCancelled` / `householdsTold` (distinct families, TASK-445) — never a client number for families.
  */
 export function CancelAllDialog({ series: ref, attended, live, cascade, onClose }: { series: SeriesRef; attended: number; live: number; cascade?: { seats: number; students: number }; onClose: () => void }) {
   const t = useT();
@@ -45,7 +45,7 @@ export function CancelAllDialog({ series: ref, attended, live, cascade, onClose 
       notify({
         title:
           ref.kind === "group"
-            ? t("otherSeries.cancelledGroup", { n: r.cancelled, seats: r.seatsCancelled ?? 0, families: r.familiesTold ?? 0 })
+            ? t("otherSeries.cancelledGroup", { n: r.cancelled, seats: r.seatsCancelled ?? 0, families: r.householdsTold ?? 0, notices: r.familyNotices ?? 0 })
             : t("otherSeries.cancelledAll", { n: r.cancelled }),
         color: "default",
       });

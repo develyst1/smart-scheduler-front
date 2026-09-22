@@ -73,9 +73,9 @@ describe("§2 — the ONE modal's two faces, the wire, the entry points", () => 
     expect(page).toContain("<CancelAllDialog series={ref} attended={counts.attended} live={counts.live} cascade={cascade}");
     expect(page).not.toMatch(/disabled=\{[^}]*(can\(|doors\.)/); // hidden, never disabled — both faces
   });
-  it("the cancel-all dialog: the GROUP line from the DTO count; the toast prints the SERVER's `seatsCancelled` / `familiesTold`; the header PATCH never carries a kind on a group; the swap body via `swapBody`", () => {
+  it("the cancel-all dialog: the GROUP line from the DTO count; the toast prints the SERVER's `seatsCancelled` / `householdsTold` (TASK-445: distinct families; `familiesTold` gone); the header PATCH never carries a kind on a group; the swap body via `swapBody`", () => {
     expect(dialogs).toContain('ref.kind === "group" && cascade ? t("otherSeries.cancelAllGroupBody", { live, kept: attended, seats: cascade.seats, students: cascade.students })');
-    expect(dialogs).toContain('t("otherSeries.cancelledGroup", { n: r.cancelled, seats: r.seatsCancelled ?? 0, families: r.familiesTold ?? 0 })');
+    expect(dialogs).toContain('t("otherSeries.cancelledGroup", { n: r.cancelled, seats: r.seatsCancelled ?? 0, families: r.householdsTold ?? 0, notices: r.familyNotices ?? 0 })');
     expect(dialogs).not.toMatch(/families:\s*(cascade|new Set|\w+\.length)/); // never a client families number
     expect(dialogs).toContain('const isGroup = seriesRef.kind === "group";');
     expect(dialogs).toContain("...(!isGroup && draft.kind && draft.kind !== series.kind ? { otherKind: draft.kind } : {}),");
@@ -100,7 +100,7 @@ describe("§2 — the ONE modal's two faces, the wire, the entry points", () => 
       expect(o.confirmGroup).toContain("{n}");
       for (const k of ["{confirmed}", "{courses}", "{skipped}"]) expect(o.confirmedGroup).toContain(k);
       for (const k of ["{live}", "{kept}", "{seats}", "{students}"]) expect(o.cancelAllGroupBody).toContain(k);
-      for (const k of ["{n}", "{seats}", "{families}"]) expect(o.cancelledGroup).toContain(k);
+      for (const k of ["{n}", "{seats}", "{families}", "{notices}"]) expect(o.cancelledGroup).toContain(k);
     }
     expect(dictionaries.en.otherSeries.inRangeEmpty).toBe("No series this week."); // groups are listed now
   });

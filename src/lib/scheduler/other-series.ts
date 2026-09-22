@@ -111,7 +111,7 @@ const isLive = (status: string) => status !== "CANCELLED" && status !== "ATTENDE
 /**
  * What cancel-all on a GROUP will cascade to, COUNTED from the DTO (every seat, any status, per row): the live seats on
  * the live rows, and how many distinct students they belong to. 🚫 No cascade logic — the server cancels the seats and
- * tells each family; `familiesTold` is the SERVER's number (the response), never computed here (siblings share one).
+ * tells each family; `householdsTold` (distinct families, TASK-445) is the SERVER's number (the response), never computed here (siblings share one).
  */
 export const seatCascade = (rows: readonly (Pick<OtherSeriesRow, "status"> & { seats?: readonly SeriesSeat[] })[]) => {
   const live = rows.filter((r) => isLive(r.status)).flatMap((r) => (r.seats ?? []).filter((s) => isLive(s.status)));

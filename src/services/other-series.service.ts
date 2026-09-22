@@ -38,11 +38,12 @@ export const confirmAllOtherSeries = async (ref: SeriesRef): Promise<ConfirmAllR
   return data;
 };
 
-/** Key 58 — `action:calendar.other-cancel-all`; ATTENDED rows stay. A GROUP cascades: the server's `seatsCancelled` + `familiesTold`. */
+/** Key 58 — `action:calendar.other-cancel-all`; ATTENDED rows stay. A GROUP cascades (TASK-445): the server's `seatsCancelled` · `familyNotices` (one per household per row) · `householdsTold` (distinct families). */
 export interface CancelAllResult {
   cancelled: number;
   seatsCancelled?: number;
-  familiesTold?: number;
+  familyNotices?: number;
+  householdsTold?: number;
 }
 export const cancelAllOtherSeries = async (ref: SeriesRef, body: { reasonCode: EndCourseReason; note?: string }): Promise<CancelAllResult> => {
   if (useMockData) return mock.cancelAll(ref, body);
