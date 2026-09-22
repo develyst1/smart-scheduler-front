@@ -12,6 +12,7 @@ import { usePermissions } from "@/hooks/scheduler/useMe";
 import { useUsers } from "@/hooks/scheduler/useUsers";
 import { ActionsChecklist, MenusChecklist } from "@/components/partials/Users/GrantChecklists";
 import { MENU_KEYS } from "@/lib/rbac/menus";
+import StickyScrollArea from "@/components/common/StickyScrollArea";
 import MatrixTable from "./MatrixTable";
 import type { RoleDTO } from "@/types/api/contract";
 
@@ -80,14 +81,15 @@ export default function RolesContent() {
                 {t("roles.empty")}
               </Text>
             ) : (
-              <Table verticalSpacing="sm" highlightOnHover>
+              <StickyScrollArea minWidth={720}>
+              <Table verticalSpacing="sm" highlightOnHover className="whitespace-nowrap">
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th>{t("roles.colName")}</Table.Th>
+                    <Table.Th data-pin="lead">{t("roles.colName")}</Table.Th>
                     <Table.Th>{t("roles.colDescription")}</Table.Th>
                     <Table.Th>{t("roles.colKeys")}</Table.Th>
                     <Table.Th>{t("roles.colUsers")}</Table.Th>
-                    <Table.Th />
+                    <Table.Th data-pin="action" />
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -96,20 +98,20 @@ export default function RolesContent() {
                     const actions = r.keys.filter((k) => k.startsWith("action:")).length;
                     return (
                       <Table.Tr key={r.id}>
-                        <Table.Td>
-                          <Group gap={6}>
+                        <Table.Td data-pin="lead">
+                          <Group gap={6} wrap="nowrap">
                             <ShieldCheck size={14} className="text-blue-600" />
                             <span className="font-medium">{r.name}</span>
                           </Group>
                         </Table.Td>
-                        <Table.Td className="text-sm text-muted-500">{r.description ?? ""}</Table.Td>
+                        <Table.Td className="min-w-[220px] max-w-[360px] whitespace-normal text-sm text-muted-500">{r.description ?? ""}</Table.Td>
                         <Table.Td className="text-sm">{t("roles.keysCount", { menus: String(menus), actions: String(actions) })}</Table.Td>
                         <Table.Td>
                           <Badge size="sm" variant="light" color={r.userCount > 0 ? "blue" : "gray"}>
                             {t("roles.usersCount", { n: String(r.userCount) })}
                           </Badge>
                         </Table.Td>
-                        <Table.Td>
+                        <Table.Td data-pin="action">
                           <Group gap={4} justify="flex-end" wrap="nowrap">
                             <Button size="compact-xs" variant="subtle" leftSection={<Pencil size={13} />} onClick={() => setEditTarget(r)}>
                               {t("users.edit")}
@@ -124,6 +126,7 @@ export default function RolesContent() {
                   })}
                 </Table.Tbody>
               </Table>
+              </StickyScrollArea>
             )}
           </Card>
         </Stack>
