@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: [
     "localhost",
     "https://did.smartalliance.co.th",
+    "https://som.develyst.online",
     "did.smartalliance.co.th",
     "localhost:3001",
     "192.168.33.162",
