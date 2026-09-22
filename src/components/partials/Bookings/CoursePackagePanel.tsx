@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Skeleton, Modal, SegmentedControl, TextInput, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Skeleton, Modal, SegmentedControl, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban, CalendarClock, PackageX } from "lucide-react";
 import { useSetCourseAdminUnlock, useCoursePackages, useRemoveCourseRental, useUpdateCourseRate } from "@/hooks/scheduler";
 import DuoRateLine from "./DuoRateLine";
+import CourseDetailRow, { CourseDetails } from "./CourseDetailRow";
 import { COURSE_STATUSES, type CourseStatus } from "@/types/app/scheduler";
 import { isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import { notify } from "@/lib/ui/notify";
@@ -186,10 +187,10 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
             : MANTINE_COLOR.success;
 
         return (
-          <Card key={c.id} padding="lg">
-            <Stack gap="md">
-              <div className="flex items-start justify-between">
-                <div>
+          <Card key={c.id} padding="lg" className="h-full">
+            <Stack gap="md" className="flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
                   <p className="font-semibold">
                     {c.studentName}
                     {c.courseKind === "DUO" && (
@@ -198,75 +199,18 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                       </Badge>
                     )}
                   </p>
-                  {/* TASK-424 — the DEFAULT coach rate, ANY course (the session popup owns the per-session override). */}
-                  {canRate && (
-                    <DuoRateLine
-                      rateMinor={c.classRateMinor ?? null}
-                      editable={canEdit}
-                      saving={updateRate.isPending && updateRate.variables?.courseId === c.id}
-                      onSave={async (classRateMinor) => {
-                        await updateRate.mutateAsync({ courseId: c.id, classRateMinor });
-                        notify({ title: t("course.rateSavedOk"), color: "success" });
-                      }}
-                    />
-                  )}
-                  <p className="text-xs text-muted-400">
-                    {t("course.sizeLine", { size: c.size })} ·{" "}
-                    {/* 🔴 SPEC-076 / REQ-082 AC-1 (TASK-265) — editable on ANY course, and deliberately NOT
-                        lifecycle-gated. TASK-264 left the endpoint ungated for the same reason: REQ-084's
-                        resume warning points the admin at THIS control on a course that is `DROPPED` at that
-                        moment, so a gate would aim the warning at a control that refuses.
-                        ⚠️ This is the one place today where TASK-262's *"gate the control on lifecycle"*
-                        instinct does NOT apply, and it is deliberate.
-
-                        🔴 TASK-311 §1 (`REQ-085 §12.1`, the owner: *"ขวาบน ควรแก้ได้"*) — **the DATE is the
-                        control now, not a 14px icon beside it.** Before this, `expires 12 Oct 26` was a label
-                        and the only clickable thing was a subtle grey icon after it — the capability existed
-                        and the screen did not say so. The dialog is unchanged; this is its same entry point,
-                        grown to cover the words the owner reads. 🚫 Not moved: the icon stays, inside the
-                        button, so it is one control and not two adjacent ones doing the same thing. */}
-                    {canExpiry ? (
-                      <UnstyledButton
-                        onClick={() => setExpiryTarget(c)}
-                        aria-label={t("expiry.edit")}
-                        title={t("expiry.edit")}
-                        className="inline-flex items-center gap-1 align-baseline text-xs text-muted-400 underline decoration-dotted underline-offset-2 hover:text-muted-600"
-                      >
-                        {t("course.expiresOn", { expiry: c.expiryDate })}
-                        <CalendarClock size={14} />
-                      </UnstyledButton>
-                    ) : (
-                      <span className="text-xs text-muted-400">{t("course.expiresOn", { expiry: c.expiryDate })}</span>
-                    )}
-                  </p>
+                  <p className="text-xs text-muted-400">{t("course.sizeLine", { size: c.size })}</p>
                   {c.subject?.name && (
                     <p className="mt-0.5 text-xs text-muted-400">
                       {t("course.program")}:{" "}
                       <span className="font-medium text-muted-600">{c.subject.name}</span>
                     </p>
                   )}
-                  {/* REQ-091 Deploy B (TASK-374) — the whole-course rental, the customer's print shape; null ⇒ nothing. */}
-                  {c.rental && (
-                    <p className="mt-0.5 text-xs text-muted-400 tabular-nums">
-                      {t("rental.section")}:{" "}
-                      <span className="font-medium text-muted-600">
-                        {rentalPrintLine(t, c.rental.code, c.rental.remark, rentalPriceOf(c.rental.code))}
-                      </span>{" "}
-                      {/* TASK-391 — the variant chosen at creation; per-session also says how many are still to collect. */}
-                      <span>
-                        ({c.rental.paidUpfront ? t("rental.paidUpfront") : t("rental.payPerSession")}
-                        {!c.rental.paidUpfront && c.rental.unpaidSessions > 0 ? ` · ${t("rental.toCollect", { n: String(c.rental.unpaidSessions) })}` : ""})
-                      </span>
-                      {canRemoveRental && isCourseWritable(c.status) && (
-                        <UnstyledButton
-                          onClick={() => setRentalTarget(c)}
-                          className="ml-2 inline-flex items-center gap-1 align-baseline text-xs text-red-600 underline decoration-dotted underline-offset-2 hover:text-red-700"
-                        >
-                          <PackageX size={12} />
-                          {t("rental.removeFromCourse")}
-                        </UnstyledButton>
-                      )}
-                    </p>
+                  {/* The cancel reason is a line of its own, not a suffix on the badge: "Cancelled — <reason>" was
+                      long enough to crowd the name and push the Locked badge around; the badge now reads as short
+                      as every other status. */}
+                  {c.status === "CANCELLED" && c.endReason && (
+                    <p className="mt-0.5 text-xs text-red-600">{t("course.endReasonLine", { reason: t(`endCourse.${c.endReason}`) })}</p>
                   )}
                 </div>
                 {/* 🔴 TASK-189 — LIFECYCLE comes from the server's ONE `status` field. The FE no longer computes
@@ -279,9 +223,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                     variant="light"
                     leftSection={c.status === "CANCELLED" ? <Ban size={13} /> : undefined}
                   >
-                    {c.status === "CANCELLED" && c.endReason
-                      ? t("course.endedWithReason", { reason: t(`endCourse.${c.endReason}`) })
-                      : t(`course.status.${c.status}`)}
+                    {t(`course.status.${c.status}`)}
                   </Badge>
                   {c.leaveLocked ? (
                     <Badge color="red" variant="light" leftSection={<Lock size={13} />}>
@@ -330,62 +272,121 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                 </div>
               </Group>
 
-              <Group gap="xs" grow>
-                <Button
-                  size="xs"
-                  variant="light"
-                  color="blue"
-                  leftSection={<GraduationCap size={15} />}
-                  onClick={() => onManage(c.id)}
+              {/* The card's editable facts, one row each, every edit a full-size button at the row's end (they were a
+                  dotted date link, an 11px pencil and a small red link, scattered through the header). */}
+              <CourseDetails>
+                {/* 🔴 SPEC-076 / REQ-082 AC-1 (TASK-265) — the expiry is editable on ANY course, deliberately NOT
+                    lifecycle-gated: REQ-084's resume warning points the admin at THIS control on a course that is
+                    `DROPPED` at that moment, so a gate would aim the warning at a control that refuses. */}
+                <CourseDetailRow
+                  label={t("course.expiresLabel")}
+                  action={
+                    canExpiry && (
+                      <ActionIcon size="lg" variant="default" onClick={() => setExpiryTarget(c)} aria-label={t("expiry.edit")} title={t("expiry.edit")}>
+                        <CalendarClock size={16} />
+                      </ActionIcon>
+                    )
+                  }
                 >
-                  {t("plan.manage")}
-                </Button>
-                <Button
-                  size="xs"
-                  variant="light"
-                  color="gray"
-                  leftSection={<History size={15} />}
-                  onClick={() => setHistoryId(c.id)}
-                >
-                  {t("history.button")}
-                </Button>
-              </Group>
-
-              {/* 🔴 REQ-084 AC-C / TASK-262 — **the second surface the sweep found.** These were gated on
-                  `leaveLocked` / `adminUnlocked` alone — on the LEAVE state, never on the course's lifecycle —
-                  so a `DROPPED` (or ended) course still offered ปลดล็อก. `updateCourse` runs through
-                  `assertCourseWritable` (`scheduler.service.ts:3224`) and refuses it, which makes this the same
-                  defect as AC-A wearing a different button: **a control offered for a call the server rejects.**
-                  Same predicate as the plan modal's, so the two cannot drift apart. */}
-              {isCourseWritable(c.status) &&
-                canEdit &&
-                (c.leaveLocked ? (
-                  <Button
-                    size="xs"
-                    color="orange"
-                    variant="light"
-                    fullWidth
-                    leftSection={<LockKeyholeOpen size={15} />}
-                    loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
-                    onClick={() => setPending({ course: c, unlock: true })}
+                  {c.expiryDate}
+                </CourseDetailRow>
+                {/* TASK-424 — the DEFAULT coach rate, ANY course (the session popup owns the per-session override). */}
+                {canRate && (
+                  <DuoRateLine
+                    rateMinor={c.classRateMinor ?? null}
+                    editable={canEdit}
+                    saving={updateRate.isPending && updateRate.variables?.courseId === c.id}
+                    onSave={async (classRateMinor) => {
+                      await updateRate.mutateAsync({ courseId: c.id, classRateMinor });
+                      notify({ title: t("course.rateSavedOk"), color: "success" });
+                    }}
+                  />
+                )}
+                {/* REQ-091 Deploy B (TASK-374) — the whole-course rental, the customer's print shape; null ⇒ no row. */}
+                {c.rental && (
+                  <CourseDetailRow
+                    label={t("rental.section")}
+                    below={
+                      <>
+                        {/* TASK-391 — the variant chosen at creation; per-session also says how many are still to collect. */}
+                        <p className="text-xs text-muted-400">
+                          {c.rental.paidUpfront ? t("rental.paidUpfront") : t("rental.payPerSession")}
+                          {!c.rental.paidUpfront && c.rental.unpaidSessions > 0 ? ` · ${t("rental.toCollect", { n: String(c.rental.unpaidSessions) })}` : ""}
+                        </p>
+                        {/* The full words, not a bare bin icon: it only touches the sessions still to come. Two taps. */}
+                        {canRemoveRental && isCourseWritable(c.status) && (
+                          <Button size="xs" variant="subtle" color="red" mt={4} ml={-8} leftSection={<PackageX size={14} />} onClick={() => setRentalTarget(c)}>
+                            {t("rental.removeFromCourse")}
+                          </Button>
+                        )}
+                      </>
+                    }
                   >
-                    {t("course.unlockBtn")}
+                    {rentalPrintLine(t, c.rental.code, c.rental.remark, rentalPriceOf(c.rental.code))}
+                  </CourseDetailRow>
+                )}
+              </CourseDetails>
+
+              {/* Actions sit at the card bottom (mt="auto"), so a row of cards lines up whatever the content above;
+                  the unlock/relock button, when present, is the last one and pushes the other two up into the spare space. */}
+              <Stack gap="xs" mt="auto">
+                <Group gap="xs" grow>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="blue"
+                    leftSection={<GraduationCap size={16} />}
+                    onClick={() => onManage(c.id)}
+                  >
+                    {t("plan.manage")}
                   </Button>
-                ) : (
-                  c.adminUnlocked && (
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="gray"
+                    leftSection={<History size={16} />}
+                    onClick={() => setHistoryId(c.id)}
+                  >
+                    {t("history.button")}
+                  </Button>
+                </Group>
+
+                {/* 🔴 REQ-084 AC-C / TASK-262 — **the second surface the sweep found.** These were gated on
+                    `leaveLocked` / `adminUnlocked` alone — on the LEAVE state, never on the course's lifecycle —
+                    so a `DROPPED` (or ended) course still offered ปลดล็อก. `updateCourse` runs through
+                    `assertCourseWritable` (`scheduler.service.ts:3224`) and refuses it, which makes this the same
+                    defect as AC-A wearing a different button: **a control offered for a call the server rejects.**
+                    Same predicate as the plan modal's, so the two cannot drift apart. */}
+                {isCourseWritable(c.status) &&
+                  canEdit &&
+                  (c.leaveLocked ? (
                     <Button
-                      size="xs"
-                      color="gray"
+                      size="sm"
+                      color="orange"
                       variant="light"
                       fullWidth
-                      leftSection={<Lock size={15} />}
+                      leftSection={<LockKeyholeOpen size={16} />}
                       loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
-                      onClick={() => setPending({ course: c, unlock: false })}
+                      onClick={() => setPending({ course: c, unlock: true })}
                     >
-                      {t("course.relockBtn")}
+                      {t("course.unlockBtn")}
                     </Button>
-                  )
-                ))}
+                  ) : (
+                    c.adminUnlocked && (
+                      <Button
+                        size="sm"
+                        color="gray"
+                        variant="light"
+                        fullWidth
+                        leftSection={<Lock size={16} />}
+                        loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
+                        onClick={() => setPending({ course: c, unlock: false })}
+                      >
+                        {t("course.relockBtn")}
+                      </Button>
+                    )
+                  ))}
+              </Stack>
             </Stack>
           </Card>
         );
@@ -473,9 +474,11 @@ function CourseCardSkeletons({ count }: { count: number }) {
                 <Skeleton height={SKEL.meta} width="70%" mt={8} radius={SKEL_RADIUS} />
               </div>
             </Group>
+            {/* the details box: at least the expiry row (34px) — the rate / rental rows vary per course */}
+            <Skeleton height={48} radius={SKEL_RADIUS} />
             <Group gap="xs" grow>
-              <Skeleton height={SKEL.button} radius={SKEL_RADIUS} />
-              <Skeleton height={SKEL.button} radius={SKEL_RADIUS} />
+              <Skeleton height={36} radius={SKEL_RADIUS} />
+              <Skeleton height={36} radius={SKEL_RADIUS} />
             </Group>
           </Stack>
         </Card>
@@ -485,7 +488,7 @@ function CourseCardSkeletons({ count }: { count: number }) {
 }
 
 /**
- * TASK-391 (REQ-091 §14) — the SECOND tap: the red link on the card opens this; its own red confirm removes the rental
+ * TASK-391 (REQ-091 §14) — the SECOND tap: the red button in the card's rental row opens this; its own red confirm removes the rental
  * from the course's REMAINING sessions. 🔴 The dialog says what the server does: no money is changed (a paid-upfront
  * post stands; collected rows stand); after `200` the notice names the count from the response, and the card's line
  * reads "rental removed" on re-read (`rental === null`). Refusals (`RENTAL_NOT_ON_COURSE`) are the server's sentence.

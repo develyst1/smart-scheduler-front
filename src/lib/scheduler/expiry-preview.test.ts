@@ -26,13 +26,14 @@ const { en, th } = dictionaries;
 describe("🔴 §1 — the `expires …` line on the card OPENS the expiry dialog", () => {
   const card = codeOf(CARD);
 
-  it("the date is inside a control that targets the dialog", () => {
-    // Before: the date was a label and the only control was a 14px icon after it. Now the words the owner
-    // reads are the button, and the icon sits inside it — one control, not two adjacent ones.
-    const btn = card.slice(card.indexOf("<UnstyledButton"), card.indexOf("</UnstyledButton>"));
-    expect(btn).toContain("onClick={() => setExpiryTarget(c)}");
-    expect(btn).toContain('t("course.expiresOn"');
-    expect(btn).toContain("<CalendarClock");
+  it("the expiry is a row of the card's details box, and its full-size button targets the dialog", () => {
+    // History: a 14px icon after a label (TASK-311 made the dotted date itself the button); now the date is the
+    // `Expires` row's value and the edit is the row's full-size ActionIcon — the same shape as every other edit.
+    const row = card.slice(card.indexOf('label={t("course.expiresLabel")}'), card.indexOf("</CourseDetailRow>"));
+    expect(row).toContain("onClick={() => setExpiryTarget(c)}");
+    expect(row).toContain("<ActionIcon");
+    expect(row).toContain("<CalendarClock");
+    expect(row).toContain("{c.expiryDate}");
   });
 
   it("🚫 there is still ONE dialog, mounted once", () => {
@@ -41,8 +42,9 @@ describe("🔴 §1 — the `expires …` line on the card OPENS the expiry dialo
 
   it("the split strings say the same thing the one string said, in both languages", () => {
     expect(en.course.sizeLine).toBe("{size}-session course");
-    expect(en.course.expiresOn).toBe("expires {expiry}");
-    expect(th.course.expiresOn).toBe("หมดอายุ {expiry}");
+    expect(en.course.expiresLabel).toBe("Expires");
+    expect(th.course.expiresLabel).toBe("หมดอายุ");
+    expect((en.course as Record<string, unknown>).expiresOn).toBeUndefined(); // the "expires {date}" line is gone
     // The old combined key is gone — a string nothing renders is a label waiting to outlive its value.
     expect((en.course as Record<string, unknown>).summary).toBeUndefined();
   });

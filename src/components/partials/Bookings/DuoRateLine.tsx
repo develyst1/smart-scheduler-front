@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ActionIcon, Button, Group, NumberInput, Text } from "@mantine/core";
+import { ActionIcon, Button, Group, NumberInput } from "@mantine/core";
+import CourseDetailRow from "./CourseDetailRow";
 import { Pencil } from "lucide-react";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
@@ -35,7 +36,7 @@ export default function DuoRateLine({ rateMinor, editable, saving, onSave }: { r
 
   if (editing) {
     return (
-      <Group gap="xs" align="flex-end" data-duo-rate-edit>
+      <Group gap="xs" align="flex-end" p="xs" className="border-b border-muted-200 last:border-b-0" data-duo-rate-edit>
         <NumberInput size="xs" label={t("course.defaultRate")} value={baht} onChange={(v) => setBaht(typeof v === "number" ? v : "")} min={0} step={50} allowDecimal={false} allowNegative={false} suffix=" ฿" className="max-w-40" />
         <Button size="xs" loading={saving} disabled={baht === ""} onClick={() => void save()}>
           {t("common.save")}
@@ -46,14 +47,22 @@ export default function DuoRateLine({ rateMinor, editable, saving, onSave }: { r
       </Group>
     );
   }
+  // A row of the card's details box; the pencil is a full-size target now (it was an 11px icon after the text).
   return (
-    <Text size="xs" c="teal" className="flex items-center gap-1" data-duo-rate={rateMinor ?? "none"}>
-      {t("course.defaultRateLine", { baht: typeof rateMinor === "number" ? rateMinor / 100 : "—" })}
-      {editable && (
-        <ActionIcon size="xs" variant="subtle" color="gray" aria-label={t("course.rateEdit")} onClick={() => setEditing(true)}>
-          <Pencil size={11} />
-        </ActionIcon>
-      )}
-    </Text>
+    <CourseDetailRow
+      label={t("course.defaultRate")}
+      color="green"
+      data-duo-rate={rateMinor ?? "none"}
+      action={
+        editable && (
+          <ActionIcon size="lg" variant="default" aria-label={t("course.rateEdit")} onClick={() => setEditing(true)}>
+            <Pencil size={16} />
+          </ActionIcon>
+        )
+      }
+    >
+      {/* green, label and value — the card's one money-to-the-coach figure stands out from the other rows */}
+      {t("course.rateValue", { baht: typeof rateMinor === "number" ? rateMinor / 100 : "—" })}
+    </CourseDetailRow>
   );
 }
