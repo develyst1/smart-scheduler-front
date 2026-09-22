@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { Alert, Badge, Button, Card, Checkbox, Group, Loader, Modal, PasswordInput, Select, Stack, Table, Text, TextInput } from "@mantine/core";
-import { AlertTriangle, GraduationCap, KeyRound, LayoutList, ListChecks, Pencil, ShieldCheck, UserPlus, UserX, UserCheck } from "lucide-react";
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Group, Loader, Menu, Modal, PasswordInput, Select, Stack, Table, Text, TextInput } from "@mantine/core";
+import { AlertTriangle, GraduationCap, KeyRound, LayoutList, ListChecks, MoreHorizontal, Pencil, ShieldCheck, UserPlus, UserX, UserCheck } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
@@ -13,6 +13,7 @@ import { useCreateUser, useResetUserPassword, useSetUserActions, useSetUserDisab
 import { useRoles } from "@/hooks/scheduler/useRoles";
 import { useTeachers } from "@/hooks/scheduler";
 import { teacherSelectData } from "@/components/common/TeacherOption";
+import StickyScrollArea from "@/components/common/StickyScrollArea";
 import { ActionsChecklist, MenusChecklist } from "./GrantChecklists";
 import { usePermissions } from "@/hooks/scheduler/useMe";
 import { MENU_KEYS } from "@/lib/rbac/menus";
@@ -87,10 +88,11 @@ export default function UsersContent() {
             </Text>
           </Group>
         ) : (
-          <Table verticalSpacing="sm" highlightOnHover>
+          <StickyScrollArea minWidth={900}>
+          <Table verticalSpacing="sm" highlightOnHover className="whitespace-nowrap">
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>{t("users.colUsername")}</Table.Th>
+                <Table.Th data-pin="lead">{t("users.colUsername")}</Table.Th>
                 <Table.Th>{t("users.colDisplayName")}</Table.Th>
                 <Table.Th>{t("users.colRole")}</Table.Th>
                 <Table.Th>{t("users.colRoleName")}</Table.Th>
@@ -98,7 +100,7 @@ export default function UsersContent() {
                 <Table.Th>{t("users.colActions")}</Table.Th>
                 <Table.Th>{t("users.colStatus")}</Table.Th>
                 <Table.Th>{t("users.colCreated")}</Table.Th>
-                <Table.Th />
+                <Table.Th data-pin="action" />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -116,6 +118,7 @@ export default function UsersContent() {
               ))}
             </Table.Tbody>
           </Table>
+          </StickyScrollArea>
         )}
       </Card>
 
@@ -205,7 +208,7 @@ function UserRow({
 
   return (
     <Table.Tr className={disabled ? "opacity-60" : undefined}>
-      <Table.Td className="font-mono text-sm">{user.username}</Table.Td>
+      <Table.Td data-pin="lead" className="font-mono text-sm">{user.username}</Table.Td>
       <Table.Td>
         {user.displayName}
         {isSelf && (
@@ -277,24 +280,37 @@ function UserRow({
         </Badge>
       </Table.Td>
       <Table.Td className="tabular-nums text-sm">{formatDateDisplay(user.createdAt)}</Table.Td>
-      <Table.Td>
+      <Table.Td data-pin="action">
+        {/* The frequent act stays one tap; reset + disable/enable sit behind ⋯ (disable still confirms). */}
         <Group gap={4} justify="flex-end" wrap="nowrap">
           <Button size="compact-xs" variant="subtle" leftSection={<Pencil size={13} />} onClick={onEdit}>
             {t("users.edit")}
           </Button>
-          <Button size="compact-xs" variant="subtle" leftSection={<KeyRound size={13} />} onClick={onReset}>
-            {t("users.resetPassword")}
-          </Button>
-          <Button
-            size="compact-xs"
-            variant="subtle"
-            color={disabled ? "green" : "red"}
-            leftSection={disabled ? <UserCheck size={13} /> : <UserX size={13} />}
-            loading={setDisabled.isPending}
-            onClick={toggle}
-          >
-            {disabled ? t("users.enable") : t("users.disable")}
-          </Button>
+          <Menu shadow="md" position="bottom-end" withinPortal>
+            <Menu.Target>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                loading={setDisabled.isPending}
+                aria-label={t("users.moreActions", { name: user.displayName })}
+              >
+                <MoreHorizontal size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<KeyRound size={14} />} onClick={onReset}>
+                {t("users.resetPassword")}
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                color={disabled ? "green" : "red"}
+                leftSection={disabled ? <UserCheck size={14} /> : <UserX size={14} />}
+                onClick={toggle}
+              >
+                {disabled ? t("users.enable") : t("users.disable")}
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
       </Table.Td>
       {confirmDialog}

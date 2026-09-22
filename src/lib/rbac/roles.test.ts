@@ -201,7 +201,7 @@ describe("copy", () => {
     expect(dictionaries.en.nav.roles).toBe("Roles");
     expect(dictionaries.th.nav.roles).toBe("บทบาท");
     const u = dictionaries.en.users as Record<string, string>;
-    expect(Object.keys(u).length).toBe(62); // + TASK-407's teacher link 4
+    expect(Object.keys(u).length).toBe(63); // + TASK-407's teacher link 4 · + the row's ⋯ menu label (moreActions)
     for (const k of ["colRoleName", "roleNone", "fromRole", "roleSavedOk"]) {
       expect(u[k]?.length).toBeGreaterThan(0);
       expect((dictionaries.th.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);
