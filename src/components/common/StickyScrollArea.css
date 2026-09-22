@@ -19,6 +19,15 @@
   z-index: 10;
   background: var(--mantine-color-body);
 }
+/* …and Mantine's zebra stripe (`striped`, also painted on <tr>) — kept before the hover rule so hover wins */
+.stickyScroll tr[data-striped="odd"]:nth-of-type(odd) > [data-pin],
+.stickyScroll tr[data-striped="even"]:nth-of-type(even) > [data-pin] {
+  background: var(--table-striped-color);
+}
+/* the opaque bg above hides Mantine's row hover (set on <tr>) — repaint pinned cells with the same, also opaque, colour */
+.stickyScroll tr[data-hover]:hover > [data-pin] {
+  background: var(--tr-hover-bg);
+}
 .stickyScroll thead [data-pin="lead"],
 .stickyScroll thead [data-pin="action"] {
   z-index: 20;
@@ -36,4 +45,12 @@
 }
 .stickyScroll:not([data-at-end="true"]) [data-pin="action"] {
   box-shadow: -8px 0 12px -4px rgba(0, 0, 0, 0.22);
+}
+
+/* Mantine Badge clips its label (overflow hidden + ellipsis), which lets table auto-layout squeeze it down to "…".
+   Inside a scrolling table the row should widen and scroll instead, so badges keep their full label. */
+.stickyScroll .mantine-Badge-root,
+.stickyScroll .mantine-Badge-label {
+  overflow: visible;
+  min-width: max-content;
 }
