@@ -1006,7 +1006,6 @@ const en = {
     rateOverride: "override",
     rateClear: "Clear (back to default)",
     defaultRate: "Default coach rate",
-    defaultRateLine: "Default coach rate {baht} ฿ / session",
     rateValue: "{baht} ฿ / session",
     priceInclVat: "฿{price} — price includes VAT",
     pickTeacherFirst: "Select a teacher first",
@@ -1175,6 +1174,8 @@ const en = {
       "rental-set": "Full Set",
     },
     tierLabel: "{tier} — {price}",
+    // REQ-106 §1 (TASK-464) — the coach's read-only gear line (no price, no paid state, no doors)
+    gearForCoach: "Equipment to prepare",
     remark: "Remark",
     remarkHint: "Which pair / which size — required for Full Set and Ride only",
     save: "Save rental",
@@ -2729,7 +2730,6 @@ const th: typeof en = {
     rateOverride: "กำหนดเอง",
     rateClear: "ล้าง (กลับเป็นค่าเริ่มต้น)",
     defaultRate: "ค่าสอนเริ่มต้น",
-    defaultRateLine: "ค่าสอนเริ่มต้น {baht} ฿ / คาบ",
     rateValue: "{baht} ฿ / คาบ",
     priceInclVat: "฿{price} — ราคารวม VAT แล้ว",
     pickTeacherFirst: "เลือกครูก่อน",
@@ -2875,6 +2875,8 @@ const th: typeof en = {
       "rental-set": "ชุดเต็ม",
     },
     tierLabel: "{tier} — {price}",
+    // REQ-106 §1 (TASK-464) — บรรทัดอุปกรณ์สำหรับครู อ่านอย่างเดียว (ไม่มีราคา ไม่มีสถานะจ่าย ไม่มีปุ่ม)
+    gearForCoach: "อุปกรณ์ที่ต้องเตรียม",
     remark: "หมายเหตุ",
     remarkHint: "คู่ไหน / ไซส์อะไร — ต้องใส่สำหรับชุดเต็มและเฉพาะตัวเล่น",
     save: "บันทึกค่าเช่า",

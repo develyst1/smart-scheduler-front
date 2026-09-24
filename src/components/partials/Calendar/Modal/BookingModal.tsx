@@ -73,6 +73,7 @@ import {
   canSubmitResume,
 } from "@/lib/scheduler/pause-booking";
 import RentalSection from "./RentalSection";
+import RentalGearLine from "./RentalGearLine";
 import OtherScheduleFields from "./OtherScheduleFields";
 import OtherSeriesDialog from "./OtherSeriesDialog";
 import OtherDetailsDialog from "./OtherDetailsDialog";
@@ -674,7 +675,9 @@ function ViewBooking({
           one door for a session's rental, on the modal itself; the standalone modal stays on the Bookings page for
           walk-ins. */}
       {/* TASK-407 — not while scoped: the section reads `GET /sellable-packages`, outside the server's allowed set. */}
-      {!scoped && <RentalSection booking={booking} />}
+      {/* REQ-106 §1 (TASK-464) — the unscoped section is untouched; a COACH gets the gear line instead: item + remark,
+          read-only, no price, no paid state, no buttons (the owner's ruling ก). No rental ⇒ nothing at all. */}
+      {scoped ? <RentalGearLine booking={booking} /> : <RentalSection booking={booking} />}
 
       {activeBadgeTypes.length > 0 && can("action:calendar.badges") && (
         <div className="flex flex-col gap-2">

@@ -89,7 +89,10 @@ describe("§3 — the calendar page under the flag", () => {
     expect(codeOf("src/hooks/scheduler/useScheduler.ts")).toContain('getAllBookings({ status: "PAUSED"');
     // the modal's VIEW, mounted on a click, fetches only badges by itself; the rental section (sellable-packages) is off under the flag
     expect(dataHooks(region(modal, "function ViewBooking(", "function MoveBookingForm("))).toEqual(["useBadges", "useConfirmBooking", "useMarkAttended", "useMarkSickLeave", "usePauseBooking", "useResumeBooking", "useSetBookingBadges"]);
-    expect(modal).toContain("{!scoped && <RentalSection booking={booking} />}");
+    // 📌 REQ-106 §1 (TASK-464) — the owner ruled a coach DOES see the gear (item + remark, read-only), so the scoped
+    // branch is no longer "nothing": it is `RentalGearLine`, which mounts no data hook (the pin above still holds) and
+    // carries no price, no paid state and no door. The unscoped `RentalSection` is untouched.
+    expect(modal).toContain("{scoped ? <RentalGearLine booking={booking} /> : <RentalSection booking={booking} />}");
   });
   it("the columns are the payload's; the pickers go; `Report leave` only for a LINKED holder of the key", () => {
     expect(content).toContain("const scoped = isScoped(me);");
