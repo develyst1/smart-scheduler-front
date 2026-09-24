@@ -15,6 +15,8 @@ import { useMemo } from "react";
 import { mergeCampCells, type CampBlock } from "@/lib/camp/grid";
 import CampBlockCell from "./CampBlockCell";
 import {
+  ClashMark,
+  groupToneClass,
   BOOKING_TYPE_ICON,
   BOOKING_TYPE_VAR,
   SharedTeachersMarker,
@@ -23,6 +25,7 @@ import {
   OtherKindTag,
   GroupSeatsLine,
 } from "@/components/common/BookingCellBody";
+import { groupTone, inClashPair } from "@/lib/scheduler/group-clash";
 
 interface Props {
   teachers: TeacherView[];
@@ -116,6 +119,7 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
             display={display}
             campCell={(teacherId) => campCells.get(`${teacherId}|${time}`)}
             onSelectCamp={onSelectCamp}
+            bookings={bookings}
           />
         ))}
         </div>
@@ -133,9 +137,12 @@ function Row({
   display,
   campCell,
   onSelectCamp,
+  bookings,
 }: {
   time: string;
   teachers: TeacherView[];
+  /** REQ-105 (TASK-457) — the rows on screen, so a cell can tell it is one half of a clash PAIR (pure `inClashPair`). */
+  bookings: Booking[];
   findBooking: (teacherId: string, time: string) => Booking | undefined;
   onSelectBooking: (b: Booking) => void;
   onCreate: (teacherId: string, time: string) => void;
@@ -169,7 +176,8 @@ function Row({
               <button
                 type="button"
                 onClick={() => onSelectBooking(booking)}
-                className={`relative flex h-full w-full flex-col gap-1 overflow-hidden rounded-xl border-y border-r p-2 pl-3 text-left shadow-sm transition-shadow hover:shadow-md ${CAL_SURFACE_STYLE[accent]} ${CAL_SURFACE_HOVER[accent]}`}
+                className={`relative flex h-full w-full flex-col gap-1 overflow-hidden rounded-xl border-y border-r p-2 pl-3 text-left shadow-sm transition-shadow hover:shadow-md ${CAL_SURFACE_STYLE[accent]} ${CAL_SURFACE_HOVER[accent]} ${groupToneClass(booking)}`}
+                data-group-tone={booking.bookingType === "GROUP" ? groupTone(booking) : undefined}
               >
                 {/* SPEC-046 — the left stripe carries TYPE (the stable commercial channel), matching the week cell;
                     STATUS rides the dot beside the name. Two competing stripes on one card would make neither
@@ -192,6 +200,8 @@ function Row({
                   <RentalStamp booking={booking} />
                   {/* REQ-095 — the OTHER kind, from the server's `other.kind`. */}
                   <OtherKindTag booking={booking} />
+                  {/* REQ-105 — the CLASH mark on BOTH halves of the pair (the group's own flag, or sharing its coach-hour). */}
+                  <ClashMark booking={booking} inPair={inClashPair(booking, bookings)} />
                   {/* Branch (badge) — a primary identifier here, so it stays a labelled chip, never a bare dot. */}
                   {display.badge && (booking.badges ?? []).length > 0 && (
                     <span className="flex shrink-0 flex-wrap justify-end gap-1">

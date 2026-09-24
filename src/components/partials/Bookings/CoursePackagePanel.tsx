@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ActionIcon, Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Skeleton, Modal, SegmentedControl, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban, CalendarClock, PackageX } from "lucide-react";
@@ -12,6 +12,7 @@ import { isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
+import { isDeadEntitlement, sortEntitlements } from "@/lib/scheduler/entitlement-order";
 import PagerBar from "@/components/common/PagerBar";
 import CourseHistoryModal from "./CourseHistoryModal";
 import { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
@@ -55,7 +56,9 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
     page,
     limit: PAGE_SIZE,
   });
-  const courses = data?.items ?? [];
+  // REQ-105 §2 (TASK-455) — the ONE sorter, shared with the voucher panel (the server's `status` decides).
+  const sorted = sortEntitlements(data?.items ?? []);
+  const courses = sorted.rows;
   const total = data?.total ?? 0;
   // AC-B6 — the server's counts, over the search-filtered set before paging; they partition the unfiltered total.
   const counts = data?.counts;
@@ -179,7 +182,9 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {courses.map((c) => {
+          {courses.map((c, i) => {
+        // REQ-105 §2 (TASK-455) — the same ONE sorter as the voucher panel; the dead group is faded under a divider.
+        const dead = isDeadEntitlement(c.status);
         const leaveColor = c.leaveLocked
           ? MANTINE_COLOR.danger
           : c.leaveRemaining === 0
@@ -187,7 +192,15 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
             : MANTINE_COLOR.success;
 
         return (
-          <Card key={c.id} padding="lg" className="h-full">
+          <React.Fragment key={c.id}>
+          {sorted.divider && i === sorted.live.length && (
+            <div className="col-span-full mt-2 flex items-center gap-2 text-xs uppercase tracking-wide text-muted-500" data-inactive-divider>
+              <span className="h-px grow bg-muted-200" />
+              {t("bookings.inactiveDivider")}
+              <span className="h-px grow bg-muted-200" />
+            </div>
+          )}
+          <Card padding="lg" className={`h-full ${dead ? "opacity-60" : ""}`} data-dead={dead ? "yes" : "no"}>
             <Stack gap="md" className="flex-1">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -390,6 +403,7 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
               </Stack>
             </Stack>
           </Card>
+          </React.Fragment>
         );
           })}
         </div>

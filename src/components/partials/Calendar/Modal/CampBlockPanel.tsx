@@ -11,6 +11,7 @@ import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { useCampWeekDays, useUpdateCampWeekDay } from "@/hooks/scheduler/useCamp";
 import { replaceTeacher, type CampBlock } from "@/lib/camp/grid";
+import { isUuid } from "@/lib/camp/units";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import type { TeacherView } from "@/types/app/scheduler";
 
@@ -33,8 +34,11 @@ export default function CampBlockPanel({ block, teachers, onClose }: { block: Ca
   const name = (id: string) => teachers.find((x) => x.id === id)?.nickname ?? id;
   const dayTeacherIds = day?.teacherIds ?? [block.teacherId];
 
+  // TASK-450b — the same guard on the WRITE: a mutation has no `enabled`, so a block whose week id never arrived would
+  // have sent `PATCH /camp/weeks/undefined/days/:date`. The door is absent instead (hidden, never disabled).
+  const hasWeek = isUuid(block.campWeekId);
   const runSwap = async () => {
-    if (!to) return;
+    if (!to || !hasWeek) return;
     setError(null);
     try {
       const r = await swap.mutateAsync({ weekId: block.campWeekId, date: block.date, body: { teacherIds: replaceTeacher(dayTeacherIds, block.teacherId, to) } });
@@ -103,7 +107,7 @@ export default function CampBlockPanel({ block, teachers, onClose }: { block: Ca
             <Button variant="default" size="xs" onClick={onClose}>
               {t("common.close")}
             </Button>
-            {can("action:camp.week-open") && !swapOpen && (
+            {can("action:camp.week-open") && hasWeek && !swapOpen && (
               <Button size="xs" variant="light" leftSection={<ArrowLeftRight size={13} />} onClick={() => setSwapOpen(true)}>
                 {t("calendar.campSwap")}
               </Button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Card, Table, Progress, Text, Badge, Group, Skeleton, Stack, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { Ticket, Search, GraduationCap, Ban } from "lucide-react";
@@ -8,6 +8,7 @@ import { MANTINE_COLOR } from "@/lib/ui/colors";
 import { useVouchers } from "@/hooks/scheduler";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { voucherChip, voucherDoors } from "@/lib/scheduler/voucher";
+import { isDeadEntitlement, sortEntitlements } from "@/lib/scheduler/entitlement-order";
 import EndCourseDialog from "./EndCourseDialog";
 import type { VoucherSummary } from "@/types/api/contract";
 import { formatDateDisplay } from "@/lib/ui/format";
@@ -49,7 +50,10 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
     page,
     limit: PAGE_SIZE,
   });
-  const vouchers = data?.items ?? [];
+  // REQ-105 §2 (TASK-455) — the ONE sorter, shared with the course panel: cancelled/expired to the bottom, faded,
+  // under a divider (never above an all-dead list). The server's `status` decides; nothing is derived here.
+  const sorted = sortEntitlements(data?.items ?? []);
+  const vouchers = sorted.rows;
   const total = data?.total ?? 0;
   const busy = isLoading || isPlaceholderData;
   const phase = useLoadPhase(busy, data !== undefined);
@@ -107,10 +111,19 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
                       ))}
                     </Table.Tr>
                   ))
-                : vouchers.map((v) => {
+                : vouchers.map((v, i) => {
                 const usedPct = v.totalHours > 0 ? (v.usedHours / v.totalHours) * 100 : 0;
+                const dead = isDeadEntitlement(v.status);
                 return (
-                  <Table.Tr key={v.id}>
+                  <React.Fragment key={v.id}>
+                  {sorted.divider && i === sorted.live.length && (
+                    <Table.Tr data-inactive-divider>
+                      <Table.Td colSpan={6} className="bg-muted-100 py-1 text-xs uppercase tracking-wide text-muted-500">
+                        {t("bookings.inactiveDivider")}
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+                  <Table.Tr className={dead ? "opacity-60" : undefined} data-dead={dead ? "yes" : "no"}>
                     <Table.Td>
                       <Text fw={500}>{v.student.name}</Text>
                       {v.student.nickname && (
@@ -167,6 +180,7 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
                       </Group>
                     </Table.Td>
                     </Table.Tr>
+                  </React.Fragment>
                   );
                 })}
             </Table.Tbody>

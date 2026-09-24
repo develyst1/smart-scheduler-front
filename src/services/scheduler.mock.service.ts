@@ -965,6 +965,12 @@ export const getSlotAvailability = (date: string, startTime: string): Promise<Sl
 export const setAttendeeNote = (id: string, attendeeNote: string | null) =>
   delay({ id, attendeeNote });
 
+/** REQ-105 — offline stand-ins for the two clash resolutions (the dialogs are exercisable without a server). */
+export const resolveClashMove = (bookingId: string, body: { teacherId?: string; date?: string; startTime?: string }) =>
+  delay({ resolved: true, bookingId, ...body });
+export const resolveClashSwapCoach = (bookingId: string, body: { teacherId: string }) =>
+  delay({ resolved: true, bookingId, teacherId: body.teacherId });
+
 /** REQ-036 — offline stand-in for the end-course preview/commit so the dialog is exercisable without a server. */
 export const previewEndCourse = (courseId: string) =>
   delay({

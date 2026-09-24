@@ -152,7 +152,7 @@ describe("§2 — the wire and the doors", () => {
   it("copy: camp 60 · nav.camp — both languages; the Camp card door on every student row", () => {
     const en = dictionaries.en.camp as Record<string, string>;
     const th = dictionaries.th.camp as Record<string, string>;
-    expect(Object.keys(en).length).toBe(77); // TASK-444: +1 (rateCol) · TASK-402: 60 · TASK-404: +9 (undo ×7, qr ×2) · TASK-419: +7 (the window + per-day editor)
+    expect(Object.keys(en).length).toBe(80); // TASK-457: +3 (coachFrom · coachTo · coachWindowHint) · TASK-444: +1 (rateCol) · TASK-402: 60 · TASK-404: +9 (undo ×7, qr ×2) · TASK-419: +7 (the window + per-day editor)
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     expect(dictionaries.en.nav.camp).toBe("Camp");
     expect(dictionaries.th.nav.camp.length).toBeGreaterThan(0);

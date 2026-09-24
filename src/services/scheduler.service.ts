@@ -712,6 +712,25 @@ export const moveBooking = async (
   return dtoToBooking(data.booking);
 };
 
+/**
+ * REQ-105 / SPEC-091 (TASK-453/457) — the two clash resolutions, one transaction each on the server.
+ * ① `move` — the PRIVATE moves and the group takes its hour back (the owner's default).
+ * ② `swap-coach` — the GROUP session moves to another coach; the Private keeps this one.
+ * 🔴 Either may answer `409 SLOT_TAKEN` (or `409 NOT_IN_CLASH` on a stale screen): **the clash then STANDS** and
+ * nothing was written — the caller renders the server's sentence and refetches on 2xx only.
+ */
+export const resolveClashMove = async (bookingId: string, body: { teacherId?: string; date?: string; startTime?: string }) => {
+  if (useMock) return mock.resolveClashMove(bookingId, body);
+  const { data } = await api.post(`/bookings/${bookingId}/resolve-clash/move`, body);
+  return data;
+};
+
+export const resolveClashSwapCoach = async (bookingId: string, body: { teacherId: string }) => {
+  if (useMock) return mock.resolveClashSwapCoach(bookingId, body);
+  const { data } = await api.post(`/bookings/${bookingId}/resolve-clash/swap-coach`, body);
+  return data;
+};
+
 // ───────────────────────── Course packages ─────────────────────────
 
 export interface CoursesQuery {

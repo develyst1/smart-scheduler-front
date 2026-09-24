@@ -66,6 +66,8 @@ import {
   setAttendeeNote,
   previewEndCourse,
   endCourse,
+  resolveClashMove,
+  resolveClashSwapCoach,
   previewEndVoucher,
   endVoucher,
   dropCourse,
@@ -306,6 +308,26 @@ export const useEndCourse = () => {
   return useMutation({
     mutationFn: ({ courseId, reason, note }: { courseId: string; reason: EndCourseReason; note?: string }) =>
       endCourse(courseId, { reason, note }),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/**
+ * REQ-105 (TASK-457) — the two clash resolutions. Both invalidate everything on success ONLY: a 409 wrote nothing and
+ * the clash still stands, so a refetch would only redraw the same two blocks (and hide the refusal behind a flicker).
+ */
+export const useResolveClashMove = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, body }: { bookingId: string; body: { teacherId?: string; date?: string; startTime?: string } }) => resolveClashMove(bookingId, body),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+export const useResolveClashSwapCoach = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, teacherId }: { bookingId: string; teacherId: string }) => resolveClashSwapCoach(bookingId, { teacherId }),
     onSuccess: () => invalidateAll(qc),
   });
 };

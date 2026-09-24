@@ -31,6 +31,10 @@ export interface GroupSeat {
 export interface GroupFacts {
   key: string | null;
   kind: GroupKind | null;
+  /** REQ-105 (TASK-453) — the yield / closed stamps and the SERVER's clash verdict; read, never re-derived. */
+  yieldedAt?: string | null;
+  closedAt?: string | null;
+  clash?: boolean;
   /** The card's price group for this group, from the server — the course form inside the group picks its card by THIS name. */
   priceGroup: string | null;
   name: string | null;
@@ -41,8 +45,13 @@ export interface GroupFacts {
   ratePostedAt: string | null;
 }
 
-/** `n/cap` for the cell and the roster — `n` is the seats the server listed, nothing derived. */
-export const seatsLabel = (g: Pick<GroupFacts, "seats" | "seatCap">): string => `${g.seats.length}/${g.seatCap ?? "?"}`;
+/**
+ * `n/cap` for the cell and the roster — `n` is the seats the server listed, nothing derived.
+ * REQ-105 (TASK-453/457): `seatCap: null` now means **uncapped**, and an uncapped group prints a bare `n` — no
+ * denominator is invented (the old `?` claimed "unknown", which is a different thing from "no limit").
+ */
+export const seatsLabel = (g: Pick<GroupFacts, "seats" | "seatCap">): string =>
+  typeof g.seatCap === "number" ? `${g.seats.length}/${g.seatCap}` : `${g.seats.length}`;
 
 /** The body of `POST /bookings/group-series` — the confirmed shape; optional parts only when present. */
 export interface GroupSeriesInput {

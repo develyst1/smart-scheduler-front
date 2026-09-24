@@ -16,6 +16,7 @@ import {
   type CreateCampWeekInput,
   type UpdateCampWeekInput,
 } from "@/services/camp.service";
+import { isUuid } from "@/lib/camp/units";
 import type { CampDayStatusWrite, CampHalf, SellCampInput } from "@/lib/camp/units";
 import type { CampDayPatch } from "@/lib/camp/grid";
 import { CALENDAR_KEY } from "./useScheduler";
@@ -30,8 +31,10 @@ const invalidate = (qc: ReturnType<typeof useQueryClient>) => {
 export const useCampPrices = (enabled = true) => useQuery({ queryKey: [...CAMP_KEY, "prices"], queryFn: getCampPrices, enabled, staleTime: 5 * 60_000 });
 export const useCampWeeks = (from: string, to: string, enabled = true) =>
   useQuery({ queryKey: [...CAMP_KEY, "weeks", from, to], queryFn: () => listCampWeeks(from, to), enabled });
+// TASK-450b — `isUuid`, not `!!id`: a real `undefined` is blocked by `!!`, but the four-letter STRING "undefined" is
+// truthy and reached `/camp/weeks/undefined/days` on sid (`22P02` before TASK-450 made the route a 400).
 export const useCampWeekDays = (id: string | null) =>
-  useQuery({ queryKey: [...CAMP_KEY, "week", id], queryFn: () => getCampWeekDays(id as string), enabled: !!id, staleTime: 0 });
+  useQuery({ queryKey: [...CAMP_KEY, "week", id], queryFn: () => getCampWeekDays(id as string), enabled: isUuid(id), staleTime: 0 });
 export const useCampPackages = (studentId: string | null) =>
   useQuery({ queryKey: [...CAMP_KEY, "packages", studentId], queryFn: () => listCampPackages(studentId as string), enabled: !!studentId, staleTime: 0 });
 

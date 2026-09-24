@@ -128,7 +128,8 @@ describe("§2 — the Users page", () => {
 
   it("copy: the page's keys exist in both languages (38 + 8 Stage 2 + 8 Stage 3 = 54 × 2), plus nav.users", () => {
     const keys = Object.keys(dictionaries.en.users);
-    expect(keys.length).toBe(62); // + Stage 4's role column 4 + TASK-407's teacher link 4
+    expect(keys.length).toBe(63); // + Stage 4's role column 4 + TASK-407's teacher link 4 + `moreActions` (897b29a: the row's ⋯ menu aria-label — the key IS rendered, see below)
+    expect(page).toContain('aria-label={t("users.moreActions", { name: user.displayName })}'); // the 63rd key earns its place
     for (const k of keys) expect((dictionaries.th.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);
     expect(dictionaries.en.nav.users).toBe("Users");
     expect(dictionaries.th.nav.users).toBe("ผู้ใช้งาน");

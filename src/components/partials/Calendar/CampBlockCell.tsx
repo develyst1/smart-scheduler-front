@@ -30,6 +30,9 @@ export default function CampBlockCell({ block, onSelect, size = "md" }: { block:
       </span>
       <span className={`tabular-nums text-cal-ink ${size === "sm" ? "text-[11px]" : "text-xs"} font-medium`}>
         {formatTimeDisplay(block.startTime)}–{formatTimeDisplay(block.endTime)} · {t("calendar.campHours", { n: block.hours })}
+        {/* REQ-105 (TASK-454/457) — the DAY's kid count from the server (`campKidCount`): the SAME number on every camp
+            block of that date, by the owner's ruling — it is a day fact, not a coach fact. `null` ⇒ nothing printed. */}
+        {typeof block.kidCount === "number" && <span data-camp-kids={block.kidCount}> · {t("calendar.campKids", { n: block.kidCount })}</span>}
       </span>
     </button>
   );

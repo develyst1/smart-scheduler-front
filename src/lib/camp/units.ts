@@ -30,6 +30,13 @@ export const remainingLine = (
   return { key: r.remaining.unit === "hours" ? "checkin.remainingHours" : "checkin.remainingSessions", args: { used: r.remaining.used, total: r.remaining.total } };
 };
 
+/**
+ * TASK-450b — is this an id the server can look up? A camp week/day id is a uuid; anything else must never reach a
+ * route, because a bad id was answered by Postgres (`22P02`) before TASK-450 made it a 400. `!!id` is not the guard:
+ * a real `undefined` is blocked by it, but the four-letter STRING `"undefined"` is truthy and sails through.
+ */
+export const isUuid = (id: unknown): boolean => typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 /** Units → whole days + whether a half is left over. `credit` is the server's number; never derived here. */
 export const creditDays = (units: number): { days: number; half: boolean } => {
   const u = Math.max(0, Math.floor(units));

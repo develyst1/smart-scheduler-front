@@ -4,6 +4,7 @@ import { Award, GraduationCap, Shapes, Sparkles, Ticket, Users } from "lucide-re
 import type { LucideIcon } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { seatsLabel } from "@/lib/scheduler/group-session";
+import { groupTone, isClash } from "@/lib/scheduler/group-clash";
 import type { Booking, BookingType } from "@/types/app/scheduler";
 import type { CellDisplay } from "@/lib/scheduler/cell-display";
 
@@ -157,6 +158,43 @@ export function GroupSeatsLine({ booking, size = "md" }: { booking: Booking; siz
     <span className={`flex min-w-0 items-baseline gap-1 text-cal-ink ${size === "sm" ? "text-[10px]" : "text-[11px]"}`} data-seats={seatsLabel(g)}>
       <span className="shrink-0 font-semibold tabular-nums">{t("booking.groupSeats", { n: seatsLabel(g) })}</span>
       {names.length > 0 && <span className="truncate text-muted-600">{names.join(", ")}</span>}
+    </span>
+  );
+}
+
+/**
+ * REQ-105 §1 (TASK-453/457) — a GROUP block's **two colour states**: it has children (`filled`) or it has none yet
+ * (`empty`, a hollower tint — the thing the customer scans for when filling a group). A CLASH outranks both.
+ * 🚫 The clash is the server's `group.clash`; the seat count is the server's seats — nothing is derived here.
+ */
+export function groupToneClass(booking: Booking): string {
+  switch (groupTone(booking)) {
+    case "clash":
+      return "ring-2 ring-orange-500";
+    case "filled":
+      return "";
+    default:
+      return "opacity-80 [background-image:repeating-linear-gradient(135deg,transparent,transparent_5px,rgba(0,0,0,0.05)_5px,rgba(0,0,0,0.05)_10px)]";
+  }
+}
+
+/**
+ * The CLASH mark — worn by BOTH halves of the pair (the yielded group block and the Private standing in its hour),
+ * so a reader can see WHICH coach-hour is being fought over. A group block reads its own `group.clash`; the Private
+ * has no flag of its own, so the grid passes `inPair` (computed once over the rows on screen, pure).
+ */
+export function ClashMark({ booking, inPair = false, size = "md" }: { booking: Booking; inPair?: boolean; size?: "sm" | "md" }) {
+  const t = useT();
+  if (!isClash(booking) && !inPair) return null;
+  return (
+    <span
+      data-clash-mark
+      title={t("clash.markTitle")}
+      className={`inline-flex shrink-0 items-center rounded-sm bg-orange-600 px-1 font-bold uppercase leading-tight tracking-wide text-white ${
+        size === "sm" ? "text-[9px] py-px" : "text-[10px] py-0.5"
+      }`}
+    >
+      {t("clash.mark")}
     </span>
   );
 }

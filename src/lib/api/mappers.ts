@@ -61,6 +61,8 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     // TASK-419 — a CAMP hour's owner ids as sent; absent ⇒ null.
     campWeekDayId: dto.campWeekDayId ?? null,
     campWeekId: dto.campWeekId ?? null,
+    // TASK-457 — the DATE's kid count on a camp hour; a reader that does not send it ⇒ null (no number invented).
+    campKidCount: dto.campKidCount ?? null,
     // Conflict resolution (B.1)
     pendingSlot: dto.pendingSlot || undefined,
     incomingBookingId: dto.incomingBookingId ?? undefined,

@@ -48,7 +48,17 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
   const [days, setDays] = useState<CampDayFacts[] | null>(null);
   const originals: CampDayFacts[] = (roster?.days ?? [])
     .filter((d) => d.campWeekDayId)
-    .map((d) => ({ date: d.date, campWeekDayId: d.campWeekDayId as string, teacherIds: d.teacherIds ?? [], startTime: d.startTime ?? CAMP_WINDOW_DEFAULT.start, endTime: d.endTime ?? CAMP_WINDOW_DEFAULT.end, editedAt: d.editedAt ?? null, teacherRates: d.teacherRates }));
+    .map((d) => ({
+      date: d.date,
+      campWeekDayId: d.campWeekDayId as string,
+      teacherIds: d.teacherIds ?? [],
+      startTime: d.startTime ?? CAMP_WINDOW_DEFAULT.start,
+      endTime: d.endTime ?? CAMP_WINDOW_DEFAULT.end,
+      editedAt: d.editedAt ?? null,
+      teacherRates: d.teacherRates,
+      // REQ-105 (TASK-454/457) — the coaches with their RESOLVED windows; the editor edits THIS list.
+      teachers: d.teachers ?? [],
+    }));
   const rows = days ?? originals;
   // REQ-104 §2 item 4 (TASK-444) — the per-coach rate box: only with key 59 AND when the server sent the rates (masked ⇒ `null` ⇒ no box);
   // `withoutRates` strips the field from every PATCH without the key (the server 403s regardless).
@@ -58,6 +68,22 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
   const coachName = (id: string) => teachers.find((x) => x.id === id)?.nickname ?? id;
   const setRate = (date: string, teacherId: string, baht: number | "") =>
     setDays(rows.map((d) => (d.date === date ? { ...d, teacherRates: { ...(d.teacherRates ?? {}), [teacherId]: baht === "" ? 0 : bahtToMinor(baht) } } : d)));
+  // REQ-105 (TASK-457) — a coach's OWN window on this day. Blank = "the day's window": the placeholder shows the day's
+  // hours, and `teacherEntry` omits an unchanged value, so a coach on the default is never frozen onto today's hours.
+  const setCoachWindow = (date: string, teacherId: string, patch: { startTime?: string; endTime?: string }) =>
+    setDays(
+      rows.map((d) =>
+        d.date === date
+          ? {
+              ...d,
+              teachers: (d.teachers ?? []).some((x) => x.teacherId === teacherId)
+                ? (d.teachers ?? []).map((x) => (x.teacherId === teacherId ? { ...x, ...patch } : x))
+                : [...(d.teachers ?? []), { teacherId, startTime: patch.startTime ?? "", endTime: patch.endTime ?? "" }],
+            }
+          : d,
+      ),
+    );
+  const coachWindow = (d: CampDayFacts, teacherId: string) => (d.teachers ?? []).find((x) => x.teacherId === teacherId);
   const [error, setError] = useState<string | null>(null);
   const busy = create.isPending || update.isPending || updateDay.isPending;
   const ready = !!name.trim() && !!startDate && !!endDate;
@@ -156,6 +182,7 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
                     <Table.Th>{t("camp.teachers")}</Table.Th>
                     <Table.Th>{t("camp.windowStart")}</Table.Th>
                     <Table.Th>{t("camp.windowEnd")}</Table.Th>
+                    <Table.Th>{t("camp.coachFrom")} / {t("camp.coachTo")}</Table.Th>
                     {showRates && <Table.Th>{t("camp.rateCol")}</Table.Th>}
                   </Table.Tr>
                 </Table.Thead>
@@ -178,6 +205,43 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
                       </Table.Td>
                       <Table.Td>
                         <Select size="xs" data={hourData} value={d.endTime.slice(0, 5)} onChange={(v) => v && setDay(d.date, { endTime: v })} allowDeselect={false} />
+                      </Table.Td>
+                      {/* REQ-105 (TASK-457) — one from/to pair per coach ON the day; blank ⇒ the day's window as
+                          PLACEHOLDER text, never sent as a value (that is what NULL is for). A half-given window is
+                          the server's 400, rendered as its own sentence. */}
+                      <Table.Td data-coach-windows={d.date}>
+                        <Stack gap={2}>
+                          {d.teacherIds.map((id) => (
+                            <Group key={id} gap={4} wrap="nowrap">
+                              <Text size="xs" c="dimmed" className="w-14 shrink-0 truncate">
+                                {coachName(id)}
+                              </Text>
+                              <Select
+                                size="xs"
+                                data={hourData}
+                                value={coachWindow(d, id)?.startTime || null}
+                                placeholder={d.startTime.slice(0, 5)}
+                                onChange={(v) => setCoachWindow(d.date, id, { startTime: v ?? "" })}
+                                clearable
+                                data-coach-from={id}
+                                className="w-24"
+                              />
+                              <Select
+                                size="xs"
+                                data={hourData}
+                                value={coachWindow(d, id)?.endTime || null}
+                                placeholder={d.endTime.slice(0, 5)}
+                                onChange={(v) => setCoachWindow(d.date, id, { endTime: v ?? "" })}
+                                clearable
+                                data-coach-to={id}
+                                className="w-24"
+                              />
+                            </Group>
+                          ))}
+                          <Text size="xs" c="dimmed">
+                            {t("camp.coachWindowHint")}
+                          </Text>
+                        </Stack>
                       </Table.Td>
                       {showRates && (
                         <Table.Td data-rates={d.date}>

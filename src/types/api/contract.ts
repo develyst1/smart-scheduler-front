@@ -284,6 +284,8 @@ export interface BookingDTO {
   other?: { kind: "ECA" | "FREE" | "KOL" | "CAMP" | null; headCount: number | null; teacherRates: Record<string, number>; ratePostedAt: string | null } | null;
   /** REQ-095 §11 (TASK-418) — a CAMP hour's owner: the week's day object and the week; null on every other row. */
   campWeekDayId?: string | null;
+  /** REQ-105 (TASK-454) — the kid count for that DATE; the SAME number on every camp block of the day (approved). */
+  campKidCount?: number | null;
   campWeekId?: string | null;
   /**
    * REQ-095 Stage 2a (TASK-397) — a GROUP row's facts: the key, DUO/GROUP, the name, the cap, the SEATS (ordinary
@@ -300,6 +302,11 @@ export interface BookingDTO {
     seats: Array<{ bookingId: string; studentId: string | null; studentName: string | null; status: string; courseId: string | null }>;
     teacherRates: Record<string, number>;
     ratePostedAt: string | null;
+    /** REQ-105 (TASK-453) — the hour was given to a Private (ISO), the series takes no new child, and the SERVER's
+     *  clash verdict (yielded AND ≥ 1 live seat). 🚫 `clash` is read, never re-derived. Optional: an older payload. */
+    yieldedAt?: string | null;
+    closedAt?: string | null;
+    clash?: boolean;
   } | null;
   groupId?: string | null;
   groupName?: string | null;
@@ -478,6 +485,8 @@ export interface CampWeekDays {
     editedAt?: string | null;
     /** REQ-104 §2 item 4 (TASK-443) — teacherId → SATANG per coach on the day (`0` = no rate set); `null` = MASKED without key 59 (render nothing); absent on an older payload. */
     teacherRates?: Record<string, number> | null;
+    /** REQ-105 (TASK-454) — the coaches with their RESOLVED windows (a NULL own-window reads the day default); `rateMinor` masked without key 59. */
+    teachers?: Array<{ teacherId: string; startTime: string; endTime: string; rateMinor?: number | null }>;
   }>;
 }
 /** TASK-418 — `PATCH /camp/weeks/:id/days/:date` ⇒ the day as saved + what the sync did to the grid. */

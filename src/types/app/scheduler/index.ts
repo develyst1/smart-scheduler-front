@@ -216,6 +216,8 @@ export interface Booking {
   groupName?: string | null;
   /** REQ-095 §11 (TASK-419) — a CAMP hour's owner (the week's day object, the week); null elsewhere. Set ⇒ the row is the week's, no booking doors. */
   campWeekDayId?: string | null;
+  /** REQ-105 (TASK-454) — the DATE's kid count on a camp hour (the same on every block of that day). */
+  campKidCount?: number | null;
   campWeekId?: string | null;
   /** REQ-095 §13 (TASK-421) — a DUO course row's second child (as sent). */
   coStudent?: { id: string; name: string; nickname: string | null } | null;

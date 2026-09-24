@@ -446,6 +446,10 @@ const en = {
     datesImmutable: "A week's dates cannot change — open a new week instead.",
     weekLevelHint: "Applies to days you have not edited by hand; use Apply to every day to overwrite them too.",
     perDay: "Per day (teachers · window)",
+    // REQ-105 (TASK-454/457) — each coach's own hours on a day; blank ⇒ the day's window (never sent as a value)
+    coachFrom: "From",
+    coachTo: "To",
+    coachWindowHint: "Blank = the day's window",
     applyToEveryDay: "Apply week's teachers & window to every day",
     dayEdited: "(edited)",
     // REQ-104 §2 item 4 (TASK-444) — the per-coach rate box on a day (key 59 only)
@@ -504,6 +508,21 @@ const en = {
     confirmedGroup: "{confirmed} dates confirmed · {courses} courses confirmed · {skipped} skipped",
     cancelAllGroupBody: "{live} live dates will be cancelled; {kept} attended dates are kept. {seats} seats across {students} students on those dates will be cancelled and each family told by the system. The coaches are told too.",
     cancelledGroup: "{n} dates cancelled · {seats} seats cancelled · {families} families told ({notices} notices)",
+  },
+  // REQ-105 (TASK-453/457) — the group/Private clash on one coach-hour, and its two resolutions
+  clash: {
+    title: "Two classes on this hour",
+    pairLine: "{group} and {student} both stand on this coach-hour.",
+    movePrivate: "Move the private",
+    moveHint: "Pick a new coach, date or time for the private — the group takes this hour back.",
+    moveConfirm: "Move it",
+    movedOk: "The private was moved; the group has this hour.",
+    swapCoach: "Swap the group's coach",
+    swapTo: "New coach for the group",
+    swapConfirm: "Swap the coach",
+    swappedOk: "The group moved to the other coach.",
+    mark: "CLASH",
+    markTitle: "Two classes stand on this coach-hour — resolve it from either one.",
   },
   // TASK-404 — the shared QR dialog
   qr: {
@@ -634,6 +653,8 @@ const en = {
     otherKindTag_KOL: "KOL",
     otherKindTag_CAMP: "Camp", // TASK-419 — the week's own kind on the grid
     campHours: "{n} h",
+    // REQ-105 (TASK-454/457) — the DAY's kid count on a camp block (the same number on every block of that date)
+    campKids: "{n} kids",
     campTeachersToday: "Teachers this day",
     campSwap: "Swap teacher",
     campSwapTo: "Replace {from} with",
@@ -899,6 +920,8 @@ const en = {
     colType: "Type",
     colStatus: "Status",
     noMatch: "No bookings match the filters",
+    // REQ-105 §2 (TASK-455) — the divider above the cancelled/expired group, on both panels
+    inactiveDivider: "Cancelled / expired",
     // Bulk-confirm (SPEC-011)
     bulkConfirmSelected: "Confirm selected ({n})",
     bulkSelectRow: "Select this booking",
@@ -2200,6 +2223,9 @@ const th: typeof en = {
     datesImmutable: "วันของสัปดาห์แก้ไม่ได้ — เปิดสัปดาห์ใหม่แทน",
     weekLevelHint: "มีผลกับวันที่ยังไม่ได้แก้รายวัน ถ้าต้องการทับทุกวันให้กด ใช้กับทุกวัน",
     perDay: "รายวัน (ครู · ช่วงเวลา)",
+    coachFrom: "เริ่ม",
+    coachTo: "ถึง",
+    coachWindowHint: "เว้นว่าง = ใช้ช่วงเวลาของวัน",
     applyToEveryDay: "ใช้ครูและช่วงเวลาของสัปดาห์กับทุกวัน",
     dayEdited: "(แก้แล้ว)",
     rateCol: "เรทครู (฿)",
@@ -2254,6 +2280,20 @@ const th: typeof en = {
     confirmedGroup: "ยืนยันแล้ว {confirmed} วัน · คอร์ส {courses} คอร์ส · ข้าม {skipped}",
     cancelAllGroupBody: "จะยกเลิก {live} วันที่ใช้งานอยู่ วันที่มาเรียนแล้ว {kept} วันคงไว้ ที่นั่ง {seats} ที่ของนักเรียน {students} คนในวันเหล่านั้นจะถูกยกเลิก และระบบจะแจ้งทุกครอบครัวรวมถึงครูให้",
     cancelledGroup: "ยกเลิกแล้ว {n} วัน · ที่นั่ง {seats} ที่ · แจ้งครอบครัวแล้ว {families} ครอบครัว ({notices} ข้อความ)",
+  },
+  clash: {
+    title: "ชั่วโมงนี้มีสองคลาสทับกัน",
+    pairLine: "{group} กับ {student} อยู่ในชั่วโมงเดียวกันของครูคนนี้",
+    movePrivate: "ย้ายคาบเดี่ยว",
+    moveHint: "เลือกครู วันที่ หรือเวลาใหม่ให้คาบเดี่ยว แล้วกลุ่มจะได้ชั่วโมงนี้คืน",
+    moveConfirm: "ย้ายเลย",
+    movedOk: "ย้ายคาบเดี่ยวแล้ว กลุ่มได้ชั่วโมงนี้คืน",
+    swapCoach: "เปลี่ยนครูของกลุ่ม",
+    swapTo: "ครูคนใหม่ของกลุ่ม",
+    swapConfirm: "เปลี่ยนครู",
+    swappedOk: "ย้ายกลุ่มไปครูคนใหม่แล้ว",
+    mark: "ทับซ้อน",
+    markTitle: "มีสองคลาสอยู่ในชั่วโมงเดียวกันของครูคนนี้ — แก้ได้จากคลาสใดคลาสหนึ่ง",
   },
   qr: {
     copy: "คัดลอกลิงก์",
@@ -2359,6 +2399,7 @@ const th: typeof en = {
     rentalLegendPaid: "ค่าเช่า — จ่ายแล้ว",
     otherKindTag_CAMP: "แคมป์",
     campHours: "{n} ชม.",
+    campKids: "{n} คน",
     campTeachersToday: "ครูของวันนี้",
     campSwap: "สลับครู",
     campSwapTo: "เปลี่ยน {from} เป็น",
@@ -2608,6 +2649,8 @@ const th: typeof en = {
     colType: "รูปแบบ",
     colStatus: "สถานะ",
     noMatch: "ไม่พบรายการที่ตรงเงื่อนไข",
+    // REQ-105 §2 (TASK-455) — เส้นคั่นก่อนกลุ่มที่ยกเลิก/หมดอายุ ใช้ทั้งสองหน้า
+    inactiveDivider: "ยกเลิก / หมดอายุแล้ว",
     // ยืนยันหลายรายการ (SPEC-011)
     bulkConfirmSelected: "ยืนยันที่เลือก ({n})",
     bulkSelectRow: "เลือกคาบนี้",

@@ -185,14 +185,27 @@ describe("§3 — the forms", () => {
     expect(panel).toContain("await updateRate.mutateAsync({ courseId: c.id, classRateMinor });");
     expect(rateLine).toContain("const change = rateChange(baht, rateMinor);");
     expect(rateLine).not.toMatch(/classRateMinor: null|rateClear/); // the default is set, never cleared
+    // 📌 TASK-458 — "never null" needs the CALL pinned too: the old pin read the literal, so a `null` handed to
+    // `onSave` through a cast walked straight past it. The saver passes the pure helper's number, and nothing else.
+    expect(rateLine).toContain("await onSave(change.classRateMinor);");
+    expect(rateLine).not.toMatch(/onSave\(\s*null/);
+    expect((rateLine.match(/await onSave\(/g) ?? []).length).toBe(1);
     expect(rateLine).toContain('label={t("course.defaultRate")}');
     expect(svc).toContain("api.patch<{ course: CourseListItem }>(`/courses/${courseId}`, { classRateMinor })");
+    // 📌 TASK-458 — `510e2e7` moved the line into the card's details box, so the label and the value are two spans and
+    // the old `toContain` over raw HTML could not see them. The RULE is unchanged and still pinned above (PATCH only when
+    // changed · never null · no Clear); this asserts what a USER SEES — the tags stripped — which is stricter, not looser.
+    const seen = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/&#x2F;/g, "/").replace(/\s+/g, " ").trim();
     const html = render(h(DuoRateLine, { rateMinor: 50000, editable: true, saving: false, onSave: async () => {} }));
     expect(html).toContain('data-duo-rate="50000"');
-    expect(html).toContain("Default coach rate 500 ฿ / session");
+    expect(seen(html)).toContain("Default coach rate");
+    expect(seen(html)).toContain("500 ฿ / session");
+    expect(html).toContain('aria-label="Edit rate"'); // the pencil is the edit door, by `editable`
     const ro = render(h(DuoRateLine, { rateMinor: null, editable: false, saving: false, onSave: async () => {} }));
-    expect(ro).not.toContain("aria-label=\"Edit rate\"");
-    expect(ro).toContain("Default coach rate — ฿ / session");
+    expect(ro).not.toContain("aria-label=\"Edit rate\""); // read-only ⇒ no door at all (hidden, never disabled)
+    expect(ro).toContain('data-duo-rate="none"');
+    expect(seen(ro)).toContain("Default coach rate");
+    expect(seen(ro)).toContain("— ฿ / session"); // no rate set ⇒ a dash, never ฿0
   });
   it("copy counted both languages; snapshot unchanged (no key)", () => {
     for (const lang of ["en", "th"] as const)

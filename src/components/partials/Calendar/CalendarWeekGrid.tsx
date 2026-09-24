@@ -12,7 +12,8 @@ import { BOOKING_STATUS_COLOR, OFF_CALENDAR_STATUSES, TIME_SLOTS } from "@/types
 import { useI18n } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
-import BookingCellBody, { BookingTypeStripe, GroupSeatsLine, LastStamp, OtherKindTag, RentalStamp, SharedTeachersMarker } from "@/components/common/BookingCellBody";
+import BookingCellBody, { BookingTypeStripe, ClashMark, GroupSeatsLine, LastStamp, OtherKindTag, RentalStamp, SharedTeachersMarker } from "@/components/common/BookingCellBody";
+import { inClashPair } from "@/lib/scheduler/group-clash";
 import { useCellDisplay } from "@/lib/scheduler/cell-display";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { mergeCampCells, type CampBlock } from "@/lib/camp/grid";
@@ -154,6 +155,8 @@ export default function CalendarWeekGrid({
                           <RentalStamp booking={b} size="sm" />
                           {/* REQ-095 — the OTHER kind, from the server's `other.kind`. */}
                           <OtherKindTag booking={b} size="sm" />
+                          {/* REQ-105 — the CLASH mark, on both halves of the pair. */}
+                          <ClashMark booking={b} inPair={inClashPair(b, bookings)} size="sm" />
                           {/* Branch (badge) — a primary identifier, kept as a labelled chip like the day cell. */}
                           {display.badge && (b.badges ?? []).length > 0 && (
                             <span className="flex shrink-0 flex-wrap justify-end gap-1">

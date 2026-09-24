@@ -88,10 +88,10 @@ describe("§1 — mergeCampCells, by value", () => {
 
 describe("§2 — the per-day bodies and the swap, by value", () => {
   const d = (over: Partial<CampDayFacts>): CampDayFacts => ({ date: "2026-10-05", campWeekDayId: "d1", teacherIds: ["t1", "t2"], startTime: "10:00", endTime: "15:00", editedAt: null, ...over });
-  it("dayPatch carries only what differs (teacher order ignored; times to HH:MM); unchanged ⇒ null", () => {
+  it("dayPatch carries only what differs (teacher order ignored; times to HH:MM); unchanged ⇒ null — TASK-457: the roster rides as `teachers[]`", () => {
     expect(dayPatch(d({}), d({}))).toBeNull();
     expect(dayPatch(d({}), d({ teacherIds: ["t2", "t1"] }))).toBeNull();
-    expect(dayPatch(d({}), d({ teacherIds: ["t1", "t3"] }))).toEqual({ teacherIds: ["t1", "t3"] });
+    expect(dayPatch(d({}), d({ teacherIds: ["t1", "t3"] }))).toEqual({ teachers: [{ teacherId: "t1" }, { teacherId: "t3" }] });
     expect(dayPatch(d({ startTime: "10:00:00" }), d({ startTime: "11:00", endTime: "15:00:00" }))).toEqual({ startTime: "11:00" });
     expect(dayPatch(d({}), d({ endTime: "16:00" }))).toEqual({ endTime: "16:00" });
   });
@@ -99,7 +99,7 @@ describe("§2 — the per-day bodies and the swap, by value", () => {
     const originals = [d({ date: "2026-10-05" }), d({ date: "2026-10-06", campWeekDayId: "d2" }), d({ date: "2026-10-07", campWeekDayId: "d3" })];
     const edited = [d({ date: "2026-10-07", campWeekDayId: "d3", endTime: "16:00" }), d({ date: "2026-10-05" }), d({ date: "2026-10-06", campWeekDayId: "d2", teacherIds: ["t9"] }), d({ date: "2026-10-09" })];
     expect(changedDayPatches(originals, edited)).toEqual([
-      { date: "2026-10-06", body: { teacherIds: ["t9"] } },
+      { date: "2026-10-06", body: { teachers: [{ teacherId: "t9" }] } }, // TASK-457: the new roster shape
       { date: "2026-10-07", body: { endTime: "16:00" } },
     ]);
     expect(changedDayPatches(originals, originals)).toEqual([]);
@@ -138,7 +138,7 @@ describe("§3 — the grids, the panel, the modal that never opens", () => {
   it("the panel: the day's teachers from the roster's day object; `Swap teacher` by `camp.week-open`, hidden not disabled ⇒ ONE per-day PATCH with the column's teacher replaced", () => {
     expect(panel).toContain("const { data, isLoading } = useCampWeekDays(block.campWeekId);");
     expect(panel).toContain("const day = data?.days.find((d) => d.date === block.date);");
-    expect(panel).toContain('{can("action:camp.week-open") && !swapOpen && (');
+    expect(panel).toContain('{can("action:camp.week-open") && hasWeek && !swapOpen && ('); // TASK-450b: + the uuid guard on the write door
     expect(panel).not.toMatch(/disabled=\{[^}]*week-open/);
     expect(panel).toContain("body: { teacherIds: replaceTeacher(dayTeacherIds, block.teacherId, to) }");
     expect(panel).toContain("setError(e instanceof ApiClientError ? e.message : (e as Error).message);");

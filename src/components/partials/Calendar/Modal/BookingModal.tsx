@@ -24,6 +24,8 @@ import {
 import { DatePickerInput } from "@mantine/dates";
 import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil, Users, Repeat, GraduationCap, Ticket, ListChecks } from "lucide-react";
 import type { SeriesRef } from "@/lib/scheduler/other-series";
+import ClashResolveBox from "./ClashResolveBox";
+import { inClashPair } from "@/lib/scheduler/group-clash";
 import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -172,6 +174,7 @@ export default function BookingModal({
           booking={booking}
           teacherName={teacher?.name ?? "-"}
           teachers={teachers}
+          bookings={bookings}
           onOverbook={onOverbook}
           onWalkIn={onWalkIn}
           onClose={onClose}
@@ -189,6 +192,7 @@ function ViewBooking({
   booking,
   teacherName,
   teachers,
+  bookings,
   onOverbook,
   onWalkIn,
   onClose,
@@ -198,6 +202,8 @@ function ViewBooking({
   booking: Booking;
   teacherName: string;
   teachers: TeacherView[];
+  /** REQ-105 (TASK-457) — the rows on screen: the clash box finds the other half of the pair among them. */
+  bookings: Booking[];
   onOverbook: (b: Booking) => void;
   onWalkIn: (b: Booking) => void;
   onClose: () => void;
@@ -540,6 +546,9 @@ function ViewBooking({
       )}
       {/* REQ-095 (TASK-395) — the ECA/Free/KOL facts on an OTHER booking, from the server's `other`; the pencil edits them
           through their own route. A lesson booking has `other === null` and shows nothing. */}
+      {/* REQ-105 (TASK-457) — the clash box on EITHER half of the pair: the yielded GROUP block, or the Private
+          standing in its hour (`inClashPair`, pure, over the rows on screen). The verdict is the server's `group.clash`. */}
+      {inClashPair(booking, bookings) && <ClashResolveBox booking={booking} rows={bookings} teachers={teachers} />}
       {/* A SEAT row: which group it sits in, from the server's `groupName`; nothing else changes on a seat. */}
       {booking.groupName && (
         <p className="text-sm text-muted-500">{t("booking.inGroup", { name: booking.groupName })}</p>
