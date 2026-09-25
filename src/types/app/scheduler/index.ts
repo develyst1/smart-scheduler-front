@@ -218,6 +218,9 @@ export interface Booking {
   campWeekDayId?: string | null;
   /** REQ-105 (TASK-454) — the DATE's kid count on a camp hour (the same on every block of that day). */
   campKidCount?: number | null;
+  /** REQ-108 (TASK-481/482) — who checked it in; `null` for a coach (the server's rule). Open-ended: only
+   *  `shopfront-qr` has a chip (`lib/scheduler/checkin-source.ts`). */
+  checkinSource?: string | null;
   campWeekId?: string | null;
   /** REQ-095 §13 (TASK-421) — a DUO course row's second child (as sent). */
   coStudent?: { id: string; name: string; nickname: string | null } | null;

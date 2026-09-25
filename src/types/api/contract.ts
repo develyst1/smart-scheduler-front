@@ -217,6 +217,10 @@ export interface SetBookingBadgesResponse {
 
 export interface BookingDTO {
   id: string;
+  /** REQ-108 (TASK-481) — WHO checked this session in: `shopfront-qr` · `checkin-qr` · `end-of-day` · an admin's
+   *  USERNAME for a staff check-in (so the values are open-ended), and `null` for a linked-teacher account — the
+   *  SERVER decides that last rule; 🚫 the FE never re-implements it. Absent on an older payload. */
+  checkinSource?: string | null;
   date: IsoDate;
   startTime: HhMm;
   endTime: HhMm;

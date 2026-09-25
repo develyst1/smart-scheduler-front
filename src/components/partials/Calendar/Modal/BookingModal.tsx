@@ -26,7 +26,7 @@ import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move,
 import type { SeriesRef } from "@/lib/scheduler/other-series";
 import ClashResolveBox from "./ClashResolveBox";
 import { inClashPair } from "@/lib/scheduler/group-clash";
-import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
+import { BookingTypeChip, CheckinSourceChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
 import EligibleStudentSelect from "@/components/common/EligibleStudentSelect";
@@ -163,6 +163,8 @@ export default function BookingModal({
             <div className="flex items-center gap-2">
               <StatusChip status={booking.status} />
               <BookingTypeChip type={booking.bookingType} />
+              {/* REQ-108 (TASK-482) — the same chip on the detail, from the same ONE mapping. */}
+              <CheckinSourceChip source={booking.checkinSource} />
             </div>
           </div>
         ) : null

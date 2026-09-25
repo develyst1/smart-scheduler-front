@@ -17,6 +17,7 @@ import type { BookingStatus, BookingType, TeacherType } from "@/types/app/schedu
 import { BOOKING_STATUS_COLOR, TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 import { MANTINE_COLOR, type SemanticColor } from "@/lib/ui/colors";
 import { useT } from "@/lib/i18n";
+import { checkinSourceLabelKey } from "@/lib/scheduler/checkin-source";
 
 type Size = "sm" | "md";
 
@@ -90,6 +91,25 @@ export function TeacherTypeChip({ type, size = "sm" }: { type: TeacherType; size
   return (
     <Badge size={size} color={MANTINE_COLOR[TEACHER_TYPE_COLOR[type]]} variant="light" radius="sm" styles={NO_TRUNCATE}>
       {TEACHER_TYPE_LABEL[type]}
+    </Badge>
+  );
+}
+
+/**
+ * REQ-108 (TASK-481/482) — the wall-QR chip. **Only `shopfront-qr` gets one**; every other source — the other known
+ * ones, an admin's username on a staff check-in, a value invented by a later BE task, `null` for a coach — renders
+ * NOTHING and throws nothing (the decision is the one map in `lib/scheduler/checkin-source.ts`).
+ *
+ * Quiet and unmissable: an outlined amber chip, not a red alarm — most shop-QR check-ins are perfectly ordinary, and
+ * this is read by an admin scanning a roster after something has gone wrong for a family with no LINE notice.
+ */
+export function CheckinSourceChip({ source, size = "sm" }: { source: string | null | undefined; size?: Size }) {
+  const t = useT();
+  const key = checkinSourceLabelKey(source);
+  if (!key) return null;
+  return (
+    <Badge size={size} color="orange" variant="outline" radius="sm" styles={NO_TRUNCATE} title={t("checkinSource.shopfrontQrTitle")} data-checkin-source={source}>
+      {t(key)}
     </Badge>
   );
 }

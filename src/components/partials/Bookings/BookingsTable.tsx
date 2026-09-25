@@ -21,7 +21,7 @@ import {
 import { DatePickerInput } from "@mantine/dates";
 import { useDebouncedValue } from "@mantine/hooks";
 import { Search, CheckCheck, ArrowDownWideNarrow, ArrowUpNarrowWide } from "lucide-react";
-import { BookingTypeChip, StatusChip } from "@/components/common/BookingBadges";
+import { BookingTypeChip, CheckinSourceChip, StatusChip } from "@/components/common/BookingBadges";
 import PagerBar from "@/components/common/PagerBar";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
@@ -382,7 +382,12 @@ export default function BookingsTable() {
                   <BookingTypeChip type={b.bookingType} />
                 </Table.Td>
                 <Table.Td>
-                  <StatusChip status={b.status} />
+                  <Group gap={6} wrap="nowrap">
+                    <StatusChip status={b.status} />
+                    {/* REQ-108 (TASK-482) — the wall-QR chip beside the state it belongs to: an unlinked family's only
+                        safety net, read by an admin scanning the roster for the odd row. Only `shopfront-qr` shows. */}
+                    <CheckinSourceChip source={b.checkinSource} />
+                  </Group>
                 </Table.Td>
               </Table.Tr>
             ))

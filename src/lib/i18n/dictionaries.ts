@@ -524,6 +524,12 @@ const en = {
     mark: "CLASH",
     markTitle: "Two classes stand on this coach-hour — resolve it from either one.",
   },
+  // REQ-108 (TASK-481/482) — the chip that makes a wall-QR check-in visible on a roster. ONE key: the other sources
+  // (and an admin's username, and anything new) render nothing at all — see `lib/scheduler/checkin-source.ts`.
+  checkinSource: {
+    shopfrontQr: "Shop QR",
+    shopfrontQrTitle: "Checked in by the family at the shop-front QR, not by staff",
+  },
   // REQ-108 (TASK-478) — the SHOP-FRONT check-in page at the PRINTED url `/checkin/shop`, and its QR panel.
   // 🔴 `nothing` is the ONE sentence for an unknown number, a family with nothing right now and a suspended family
   // alike — it must never hint which. `tryAgain` is the ONE sentence for a 429, a 409 and a dead network alike.
@@ -2312,6 +2318,10 @@ const th: typeof en = {
     swappedOk: "ย้ายกลุ่มไปครูคนใหม่แล้ว",
     mark: "ทับซ้อน",
     markTitle: "มีสองคลาสอยู่ในชั่วโมงเดียวกันของครูคนนี้ — แก้ได้จากคลาสใดคลาสหนึ่ง",
+  },
+  checkinSource: {
+    shopfrontQr: "เช็คอินจาก QR หน้าร้าน",
+    shopfrontQrTitle: "ผู้ปกครองเช็คอินเองจาก QR หน้าร้าน ไม่ใช่พนักงานเช็คอินให้",
   },
   shopCheckin: {
     title: "เช็คอินที่ร้าน",
