@@ -524,6 +524,23 @@ const en = {
     mark: "CLASH",
     markTitle: "Two classes stand on this coach-hour — resolve it from either one.",
   },
+  // REQ-108 (TASK-478) — the SHOP-FRONT check-in page at the PRINTED url `/checkin/shop`, and its QR panel.
+  // 🔴 `nothing` is the ONE sentence for an unknown number, a family with nothing right now and a suspended family
+  // alike — it must never hint which. `tryAgain` is the ONE sentence for a 429, a 409 and a dead network alike.
+  shopCheckin: {
+    title: "Check in at the shop",
+    phoneHint: "Type the phone number you registered with.",
+    phoneLabel: "Phone number",
+    findBtn: "Find my class",
+    pickHint: "Tap the class to check in.",
+    nothing: "Nothing to check in right now. Please ask the front desk.",
+    tryAgain: "Please try again shortly, or ask the front desk.",
+    startOver: "Start over",
+    nextFamily: "Done — next family",
+    qrTitle: "Shop-front check-in QR",
+    qrHint: "Print this and put it on the counter. Families scan it, type their phone number and check in themselves.",
+    printBtn: "Print",
+  },
   // TASK-404 — the shared QR dialog
   qr: {
     copy: "Copy link",
@@ -2295,6 +2312,20 @@ const th: typeof en = {
     swappedOk: "ย้ายกลุ่มไปครูคนใหม่แล้ว",
     mark: "ทับซ้อน",
     markTitle: "มีสองคลาสอยู่ในชั่วโมงเดียวกันของครูคนนี้ — แก้ได้จากคลาสใดคลาสหนึ่ง",
+  },
+  shopCheckin: {
+    title: "เช็คอินที่ร้าน",
+    phoneHint: "กรอกเบอร์โทรที่ลงทะเบียนไว้",
+    phoneLabel: "เบอร์โทร",
+    findBtn: "ค้นหาคลาสของฉัน",
+    pickHint: "แตะที่คลาสเพื่อเช็คอิน",
+    nothing: "ตอนนี้ยังไม่มีคลาสที่เช็คอินได้ กรุณาสอบถามที่เคาน์เตอร์",
+    tryAgain: "กรุณาลองอีกครั้งในอีกสักครู่ หรือสอบถามที่เคาน์เตอร์",
+    startOver: "เริ่มใหม่",
+    nextFamily: "เรียบร้อย — รายต่อไป",
+    qrTitle: "QR เช็คอินหน้าร้าน",
+    qrHint: "พิมพ์แล้วติดไว้ที่เคาน์เตอร์ ผู้ปกครองสแกน กรอกเบอร์โทร แล้วเช็คอินเองได้เลย",
+    printBtn: "พิมพ์",
   },
   qr: {
     copy: "คัดลอกลิงก์",

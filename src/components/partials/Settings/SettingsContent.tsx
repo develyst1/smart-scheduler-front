@@ -23,6 +23,7 @@ import { useSettings, useUpdateSetting, useResetSetting } from "@/hooks/schedule
 import { settingHelp } from "@/lib/scheduler/setting-help";
 import type { SettingRow } from "@/types/app/settings";
 import { useCan } from "@/hooks/scheduler/useMe";
+import ShopfrontQrPanel from "./ShopfrontQrPanel";
 
 export default function SettingsContent() {
   const t = useT();
@@ -115,6 +116,10 @@ export default function SettingsContent() {
           {t("settings.subtitle")}
         </Text>
       </div>
+
+      {/* REQ-108 §3 (TASK-478) — the printable shop-front QR: a shop-wide artefact, and the URL under it is what
+          someone types when a camera fails. Above the rules list, because it is the thing staff come here to print. */}
+      <ShopfrontQrPanel />
 
       {isLoading ? (
         <div className="flex h-40 items-center justify-center">

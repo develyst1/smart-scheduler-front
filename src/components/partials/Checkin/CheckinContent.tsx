@@ -17,7 +17,7 @@ import type { CampCheckinResult, CheckinRemaining } from "@/types/api/contract";
 // day ⇒ POST {API}/checkin/camp ⇒ `{ already, day }`). The token never says; the camp's own expiry is `410
 // CAMP_TOKEN_EXPIRED` (the session keeps its 400 sentence) — both draw the clock.
 
-const API_BASE =
+export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
 
 interface BookingRef {
@@ -29,7 +29,7 @@ interface BookingRef {
   endTime?: string;
 }
 
-interface CheckinResult {
+export interface CheckinResult {
   already: boolean;
   booking: BookingRef | null;
   crmAwarded?: number;
@@ -100,7 +100,9 @@ function LoadingView() {
   );
 }
 
-function SuccessView({ result }: { result: CheckinResult }) {
+// REQ-108 (TASK-478) — exported: the SHOP-FRONT page renders the SAME reply (`already` / the booking / the remaining
+// line / a camp day's own shape). One rendering of the check-in answer, never a second that can drift from it.
+export function SuccessView({ result }: { result: CheckinResult }) {
   const t = useT();
   const b = result.booking;
   return (
@@ -150,7 +152,7 @@ function RemainingLine({ line }: { line: { key: string; args: Record<string, num
 }
 
 /** TASK-404 — the camp day's shape: date · session · status, and the undone line when a mark was taken back. */
-function CampSuccessView({ result }: { result: CampCheckinResult }) {
+export function CampSuccessView({ result }: { result: CampCheckinResult }) {
   const t = useT();
   const d = result.day;
   return (
