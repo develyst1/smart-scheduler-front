@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, Loader, Paper, Title } from "@mantine/core";
-import { CheckCircle2, Clock3, XCircle } from "lucide-react";
+import { CheckCircle2, ClipboardList, Clock3, XCircle } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { CAMP_TOKEN_EXPIRED, checkinEndpointFor, remainingLine, type CheckinKind } from "@/lib/camp/units";
@@ -151,16 +151,36 @@ function RemainingLine({ line }: { line: { key: string; args: Record<string, num
   );
 }
 
-/** TASK-404 — the camp day's shape: date · session · status, and the undone line when a mark was taken back. */
+/**
+ * TASK-404 — the camp day's shape: date · session · status, and the undone line when a mark was taken back.
+ *
+ * 🔴 TASK-483 — **an ABSENT day is NOT a success, and the mark at the top is what the person actually reads.** The
+ * server refuses a scan on a day the coach marked ABSENT (TASK-480) and answers with the day as it stands; this view
+ * used to draw that refusal with a green tick and *"Already checked in"*, with `Status: Absent` four lines below. The
+ * phone at the counter is often a nanny or a driver (the owner's own reason for rejecting LINE identity in REQ-108):
+ * they do not know the child was marked absent, they will not read a status line under a green tick, and the headline
+ * says the job is done — **so they walk the child in, and the guard that protects the coach's record is defeated by the
+ * screen reporting it.** ⇒ ABSENT gets a NEUTRAL mark and *"Already recorded"*.
+ * 🚫 An ATTENDED "already" is untouched: that one really is a success, and this page must not look anxious about every
+ * repeat scan.
+ */
 export function CampSuccessView({ result }: { result: CampCheckinResult }) {
   const t = useT();
   const d = result.day;
+  // The one fact this view branches on — the server's status, never a client re-reading of it.
+  const absent = d.status === "ABSENT";
   return (
-    <div className="flex flex-col items-center gap-3 text-center" data-camp-checkin>
-      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-success">
-        <CheckCircle2 size={32} />
-      </span>
-      <Title order={3}>{result.already ? t("checkin.alreadyTitle") : t("checkin.successTitle")}</Title>
+    <div className="flex flex-col items-center gap-3 text-center" data-camp-checkin data-camp-status={d.status}>
+      {absent ? (
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-muted-200 text-muted-600" data-camp-mark="neutral">
+          <ClipboardList size={32} />
+        </span>
+      ) : (
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-success" data-camp-mark="success">
+          <CheckCircle2 size={32} />
+        </span>
+      )}
+      <Title order={3}>{absent ? t("checkin.recordedTitle") : result.already ? t("checkin.alreadyTitle") : t("checkin.successTitle")}</Title>
       <div className="w-full rounded-lg bg-muted-100 p-4 text-left text-sm">
         {d.studentName && <BookingLine label={t("checkin.student")} value={d.studentName} />}
         <BookingLine label={t("checkin.campTitle")} value={d.weekName ?? t("checkin.campTitle")} />

@@ -72,3 +72,81 @@ export const checkinBody = (phone: string, item: ShopfrontItem): { phone: string
  * client format rule would be a second opinion that can disagree (and would leak "this looks like a real number").
  */
 export const canLookup = (phone: string): boolean => phone.trim().length > 0;
+
+// ──────────── REQ-108 (TASK-490/491) — several children, one press, A RESULT PER CHILD ────────────
+
+/** The server's ceiling, surfaced kindly BEFORE the request rather than as a refusal after it. */
+export const MAX_BATCH = 10;
+
+/** `POST /api/checkin/shopfront/batch` — the phone again, then the ticked items in the order shown. */
+export const batchBody = (phone: string, items: readonly ShopfrontItem[]) => ({
+  phone: phone.trim(),
+  items: items.map((item) => (item.kind === "camp" ? { campDayId: item.campDayId } : { bookingId: item.bookingId })),
+});
+
+/** 1 to `MAX_BATCH` ticked. Zero has nothing to ask; over the ceiling is refused before the request (see `overMax`). */
+export const canSubmitBatch = (ticked: number): boolean => ticked >= 1 && ticked <= MAX_BATCH;
+export const overMax = (ticked: number): boolean => ticked > MAX_BATCH;
+
+/** One row of the batch answer: the item asked, the status the SINGLE route would have given, and that route's body. */
+export interface BatchRow {
+  bookingId?: string;
+  campDayId?: string;
+  status: number;
+  body?: unknown;
+}
+
+/**
+ * 🔴 **The rule this whole feature turns on.** The request's `200` means *the list was read* — it says nothing about any
+ * child. Each row is decided from **its own `status`**, exactly as the single route's answer would have been:
+ * `done` (checked in) · `already` (it was already done — still in the class) · `refused` (it did not happen).
+ *
+ * 🚫 Never from the HTTP status of the batch, and never optimistically: three ticked with one refused must not read as
+ * "checked in", because a parent told that walks away believing all three children are in — and the refused child is
+ * then not expected in the class with nobody looking for them.
+ */
+export type RowOutcome = "done" | "already" | "refused";
+export const rowOutcome = (row: Pick<BatchRow, "status" | "body">): RowOutcome => {
+  if (row.status < 200 || row.status > 299) return "refused";
+  const body = row.body as { already?: boolean; day?: { status?: string } } | null | undefined;
+  // A camp day the coach marked ABSENT comes back 2xx with the day as it stands (TASK-480/483) — it is NOT a check-in.
+  if (body?.day?.status === "ABSENT") return "refused";
+  return body?.already === true ? "already" : "done";
+};
+
+/** The refused row's OWN sentence, as the server wrote it; never a client explanation of someone else's refusal. */
+export const rowReason = (row: Pick<BatchRow, "body">): string | null => {
+  const body = row.body as { error?: { message?: string } } | null | undefined;
+  const message = body?.error?.message;
+  return typeof message === "string" && message.trim() ? message : null;
+};
+
+/**
+ * The counts for a line that may be shown **in addition to** the per-child rows, never instead of them.
+ * `anyRefused` is what forbids every overall-success word on the screen.
+ */
+export const batchSummary = (rows: readonly Pick<BatchRow, "status" | "body">[]) => {
+  const outcomes = rows.map(rowOutcome);
+  const refused = outcomes.filter((o) => o === "refused").length;
+  return {
+    total: outcomes.length,
+    in: outcomes.filter((o) => o === "done" || o === "already").length,
+    refused,
+    anyRefused: refused > 0,
+    allIn: outcomes.length > 0 && refused === 0,
+  };
+};
+
+/**
+ * The headline for a batch result. 🔴 **A success word only when EVERY child is in**; one refusal and the headline is
+ * neutral and says how many need attention — the parent must be able to tell at a glance which children are in.
+ */
+export const batchHeadlineKey = (rows: readonly Pick<BatchRow, "status" | "body">[]): string => {
+  const s = batchSummary(rows);
+  if (s.total === 0) return "shopCheckin.tryAgain";
+  return s.allIn ? "shopCheckin.batchAllIn" : "shopCheckin.batchMixed";
+};
+
+/** Pair each answer row back to the item it was asked for — by id, not by position, so a reorder cannot mislabel a child. */
+export const pairRows = <T extends { item: ShopfrontItem; child: string }>(asked: readonly T[], rows: readonly BatchRow[]): Array<T & { row: BatchRow | null }> =>
+  asked.map((a) => ({ ...a, row: rows.find((r) => (r.campDayId ?? r.bookingId) === itemKey(a.item)) ?? null }));

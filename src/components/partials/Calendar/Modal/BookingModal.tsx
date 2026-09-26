@@ -383,13 +383,25 @@ function ViewBooking({
     }
   };
 
+  /**
+   * 🔴 TASK-514 — **the same control means two different things, and the words follow THIS row's state.**
+   *
+   * On a row that has not happened it is a LEAVE: it spends one of the course's leaves and appends a make-up (REQ-073),
+   * both of them work to unpick — so the dialog warns, as it always has.
+   *
+   * On an **ATTENDED** row it is not a leave at all any more. TASK-497 changed what it DOES: the session goes back to
+   * CONFIRMED, the class returns to the family's balance, **no quota is charged, no make-up is created, and nobody is
+   * messaged.** The screen still promised the old thing — and an admin who reads *"this uses one of the course's leaves"*
+   * to correct **our own** mistake will not press it, so the correction we built is one nobody dares use. Hence:
+   * `undoing` picks the label, the dialog and the toast together. They cannot disagree because they are one branch.
+   */
+  const undoing = booking.status === "ATTENDED";
   const handleSickLeave = async (override = false) => {
-    // REQ-073 (1) — consumes leave quota and appends a make-up; both are work to unpick.
     if (
       !(await askConfirm({
-        title: t("confirmAction.leaveTitle"),
-        message: t("confirmAction.leaveMsg"),
-        confirmLabel: t("booking.sickLeaveBtn"),
+        title: t(undoing ? "confirmAction.undoAttendedTitle" : "confirmAction.leaveTitle"),
+        message: t(undoing ? "confirmAction.undoAttendedMsg" : "confirmAction.leaveMsg"),
+        confirmLabel: t(undoing ? "booking.undoAttendedBtn" : "booking.sickLeaveBtn"),
         color: "orange",
       }))
     )
@@ -410,7 +422,8 @@ function ViewBooking({
           color: "success",
         });
       } else {
-        notify({ title: t("booking.leaveSavedTitle"), color: "default" });
+        // The toast says what happened to THIS row — an undo did not "record a leave".
+        notify({ title: t(undoing ? "booking.undoAttendedDone" : "booking.leaveSavedTitle"), color: "default" });
       }
       onClose();
     } catch (err) {
@@ -826,8 +839,9 @@ function ViewBooking({
                 leftSection={<CalendarX2 size={16} />}
                 onClick={() => handleSickLeave()}
                 disabled={booking.status === "SICK_LEAVE"}
+                data-status-action={undoing ? "undo-attended" : "sick-leave"}
               >
-                {t("booking.sickLeaveBtn")}
+                {t(undoing ? "booking.undoAttendedBtn" : "booking.sickLeaveBtn")}
               </Menu.Item>
             )}
             {/* 🔴 SPEC-075 / REQ-076 (TASK-261) — พัก. Offered for exactly the three non-course types, and only

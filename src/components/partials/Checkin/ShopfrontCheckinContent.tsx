@@ -1,17 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Loader, Paper, Stack, Text, TextInput, Title, UnstyledButton } from "@mantine/core";
-import { ArrowLeft, Phone, Tent } from "lucide-react";
+import { Button, Checkbox, Loader, Paper, Stack, Text, TextInput, Title } from "@mantine/core";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Phone, Tent } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { API_BASE, CampSuccessView, SuccessView, type CheckinResult } from "./CheckinContent";
 import {
+  MAX_BATCH,
+  batchBody,
+  batchHeadlineKey,
+  batchSummary,
   canLookup,
+  canSubmitBatch,
   checkinBody,
   isNothingToOffer,
   itemKey,
   offerRows,
+  overMax,
+  pairRows,
+  rowOutcome,
+  rowReason,
+  type BatchRow,
   type ShopfrontItem,
   type ShopfrontLookup,
 } from "@/lib/checkin/shopfront";
@@ -33,6 +43,7 @@ import type { CampCheckinResult } from "@/types/api/contract";
  *
  * Public, so it calls the API directly (the axios client attaches a JWT and bounces to /login on 401).
  */
+type Asked = { child: string; item: ShopfrontItem };
 type Phase =
   | { kind: "phone" }
   | { kind: "looking" }
@@ -40,19 +51,24 @@ type Phase =
   | { kind: "nothing" }
   | { kind: "checking" }
   | { kind: "done"; result: CheckinResult }
-  | { kind: "doneCamp"; result: CampCheckinResult };
+  | { kind: "doneCamp"; result: CampCheckinResult }
+  /** TASK-491 — several children: ONE row per child, in the order asked, each decided from its OWN row. */
+  | { kind: "batch"; asked: Asked[]; rows: BatchRow[] };
 
 export default function ShopfrontCheckinContent() {
   const t = useT();
   // 🚫 Never persisted and never autofilled — a counter device is shared by every family that walks in.
   const [phone, setPhone] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "phone" });
+  /** The ticked rows, by item id. 🚫 Never persisted — a counter device is shared. */
+  const [ticked, setTicked] = useState<string[]>([]);
   /** ONE neutral line for every refusal — a 429, a 409, a dead network. It never names a cause. */
   const [notice, setNotice] = useState<string | null>(null);
 
   const backToStart = () => {
     setPhone("");
     setNotice(null);
+    setTicked([]);
     setPhase({ kind: "phone" });
   };
 
@@ -75,6 +91,7 @@ export default function ShopfrontCheckinContent() {
         return;
       }
       // 🔴 The four "nothing" cases meet here, all of them: one phase, one sentence, no names.
+      setTicked([]);
       if (isNothingToOffer(data as ShopfrontLookup)) setPhase({ kind: "nothing" });
       else setPhase({ kind: "list", data: data as ShopfrontLookup });
     } catch {
@@ -110,7 +127,42 @@ export default function ShopfrontCheckinContent() {
     }
   };
 
+  /**
+   * TASK-491 — several children, one press. 🔴 **The request's 200 means "the list was read".** Every child is decided
+   * from its OWN row (`rowOutcome`), and the screen shows one row per child in the order asked — never one tick for the
+   * batch, never all-or-nothing. A SINGLE ticked child goes down today's single route unchanged: one child, one
+   * behaviour, and the familiar full reply (`SuccessView` / `CampSuccessView`) rather than a compact row.
+   */
+  const checkInMany = async (asked: Asked[]) => {
+    if (!canSubmitBatch(asked.length)) return;
+    if (asked.length === 1) return checkIn(asked[0].item);
+    setNotice(null);
+    setPhase({ kind: "checking" });
+    try {
+      const res = await fetch(`${API_BASE}/checkin/shopfront/batch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(batchBody(phone, asked.map((a) => a.item))),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !Array.isArray((data as { results?: BatchRow[] })?.results)) {
+        // The whole call failed (429, a dead network): the same neutral line as everywhere, then a REFRESHED list.
+        setNotice(t("shopCheckin.tryAgain"));
+        await lookup(true);
+        return;
+      }
+      setPhase({ kind: "batch", asked, rows: (data as { results: BatchRow[] }).results });
+      // 🚫 The number is cleared the moment it is no longer needed: the next family must not meet it.
+      setPhone("");
+      setTicked([]);
+    } catch {
+      setNotice(t("shopCheckin.tryAgain"));
+      await lookup(true);
+    }
+  };
+
   const rows = phase.kind === "list" ? offerRows(phase.data) : [];
+  const tickedRows = rows.filter((r) => ticked.includes(itemKey(r.item)));
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper p-4">
@@ -169,12 +221,21 @@ export default function ShopfrontCheckinContent() {
                 {t("shopCheckin.pickHint")}
               </Text>
               {rows.map(({ child, item }) => (
-                <UnstyledButton
+                <label
                   key={itemKey(item)}
-                  onClick={() => void checkIn(item)}
-                  className="min-h-[56px] rounded-lg border border-muted-200 bg-muted-50 px-3 py-2 text-left hover:bg-muted-100"
+                  className="flex min-h-[56px] cursor-pointer items-start gap-2 rounded-lg border border-muted-200 bg-muted-50 px-3 py-2 text-left hover:bg-muted-100"
                   data-shop-row={itemKey(item)}
                 >
+                  <Checkbox
+                    size="md"
+                    checked={ticked.includes(itemKey(item))}
+                    onChange={(e) =>
+                      setTicked((prev) => (e.currentTarget.checked ? [...prev, itemKey(item)] : prev.filter((k) => k !== itemKey(item))))
+                    }
+                    aria-label={child}
+                    data-shop-tick={itemKey(item)}
+                  />
+                  <div className="min-w-0">
                   <Text size="sm" fw={600}>
                     {child}
                   </Text>
@@ -190,8 +251,18 @@ export default function ShopfrontCheckinContent() {
                       </>
                     )}
                   </Text>
-                </UnstyledButton>
+                  </div>
+                </label>
               ))}
+              {/* The server's ceiling, surfaced kindly BEFORE the request: the button waits rather than the call failing. */}
+              {overMax(tickedRows.length) && (
+                <Text size="xs" c="dimmed" ta="center" data-shop-max>
+                  {t("shopCheckin.tooMany", { max: MAX_BATCH })}
+                </Text>
+              )}
+              <Button size="md" fullWidth disabled={!canSubmitBatch(tickedRows.length)} onClick={() => void checkInMany(tickedRows)} data-shop-submit>
+                {t("shopCheckin.checkInBtn", { n: tickedRows.length })}
+              </Button>
               <Button size="sm" fullWidth variant="subtle" color="gray" leftSection={<ArrowLeft size={14} />} onClick={backToStart}>
                 {t("shopCheckin.startOver")}
               </Button>
@@ -208,6 +279,53 @@ export default function ShopfrontCheckinContent() {
           )}
 
           {/* The SAME reply rendering the other two check-in pages use — never a second one. */}
+          {/* 🔴 TASK-491 — the MIXED result is the design: one row per child, in the order asked, each from its OWN
+              row. A success headline appears only when EVERY child is in; otherwise the headline is neutral and says how
+              many need attention, because a parent told "checked in" walks away believing all of them are. */}
+          {phase.kind === "batch" && (
+            <Stack gap="xs" data-shop-batch={batchSummary(phase.rows).anyRefused ? "mixed" : "all-in"}>
+              <Text fw={600} ta="center">
+                {t(batchHeadlineKey(phase.rows), { in: batchSummary(phase.rows).in, total: batchSummary(phase.rows).total, refused: batchSummary(phase.rows).refused })}
+              </Text>
+              {pairRows(phase.asked, phase.rows).map(({ child, item, row }) => {
+                // A row the server did not answer for is not a success: it is refused, like any other unconfirmed child.
+                const outcome = row ? rowOutcome(row) : "refused";
+                const reason = row ? rowReason(row) : null;
+                return (
+                  <div
+                    key={itemKey(item)}
+                    className={`flex items-start gap-2 rounded-lg border px-3 py-2 ${outcome === "refused" ? "border-orange-300 bg-orange-50" : "border-muted-200 bg-muted-50"}`}
+                    data-shop-result={itemKey(item)}
+                    data-outcome={outcome}
+                  >
+                    {outcome === "refused" ? (
+                      <AlertTriangle size={16} className="mt-0.5 shrink-0 text-orange-700" aria-hidden />
+                    ) : (
+                      <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-success" aria-hidden />
+                    )}
+                    <div className="min-w-0">
+                      <Text size="sm" fw={600}>
+                        {child}
+                      </Text>
+                      <Text size="xs" c={outcome === "refused" ? "orange.9" : "dimmed"}>
+                        {outcome === "refused" ? (reason ?? t("shopCheckin.rowRefused")) : t(outcome === "already" ? "shopCheckin.rowAlready" : "shopCheckin.rowDone")}
+                      </Text>
+                    </div>
+                  </div>
+                );
+              })}
+              {/* What to do about the ones that are not in — the counter, not a retry-all that re-submits the successes. */}
+              {batchSummary(phase.rows).anyRefused && (
+                <Text size="xs" c="dimmed" ta="center" data-shop-ask-desk>
+                  {t("shopCheckin.askDesk")}
+                </Text>
+              )}
+              <Button size="md" fullWidth variant="light" onClick={backToStart}>
+                {t("shopCheckin.nextFamily")}
+              </Button>
+            </Stack>
+          )}
+
           {phase.kind === "done" && (
             <Stack gap="md">
               <SuccessView result={phase.result} />

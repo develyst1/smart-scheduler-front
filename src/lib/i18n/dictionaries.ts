@@ -136,6 +136,10 @@ const en = {
     confirmMsgMulti: "The schedule will be sent on LINE to {n} teachers: {teachers}",
     leaveTitle: "Record leave for this session?",
     leaveMsg: "This uses one of the course's leaves and adds a make-up session at the end.",
+    // 📝 DRAFT (Fern, TASK-514) — the ATTENDED row's undo. The FINAL words are the owner's, with @Porter; this says what
+    // TASK-497 actually does and is pinned BY SHAPE (the four facts), so his answer is a one-line change here.
+    undoAttendedTitle: "Undo this attendance?",
+    undoAttendedMsg: "The session goes back to confirmed and the class returns to the family's balance. No leave is used, no make-up is added, and nobody is told.",
     extraTitle: "Add a charged extra session?",
     extraMsg: "This is billed on top of the package — it does not use a course session.",
     bulkTitle: "Confirm the selected bookings?",
@@ -542,6 +546,16 @@ const en = {
     nothing: "Nothing to check in right now. Please ask the front desk.",
     tryAgain: "Please try again shortly, or ask the front desk.",
     startOver: "Start over",
+    // TASK-491 — several children, one press. 🔴 `batchAllIn` is the ONLY success wording, and it is reachable only when
+    // every child is in; a mixed result gets `batchMixed`, which names how many need attention and promises nothing.
+    checkInBtn: "Check in ({n})",
+    tooMany: "Please check in up to {max} children at a time.",
+    batchAllIn: "All {total} checked in",
+    batchMixed: "{in} of {total} checked in · {refused} need the front desk",
+    rowDone: "Checked in",
+    rowAlready: "Already checked in",
+    rowRefused: "Not checked in — please ask the front desk.",
+    askDesk: "Please show this screen at the front desk for the ones that are not checked in.",
     nextFamily: "Done — next family",
     qrTitle: "Shop-front check-in QR",
     qrHint: "Print this and put it on the counter. Families scan it, type their phone number and check in themselves.",
@@ -760,6 +774,9 @@ const en = {
     overbookBtn: "Overbook (student on leave)",
     moveBtn: "Move session",
     sickLeaveBtn: "Record leave/sick",
+    // 📝 DRAFT (Fern, TASK-514) — see `confirmAction.undoAttended*`; the owner's final words replace these two lines.
+    undoAttendedBtn: "Undo attendance",
+    undoAttendedDone: "Attendance undone",
     attendBtn: "Attended",
     confirmBtn: "Confirm + LINE",
     // confirm toasts
@@ -1821,6 +1838,8 @@ const en = {
     connectFail: "Couldn't connect. Please try again.",
     loading: "Checking in…",
     alreadyTitle: "Already checked in",
+    // 🔴 TASK-483 — an ABSENT day: recorded, NOT checked in. The owner's direction via Porter; parent-facing.
+    recordedTitle: "Already recorded",
     successTitle: "Check-in complete",
     student: "Student",
     subject: "Subject",
@@ -1958,6 +1977,9 @@ const th: typeof en = {
     confirmMsgMulti: "ระบบจะส่งตารางให้ครู {n} คน ทาง LINE: {teachers}",
     leaveTitle: "บันทึกลาคาบนี้?",
     leaveMsg: "จะใช้โควตาลาของคอร์ส 1 ครั้ง และเพิ่มคาบชดเชยต่อท้ายให้",
+    // 📝 DRAFT (Fern, TASK-514) — คำสุดท้ายเป็นของเจ้าของ (อยู่กับ @Porter); ข้อความนี้บอกสิ่งที่ TASK-497 ทำจริง
+    undoAttendedTitle: "ยกเลิกการเช็คอินคาบนี้?",
+    undoAttendedMsg: "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้าโควตาของลูกค้า ไม่ใช้โควตาลา ไม่เพิ่มคาบชดเชย และไม่มีการแจ้งใคร",
     extraTitle: "เพิ่มคาบแบบคิดเงิน?",
     extraMsg: "คาบนี้คิดเงินเพิ่มจากแพ็กเกจ ไม่ได้ตัดคาบของคอร์ส",
     bulkTitle: "ยืนยันการจองที่เลือก?",
@@ -2332,6 +2354,14 @@ const th: typeof en = {
     nothing: "ตอนนี้ยังไม่มีคลาสที่เช็คอินได้ กรุณาสอบถามที่เคาน์เตอร์",
     tryAgain: "กรุณาลองอีกครั้งในอีกสักครู่ หรือสอบถามที่เคาน์เตอร์",
     startOver: "เริ่มใหม่",
+    checkInBtn: "เช็คอิน ({n})",
+    tooMany: "เช็คอินได้ครั้งละไม่เกิน {max} คนค่ะ",
+    batchAllIn: "เช็คอินครบทั้ง {total} คน",
+    batchMixed: "เช็คอินแล้ว {in} จาก {total} คน · อีก {refused} คนต้องติดต่อเคาน์เตอร์",
+    rowDone: "เช็คอินแล้ว",
+    rowAlready: "เช็คอินแล้วก่อนหน้านี้",
+    rowRefused: "ยังไม่ได้เช็คอิน — กรุณาติดต่อเคาน์เตอร์",
+    askDesk: "กรุณาแสดงหน้าจอนี้ที่เคาน์เตอร์สำหรับคนที่ยังไม่ได้เช็คอิน",
     nextFamily: "เรียบร้อย — รายต่อไป",
     qrTitle: "QR เช็คอินหน้าร้าน",
     qrHint: "พิมพ์แล้วติดไว้ที่เคาน์เตอร์ ผู้ปกครองสแกน กรอกเบอร์โทร แล้วเช็คอินเองได้เลย",
@@ -2518,6 +2548,9 @@ const th: typeof en = {
     overbookBtn: "จองทับ (นักเรียนลา)",
     moveBtn: "ย้ายคาบ",
     sickLeaveBtn: "บันทึกลา/ป่วย",
+    // 📝 DRAFT (Fern, TASK-514)
+    undoAttendedBtn: "ยกเลิกการเช็คอิน",
+    undoAttendedDone: "ยกเลิกการเช็คอินแล้ว",
     attendBtn: "มาเรียน",
     confirmBtn: "ยืนยัน + แจ้งเตือน Line",
     confirmedTitle: "ยืนยันตารางแล้ว",
@@ -3451,6 +3484,8 @@ const th: typeof en = {
     connectFail: "เชื่อมต่อระบบไม่ได้ กรุณาลองใหม่อีกครั้ง",
     loading: "กำลังเช็คอิน…",
     alreadyTitle: "เช็คอินแล้วก่อนหน้านี้",
+    // 🔴 TASK-483 — วันที่ครูบันทึกว่าไม่มาเรียน: "บันทึกแล้ว" ไม่ใช่ "เช็คอินแล้ว" (คำของเจ้าของผ่าน @Porter)
+    recordedTitle: "บันทึกแล้ว",
     successTitle: "เช็คอินสำเร็จ",
     student: "นักเรียน",
     subject: "วิชา",

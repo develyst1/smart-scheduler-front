@@ -81,7 +81,8 @@ describe("§2 — 🔴 the four 'nothing' cases are ONE case", () => {
     // the rows render in exactly ONE place (the list phase), never under the neutral sentence
     expect((page.match(/rows\.map\(/g) ?? []).length).toBe(1);
     // every refusal is the same neutral line: a 429, a 400, a 409 and a dead network
-    expect((page.match(/t\("shopCheckin\.tryAgain"\)/g) ?? []).length).toBe(4);
+    // TASK-491: +2 — the BATCH call's own two failure paths (a bad answer and a dead network) use the SAME line
+    expect((page.match(/t\("shopCheckin\.tryAgain"\)/g) ?? []).length).toBe(6);
     expect(page).not.toMatch(/429|RATE_LIMITED|NOT_CHECKINABLE|status ===/);
     // and the 409 path goes back to a REFRESHED list rather than guessing
     expect(page).toMatch(/setNotice\(t\("shopCheckin\.tryAgain"\)\);\s*await lookup\(true\);/);
@@ -115,13 +116,13 @@ describe("§3 — the act, the reuse, and what is never kept", () => {
     expect(page).not.toMatch(/localStorage|sessionStorage|autoComplete="tel"|defaultValue/);
     expect(page).toContain('autoComplete="off"');
     expect(page).toContain("setPhone(\"\");"); // cleared on success and on start-over
-    expect((page.match(/setPhone\(""\);/g) ?? []).length).toBe(2);
+    expect((page.match(/setPhone\(""\);/g) ?? []).length).toBe(3); // TASK-491: +1 — the batch result clears it too
     expect(page).toMatch(/const backToStart = \(\) => \{\s*setPhone\(""\);/);
   });
-  it("copy: the twelve keys in both languages, plain words, no jargon", () => {
+  it("copy: the twenty keys in both languages (TASK-491 added the batch's eight), plain words, no jargon", () => {
     const en = dictionaries.en.shopCheckin as Record<string, string>;
     const th = dictionaries.th.shopCheckin as Record<string, string>;
-    expect(Object.keys(en).length).toBe(12);
+    expect(Object.keys(en).length).toBe(20); // TASK-491: + checkInBtn · tooMany · batchAllIn · batchMixed · rowDone · rowAlready · rowRefused · askDesk
     expect(Object.keys(en).length).toBe(Object.keys(th).length);
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     // the neutral pair says nothing technical and nothing about the number
