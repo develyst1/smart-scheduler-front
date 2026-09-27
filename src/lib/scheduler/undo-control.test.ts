@@ -66,8 +66,11 @@ describe("§1 — which undo this row is (and where there is none)", () => {
     expect(undoDoor(true, row("CONFIRMED"))).toBe(false);
     expect(undoDoor(false, row("ATTENDED"))).toBe(false);
     expect(undoDoor(false, row("SICK_LEAVE"))).toBe(false);
-    // hidden, never disabled — the component returns null rather than rendering a greyed control
-    expect(control).toContain('if (!undoDoor(can("action:calendar.undo"), booking) || !kind) return null;');
+    // hidden, never disabled — TASK-531: the HOOK returns two nulls rather than a greyed control
+    // TASK-531 — and a LINKED (teacher) account gets no door at all: the server refuses it `403 SCOPE_TEACHER`, so a
+    // control there could only ever fail. The host passes its own `scoped`, beside `canStatus = canAttend && !scoped`.
+    expect(control).toContain('const shown = !scoped && undoDoor(can("action:calendar.undo"), booking) && kind !== null;');
+    expect(control).toContain("if (!shown || !kind) return { menuItem: null, dialog: null };");
     expect(control).not.toMatch(/disabled=\{!/);
   });
   it("the mapper carries the provenance as SENT — a channel is never invented (TASK-526)", () => {
@@ -95,7 +98,7 @@ describe("§2 — the words: three approved labels, and a body that varies with 
     expect(dictionaries.en.undo.leaveBtn).toBe("Undo leave");
     // the label comes from ONE table keyed by the kind — no literal in the component
     expect(UNDO_LABEL_KEYS).toEqual({ attendance: "undo.attendanceBtn", checkin: "undo.checkinBtn", leave: "undo.leaveBtn" });
-    expect(control).toContain("const label = t(UNDO_LABEL_KEYS[kind]);");
+    expect(control).toContain("{t(UNDO_LABEL_KEYS[kind])}"); // TASK-531: rendered straight into the menu item the hook returns
   });
   it("🔴 the LEAVE body says the coach IS told; the attendance and check-in bodies say nobody is", () => {
     expect(UNDO_BODY_KEYS).toEqual({ attendance: "undo.attendanceMsg", checkin: "undo.checkinMsg", leave: "undo.leaveMsg" });
@@ -131,9 +134,13 @@ describe("§2 — the words: three approved labels, and a body that varies with 
 });
 
 describe("§3 — two surfaces, one control; the refusals; no optimism", () => {
-  it("the roster modal and the plan editor mount the SAME component", () => {
-    expect(modal).toContain("<UndoControl booking={booking} onDone={onClose} />");
-    expect(plan).toContain("<UndoControl booking={session as unknown as import(\"@/types/app/scheduler\").Booking} />");
+  it("the roster modal and the plan editor mount the SAME hook (TASK-531: one rule, two lifetimes)", () => {
+    expect(modal).toContain("const undoControl = useUndoControl(booking, onClose, scoped);");
+    expect(plan).toContain('const undoControl = useUndoControl(session as unknown as import("@/types/app/scheduler").Booking);');
+    for (const src of [modal, plan]) {
+      expect(src).toContain("{undoControl.menuItem}");
+      expect(src).toContain("{undoControl.dialog}");
+    }
     expect(existsSync("src/components/common/UndoControl.tsx")).toBe(true);
   });
   it("🔴 TASK-514's ATTENDED branch is GONE: the Sick-leave control is a leave on every row again", () => {
@@ -142,8 +149,10 @@ describe("§3 — two surfaces, one control; the refusals; no optimism", () => {
     expect(modal).toContain('title: t("confirmAction.leaveTitle"),');
     expect(modal).toContain('message: t("confirmAction.leaveMsg"),');
     expect(modal).toContain('data-status-action="sick-leave"');
+    // TASK-531 D5 — and on an ATTENDED row the leave item is not offered at all (the Undo owns that act)
+    expect(modal).toContain('{canStatus && booking.status !== "ATTENDED" && (');
     // exactly ONE control undoes an attendance now
-    expect((modal.match(/<UndoControl /g) ?? []).length).toBe(1);
+    expect((modal.match(/\{undoControl\.menuItem\}/g) ?? []).length).toBe(1);
     // and TASK-514's leave-side guarantee is kept: the leave copy is byte-identical
     expect(dictionaries.en.confirmAction.leaveMsg).toBe("This uses one of the course's leaves and adds a make-up session at the end.");
     expect(dictionaries.th.confirmAction.leaveMsg).toBe("จะใช้โควตาลาของคอร์ส 1 ครั้ง และเพิ่มคาบชดเชยต่อท้ายให้");

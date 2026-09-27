@@ -85,7 +85,11 @@ describe("§1 — ONE gate, everywhere", () => {
     // TASK-407 — under a linked account the key is `attend` alone: `canAttend` keeps it, `canStatus` needs `!scoped`.
     expect(modal).toContain('const canAttend = can("action:calendar.status");');
     expect(modal).toContain("const canStatus = canAttend && !scoped;");
-    expect(modal).toContain("{canStatus && (");
+    // TASK-531 D5 — the leave item now reads `{canStatus && booking.status !== "ATTENDED" && (` (an attended row is an
+    // UNDO, and its dialog must not promise the family quota). The ACT is still ONE key on the four buttons, which is
+    // what this pin is for, so it names both shapes rather than the bare one that no longer exists.
+    expect(modal).toContain('{canStatus && booking.status !== "ATTENDED" && (');
+    expect(modal).toContain("{canOfferConfirm(booking.status) && canStatus && (");
     expect(modal).toContain("{canOfferConfirm(booking.status) && canStatus && ("); // TASK-409 — PENDING + EXTENDED through one list
     expect(modal).toContain("const menuHasItems =");
     expect(modal).toContain("{menuHasItems && (");

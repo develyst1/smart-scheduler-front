@@ -51,7 +51,7 @@ import {
 } from "@/types/app/scheduler";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 import EndCourseDialog from "./EndCourseDialog";
-import UndoControl from "@/components/common/UndoControl";
+import { useUndoControl } from "@/components/common/UndoControl";
 import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
 import { canResumeCourse, isCourseWritable } from "@/lib/scheduler/course-lifecycle";
@@ -810,6 +810,8 @@ function SessionActions({
   onCancelSession?: (s: PlanSession) => void;
 }) {
   const t = useT();
+  // 🔴 TASK-531 D4 — the hook lives at the ROW's lifetime, not the dropdown's (see `UndoControl`).
+  const undoControl = useUndoControl(session as unknown as import("@/types/app/scheduler").Booking);
   const canEdit = !locked && !!onEdit;
   const canMarkAbsence = !locked && !!onMarkAbsence && !isExtra && absenceLabel !== null;
   const canCancel = !!onCancelSession && (locked || isLiveStatus(session.status));
@@ -856,9 +858,10 @@ function SessionActions({
               {absenceLabel ?? t("plan.markAbsence")}
             </Menu.Item>
           )}
-          {/* SPEC-094 (TASK-518) — the same Undo control as the roster's, on a plan row. `PlanSession` carries the two
-              fields the rule reads (`status`, `checkinChannel`), so there is no second rule and no second dialog. */}
-          <UndoControl booking={session as unknown as import("@/types/app/scheduler").Booking} />
+          {/* SPEC-094 (TASK-518/531) — the same Undo control as the roster's, on a plan row. `PlanSession` carries the
+              two fields the rule reads (`status`, `checkinChannel`), so there is no second rule and no second dialog.
+              Its DIALOG is rendered after `</Menu>` — inside the dropdown it would unmount on the click that opens it. */}
+          {undoControl.menuItem}
           {canCancel && (
             <>
               {(canEdit || canMarkAbsence) && <Menu.Divider />}
@@ -873,6 +876,8 @@ function SessionActions({
           )}
         </Menu.Dropdown>
       </Menu>
+      {/* 🔴 TASK-531 D4 — OUTSIDE the `<Menu>`, for the same reason as the roster's. */}
+      {undoControl.dialog}
     </Group>
   );
 }

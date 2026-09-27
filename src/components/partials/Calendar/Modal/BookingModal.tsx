@@ -25,7 +25,7 @@ import { DatePickerInput } from "@mantine/dates";
 import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil, Users, Repeat, GraduationCap, Ticket, ListChecks } from "lucide-react";
 import type { SeriesRef } from "@/lib/scheduler/other-series";
 import ClashResolveBox from "./ClashResolveBox";
-import UndoControl from "@/components/common/UndoControl";
+import { useUndoControl } from "@/components/common/UndoControl";
 import { inClashPair } from "@/lib/scheduler/group-clash";
 import { BookingTypeChip, CheckinSourceChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
@@ -227,6 +227,10 @@ function ViewBooking({
   const canAttend = can("action:calendar.status");
   const canStatus = canAttend && !scoped;
 
+  // 🔴 TASK-531 D4 — the Undo's dialog must NOT live inside the menu: clicking the item closes the dropdown, which
+  // unmounted the dialog with it (no dialog, no request, no error). The hook holds the state here, at the ROW's
+  // lifetime; the item goes in the dropdown and the dialog goes after `</Menu>`.
+  const undoControl = useUndoControl(booking, onClose, scoped);
   const [moving, setMoving] = useState(false);
   const [noticeError, setNoticeError] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -829,7 +833,11 @@ function ViewBooking({
                 {t("booking.moveBtn")}
               </Menu.Item>
             )}
-            {canStatus && (
+            {/* 🔴 TASK-531 D5 — NOT offered on an ATTENDED row. Recording a leave there is not a thing an admin means to
+                do: this control's dialog promises the family's quota and a make-up, and on an attended session the act
+                is an UNDO, which has its own door below. Leaving it visible put the quota promise back in front of an
+                admin correcting OUR mistake — the very sentence TASK-514 removed. Absent, not disabled. */}
+            {canStatus && booking.status !== "ATTENDED" && (
               <Menu.Item
                 leftSection={<CalendarX2 size={16} />}
                 onClick={() => handleSickLeave()}
@@ -839,9 +847,9 @@ function ViewBooking({
                 {t("booking.sickLeaveBtn")}
               </Menu.Item>
             )}
-            {/* SPEC-094 (TASK-518) — the ONE Undo door: its own key, its label from the row's state, and absent where
-                there is nothing to undo. It closes the modal on success so the row is re-read, never patched locally. */}
-            <UndoControl booking={booking} onDone={onClose} />
+            {/* SPEC-094 (TASK-518/531) — the ONE Undo door: its own key, its label from the row's state, absent where
+                there is nothing to undo. Its DIALOG is rendered outside this menu (see below). */}
+            {undoControl.menuItem}
             {/* 🔴 SPEC-075 / REQ-076 (TASK-261) — พัก. Offered for exactly the three non-course types, and only
                 while the session has not happened; the rule itself is `canPauseBooking`, a tested function, not
                 this condition (TASK-147/237's lesson: a rule that only lives in JSX cannot be tested).
@@ -877,6 +885,8 @@ function ViewBooking({
         </Menu>
         )}
       </div>
+      {/* 🔴 TASK-531 D4 — OUTSIDE the `<Menu>`: the dropdown unmounts on click, and a dialog it owned died with it. */}
+      {undoControl.dialog}
 
       {/* REQ-074 — placement: the booking detail's ⋯ menu, beside sick-leave/move. See the task notes. */}
       {confirmDialog}

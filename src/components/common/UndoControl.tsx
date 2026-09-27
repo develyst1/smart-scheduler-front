@@ -12,18 +12,23 @@ import { UNDO_BODY_KEYS, UNDO_LABEL_KEYS, undoDoor, undoKind } from "@/lib/sched
 import type { Booking } from "@/types/app/scheduler";
 
 /**
- * SPEC-094 (TASK-492 BE → TASK-518 FE) — **the admin Undo, ONE control in two places** (the session roster's modal and
- * the plan editor's row menu). The API shipped and nothing could press it; this is that button.
+ * SPEC-094 (TASK-492 BE → TASK-518 FE → 🔴 TASK-531 the fix) — **the admin Undo, one control in two places.**
  *
- * 🔑 **The label names what happens to THIS row** — attendance · check-in · leave — and where nothing is undoable the
- * control is **absent**, not greyed: a disabled button invites "why?" and the honest answer is better said by absence.
- * 🔴 **The refusals are the point of the dialog.** The server names each one (`UNDO_DAY_SETTLED`, `UNDO_SLOT_TAKEN` with
- * the hour AND who holds it, `UNDO_LEAVE_CHARGE_UNKNOWN`, `UNDO_ALREADY_CHANGED`, …) and **its sentence is shown
- * verbatim** — the re-booked-hour case is the only version an admin can act on, and `UNDO_LEAVE_CHARGE_UNKNOWN` is
- * CORRECT BY DESIGN on an old row and must not read as a bug. **A refusal never renders as a success** (TASK-483).
- * 🚫 **No optimistic update:** nothing on screen changes until the server has answered. This moves money.
+ * 🔴 **Why this is a HOOK and not one component (TASK-531 D4).** The first build returned the menu item and its \`Modal\`
+ * from one component, and the host put that component **inside \`<Menu.Dropdown>\`**. Clicking the item closes the menu,
+ * Mantine unmounts the dropdown's children, and **the dialog went with it — every time, before it could paint.** No
+ * dialog, no request, no error: a control that did nothing. **A dialog's lifetime must not be owned by the menu that
+ * opens it.** So the hook holds the state, and hands back two elements the host places in two different lifetimes: the
+ * item inside the dropdown, the dialog **outside the \`<Menu>\`**.
+ *
+ * 🔑 **The label names what happens to THIS row** — attendance · check-in · leave — and where nothing is undoable both
+ * elements are \`null\`: no control at all, not a greyed one.
+ * 🔴 **The refusals are the point of the dialog.** The server names each one (\`UNDO_DAY_SETTLED\`, \`UNDO_SLOT_TAKEN\` with
+ * the hour AND who holds it, \`UNDO_LEAVE_CHARGE_UNKNOWN\`, \`UNDO_ALREADY_CHANGED\`, …) and **its sentence is shown
+ * verbatim**; \`UNDO_LEAVE_CHARGE_UNKNOWN\` is CORRECT BY DESIGN on an old row and must not read as a bug. **A refusal
+ * never renders as a success** (TASK-483). 🚫 **No optimistic update:** nothing changes until the server has answered.
  */
-export default function UndoControl({ booking, onDone, as = "menu" }: { booking: Booking; onDone?: () => void; as?: "menu" | "button" }) {
+export function useUndoControl(booking: Booking, onDone?: () => void, scoped = false): { menuItem: React.ReactNode; dialog: React.ReactNode } {
   const t = useT();
   const can = useCan();
   const undo = useUndoBooking();
@@ -32,12 +37,13 @@ export default function UndoControl({ booking, onDone, as = "menu" }: { booking:
   const [error, setError] = useState<string | null>(null);
 
   const kind = undoKind(booking);
-  // The door: the 60th key AND something to undo. Ungranted ⇒ no control at all, never a control that fails.
-  // 📌 The key is asked as a LITERAL here, not through `UNDO_KEY`, and that is deliberate: `action-gate.test.ts` sweeps
-  // `src` for `can("action:…")` literals to find every door in the product, and a door that asks through a constant is
-  // a door that sweep cannot see — it landed in the "keys with no FE site" list while being perfectly wired. The
-  // constant stays for the pure rules and the tests; the SITE says its key out loud, like every other site.
-  if (!undoDoor(can("action:calendar.undo"), booking) || !kind) return null;
+  // 📌 The key is asked as a LITERAL, not through `UNDO_KEY`: `action-gate.test.ts` sweeps `src` for `can("action:…")`
+  // literals to find every door in the product, and a door that asks through a constant is a door that sweep cannot see.
+  // 🚫 A LINKED (teacher) account is refused by the server outright (`403 SCOPE_TEACHER`), so the door must not be
+  // there at all: a control whose only outcome is a refusal is the thing TASK-518 set out to avoid. The host passes its
+  // own `scoped`, exactly as `canStatus = canAttend && !scoped` does beside it.
+  const shown = !scoped && undoDoor(can("action:calendar.undo"), booking) && kind !== null;
+  if (!shown || !kind) return { menuItem: null, dialog: null };
 
   const run = async () => {
     setError(null);
@@ -54,18 +60,13 @@ export default function UndoControl({ booking, onDone, as = "menu" }: { booking:
     }
   };
 
-  const label = t(UNDO_LABEL_KEYS[kind]);
-  return (
-    <>
-      {as === "menu" ? (
-        <Menu.Item leftSection={<Undo2 size={16} />} onClick={() => setOpen(true)} data-undo-control={kind}>
-          {label}
-        </Menu.Item>
-      ) : (
-        <Button size="xs" variant="light" leftSection={<Undo2 size={14} />} onClick={() => setOpen(true)} data-undo-control={kind}>
-          {label}
-        </Button>
-      )}
+  return {
+    menuItem: (
+      <Menu.Item leftSection={<Undo2 size={16} />} onClick={() => setOpen(true)} data-undo-control={kind}>
+        {t(UNDO_LABEL_KEYS[kind])}
+      </Menu.Item>
+    ),
+    dialog: (
       <Modal opened={open} onClose={() => setOpen(false)} centered title={t(`undo.${kind}Title`)} data-undo-dialog={kind}>
         <Stack gap="sm">
           {error && (
@@ -80,12 +81,12 @@ export default function UndoControl({ booking, onDone, as = "menu" }: { booking:
             <Button variant="default" onClick={() => setOpen(false)}>
               {t("common.cancel")}
             </Button>
-            <Button color="orange" loading={undo.isPending} onClick={() => void run()}>
+            <Button color="orange" loading={undo.isPending} onClick={() => void run()} data-undo-confirm>
               {t("undo.confirm")}
             </Button>
           </Group>
         </Stack>
       </Modal>
-    </>
-  );
+    ),
+  };
 }

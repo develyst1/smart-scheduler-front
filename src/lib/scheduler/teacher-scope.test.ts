@@ -88,7 +88,7 @@ describe("§3 — the calendar page under the flag", () => {
     expect(codeOf("src/services/badge.service.ts")).toContain('"/badges"');
     expect(codeOf("src/hooks/scheduler/useScheduler.ts")).toContain('getAllBookings({ status: "PAUSED"');
     // the modal's VIEW, mounted on a click, fetches only badges by itself; the rental section (sellable-packages) is off under the flag
-    expect(dataHooks(region(modal, "function ViewBooking(", "function MoveBookingForm("))).toEqual(["useBadges", "useConfirmBooking", "useMarkAttended", "useMarkSickLeave", "usePauseBooking", "useResumeBooking", "useSetBookingBadges"]);
+    expect(dataHooks(region(modal, "function ViewBooking(", "function MoveBookingForm("))).toEqual(["useBadges", "useConfirmBooking", "useMarkAttended", "useMarkSickLeave", "usePauseBooking", "useResumeBooking", "useSetBookingBadges", "useUndoControl"]);
     // 📌 REQ-106 §1 (TASK-464) — the owner ruled a coach DOES see the gear (item + remark, read-only), so the scoped
     // branch is no longer "nothing": it is `RentalGearLine`, which mounts no data hook (the pin above still holds) and
     // carries no price, no paid state and no door. The unscoped `RentalSection` is untouched.
@@ -111,7 +111,9 @@ describe("§3 — the calendar page under the flag", () => {
     expect(modal).toContain("const canStatus = canAttend && !scoped;");
     expect(modal).toMatch(/\{canAttend && \(\s*<Button\s+variant="default"\s+leftSection=\{<BadgeCheck/);
     expect(modal).toContain("{canOfferConfirm(booking.status) && canStatus && ("); // TASK-409 — PENDING + EXTENDED through one list
-    expect(modal).toMatch(/\{canStatus && \(\s*<Menu\.Item\s+leftSection=\{<CalendarX2/);
+    // TASK-531 D5 — the leave item now carries the ATTENDED guard beside `canStatus` (an attended row is an UNDO, and
+    // its dialog must not promise the family's quota); the KEY gate is unchanged, which is what this pin is about.
+    expect(modal).toMatch(/\{canStatus && booking\.status !== "ATTENDED" && \(\s*<Menu\.Item\s+leftSection=\{<CalendarX2/);
     expect(modal).toContain("canOverbook || canMove || canStatus ||");
     expect(modal).not.toMatch(/disabled=\{[^}]*scoped/); // hidden, never disabled
   });

@@ -1,0 +1,4 @@
+# TASK-532 — the DOM harness for `.dom.test.tsx` files (a real click on a control). See `test/dom-preload.ts` for the
+# rule this serves and, more importantly, for what it does NOT license.
+[test]
+preload = ["./test/dom-preload.ts"]
