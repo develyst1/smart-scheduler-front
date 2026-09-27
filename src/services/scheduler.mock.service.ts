@@ -965,6 +965,10 @@ export const getSlotAvailability = (date: string, startTime: string): Promise<Sl
 export const setAttendeeNote = (id: string, attendeeNote: string | null) =>
   delay({ id, attendeeNote });
 
+/** SPEC-094 — offline stand-in for the admin Undo, so the dialog is exercisable without a server. */
+export const undoBooking = (bookingId: string, body: { reason?: string }) =>
+  delay({ kind: "checkin", leaveRefunded: false, makeupCancelledId: null, expiry: null, booking: { id: bookingId, status: "CONFIRMED" }, reason: body.reason ?? null });
+
 /** REQ-105 — offline stand-ins for the two clash resolutions (the dialogs are exercisable without a server). */
 export const resolveClashMove = (bookingId: string, body: { teacherId?: string; date?: string; startTime?: string }) =>
   delay({ resolved: true, bookingId, ...body });

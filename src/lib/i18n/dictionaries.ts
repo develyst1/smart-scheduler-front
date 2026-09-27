@@ -136,10 +136,7 @@ const en = {
     confirmMsgMulti: "The schedule will be sent on LINE to {n} teachers: {teachers}",
     leaveTitle: "Record leave for this session?",
     leaveMsg: "This uses one of the course's leaves and adds a make-up session at the end.",
-    // 📝 DRAFT (Fern, TASK-514) — the ATTENDED row's undo. The FINAL words are the owner's, with @Porter; this says what
     // TASK-497 actually does and is pinned BY SHAPE (the four facts), so his answer is a one-line change here.
-    undoAttendedTitle: "Undo this attendance?",
-    undoAttendedMsg: "The session goes back to confirmed and the class returns to the family's balance. No leave is used, no make-up is added, and nobody is told.",
     extraTitle: "Add a charged extra session?",
     extraMsg: "This is billed on top of the package — it does not use a course session.",
     bulkTitle: "Confirm the selected bookings?",
@@ -528,6 +525,26 @@ const en = {
     mark: "CLASH",
     markTitle: "Two classes stand on this coach-hour — resolve it from either one.",
   },
+  // SPEC-094 (TASK-492/517/518) — the admin Undo. 🔴 The verb is `ย้อน…`, NEVER `ยกเลิก…`: that belongs to `ยกเลิกการจอง`,
+  // and Cancel (takes a session off the schedule) must never blur with Undo (puts one back) — the owner's instruction.
+  // The three labels are the owner's approved words. The bodies are approved as written, and 🔴 the LEAVE body says the
+  // coach IS told (TASK-508 sends "class on again") while the other two say nobody is — the same defect this control
+  // exists to remove would otherwise ship inside it.
+  undo: {
+    attendanceBtn: "Undo attendance",
+    checkinBtn: "Undo check-in",
+    leaveBtn: "Undo leave",
+    attendanceTitle: "Undo this attendance?",
+    checkinTitle: "Undo this check-in?",
+    leaveTitle: "Undo this leave?",
+    attendanceMsg: "The session goes back to confirmed and the class returns to the family's balance. No leave is used, no make-up is added, and nobody is told.",
+    checkinMsg: "The session goes back to confirmed and the class returns to the family's balance. No leave is used, no make-up is added, and nobody is told.",
+    leaveMsg: "The session goes back to confirmed, the leave is returned to the family's quota and its make-up is cancelled. The coach is told the class is on again.",
+    reasonLabel: "Reason (optional)",
+    confirm: "Undo it",
+    // 📝 DRAFT (Fern, TASK-518) — the toast only; the labels and the bodies above are the owner's approved words.
+    done: "Undone",
+  },
   // REQ-108 (TASK-481/482) — the chip that makes a wall-QR check-in visible on a roster. ONE key: the other sources
   // (and an admin's username, and anything new) render nothing at all — see `lib/scheduler/checkin-source.ts`.
   checkinSource: {
@@ -774,9 +791,6 @@ const en = {
     overbookBtn: "Overbook (student on leave)",
     moveBtn: "Move session",
     sickLeaveBtn: "Record leave/sick",
-    // 📝 DRAFT (Fern, TASK-514) — see `confirmAction.undoAttended*`; the owner's final words replace these two lines.
-    undoAttendedBtn: "Undo attendance",
-    undoAttendedDone: "Attendance undone",
     attendBtn: "Attended",
     confirmBtn: "Confirm + LINE",
     // confirm toasts
@@ -1977,9 +1991,6 @@ const th: typeof en = {
     confirmMsgMulti: "ระบบจะส่งตารางให้ครู {n} คน ทาง LINE: {teachers}",
     leaveTitle: "บันทึกลาคาบนี้?",
     leaveMsg: "จะใช้โควตาลาของคอร์ส 1 ครั้ง และเพิ่มคาบชดเชยต่อท้ายให้",
-    // 📝 DRAFT (Fern, TASK-514) — คำสุดท้ายเป็นของเจ้าของ (อยู่กับ @Porter); ข้อความนี้บอกสิ่งที่ TASK-497 ทำจริง
-    undoAttendedTitle: "ยกเลิกการเช็คอินคาบนี้?",
-    undoAttendedMsg: "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้าโควตาของลูกค้า ไม่ใช้โควตาลา ไม่เพิ่มคาบชดเชย และไม่มีการแจ้งใคร",
     extraTitle: "เพิ่มคาบแบบคิดเงิน?",
     extraMsg: "คาบนี้คิดเงินเพิ่มจากแพ็กเกจ ไม่ได้ตัดคาบของคอร์ส",
     bulkTitle: "ยืนยันการจองที่เลือก?",
@@ -2341,6 +2352,21 @@ const th: typeof en = {
     mark: "ทับซ้อน",
     markTitle: "มีสองคลาสอยู่ในชั่วโมงเดียวกันของครูคนนี้ — แก้ได้จากคลาสใดคลาสหนึ่ง",
   },
+  undo: {
+    attendanceBtn: "ย้อนการเข้าเรียน",
+    checkinBtn: "ย้อนการเช็คอิน",
+    leaveBtn: "ย้อนการลา",
+    attendanceTitle: "ย้อนการเข้าเรียนคาบนี้?",
+    checkinTitle: "ย้อนการเช็คอินคาบนี้?",
+    leaveTitle: "ย้อนการลาคาบนี้?",
+    attendanceMsg: "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้าโควตาของลูกค้า ไม่ใช้โควตาลา ไม่เพิ่มคาบชดเชย และไม่มีการแจ้งใคร",
+    checkinMsg: "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้าโควตาของลูกค้า ไม่ใช้โควตาลา ไม่เพิ่มคาบชดเชย และไม่มีการแจ้งใคร",
+    leaveMsg: "คาบจะกลับเป็นยืนยันแล้ว คืนโควตาลาให้ลูกค้า และยกเลิกคาบชดเชยของการลานี้ ระบบจะแจ้งครูว่าคาบนี้กลับมาเรียนแล้ว",
+    reasonLabel: "เหตุผล (ไม่บังคับ)",
+    confirm: "ย้อนรายการนี้",
+    // 📝 DRAFT (Fern, TASK-518) — เฉพาะ toast; ป้ายและเนื้อหาด้านบนเป็นคำที่เจ้าของอนุมัติแล้ว
+    done: "ย้อนรายการแล้ว",
+  },
   checkinSource: {
     shopfrontQr: "เช็คอินจาก QR หน้าร้าน",
     shopfrontQrTitle: "ผู้ปกครองเช็คอินเองจาก QR หน้าร้าน ไม่ใช่พนักงานเช็คอินให้",
@@ -2548,9 +2574,6 @@ const th: typeof en = {
     overbookBtn: "จองทับ (นักเรียนลา)",
     moveBtn: "ย้ายคาบ",
     sickLeaveBtn: "บันทึกลา/ป่วย",
-    // 📝 DRAFT (Fern, TASK-514)
-    undoAttendedBtn: "ยกเลิกการเช็คอิน",
-    undoAttendedDone: "ยกเลิกการเช็คอินแล้ว",
     attendBtn: "มาเรียน",
     confirmBtn: "ยืนยัน + แจ้งเตือน Line",
     confirmedTitle: "ยืนยันตารางแล้ว",

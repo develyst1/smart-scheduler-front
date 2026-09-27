@@ -63,7 +63,10 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     campWeekId: dto.campWeekId ?? null,
     // TASK-457 — the DATE's kid count on a camp hour; a reader that does not send it ⇒ null (no number invented).
     campKidCount: dto.campKidCount ?? null,
-    // TASK-482 — the check-in's source, as sent (a coach's read is `null` server-side); nothing derived here.
+    // TASK-482/488 — the provenance as sent (a coach's read is `null` server-side); nothing derived here. The CHANNEL is
+    // the closed set anything may decide from; the ACTOR is a person's name and is carried for display only.
+    checkinChannel: dto.checkinChannel ?? null,
+    checkinActor: dto.checkinActor ?? null,
     checkinSource: dto.checkinSource ?? null,
     // Conflict resolution (B.1)
     pendingSlot: dto.pendingSlot || undefined,

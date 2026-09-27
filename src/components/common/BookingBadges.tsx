@@ -17,7 +17,7 @@ import type { BookingStatus, BookingType, TeacherType } from "@/types/app/schedu
 import { BOOKING_STATUS_COLOR, TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 import { MANTINE_COLOR, type SemanticColor } from "@/lib/ui/colors";
 import { useT } from "@/lib/i18n";
-import { checkinSourceLabelKey } from "@/lib/scheduler/checkin-source";
+import { checkinChannelLabelKey } from "@/lib/scheduler/checkin-source";
 
 type Size = "sm" | "md";
 
@@ -103,12 +103,12 @@ export function TeacherTypeChip({ type, size = "sm" }: { type: TeacherType; size
  * Quiet and unmissable: an outlined amber chip, not a red alarm — most shop-QR check-ins are perfectly ordinary, and
  * this is read by an admin scanning a roster after something has gone wrong for a family with no LINE notice.
  */
-export function CheckinSourceChip({ source, size = "sm" }: { source: string | null | undefined; size?: Size }) {
+export function CheckinSourceChip({ channel, size = "sm" }: { channel: string | null | undefined; size?: Size }) {
   const t = useT();
-  const key = checkinSourceLabelKey(source);
+  const key = checkinChannelLabelKey(channel);
   if (!key) return null;
   return (
-    <Badge size={size} color="orange" variant="outline" radius="sm" styles={NO_TRUNCATE} title={t("checkinSource.shopfrontQrTitle")} data-checkin-source={source}>
+    <Badge size={size} color="orange" variant="outline" radius="sm" styles={NO_TRUNCATE} title={t("checkinSource.shopfrontQrTitle")} data-checkin-channel={channel}>
       {t(key)}
     </Badge>
   );

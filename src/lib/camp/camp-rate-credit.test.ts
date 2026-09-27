@@ -109,7 +109,7 @@ describe("§2 — remainingLine, by value; the two pages", () => {
     expect(editor).toContain("value={(dayRates(d)?.[id] ?? 0) / 100}");
     expect(editor).toContain("body: withoutRates(p.body, canRate)"); // TASK-457: the guard stays on the new `teachers[]` body
     expect(editor).not.toMatch(/disabled=\{!canRate/); // hidden, never disabled
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(59);
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(60) /* TASK-518: + the 60th, `calendar.undo` (SPEC-094) */;
     expect(ACTION_KEYS_SNAPSHOT).toContain("action:bookings.coach-rate");
   });
 });

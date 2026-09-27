@@ -68,6 +68,7 @@ import {
   endCourse,
   resolveClashMove,
   resolveClashSwapCoach,
+  undoBooking,
   previewEndVoucher,
   endVoucher,
   dropCourse,
@@ -86,6 +87,7 @@ import {
   type SetFreelanceBudgetInput,
   type ExtraSessionInput,
 } from "@/services/scheduler.service";
+import { undoBody } from "@/lib/scheduler/undo";
 import type { EndCourseReason, PlanChange, RecordRentalInput, TeacherType } from "@/types/app/scheduler";
 import type { OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
 import type { GroupSeriesInput, GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
@@ -308,6 +310,18 @@ export const useEndCourse = () => {
   return useMutation({
     mutationFn: ({ courseId, reason, note }: { courseId: string; reason: EndCourseReason; note?: string }) =>
       endCourse(courseId, { reason, note }),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/**
+ * SPEC-094 (TASK-492/518) — the admin Undo. Invalidates everything on SUCCESS ONLY: a 409 wrote nothing, and a refetch
+ * would redraw the same row while hiding the refusal behind a flicker. 🚫 No optimistic update — this moves money.
+ */
+export const useUndoBooking = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, reason }: { bookingId: string; reason: string }) => undoBooking(bookingId, undoBody(reason)),
     onSuccess: () => invalidateAll(qc),
   });
 };

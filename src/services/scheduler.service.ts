@@ -713,6 +713,19 @@ export const moveBooking = async (
 };
 
 /**
+ * SPEC-094 (TASK-492/518) — **the admin Undo.** One endpoint for both kinds; the server decides which this row is and
+ * answers `{ kind: "leave" | "checkin", leaveRefunded, makeupCancelledId, expiry, booking }`.
+ * 🔴 Every refusal is a named `409` (`UNDO_DAY_SETTLED` · `UNDO_SLOT_TAKEN` naming who holds the hour ·
+ * `UNDO_LEAVE_CHARGE_UNKNOWN` · `UNDO_ALREADY_CHANGED` · …) and **none of them may render as a success** (TASK-483's
+ * lesson). The caller shows the server's own sentence and changes nothing until a 2xx — this moves money.
+ */
+export const undoBooking = async (bookingId: string, body: { reason?: string }) => {
+  if (useMock) return mock.undoBooking(bookingId, body);
+  const { data } = await api.post(`/bookings/${bookingId}/undo`, body);
+  return data;
+};
+
+/**
  * REQ-105 / SPEC-091 (TASK-453/457) — the two clash resolutions, one transaction each on the server.
  * ① `move` — the PRIVATE moves and the group takes its hour back (the owner's default).
  * ② `swap-coach` — the GROUP session moves to another coach; the Private keeps this one.

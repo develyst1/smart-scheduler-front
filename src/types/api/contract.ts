@@ -217,9 +217,17 @@ export interface SetBookingBadgesResponse {
 
 export interface BookingDTO {
   id: string;
-  /** REQ-108 (TASK-481) — WHO checked this session in: `shopfront-qr` · `checkin-qr` · `end-of-day` · an admin's
-   *  USERNAME for a staff check-in (so the values are open-ended), and `null` for a linked-teacher account — the
-   *  SERVER decides that last rule; 🚫 the FE never re-implements it. Absent on an older payload. */
+  /**
+   * REQ-108 (TASK-488) — the check-in's provenance, **split into two facts** because one column holding both nearly put
+   * an admin's username in a parent's reply:
+   * - `checkinChannel` — the CLOSED set (`CHECKIN_CHANNELS`), or `null`. **This is the field to decide anything with.**
+   * - `checkinActor` — a PERSON (an admin's username), free text. 🚫 Never a key, never a label, never a decision.
+   * - `checkinSource` — the old column, **kept and deprecated** until the BE drops it; open-ended (a channel OR a
+   *   username). Both are `null` for a linked-teacher account — the SERVER's rule, never re-implemented here.
+   */
+  checkinChannel?: CheckinChannel | null;
+  checkinActor?: string | null;
+  /** @deprecated TASK-488 — use `checkinChannel`; this one can hold a username. */
   checkinSource?: string | null;
   date: IsoDate;
   startTime: HhMm;
@@ -615,6 +623,10 @@ export interface CreateCoursePackageResponse {
 }
 
 /** REQ-103 (TASK-439) — the server's ONE derivation (ENDED > EXPIRED > EXHAUSTED > ACTIVE); the FE renders it, never computes it. */
+/** REQ-108 (TASK-488) — the closed channel set, mirroring the BE's `lib/checkin-channel.ts` and its DB CHECK. */
+export const CHECKIN_CHANNELS = ["checkin-qr", "line", "shopfront-qr", "staff", "end-of-day"] as const;
+export type CheckinChannel = (typeof CHECKIN_CHANNELS)[number];
+
 export type VoucherStatus = "ACTIVE" | "EXHAUSTED" | "EXPIRED" | "ENDED";
 export interface VoucherSummary {
   id: string;

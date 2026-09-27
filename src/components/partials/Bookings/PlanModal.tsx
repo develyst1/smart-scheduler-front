@@ -51,6 +51,7 @@ import {
 } from "@/types/app/scheduler";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 import EndCourseDialog from "./EndCourseDialog";
+import UndoControl from "@/components/common/UndoControl";
 import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
 import { canResumeCourse, isCourseWritable } from "@/lib/scheduler/course-lifecycle";
@@ -855,6 +856,9 @@ function SessionActions({
               {absenceLabel ?? t("plan.markAbsence")}
             </Menu.Item>
           )}
+          {/* SPEC-094 (TASK-518) — the same Undo control as the roster's, on a plan row. `PlanSession` carries the two
+              fields the rule reads (`status`, `checkinChannel`), so there is no second rule and no second dialog. */}
+          <UndoControl booking={session as unknown as import("@/types/app/scheduler").Booking} />
           {canCancel && (
             <>
               {(canEdit || canMarkAbsence) && <Menu.Divider />}

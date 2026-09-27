@@ -386,7 +386,7 @@ export default function BookingsTable() {
                     <StatusChip status={b.status} />
                     {/* REQ-108 (TASK-482) — the wall-QR chip beside the state it belongs to: an unlinked family's only
                         safety net, read by an admin scanning the roster for the odd row. Only `shopfront-qr` shows. */}
-                    <CheckinSourceChip source={b.checkinSource} />
+                    <CheckinSourceChip channel={b.checkinChannel} />
                   </Group>
                 </Table.Td>
               </Table.Tr>

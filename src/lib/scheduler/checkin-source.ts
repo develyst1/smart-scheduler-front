@@ -1,5 +1,11 @@
 /**
- * REQ-108 / TASK-481/482 — **who checked this session in**, as the one place a source becomes a chip.
+ * REQ-108 / TASK-481/482/527 — **who checked this session in**, as the one place the provenance becomes a chip.
+ *
+ * 🔴 **TASK-527: this now reads `checkinChannel` (the closed set), not the deprecated `checkinSource`.** The old column is
+ * to be dropped; this chip was its LAST reader, and a drop while it read it would have silenced the chip **without
+ * failing a test on either side** — the drop is a BE task, the chip is an FE file, and neither repo objects. The chip is
+ * the only evidence an unlinked family will ever have that a wall-QR check-in happened (REQ-108 §5, the gap the owner
+ * accepted), so that silence would have been invisible and expensive.
  *
  * 🔴 Why this exists at all: the owner accepted a gap in REQ-108 — **a family with no linked LINE gets no notice when
  * someone checks their child in.** For that family this chip is the ENTIRE safety net: the only way anyone can later
@@ -17,23 +23,27 @@
  * coach ever sees a chip, that is a BE defect to report, not something to patch in a view.
  */
 
-/** The value the shop-front QR page's check-ins carry. The one source with words. */
-export const SHOPFRONT_SOURCE = "shopfront-qr";
+import type { CheckinChannel } from "@/types/api/contract";
+
+/** The one CHANNEL with words: a family scanned the poster's QR at the counter. */
+export const SHOPFRONT_CHANNEL: CheckinChannel = "shopfront-qr";
 
 /**
- * source → copy key. ONE entry today; the next source we invent has one obvious place to be named.
- * 📌 A **null-prototype** map, and the lookup asks `Object.hasOwn`: the value is an ADMIN USERNAME on a staff
- * check-in, so it is attacker-adjacent free text reaching a map key. A plain object answers `toString` and
- * `constructor` with inherited members — my own test caught `checkinSourceLabelKey("toString")` handing a FUNCTION to
- * the chip, which would have rendered garbage in front of a customer. Own keys only.
+ * channel → copy key. ONE entry; the next channel that earns words has one obvious place to be named.
+ * 📌 Still a **null-prototype** map read through `Object.hasOwn`, and TASK-527 did NOT relax that even though
+ * `checkinChannel` is a closed set: the guard cost nothing, and the map is now one `as unknown as` away from being fed
+ * free text again if a later task widens the field. **A map whose keys come from outside stays a null-prototype map.**
+ * (The original reason, worth keeping: on a plain object `checkinSourceLabelKey("toString")` returned
+ * `Object.prototype.toString` — a FUNCTION handed to the chip to render in front of a customer.)
  */
-export const CHECKIN_SOURCE_LABELS: Readonly<Record<string, string>> = Object.freeze(
-  Object.assign(Object.create(null), { [SHOPFRONT_SOURCE]: "checkinSource.shopfrontQr" }),
+export const CHECKIN_CHANNEL_LABELS: Readonly<Record<string, string>> = Object.freeze(
+  Object.assign(Object.create(null), { [SHOPFRONT_CHANNEL]: "checkinSource.shopfrontQr" }),
 );
 
 /**
- * The chip's copy key for a source, or `null` for "render nothing" — which covers `null`, `undefined`, the other known
- * sources and any value we have never seen (an admin username, a source added by a later BE task).
+ * The chip's copy key for a CHANNEL, or `null` for "render nothing" — `null`, `undefined`, the other four channels, and
+ * any value a later task invents. 🚫 It is never given `checkinActor`: that is a person's username, and TASK-488 exists
+ * to keep the two apart.
  */
-export const checkinSourceLabelKey = (source: string | null | undefined): string | null =>
-  typeof source === "string" && Object.hasOwn(CHECKIN_SOURCE_LABELS, source) ? CHECKIN_SOURCE_LABELS[source] : null;
+export const checkinChannelLabelKey = (channel: string | null | undefined): string | null =>
+  typeof channel === "string" && Object.hasOwn(CHECKIN_CHANNEL_LABELS, channel) ? CHECKIN_CHANNEL_LABELS[channel] : null;

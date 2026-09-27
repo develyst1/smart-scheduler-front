@@ -116,7 +116,7 @@ describe("§2 — the page, the wire, the links, the key", () => {
   });
   it("the 58th key sits after `group-series` (the BE's slot); copy counted both languages", () => {
     expect(ACTION_KEYS_SNAPSHOT.indexOf("action:calendar.other-cancel-all")).toBe(ACTION_KEYS_SNAPSHOT.indexOf("action:calendar.group-series") + 1);
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(59); /* + TASK-432 coach-rate */
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(60) /* TASK-518: + the 60th, `calendar.undo` (SPEC-094) */; /* + TASK-432 coach-rate */
     const en = dictionaries.en.otherSeries as Record<string, string>;
     const th = dictionaries.th.otherSeries as Record<string, string>;
     expect(Object.keys(en).length).toBe(36); /* TASK-442: + confirmGroup · confirmedGroup · cancelAllGroupBody · cancelledGroup */

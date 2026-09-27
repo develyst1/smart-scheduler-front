@@ -25,6 +25,7 @@ import { DatePickerInput } from "@mantine/dates";
 import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil, Users, Repeat, GraduationCap, Ticket, ListChecks } from "lucide-react";
 import type { SeriesRef } from "@/lib/scheduler/other-series";
 import ClashResolveBox from "./ClashResolveBox";
+import UndoControl from "@/components/common/UndoControl";
 import { inClashPair } from "@/lib/scheduler/group-clash";
 import { BookingTypeChip, CheckinSourceChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
@@ -164,7 +165,7 @@ export default function BookingModal({
               <StatusChip status={booking.status} />
               <BookingTypeChip type={booking.bookingType} />
               {/* REQ-108 (TASK-482) — the same chip on the detail, from the same ONE mapping. */}
-              <CheckinSourceChip source={booking.checkinSource} />
+              <CheckinSourceChip channel={booking.checkinChannel} />
             </div>
           </div>
         ) : null
@@ -384,24 +385,19 @@ function ViewBooking({
   };
 
   /**
-   * 🔴 TASK-514 — **the same control means two different things, and the words follow THIS row's state.**
-   *
-   * On a row that has not happened it is a LEAVE: it spends one of the course's leaves and appends a make-up (REQ-073),
-   * both of them work to unpick — so the dialog warns, as it always has.
-   *
-   * On an **ATTENDED** row it is not a leave at all any more. TASK-497 changed what it DOES: the session goes back to
-   * CONFIRMED, the class returns to the family's balance, **no quota is charged, no make-up is created, and nobody is
-   * messaged.** The screen still promised the old thing — and an admin who reads *"this uses one of the course's leaves"*
-   * to correct **our own** mistake will not press it, so the correction we built is one nobody dares use. Hence:
-   * `undoing` picks the label, the dialog and the toast together. They cannot disagree because they are one branch.
+   * 🔴 TASK-518 — **TASK-514's ATTENDED branch is GONE from this control, deliberately.** That branch relabelled "Sick
+   * leave" as an undo on an ATTENDED row, which was the honest fix while no Undo control existed. One now does
+   * (`UndoControl`, SPEC-094): it is the same act with the STRONGER safety — it re-holds the coach's hour and can refuse
+   * naming who took it — so keeping both would leave an admin with **two buttons that both undo an attendance**, which is
+   * the thing we agreed to avoid. ⇒ This control is a LEAVE again, on every row, with its original words (REQ-073: it
+   * spends one of the course's leaves and appends a make-up — both work to unpick, so the dialog warns).
    */
-  const undoing = booking.status === "ATTENDED";
   const handleSickLeave = async (override = false) => {
     if (
       !(await askConfirm({
-        title: t(undoing ? "confirmAction.undoAttendedTitle" : "confirmAction.leaveTitle"),
-        message: t(undoing ? "confirmAction.undoAttendedMsg" : "confirmAction.leaveMsg"),
-        confirmLabel: t(undoing ? "booking.undoAttendedBtn" : "booking.sickLeaveBtn"),
+        title: t("confirmAction.leaveTitle"),
+        message: t("confirmAction.leaveMsg"),
+        confirmLabel: t("booking.sickLeaveBtn"),
         color: "orange",
       }))
     )
@@ -422,8 +418,7 @@ function ViewBooking({
           color: "success",
         });
       } else {
-        // The toast says what happened to THIS row — an undo did not "record a leave".
-        notify({ title: t(undoing ? "booking.undoAttendedDone" : "booking.leaveSavedTitle"), color: "default" });
+        notify({ title: t("booking.leaveSavedTitle"), color: "default" });
       }
       onClose();
     } catch (err) {
@@ -839,11 +834,14 @@ function ViewBooking({
                 leftSection={<CalendarX2 size={16} />}
                 onClick={() => handleSickLeave()}
                 disabled={booking.status === "SICK_LEAVE"}
-                data-status-action={undoing ? "undo-attended" : "sick-leave"}
+                data-status-action="sick-leave"
               >
-                {t(undoing ? "booking.undoAttendedBtn" : "booking.sickLeaveBtn")}
+                {t("booking.sickLeaveBtn")}
               </Menu.Item>
             )}
+            {/* SPEC-094 (TASK-518) — the ONE Undo door: its own key, its label from the row's state, and absent where
+                there is nothing to undo. It closes the modal on success so the row is re-read, never patched locally. */}
+            <UndoControl booking={booking} onDone={onClose} />
             {/* 🔴 SPEC-075 / REQ-076 (TASK-261) — พัก. Offered for exactly the three non-course types, and only
                 while the session has not happened; the rule itself is `canPauseBooking`, a tested function, not
                 this condition (TASK-147/237's lesson: a rule that only lives in JSX cannot be tested).

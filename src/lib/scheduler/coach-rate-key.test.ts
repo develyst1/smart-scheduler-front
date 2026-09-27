@@ -48,7 +48,7 @@ describe("§1 — the guard and the bodies, by value", () => {
   });
   it("the 59th key sits after `teachers.budget-view` (the BE's slot); 57 and 59 are independent (neither side reads the other's key)", () => {
     expect(ACTION_KEYS_SNAPSHOT.indexOf(COACH_RATE_KEY)).toBe(ACTION_KEYS_SNAPSHOT.indexOf("action:teachers.budget-view") + 1);
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(59);
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(60) /* TASK-518: + the 60th, `calendar.undo` (SPEC-094) */;
     expect(budget).not.toContain("coach-rate");
     for (const src of [fields, otherCreate, groupCreate, details, modal, card, flow, series, seriesPage]) expect(src).not.toContain("budget-view");
   });

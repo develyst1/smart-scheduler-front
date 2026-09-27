@@ -1,6 +1,7 @@
 import type { ExpiryWarning } from "@/types/api/contract";
 import type { OtherFacts } from "@/lib/scheduler/other-schedule";
 import type { GroupFacts } from "@/lib/scheduler/group-session";
+import type { CheckinChannel } from "@/types/api/contract";
 
 // ───────────────────────────── Teachers ─────────────────────────────
 
@@ -218,8 +219,10 @@ export interface Booking {
   campWeekDayId?: string | null;
   /** REQ-105 (TASK-454) — the DATE's kid count on a camp hour (the same on every block of that day). */
   campKidCount?: number | null;
-  /** REQ-108 (TASK-481/482) — who checked it in; `null` for a coach (the server's rule). Open-ended: only
-   *  `shopfront-qr` has a chip (`lib/scheduler/checkin-source.ts`). */
+  /** REQ-108 (TASK-488) — the CLOSED channel (decide with this one) and the PERSON (free text; never a key). */
+  checkinChannel?: CheckinChannel | null;
+  checkinActor?: string | null;
+  /** @deprecated TASK-488 — kept until the BE drops it; it can hold a username. */
   checkinSource?: string | null;
   campWeekId?: string | null;
   /** REQ-095 §13 (TASK-421) — a DUO course row's second child (as sent). */

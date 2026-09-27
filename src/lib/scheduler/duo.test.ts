@@ -210,6 +210,6 @@ describe("§3 — the forms", () => {
   it("copy counted both languages; snapshot unchanged (no key)", () => {
     for (const lang of ["en", "th"] as const)
       for (const k of ["kindPrivate", "kindDuo", "coStudent", "duoSameChild", "classRate", "classRateHint", "classRateMoveHint", "duoTag", "rateLine", "rateEdit", "rateSavedOk", "sessionRate", "sessionRateHint", "rateDefault", "rateOverride", "rateClear", "defaultRate"]) expect((dictionaries[lang].course as Record<string, string>)[k]?.length).toBeGreaterThan(0);
-    expect(ACTION_KEYS_SNAPSHOT.length).toBe(59) /* TASK-427 + TASK-429 + TASK-432: budget-view, other-cancel-all, coach-rate */;
+    expect(ACTION_KEYS_SNAPSHOT.length).toBe(60) /* TASK-518: + the 60th, `calendar.undo` (SPEC-094) */ /* TASK-427 + TASK-429 + TASK-432: budget-view, other-cancel-all, coach-rate */;
   });
 });
