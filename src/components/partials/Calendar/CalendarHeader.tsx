@@ -4,10 +4,11 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 import { ActionIcon, Button, CloseButton, MultiSelect, Paper, SegmentedControl, TextInput, Tooltip } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users, Tag, Search, CalendarOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users, Tag, Search, CalendarOff, Clock } from "lucide-react";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import type { BadgeType, TeacherType, TeacherView } from "@/types/app/scheduler";
-import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
+import { TEACHER_TYPE_LABEL, TIME_SLOTS } from "@/types/app/scheduler";
+import { formatTimeDisplay } from "@/lib/ui/format";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { useI18n } from "@/lib/i18n";
 
@@ -29,6 +30,9 @@ interface Props {
   onChangeBadgeValueIds?: (ids: string[]) => void;
   studentQuery?: string;
   onChangeStudentQuery?: (q: string) => void;
+  /** The hours to show; `[]` = every slot. Day view drops the other rows, week view drops the other bookings. */
+  selectedTimes?: string[];
+  onChangeTimes?: (times: string[]) => void;
   /** REQ-097 (TASK-407) — a linked account: no teacher/type pickers (the calendar is mine already). */
   scoped?: boolean;
   /** REQ-097 — `Report leave`, present only for a linked account holding the key. */
@@ -53,6 +57,8 @@ export default function CalendarHeader({
   onChangeBadgeValueIds,
   studentQuery = "",
   onChangeStudentQuery,
+  selectedTimes = [],
+  onChangeTimes,
   scoped = false,
   onReportLeave,
 }: Props) {
@@ -246,6 +252,27 @@ export default function CalendarHeader({
               aria-label={t("calendar.filterBadge")}
             />
           )}
+
+          {/* The hour filter, last in the row — the one filter that is about the grid's rows rather than who is in
+              them, so it reads after the who/what pickers and stays visible for a scoped (teacher) account too. */}
+          <MultiSelect
+            label={t("calendar.time")}
+            placeholder={selectedTimes.length > 0 ? undefined : t("calendar.allTimes")}
+            value={selectedTimes}
+            onChange={onChangeTimes}
+            data={TIME_SLOTS.map((slot) => ({ value: slot, label: formatTimeDisplay(slot) }))}
+            leftSection={<Clock size={15} />}
+            size="sm"
+            radius="md"
+            clearable
+            searchable
+            maxDropdownHeight={280}
+            className="min-w-44 basis-0 grow-[4]"
+            classNames={{
+              pillsList: "!flex-nowrap overflow-x-auto scroll-smooth py-0.5",
+            }}
+            aria-label={t("calendar.filterTime")}
+          />
         </div>
       )}
     </Paper>

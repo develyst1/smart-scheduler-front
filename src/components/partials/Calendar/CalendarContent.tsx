@@ -49,6 +49,8 @@ export default function CalendarContent() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedBadgeValueIds, setSelectedBadgeValueIds] = useState<string[]>([]);
   const [studentQuery, setStudentQuery] = useState("");
+  // The hours to show; empty = the whole day. Day view drops the other rows, week view drops the other bookings.
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
 
   // Week starts on Monday. dayjs weeks default to Sunday, so pull Sunday back to the prior Monday.
   const weekStart = dayjs(date).day(dayjs(date).day() === 0 ? -6 : 1);
@@ -173,6 +175,8 @@ export default function CalendarContent() {
         onChangeBadgeValueIds={setSelectedBadgeValueIds}
         studentQuery={studentQuery}
         onChangeStudentQuery={setStudentQuery}
+        selectedTimes={selectedTimes}
+        onChangeTimes={setSelectedTimes}
         scoped={scoped}
         onReportLeave={canReportLeave ? () => setLeaveOpen(true) : undefined}
       />
@@ -235,6 +239,7 @@ export default function CalendarContent() {
             <CalendarGrid
               teachers={filteredTeachers}
               bookings={dayBookings}
+              times={selectedTimes}
               onSelectBooking={openView}
               onCreate={openCreate}
               onSelectCamp={openCamp}
@@ -245,6 +250,7 @@ export default function CalendarContent() {
               teachers={filteredTeachers}
               weekDays={weekDays}
               bookings={weekBookings}
+              times={selectedTimes}
               onSelectBooking={openView}
               onCreate={openCreate}
               onSelectCamp={openCamp}
