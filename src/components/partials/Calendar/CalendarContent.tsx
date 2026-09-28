@@ -51,6 +51,8 @@ export default function CalendarContent() {
   const [studentQuery, setStudentQuery] = useState("");
   // The hours to show; empty = the whole day. Day view drops the other rows, week view drops the other bookings.
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
+  // The booking types to show — the legend's own list; empty = every type.
+  const [selectedBookingTypes, setSelectedBookingTypes] = useState<string[]>([]);
 
   // Week starts on Monday. dayjs weeks default to Sunday, so pull Sunday back to the prior Monday.
   const weekStart = dayjs(date).day(dayjs(date).day() === 0 ? -6 : 1);
@@ -81,6 +83,10 @@ export default function CalendarContent() {
           (b.badges ?? []).some((bd) => selectedBadgeValueIds.includes(bd.valueId)),
         );
 
+  // Booking-type filter (OR): the six types the legend explains. Composes with the two below.
+  const byBookingType = (list: Booking[]) =>
+    selectedBookingTypes.length === 0 ? list : list.filter((b) => selectedBookingTypes.includes(b.bookingType));
+
   // Student search (REQ-038 #3): case-insensitive substring on what the booking is CALLED. Composes with byBadge.
   //
   // TASK-227 — reads `displayName`, not `studentName`: an อื่นๆ booking may have no student at all, and a
@@ -91,12 +97,12 @@ export default function CalendarContent() {
   };
 
   const dayBookings = useMemo(
-    () => byStudent(byBadge(calendar ? calendarDayBookings(calendar, date) : [])),
-    [calendar, date, selectedBadgeValueIds, studentQuery],
+    () => byStudent(byBookingType(byBadge(calendar ? calendarDayBookings(calendar, date) : []))),
+    [calendar, date, selectedBadgeValueIds, selectedBookingTypes, studentQuery],
   );
   const weekBookings = useMemo(
-    () => byStudent(byBadge(calendar && view === "week" ? calendarToBookings(calendar) : [])),
-    [calendar, view, selectedBadgeValueIds, studentQuery],
+    () => byStudent(byBookingType(byBadge(calendar && view === "week" ? calendarToBookings(calendar) : []))),
+    [calendar, view, selectedBadgeValueIds, selectedBookingTypes, studentQuery],
   );
 
   // กรองครูตามประเภท + รายชื่อ — ว่าง = แสดงทั้งหมด
@@ -177,6 +183,8 @@ export default function CalendarContent() {
         onChangeStudentQuery={setStudentQuery}
         selectedTimes={selectedTimes}
         onChangeTimes={setSelectedTimes}
+        selectedBookingTypes={selectedBookingTypes}
+        onChangeBookingTypes={setSelectedBookingTypes}
         scoped={scoped}
         onReportLeave={canReportLeave ? () => setLeaveOpen(true) : undefined}
       />
