@@ -229,9 +229,19 @@ export default function ShopfrontCheckinContent() {
                   <Checkbox
                     size="md"
                     checked={ticked.includes(itemKey(item))}
-                    onChange={(e) =>
-                      setTicked((prev) => (e.currentTarget.checked ? [...prev, itemKey(item)] : prev.filter((k) => k !== itemKey(item))))
-                    }
+                    // 🔴 TASK-554 (Tanya's D7) — **the value is read EAGERLY, in the handler body.** It used to be read
+                    // INSIDE the `setTicked` updater, which React may run later, during the render it schedules — by
+                    // which time `currentTarget` is null and the page dies with *"Cannot read properties of null"*.
+                    // 🔑 The first tick usually survives (`dispatchSetState`'s eager path runs the updater inline, while
+                    // the event is still alive) and the SECOND one kills the page ⇒ it breaks on exactly what a parent
+                    // with two children does, at a counter with no staff nearby.
+                    // 📌 This is TASK-237's defect returning — `lib/scheduler/other-booking.ts` documents the mechanism
+                    // and states the rule. 🚫 `e.currentTarget?.checked` would NOT be the fix: it stops the crash and
+                    // silently records the wrong thing, and a tick that quietly does nothing is worse than a stack trace.
+                    onChange={(e) => {
+                      const on = e.currentTarget.checked;
+                      setTicked((prev) => (on ? [...prev, itemKey(item)] : prev.filter((k) => k !== itemKey(item))));
+                    }}
                     aria-label={child}
                     data-shop-tick={itemKey(item)}
                   />
