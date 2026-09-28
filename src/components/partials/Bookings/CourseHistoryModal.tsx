@@ -4,6 +4,7 @@ import { Modal, Stack, Group, Text, Badge, Loader, Timeline, Alert } from "@mant
 import { Info } from "lucide-react";
 import dayjs from "dayjs";
 import { useCourseHistory } from "@/hooks/scheduler";
+import { formatDateWithDay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
 import type { CourseHistoryEvent } from "@/types/app/scheduler";
 
@@ -35,7 +36,7 @@ export default function CourseHistoryModal({
     const parts: string[] = [];
     if (e.subject?.name) parts.push(e.subject.name);
     if (e.teacher?.nickname || e.teacher?.name) parts.push((e.teacher.nickname || e.teacher.name) as string);
-    if (e.makeupOfDate) parts.push(t("history.makeupOf", { date: dayjs(e.makeupOfDate).format("D MMM YYYY") }));
+    if (e.makeupOfDate) parts.push(t("history.makeupOf", { date: formatDateWithDay(e.makeupOfDate) }));
     if (e.reason) parts.push(e.reason);
     return parts.join(" · ");
   };
@@ -65,7 +66,7 @@ export default function CourseHistoryModal({
                 </Badge>
                 {s.liveEndDate && (
                   <Badge variant="light" color="gray">
-                    {t("history.sumEnd")}: {dayjs(s.liveEndDate).format("D MMM YYYY")}
+                    {t("history.sumEnd")}: {formatDateWithDay(s.liveEndDate)}
                   </Badge>
                 )}
               </Group>
@@ -88,7 +89,7 @@ export default function CourseHistoryModal({
                         </Text>
                         {e.sessionDate && (
                           <Text size="xs" c="dimmed">
-                            {dayjs(e.sessionDate).format("D MMM YYYY")}
+                            {formatDateWithDay(e.sessionDate)}
                           </Text>
                         )}
                       </Group>
@@ -100,7 +101,7 @@ export default function CourseHistoryModal({
                       </Text>
                     )}
                     <Text size="xs" c="dimmed" mt={2}>
-                      {dayjs(e.at).format("D MMM YYYY HH:mm")}
+                      {dayjs(e.at).format("DD/MMM/YY HH:mm")}
                     </Text>
                   </Timeline.Item>
                 ))}
