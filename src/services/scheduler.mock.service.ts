@@ -966,6 +966,16 @@ export const setAttendeeNote = (id: string, attendeeNote: string | null) =>
   delay({ id, attendeeNote });
 
 /** SPEC-094 — offline stand-in for the admin Undo, so the dialog is exercisable without a server. */
+/** TASK-547 — offline: a charged course leave with its make-up, the richest shape the dialog has to render. */
+export const undoPreview = (bookingId: string) =>
+  delay({
+    ok: true as const,
+    kind: "leave",
+    leaveRefunded: true,
+    makeupCancelled: { id: `${bookingId}-ext`, date: "2026-11-04" },
+    expiry: { from: "2026-11-11", to: "2026-11-04" },
+  });
+
 export const undoBooking = (bookingId: string, body: { reason?: string }) =>
   delay({ kind: "checkin", leaveRefunded: false, makeupCancelledId: null, expiry: null, booking: { id: bookingId, status: "CONFIRMED" }, reason: body.reason ?? null });
 

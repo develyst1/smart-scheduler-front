@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import {
   setCourseAdminUnlock,
   confirmBooking,
+  undoPreview,
   createBooking,
   detectConflict,
   getAllBookings,
@@ -318,6 +319,21 @@ export const useEndCourse = () => {
  * SPEC-094 (TASK-492/518) — the admin Undo. Invalidates everything on SUCCESS ONLY: a 409 wrote nothing, and a refetch
  * would redraw the same row while hiding the refusal behind a flicker. 🚫 No optimistic update — this moves money.
  */
+/**
+ * TASK-547 — the Undo dialog's forecast. 🔑 `enabled` so **nothing is asked until the dialog is open** (a preview per
+ * row on a month grid would be hundreds of privileged reads), and 🚫 `retry: false` + `staleTime: 0`: a stale forecast is
+ * worse than none, and a failed one has its own words rather than a spinner that never ends.
+ */
+export const useUndoPreview = (bookingId: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ["undo-preview", bookingId],
+    queryFn: () => undoPreview(bookingId),
+    enabled,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+  });
+
 export const useUndoBooking = () => {
   const qc = useQueryClient();
   return useMutation({

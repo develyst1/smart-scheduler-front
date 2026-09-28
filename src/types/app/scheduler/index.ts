@@ -188,6 +188,15 @@ export interface Booking {
   status: BookingStatus;
   /** อ้างถึงคอร์สแพ็คเกจ (ถ้ามี) สำหรับการนับโควตาการลา */
   courseId?: string;
+  /**
+   * TASK-541 addendum, corrected in TASK-543 — **the server's own `leaveLocked`**, as sent. `null` = no course behind
+   * the row (or a payload without the facts).
+   * 🔑 It replaced a pair of fields the FE was recomputing: `leaveLocked` is `leaveUsed >= quota && !adminUnlocked`,
+   * which is **exactly `!canTakeLeave`** — so the answer was arriving all along and we were deriving it a second time.
+   * 🚫 Nothing on the FE may re-derive this: a second computation of one rule is how a cancelled course kept a green
+   * `ปกติ` badge (TASK-183/188).
+   */
+  courseLeaveLocked?: boolean | null;
   note?: string;
   /** ปลายทางที่เสนอย้าย (เมื่อ status = PENDING_RESCHEDULE) */
   rescheduleTo?: RescheduleTarget;
@@ -204,6 +213,12 @@ export interface Booking {
   attendeeNote?: string | null;
   /** REQ-089 item 5 (TASK-367) — the SERVER's flag: this live row is its course's last session. Calendar reads only. */
   courseLast?: boolean;
+  /**
+   * TASK-542 (BE) → TASK-547 — this leave was DECLARED at course creation, as sent. 🔑 It **appends the make-up and
+   * charges no quota**, which is the one case the pre-leave dialog used to get wrong in the other direction.
+   * 🚫 Read as `=== true` only: an absent value must claim nothing (TASK-541's rule — *said only when positively known*).
+   */
+  plannedAtCreation?: boolean;
   /** REQ-089 §5 (TASK-369) — the closed cancel code, or null. The cancelled tray shows its existing label, else `note`. */
   cancelReason?: string | null;
   /** REQ-091 (TASK-372) — the session's rental row, or null. The `R` chip (red unpaid / green paid) reads only this. */
@@ -359,7 +374,15 @@ export interface CoursePackage {
   classRateMinor?: number | null;
 }
 
-export interface CoursePackageView extends CoursePackage {
+/**
+ * TASK-545 — **the view no longer DEMANDS what its source cannot supply.** `dtoToCourseView` used to fill
+ * `startDate: ""`, `weekday: 0`, `startTime: "09:00"` because this type required them and `CourseSummary` sends none.
+ * ⚖️ **`Omit`, not three optional fields** (@Sober ruled the TYPE, not the contract): an optional field still invites a
+ * reader to try, and 🔑 **the three values are PLAUSIBLE — `"09:00"` is a real time, `0` is Sunday — so the day a reader
+ * appears nothing FAILS, it just shows Sunday 09:00.** With `Omit` that reader is a compile error instead.
+ * 🚫 `CoursePackage` itself is untouched: the plan flow has genuine times and they are none of this type's business.
+ */
+export interface CoursePackageView extends Omit<CoursePackage, "startDate" | "weekday" | "startTime"> {
   leaveQuota: number;
   leaveRemaining: number;
   maxWeek: number;

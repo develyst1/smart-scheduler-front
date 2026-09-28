@@ -40,6 +40,10 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     bookingType: dto.bookingType,
     status: dto.status,
     courseId: dto.course?.id,
+    // TASK-541 addendum, corrected in TASK-543 — the SERVER's `leaveLocked` as sent, so the leave dialog can stop
+    // promising a quota an over-quota course will not spend. 🔑 It was `{ leaveRemaining, adminUnlocked }` and the rule
+    // recomputed `!canTakeLeave` from the pair; the server had already answered it. 🚫 Nothing derived here or there.
+    courseLeaveLocked: dto.course ? dto.course.leaveLocked : null,
     note: dto.note ?? undefined,
     badges: dto.badges ?? [],
     // ⚠️ This object literal is an allow-list, exactly like `createBooking`'s POST body — the omission that WAS
@@ -48,6 +52,8 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     attendeeNote: dto.attendeeNote ?? null,
     // TASK-367 — carried through as a strict boolean; the BE computes it, nothing here does.
     courseLast: dto.courseLast === true,
+    // TASK-547 — as sent; the server always sends a raw boolean, and the rule reads `=== true` so an older row claims nothing.
+    plannedAtCreation: dto.plannedAtCreation,
     // TASK-369 — the closed cancel code as sent; the tray resolves it to the existing label, or falls back to `note`.
     cancelReason: dto.cancelReason ?? null,
     // TASK-372 — the rental row as sent; a payload without the key ⇒ null (no rental), never undefined.
@@ -111,9 +117,9 @@ export function dtoToCourseView(row: CourseSummary & { student: StudentRef }): C
     usedSessions: row.usedSessions,
     leaveUsed: row.leaveUsed,
     adminUnlocked: row.adminUnlocked,
-    startDate: "",
-    weekday: 0,
-    startTime: "09:00",
+    // 🚫 TASK-545 — `startDate`, `weekday` and `startTime` are NOT here and cannot be: `CourseSummary` does not carry
+    // them, and the view no longer requires them. Inventing `"09:00"` / Sunday was worse than dropping — a fabricated
+    // value is plausible, so nothing would ever have FAILED; a screen would just have shown Sunday 09:00.
     expiryDate: row.expiryDate,
     leaveQuota: row.leaveQuota,
     leaveRemaining: row.leaveRemaining,

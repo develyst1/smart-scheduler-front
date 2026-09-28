@@ -7,6 +7,7 @@
 // the same rows. An unknown key is `400`; a super-admin target is accepted (their menus are all of them regardless).
 import { api, useMockData } from "@/lib/api/client";
 import type { UserDTO } from "@/types/api/contract";
+import type { LineAdminsResponse } from "@/lib/scheduler/line-admins";
 import * as mock from "./users.mock.service";
 
 export interface CreateUserInput {
@@ -23,6 +24,32 @@ export interface UpdateUserInput {
   /** null clears the link; absent leaves it. */
   teacherId?: string | null;
 }
+
+/**
+ * TASK-538 (BE) → TASK-539 (FE) — the LINE accounts linked as ADMIN, and taking that role away.
+ * 🔑 **Super-admin only by `requireSuperAdmin` — NOT an action key.** TASK-538 deliberately added no key (`ACTION_KEYS`
+ * stays 60): a key is grantable, and a grantable key would make this power delegable, which is the opposite of what the
+ * route is for. So the page hides the panel on `session.user.isSuperAdmin` — the honest UI — and the server is the guard.
+ * 🚫 The full LINE id never reaches us: the removal takes the opaque `ref`. A stale ref is `404 NOT_FOUND` with the
+ * server's own sentence, and nothing is written.
+ */
+export const listLineAdmins = async (): Promise<LineAdminsResponse> => {
+  if (useMockData) return mock.listLineAdmins();
+  const { data } = await api.get<LineAdminsResponse>("/users/line-admins");
+  return data;
+};
+
+export interface RemoveLineAdminResult {
+  removed: { ref: string; idTail: string };
+  afterRemoval: string;
+  /** `false` = the role IS gone but LINE would not take the menu change; the page says so instead of claiming all is well. */
+  menuSettled: boolean;
+}
+export const removeLineAdmin = async (ref: string): Promise<RemoveLineAdminResult> => {
+  if (useMockData) return mock.removeLineAdmin(ref);
+  const { data } = await api.delete<RemoveLineAdminResult>(`/users/line-admins/${ref}`);
+  return data;
+};
 
 export const listUsers = async (): Promise<UserDTO[]> => {
   if (useMockData) return mock.listUsers();

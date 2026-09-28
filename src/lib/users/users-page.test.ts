@@ -91,7 +91,13 @@ describe("§2 — the Users page", () => {
     expect(svc).toContain("...(input.isSuperAdmin !== undefined ? { isSuperAdmin: input.isSuperAdmin } : {}),");
     expect(svc).toContain("api.post<{ ok: true }>(`/users/${id}/password`, { password })");
     expect(svc).toContain('api.post<{ user: UserDTO }>(`/users/${id}/${disabled ? "disable" : "enable"}`, {})');
-    expect(svc).not.toMatch(/api\.delete|\/users\/\$\{id\}`\s*\)/); // no delete route exists
+    // 🚫 **No user is ever deleted** — there is no route, and this page must never invent one. TASK-539 NARROWED this pin
+    // rather than loosening it: it used to forbid `api.delete` anywhere in the file, which read as "no DELETE at all" the
+    // moment a second resource (`/users/line-admins/:ref`, TASK-538) landed in the same service. What it always MEANT is
+    // now literal — no DELETE of a user, and the only DELETE this file may hold, named.
+    expect(svc).not.toMatch(/api\.delete<[^>]*>\(`\/users\/\$\{id\}`/);
+    expect(svc).not.toMatch(/\/users\/\$\{id\}`\s*\)/);
+    expect([...svc.matchAll(/api\.delete<[^>]*>\(([^)]*)\)/g)].map((m) => m[1])).toEqual(["`/users/line-admins/${ref}`"]);
     // the edit dialog sends only what changed
     expect(page).toContain("...(displayName.trim() !== user.displayName ? { displayName } : {}),");
     expect(page).toContain("...(isSuperAdmin !== user.isSuperAdmin ? { isSuperAdmin } : {}),");

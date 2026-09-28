@@ -27,6 +27,7 @@ import type { SeriesRef } from "@/lib/scheduler/other-series";
 import ClashResolveBox from "./ClashResolveBox";
 import { useUndoControl } from "@/components/common/UndoControl";
 import { inClashPair } from "@/lib/scheduler/group-clash";
+import { leaveClaimKey } from "@/lib/scheduler/leave-claim";
 import { BookingTypeChip, CheckinSourceChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
@@ -400,7 +401,9 @@ function ViewBooking({
     if (
       !(await askConfirm({
         title: t("confirmAction.leaveTitle"),
-        message: t("confirmAction.leaveMsg"),
+        // 🔴 TASK-541 — the body follows the ROW, not the control: a course-backed row keeps today's words
+        // byte-identical, and everything else gets the sentence that claims nothing. See `lib/scheduler/leave-claim.ts`.
+        message: t(leaveClaimKey(booking)),
         confirmLabel: t("booking.sickLeaveBtn"),
         color: "orange",
       }))

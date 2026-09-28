@@ -12,6 +12,27 @@ const users: UserDTO[] = [
 ];
 let seq = 1;
 
+/**
+ * TASK-539 — offline stand-ins for the LINE-admin list. Deliberately TWO shapes: one row we can name (a coach) and one
+ * we cannot name at all — the honest case the page has to handle, so it is the default thing a dev sees, not an edge.
+ */
+const lineAdmins = [
+  { ref: "a1b2c3d4e5f60718", idTail: "…8f21", alsoTeacher: "บีม", alsoParent: null, afterRemoval: "teacher-menu" as const },
+  { ref: "0f1e2d3c4b5a6978", idTail: "…4c7d", alsoTeacher: null, alsoParent: null, afterRemoval: "visitor-menu" as const },
+];
+const notKnown = [
+  "ชื่อที่แสดงใน LINE — ระบบไม่เคยเก็บไว้",
+  "วันที่เชื่อมบัญชี — ไม่มีการบันทึกต่อการเชื่อม",
+  "วิธีที่ถูกเชื่อม — แอดมินที่ถูกต้องกับคนที่ใช้รหัสเดิมดูเหมือนกันหมด",
+];
+export const listLineAdmins = () => delay(clone({ admins: lineAdmins, notKnown }));
+export const removeLineAdmin = (ref: string) => {
+  const i = lineAdmins.findIndex((r) => r.ref === ref);
+  if (i < 0) return delay(Promise.reject(new Error("NOT_FOUND")) as never);
+  const [row] = lineAdmins.splice(i, 1);
+  return delay({ removed: { ref: row.ref, idTail: row.idTail }, afterRemoval: row.afterRemoval, menuSettled: true });
+};
+
 export const listUsers = () => delay(clone(users));
 
 export const createUser = (input: CreateUserInput) => {

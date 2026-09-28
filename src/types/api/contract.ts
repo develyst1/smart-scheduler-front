@@ -276,6 +276,13 @@ export interface BookingDTO {
    */
   courseLast?: boolean;
   /**
+   * TASK-542 (BE) → TASK-547 (FE) — **raw `true`/`false`, never undefined** (the server defaults it): this leave was
+   * DECLARED when the course was created. 🔑 Such a leave **appends the make-up and charges NO quota**, so the pre-leave
+   * dialog must not promise a quota spend on it. Optional here only because the FE's own mock rows predate the field;
+   * every rule reads it as `=== true`, so an absent value claims nothing.
+   */
+  plannedAtCreation?: boolean;
+  /**
    * TASK-368/369 (REQ-089 §5) — the closed cancel code (`PROGRAM_CHANGED | CUSTOMER_CANCELLED | ADMIN_ERROR`) or
    * `null` on a live row / a cancel without one. Rides EVERY booking DTO since TASK-368. The tray shows its EXISTING
    * label (`endCourse.<code>`), else `note`.
@@ -591,6 +598,26 @@ export interface TeachersResponse {
     teachers: TeacherDTO[];
   }>;
 }
+
+/**
+ * TASK-546 (BE) → TASK-547 (FE) — `GET /bookings/:id/undo-preview`: **the Undo's own read half (`planUndo`) run with
+ * nothing written.** Always `200`; a refusal comes back as `ok: false` carrying **the act's own code and sentence**, and
+ * only "not found" is a status (404).
+ *
+ * ⚠️ **A preview says what WOULD happen, not what is guaranteed.** `UNDO_PLAN_WOULD_CHANGE` is decided AFTER the act's
+ * writes (TASK-546 §4), so **the act may still refuse a preview that said ok** — every screen reading this must word it
+ * as a forecast and must keep its failure path. 🚫 Nothing here is a permission to skip the act's refusal.
+ */
+export type UndoPreview =
+  | {
+      ok: true;
+      /** The act's own name for this undo. 🚫 No screen switches on it — the row's label already comes from the row. */
+      kind: string;
+      leaveRefunded: boolean;
+      makeupCancelled: { id: string; date: IsoDate } | null;
+      expiry: { from: IsoDate; to: IsoDate } | null;
+    }
+  | { ok: false; code: string; message: string };
 
 /** Generic server-paged list envelope (TASK-070) — the shape `/bookings`, `/courses` and `/vouchers` share. */
 export interface Paged<T> {

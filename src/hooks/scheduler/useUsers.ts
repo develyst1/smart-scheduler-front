@@ -3,7 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createUser,
+  listLineAdmins,
   listUsers,
+  removeLineAdmin,
   resetUserPassword,
   setUserDisabled,
   setUserActions,
@@ -18,6 +20,21 @@ import {
 export const USERS_KEY = ["users"] as const;
 
 export const useUsers = (enabled = true) => useQuery({ queryKey: USERS_KEY, queryFn: listUsers, enabled });
+
+/**
+ * TASK-539 — the LINE admins list and the removal. Its own key: the rows are not users and no user write changes them.
+ * 🚫 **No optimistic update.** The row leaves the list when the SERVER says it has — a row that vanishes on click and
+ * comes back on a `404` teaches an admin that the button lies, on the one screen where being sure is the whole point.
+ */
+export const LINE_ADMINS_KEY = ["line-admins"] as const;
+export const useLineAdmins = (enabled = true) => useQuery({ queryKey: LINE_ADMINS_KEY, queryFn: listLineAdmins, enabled });
+export const useRemoveLineAdmin = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ref }: { ref: string }) => removeLineAdmin(ref),
+    onSuccess: () => qc.invalidateQueries({ queryKey: LINE_ADMINS_KEY }),
+  });
+};
 
 const invalidate = (qc: ReturnType<typeof useQueryClient>) => qc.invalidateQueries({ queryKey: USERS_KEY });
 

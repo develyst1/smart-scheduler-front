@@ -20,6 +20,7 @@ import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import { isCollision, type TeacherLinkRequest } from "@/types/app/teacher-link";
 import type { TeacherView } from "@/types/app/scheduler";
 import { useCan } from "@/hooks/scheduler/useMe";
+import LineAdminsPanel from "./LineAdminsPanel";
 
 /**
  * One pending request. A **collision** (the request names no teacher) renders the candidate picker inline and
@@ -280,6 +281,11 @@ export default function LinkRequestsContent() {
           </Stack>
         </Card>
       )}
+
+      {/* TASK-539 — the LINE accounts with ADMIN rights. Same page as the teacher links for the same reason unlink is
+          here: everything about a LINE link lives in one place staff can find. Absent entirely unless super admin. */}
+      <Divider my="xs" />
+      <LineAdminsPanel />
 
       {/* Unlink is destructive-ish (the teacher stops receiving schedule pushes) → confirm, don't just do it. */}
       {unlinkTarget && (

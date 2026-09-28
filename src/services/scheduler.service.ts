@@ -38,6 +38,7 @@ import type {
 import type {
   BookingsResponse,
   BulkConfirmResponse,
+  UndoPreview,
   BulkConfirmResult,
   CalendarResponse,
   CourseListItem,
@@ -719,6 +720,18 @@ export const moveBooking = async (
  * `UNDO_LEAVE_CHARGE_UNKNOWN` · `UNDO_ALREADY_CHANGED` · …) and **none of them may render as a success** (TASK-483's
  * lesson). The caller shows the server's own sentence and changes nothing until a 2xx — this moves money.
  */
+/**
+ * TASK-546 (BE) → TASK-547 — the Undo's DRY RUN: `planUndo` with nothing written. **Always 200**; a refusal arrives as
+ * `ok: false` carrying the act's own code and sentence, and only "not found" is a status (404) ⇒ a thrown error here is
+ * a FAILED preview, not a refusal, and the dialog says so in different words.
+ * ⚠️ It is a forecast: `UNDO_PLAN_WOULD_CHANGE` is decided after the act's writes, so the act may still refuse.
+ */
+export const undoPreview = async (bookingId: string): Promise<UndoPreview> => {
+  if (useMock) return mock.undoPreview(bookingId);
+  const { data } = await api.get<UndoPreview>(`/bookings/${bookingId}/undo-preview`);
+  return data;
+};
+
 export const undoBooking = async (bookingId: string, body: { reason?: string }) => {
   if (useMock) return mock.undoBooking(bookingId, body);
   const { data } = await api.post(`/bookings/${bookingId}/undo`, body);

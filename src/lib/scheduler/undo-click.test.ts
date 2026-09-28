@@ -135,7 +135,9 @@ describe("§4 — D5: an ATTENDED row is not offered the LEAVE control", () => {
     expect(modal).toContain('data-status-action="sick-leave"');
     // the leave dialog's promise is unchanged for the rows it belongs to, and reachable only from that item
     expect(modal).toContain('title: t("confirmAction.leaveTitle"),');
-    expect(modal).toContain('message: t("confirmAction.leaveMsg"),');
+    // 📌 TASK-541 — the body follows the row now (`leaveClaimKey`); the course words themselves are pinned
+    // byte-identical in `leave-claim.test.ts` and in undo-control's §3.
+    expect(modal).toContain("message: t(leaveClaimKey(booking)),");
     expect((modal.match(/handleSickLeave\(\)/g) ?? []).length).toBe(1); // one entry point, behind the status guard
     // the override path (LEAVE_NOTICE_TOO_LATE) is the leave flow's own and is not a second door to it
     expect(modal).toContain("void handleSickLeave(true);");

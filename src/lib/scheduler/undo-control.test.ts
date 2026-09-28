@@ -71,7 +71,14 @@ describe("§1 — which undo this row is (and where there is none)", () => {
     // control there could only ever fail. The host passes its own `scoped`, beside `canStatus = canAttend && !scoped`.
     expect(control).toContain('const shown = !scoped && undoDoor(can("action:calendar.undo"), booking) && kind !== null;');
     expect(control).toContain("if (!shown || !kind) return { menuItem: null, dialog: null };");
-    expect(control).not.toMatch(/disabled=\{!/);
+    // 📌 TASK-547 NARROWED this: *hidden, never disabled* is a rule about **the DOOR**, and the door is still absent or
+    // present, never greyed. The CONFIRM inside the open dialog may now be blocked — but only when the server's own
+    // refusal is rendered directly above it, which is the one case where a disabled button does not invite *"why?"*:
+    // 🔑 **the answer is already on screen, in the server's words.** Pinned as exactly one `disabled`, and what it reads.
+    expect(control).not.toMatch(/<Menu\.Item[^>]*disabled/);
+    expect((control.match(/disabled=\{/g) ?? []).length).toBe(1);
+    expect(control).toContain("disabled={!canConfirm(state)}");
+    expect(control).toContain('{state === "refused" && (');
   });
   it("the mapper carries the provenance as SENT — a channel is never invented (TASK-526)", () => {
     const mappers = codeOf("src/lib/api/mappers.ts");
@@ -112,22 +119,31 @@ describe("§2 — the words: three approved labels, and a body that varies with 
         expect(u[k]).toMatch(nobody);
         expect(u[k]).not.toMatch(told);
       }
-      // the leave body also carries its two other facts: the quota comes back and the make-up is cancelled
-      expect(u.leaveMsg).toMatch(lang === "en" ? /quota/i : /โควตาลา/);
-      expect(u.leaveMsg).toMatch(lang === "en" ? /make-?up/i : /คาบชดเชย/);
+      // 🔴 TASK-547 INVERTED these two, and the inversion is the fix: this body is shown for **every** leave, and the
+      // quota-and-make-up promise is FALSE on a creation-declared, over-quota, 1-hour or voucher leave. The two facts now
+      // come from the preview (`GET /bookings/:id/undo-preview`) and appear only when the server says they apply.
+      // ⇒ what is pinned here is that the body **claims neither**, and that the claims exist as preview keys instead.
+      expect(u.leaveMsg).not.toMatch(lang === "en" ? /quota/i : /โควตาลา/);
+      expect(u.leaveMsg).not.toMatch(lang === "en" ? /make-?up/i : /คาบชดเชย/);
+      expect(u.previewLeaveBack).toMatch(lang === "en" ? /quota/i : /โควตาลา/);
+      expect(u.previewMakeupOff).toMatch(lang === "en" ? /make-?up/i : /คาบชดเชย/);
     }
     expect(control).toContain("<Text size=\"sm\">{t(UNDO_BODY_KEYS[kind])}</Text>");
   });
-  it("📝 the one remaining DRAFT (the toast) is marked, and the marker stays load-bearing", () => {
+  it("✅ TASK-549 — nothing in this block is a draft any more; the toast is his too", () => {
+    // 📌 This pin used to assert the toast's DRAFT marker was PRESENT (the marker was load-bearing: it said "not yet his").
+    // The owner approved every string on 2026-09-28 ("ผ่านหมด"), so the same pin now asserts the opposite — no marker
+    // anywhere — and the letters themselves are held BY VALUE in `i18n/approved-copy.test.ts`.
     const raw = readFileSync("src/lib/i18n/dictionaries.ts", "utf8");
-    expect((raw.match(/📝 DRAFT \(Fern, TASK-518\)/g) ?? []).length).toBe(2); // both languages
-    expect(typeof dictionaries.en.undo.done).toBe("string");
-    expect(typeof dictionaries.th.undo.done).toBe("string");
-    // and the approved copy carries NO draft marker any more
-    expect(raw).not.toContain("📝 DRAFT (Fern, TASK-514)");
+    expect(raw).not.toContain("📝 DRAFT (Fern");
+    expect(dictionaries.en.undo.done).toBe("Undone");
+    expect(dictionaries.th.undo.done).toBe("ย้อนรายการแล้ว");
+    // 🔑 and the reason for the one word he was asked about outlives the approval
+    expect(raw).toContain("“would”, deliberately:");
   });
-  it("copy counted: `undo` has 12 keys in both languages", () => {
-    expect(Object.keys(dictionaries.en.undo).length).toBe(12);
+  it("copy counted: `undo` has 21 keys in both languages", () => {
+    // 12 + TASK-547's 9 forecast keys (heading · three lines · nothing-else · forecast caveat · loading · failed · refused)
+    expect(Object.keys(dictionaries.en.undo).length).toBe(21);
     expect(Object.keys(dictionaries.en.undo).length).toBe(Object.keys(dictionaries.th.undo).length);
     for (const k of Object.keys(dictionaries.en.undo)) expect((dictionaries.th.undo as Record<string, string>)[k]?.length).toBeGreaterThan(0);
   });
@@ -147,7 +163,10 @@ describe("§3 — two surfaces, one control; the refusals; no optimism", () => {
     expect(modal).not.toContain("const undoing = booking.status === \"ATTENDED\";");
     expect(modal).not.toMatch(/undoAttended(Btn|Done|Title|Msg)/);
     expect(modal).toContain('title: t("confirmAction.leaveTitle"),');
-    expect(modal).toContain('message: t("confirmAction.leaveMsg"),');
+    // 📌 TASK-541 moved this line ON PURPOSE: the body now follows the ROW (`leaveClaimKey`), because on a booking with
+    // no course behind it the course promise was false. What THIS pin cares about is unchanged and still pinned — the
+    // leave dialog is reached from this one item, and the COURSE body is byte-identical (asserted just below).
+    expect(modal).toContain("message: t(leaveClaimKey(booking)),");
     expect(modal).toContain('data-status-action="sick-leave"');
     // TASK-531 D5 — and on an ATTENDED row the leave item is not offered at all (the Undo owns that act)
     expect(modal).toContain('{canStatus && booking.status !== "ATTENDED" && (');
