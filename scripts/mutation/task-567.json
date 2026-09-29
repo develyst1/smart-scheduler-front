@@ -1,0 +1,137 @@
+[
+  {
+    "id": "M1",
+    "what": "🔴 THE ROW THE TASK ASKS FOR — a real masked-input test drops its request assertion and believes the screen",
+    "files": [
+      {
+        "file": "src/components/partials/Camp/open-week-dialog.dom.test.tsx",
+        "edits": [
+          {
+            "from": "    expect(JSON.stringify(patches[0].body)).toContain(\"65000\");",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M2",
+    "what": "the sweep stops looking at `.dom.test.tsx` files (it would then pass on an empty list)",
+    "files": [
+      {
+        "file": "src/lib/ui/masked-input-assert.test.ts",
+        "edits": [
+          {
+            "from": "    else if (/\\.dom\\.test\\.tsx$/.test(name)) domTests.push(full);",
+            "to": "    else if (/\\.never-matches\\.tsx$/.test(name)) domTests.push(full);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M3",
+    "what": "`NumberInput` is quietly dropped from the masked list (the control the rule was learned from)",
+    "files": [
+      {
+        "file": "src/lib/ui/masked-input-assert.test.ts",
+        "edits": [
+          {
+            "from": "    control: \"NumberInput\",",
+            "to": "    control: \"NumberInputXX\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M4",
+    "what": "🔴 the subject extractor goes back to the lazy match that reads `expect(rateBox().value)` as `rateBox(`",
+    "files": [
+      {
+        "file": "src/lib/ui/masked-input-assert.test.ts",
+        "edits": [
+          {
+            "from": "      const end = chunk.search(/\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?to[A-Za-z]/);\n      return end === -1 ? chunk.slice(0, 200) : chunk.slice(0, end);",
+            "to": "      const end = chunk.indexOf(\")\");\n      return end === -1 ? chunk.slice(0, 200) : chunk.slice(0, end);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M5",
+    "what": "the UNDECIDED set is enforced on a guess (the check starts crying wolf where the survey refused to)",
+    "files": [
+      {
+        "file": "src/lib/ui/masked-input-assert.test.ts",
+        "edits": [
+          {
+            "from": "const UNPROVEN = [\"Select\", \"MultiSelect\", \"DatePickerInput\"] as const;",
+            "to": "const UNPROVEN = [\"MultiSelect\", \"DatePickerInput\"] as const;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M6",
+    "what": "a masked entry loses its REASON (the list becomes one the next person deletes)",
+    "files": [
+      {
+        "file": "src/lib/ui/masked-input-assert.test.ts",
+        "edits": [
+          {
+            "from": "    why: \"renders several inputs and assembles one value; a per-keystroke read of any single box is not the value the form holds\",",
+            "to": "    why: \"masked\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M7",
+    "what": "🔴 §2 — the shop-front lookup's VALUE assertion is removed again (two children prove only that the stub answered)",
+    "files": [
+      {
+        "file": "src/components/partials/Checkin/shopfront-checkin.dom.test.tsx",
+        "edits": [
+          {
+            "from": "  expect((lookup?.body as { phone?: string } | null)?.phone).toBe(\"0812345678\");",
+            "to": "  expect(lookup).toBeTruthy();"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M8",
+    "what": "the shop-front page sends a DIFFERENT number than the one typed (the defect §2's assertion exists to catch)",
+    "files": [
+      {
+        "file": "src/components/partials/Checkin/ShopfrontCheckinContent.tsx",
+        "edits": [
+          {
+            "from": "        body: JSON.stringify({ phone: phone.trim() }),",
+            "to": "        body: JSON.stringify({ phone: phone.trim().slice(0, 9) }),"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M9",
+    "what": "🔴 the check goes back to accepting \"a request HAPPENED\" as proof of the value (the M1 hole)",
+    "files": [
+      {
+        "file": "src/lib/ui/masked-input-assert.test.ts",
+        "edits": [
+          {
+            "from": "  { token: \"body\", why: \"the request body — where a committed value actually shows up\" },",
+            "to": "  { token: \"patches\", why: \"the request body — where a committed value actually shows up\" },"
+          }
+        ]
+      }
+    ]
+  }
+]

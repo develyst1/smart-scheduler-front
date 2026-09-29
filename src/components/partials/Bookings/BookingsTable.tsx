@@ -38,6 +38,7 @@ import { useT } from "@/lib/i18n";
 import { useLoadPhase } from "@/lib/ui/load-phase";
 import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import { useCan } from "@/hooks/scheduler/useMe";
+import { allConfirmableSelected, bulkConfirmable, confirmableIds, someConfirmableSelected } from "@/lib/scheduler/bulk-confirm";
 
 type DateRange = "ALL" | "TODAY" | "WEEK" | "MONTH" | "CUSTOM";
 
@@ -118,7 +119,11 @@ export default function BookingsTable() {
 
   const teacherName = (id: string) => teachers.find((tc) => tc.id === id)?.nickname ?? "-";
 
-  // ── Bulk-confirm (SPEC-011): tick PENDING rows → confirm in one call ──
+  // ── Bulk-confirm (SPEC-011): tick the CONFIRMABLE rows → confirm in one call ──
+  // 🔴 REQ-110 item 1 (TASK-557) — it used to tick **PENDING only**, in three places. The server has accepted
+  // **PENDING or EXTENDED** since TASK-389 (a make-up is born EXTENDED and a bulk confirm skipped every one of them),
+  // so this screen was the last thing standing between Khwan and a fix we had already shipped. 🔑 The test now lives in
+  // ONE place (`lib/scheduler/bulk-confirm.ts`), mirroring the server's own `preCheckBulkConfirm` set.
   const bulk = useBulkConfirm();
   // REQ-092 Stage 3 — the tick boxes and the button are one control (`bookings.bulk-confirm`); hidden together.
   const can = useCan();
@@ -132,13 +137,14 @@ export default function BookingsTable() {
   // Selection only makes sense within a single page/filter view → clear when the query changes.
   useEffect(() => setSelected([]), [query]);
 
-  const pendingIds = rows.filter((b) => b.status === "PENDING").map((b) => b.id);
-  const allPendingSelected = pendingIds.length > 0 && pendingIds.every((id) => selected.includes(id));
-  const somePendingSelected = selected.length > 0 && !allPendingSelected;
+  const tickableIds = confirmableIds(rows);
+  const allTickableSelected = allConfirmableSelected(tickableIds, selected);
+  const someTickableSelected = someConfirmableSelected(tickableIds, selected);
 
   const toggleOne = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  const toggleAllPending = () => setSelected(allPendingSelected ? [] : pendingIds);
+  // 🔑 “Select all” = every CONFIRMABLE row on this page (pending AND make-ups), never every row.
+  const toggleAllTickable = () => setSelected(allTickableSelected ? [] : tickableIds);
 
   // TASK-227 — what the booking is CALLED, for the bulk-confirm list. Falling back to the raw id was already
   // the "row not found" case; `displayName` itself is never blank by contract.
@@ -304,10 +310,10 @@ export default function BookingsTable() {
               {canBulk && (
                 <Checkbox
                   aria-label={t("bookings.bulkSelectAll")}
-                  checked={allPendingSelected}
-                  indeterminate={somePendingSelected}
-                  disabled={pendingIds.length === 0}
-                  onChange={toggleAllPending}
+                  checked={allTickableSelected}
+                  indeterminate={someTickableSelected}
+                  disabled={tickableIds.length === 0}
+                  onChange={toggleAllTickable}
                 />
               )}
             </Table.Th>
@@ -355,7 +361,9 @@ export default function BookingsTable() {
             rows.map((b) => (
               <Table.Tr key={b.id}>
                 <Table.Td data-pin="lead">
-                  {b.status === "PENDING" && canBulk && (
+                  {/* 🔑 The same predicate as the select-all's list: a tick you can make that select-all then
+                      ignores would be a worse screen than yesterday's. 🚫 CONFIRMED / ATTENDED have no tick. */}
+                  {bulkConfirmable(b) && canBulk && (
                     <Checkbox
                       aria-label={t("bookings.bulkSelectRow")}
                       checked={selected.includes(b.id)}

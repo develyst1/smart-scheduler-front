@@ -1,0 +1,27 @@
+[
+  {
+    "id": "S1",
+    "what": "the commit no longer needs a forecast (the preview becomes decoration)",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ChangeStartDateDialog.tsx",
+        "edits": [{ "from": "if (!startDate || !forecast) return;", "to": "if (!startDate) return;" }]
+      }
+    ]
+  },
+  {
+    "id": "S5",
+    "what": "the forecast caveat stops matching TASK-547's sentence (two products again)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    forecastCaveat: \"The server checks again when you confirm, so it may still refuse.\",",
+            "to": "    forecastCaveat: \"This is what will happen.\","
+          }
+        ]
+      }
+    ]
+  }
+]

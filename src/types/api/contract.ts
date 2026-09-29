@@ -122,6 +122,12 @@ export type CourseStatus = "CANCELLED" | "DROPPED" | "COMPLETED" | "EXPIRED" | "
 
 export interface CourseSummary {
   id: string;
+  /**
+   * 🔻 TASK-573 (BE) → TASK-574 — **the real start date**, sent at last. 📌 TASK-545 removed the FE's invented one
+   * (`""`), which turned the next need for it into a compile error instead of a wrong screen — and TASK-571 was that
+   * need. **This is the field closing it**; nothing is derived anywhere.
+   */
+  startDate: IsoDate;
   size: PackageSize;
   usedSessions: number;
   leaveUsed: number;
@@ -669,6 +675,30 @@ export interface VoucherSummary {
   endReason?: string | null;
 }
 export type VouchersResponse = Paged<VoucherSummary>;
+
+/**
+ * 🔴 TASK-568 (BE) → TASK-572 (REQ-110 item 3) — **extend a voucher's expiry.** `POST /vouchers/:id/expiry/preview`
+ * (writes nothing) and `PATCH /vouchers/:id/expiry`, both taking the COURSE's one-field body.
+ *
+ * 🔑 **Both go through the server's ONE `voucherExpiryDecision`** — so the preview and the save cannot answer
+ * differently, and **the two refusals arrive at the PREVIEW**, before the admin has pressed anything: ENDED (its hours
+ * are gone) and NOT STARTED (validity counts from the first booking, so a date typed now would freeze a sale-day
+ * placeholder and could end the voucher EARLIER — *there is nothing to extend yet*). An already-EXPIRED voucher IS
+ * extendable: that is what the feature is for.
+ *
+ * 🚫 **No `leaveRoom` here, and its absence is structural**: a voucher has no plan and no leave quota, so the course
+ * preview's second half has nothing to report. The warning itself is the course's own `ExpiryWarning`, unchanged —
+ * one `expiryImpact` on the BE, two entitlements, 🚫 nothing recomputed on this side.
+ */
+export interface VoucherExpiryPreview {
+  expiryWarning: ExpiryWarning;
+}
+
+export interface UpdateVoucherExpiryResponse {
+  voucher: VoucherSummary;
+  expiryWarning: ExpiryWarning;
+  previousExpiryDate: IsoDate | null;
+}
 export interface CreateVoucherRequest {
   student: StudentInput;
   totalHours: 5 | 10 | 15;

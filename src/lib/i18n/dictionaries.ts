@@ -296,6 +296,22 @@ const en = {
   },
 
   // ── SPEC-076 / REQ-082 (TASK-265) — the expiry control and THE one warning ──
+  // 🔴 TASK-568 (BE) → TASK-572 (REQ-110 item 3) — extending a VOUCHER's expiry. 📝 DRAFT (Fern, TASK-572).
+  // 🔑 The preview sentences are NOT duplicated here: this dialog renders `expiry.previewTitle/Cuts/Clear/NotSaved` —
+  // one question, one wording, two entitlements. Only what is genuinely voucher-specific lives below.
+  voucherExpiry: {
+    edit: "Extend expiry",
+    title: "Voucher expiry — {student}",
+    savedTitle: "Voucher expiry updated",
+    // 🔴 A 409 presented as an ANSWER: the heading asks the admin's own question back, and the server's sentence
+    // follows it verbatim. 🚫 Never "could not save" — each refusal names its own reason and that is the useful part.
+    refusedTitle: "This expiry cannot move — here is why",
+    answerEnded: "The voucher was cancelled, so its hours are already gone; a later date would change only what this screen says. To give hours back, create a new voucher.",
+    answerNotStarted: "Validity is counted from the first booking, so there is nothing to extend yet — book the first session and the expiry follows it. (A date set now would freeze the sale-day placeholder and could end the voucher EARLIER.)",
+    earlier: "This date is EARLIER than the current one — it shortens the voucher instead of extending it.",
+    // 🔕 Deliberately says nobody is told. Saying nothing would let an admin assume a notice went out.
+    audience: "Nobody is told by this change. The family sees the new date on their next deduction notice or reminder.",
+  },
   expiry: {
     edit: "Change expiry date",
     title: "Expiry date — {student}",
@@ -505,6 +521,18 @@ const en = {
     rateOptional: "Rate per session (optional)",
     fromDate: "From date",
     fromDateHint: "Today by default — earlier rows are history and stay as they are.",
+    // 🔴 TASK-564 (REQ-110 item 5) — the scope the door now ASKS for. 📝 **DRAFT (Fern, TASK-564)**, both languages,
+    // pinned BY SHAPE: the two options must be distinguishable, and the `this session` one must not read as the whole
+    // series. 🔑 Khwan's complaint was that one change rewrote every remaining session **and nothing asked** — so there
+    // is no default here, and the words have to make the smaller choice the obvious one to read first.
+    scopeLabel: "Which sessions?",
+    scopeThis: "This session only",
+    scopeRest: "This session and the rest",
+    scopeHint: "Choose one — nothing is assumed.",
+    scopeThisDate: "The session on",
+    // 🔑 The two one-session outcomes read differently because they ARE different, and the pay differs:
+    coverNote: "{to} covers for {from} on that day. {from} is not teaching it, and {to} is paid for it.",
+    joinNote: "{name} joins that session as a second coach. Both coaches are paid for it.",
     teacherAdded: "{name} added to {n} rows",
     teacherRemoved: "{name} removed from {n} rows",
     teacherSwapped: "{from} → {to} on {n} rows",
@@ -545,16 +573,46 @@ const en = {
     mark: "CLASH",
     markTitle: "Two classes stand on this coach-hour — resolve it from either one.",
   },
+  // 🔴 REQ-110 item 6 (TASK-571) — moving a not-yet-started course's START date. 📝 **DRAFT (Fern, TASK-571)**, both
+  // languages, pinned BY SHAPE. 🔑 The first warning is the one this whole task exists for: **the server tells nobody**,
+  // so until Confirm-course runs the family and the coach still hold the OLD dates — and the sentence must say what to
+  // do about it, not merely that it happened.
+  courseStart: {
+    startLabel: "Starts",
+    edit: "Move the start date",
+    title: "Move the start date — {student}",
+    newStart: "New start date",
+    newStartHint: "The first session moves here; the rest follow week by week.",
+    // 🔻 TASK-574 — the current date is REAL now, so the hint says it. 📝 DRAFT (Fern, TASK-574).
+    newStartHintCurrent: "Currently {current}. The first session moves to the new date; the rest follow week by week.",
+    preview: "Check what would change",
+    forecastTitle: "{n} sessions would move:",
+    forecastRow: "{from} → {to}",
+    // 🔑 TASK-547's own sentence, deliberately word-for-word: the two screens must not read as two products, and a
+    // refusal after a clean forecast has to be an ordinary outcome rather than a contradiction.
+    forecastCaveat: "The server checks again when you confirm, so it may still refuse.",
+    warnStale: "Nobody is told by this move. Until you run Confirm course, the family and the coach still have the OLD dates — run it as soon as the new dates are right.",
+    warnExpiry: "The expiry date is recalculated from the new schedule.",
+    warnHandSetExpiry: "Someone set this course's expiry date by hand. This move REPLACES it.",
+    confirm: "Move the sessions",
+    doneTitle: "{n} sessions moved — the course now starts {date}",
+    expiryMoved: "Expiry: {from} → {to}",
+    skippedTitle: "Weeks skipped (the coach is away)",
+    reconfirmTitle: "{n} sessions need confirming again",
+    reconfirmBody: "Their confirmation was of the old dates, so it was cleared. Run Confirm course to send the new schedule — one message per person.",
+  },
   // SPEC-094 (TASK-492/517/518) — the admin Undo. 🔴 The verb is `ย้อน…`, NEVER `ยกเลิก…`: that belongs to `ยกเลิกการจอง`,
   // and Cancel (takes a session off the schedule) must never blur with Undo (puts one back) — the owner's instruction.
   // The three labels are the owner's approved words. The bodies are approved as written, and 🔴 the LEAVE body says the
   // coach IS told (TASK-508 sends "class on again") while the other two say nobody is — the same defect this control
   // exists to remove would otherwise ship inside it.
   // TASK-538 (BE) → TASK-539 (FE) — the LINE accounts linked as ADMIN, on the LINE-links page. Super admin only.
-  // ✅ **APPROVED by the owner 2026-09-28 (“ผ่านหมด”)** — these letters are now the spec, pinned BY VALUE in `approved-copy.test.ts` (COPY-REVIEW §D) —
-  // ⚠️ **for the TEN rows his table listed.** `tail`, `alsoTeacher`, `alsoParent`, `afterVisitor`, `confirm`, `removed`,
-  // `notKnownTitle` and `empty` were **never in front of him**, so they are STILL DRAFTS and keep their shape pins only.
-  // 🔑 The BY-FORM pins stayed for all seventeen (a question, no `deleted`, a named consequence).
+  // ✅ **APPROVED by the owner 2026-09-28 (“ผ่านหมด”)** — these letters are now the spec, pinned BY VALUE in
+  // `approved-copy.test.ts`. 📌 **All SEVENTEEN, in two rounds:** ten in COPY-REVIEW §D, and the other eight in **§D2**
+  // (TASK-555) — they were left out of §D by accident, held back rather than folded in, and approved on their own.
+  // 🔑 **The boundary pin that held them back is still there and still bites:** it now asserts every key here is either
+  // approved or declared a draft, so a NEW unapproved string fails until someone says which it is.
+  // 🔑 The BY-FORM pins stayed for all seventeen too (a question, no `deleted`, a named consequence).
   // 🔑 `unknownAccount` is the honest label for a row we cannot name: we store bare LINE ids with no display name, so
   // anything here that LOOKED like a name would be invented — and inventing one on the screen where you decide who keeps
   // admin rights is worse than admitting we do not know.
@@ -881,6 +939,9 @@ const en = {
     moveTitle: "Move session manually",
     moveHint: "Move teacher / date / time for special cases — you can't move into a slot that's already taken",
     noChange: "No changes",
+    // 🔑 TASK-564 — the move is ONE row and always was; this says so where the doubt was met. 📝 **DRAFT (Fern, TASK-564)**,
+    // pinned by shape: it must name this session and deny the rest, and it must NOT offer a choice the server cannot honour.
+    moveThisOnly: "This moves this session only — the rest of the course stays as it is.",
     movedTitle: "Session moved",
     moveFailTitle: "Move failed",
     moveSlotTaken: "The teacher already has a session at this time — choose another date/time/teacher",
@@ -1047,7 +1108,10 @@ const en = {
     // Bulk-confirm (SPEC-011)
     bulkConfirmSelected: "Confirm selected ({n})",
     bulkSelectRow: "Select this booking",
-    bulkSelectAll: "Select all pending (this page)",
+    // 🔴 TASK-557 — this label SAID “pending” and the control no longer means that: since the row gate widened to
+    // PENDING **and EXTENDED** (the server's own set), the box also picks up make-ups. 📝 **DRAFT (Fern, TASK-557)**,
+    // pinned BY SHAPE (it may not claim “pending” alone, and it must keep saying “this page”) — the owner's answer is one line.
+    bulkSelectAll: "Select all that can be confirmed (this page)",
     bulkResultTitle: "Confirmation results",
     bulkResultSummary: "{confirmed} confirmed · {already} already confirmed · {skipped} skipped",
     bulkOutcomeConfirmed: "Confirmed",
@@ -1684,6 +1748,11 @@ const en = {
       incomplete_students: "Students with incomplete info",
       yesterday_no_shows: "No-shows yesterday",
       pending_teacher_links: "Teacher LINE link requests awaiting approval",
+      // 🔻 TASK-573 (BE) → TASK-574 — the card that answers my TASK-571 finding. 📝 DRAFT (Fern, TASK-574).
+      // 🔑 Worded to AGREE with the dialog's own warning, deliberately: both say the family still holds the OLD dates and
+      // both name Confirm course as the act that ends it. *Two warnings describing one state differently teach an admin to
+      // trust neither* — so they share vocabulary, and the card is the shorter one because it is a list row.
+      courses_awaiting_reconfirm: "Courses moved but not re-confirmed (the family still has the old dates)",
     },
   },
 
@@ -1813,10 +1882,12 @@ const en = {
     nameLabel: 'Please enter the student\'s name, e.g. "Emily".',
     // §17c screen 5 — VERBATIM (EN half)
     birthDateLabel: "Please enter the date of birth in (DD-MM-YYYY)",
-    // PLACEHOLDER — the input's own hint; the chat's `ข้าม` is "leave it blank" on a page
-    birthDatePlaceholder: "DD-MM-YYYY (optional)",
+    // 🔴 TASK-566 (REQ-110 item 10) — **“(optional)” is gone from all three placeholders.** The ข้าม path is removed and
+    // 🔑 *a skip that survives as a hint is still an invitation* — a parent who reads “optional” and leaves it blank now
+    // meets a refusal instead of the outcome the hint promised.
+    birthDatePlaceholder: "DD-MM-YYYY",
     // TASK-349 §7a/§7b — the pickers and their escape hatches. All PLACEHOLDER; `typeInstead` is @Sober's pair.
-    dobPickPlaceholder: "Tap to pick a date (optional)",
+    dobPickPlaceholder: "Tap to pick a date",
     typeInstead: "Type it instead",
     dobPickInstead: "Pick from a calendar instead",
     addrPickInstead: "Pick from the list instead",
@@ -1829,8 +1900,12 @@ const en = {
     addrLoading: "Loading the address list…",
     // §17c screen 6 — VERBATIM (EN half, two lines joined with a space)
     provinceLabel: "Please enter your address: District, Sub-district, Province Eg. Prakanueng Nuea, Wattana, BKK",
-    // PLACEHOLDER
-    provincePlaceholder: "(optional)",
+    // 🔴 TASK-566 — was “(optional)”; see `birthDatePlaceholder`.
+    provincePlaceholder: "District, Sub-district, Province",
+    // 🔴 TASK-566 — the household already has an address, so the question is ABSENT and this says why in the parent's
+    // terms. 📝 DRAFT (Fern, TASK-566), pinned by shape: it must say we HAVE it, and must not ask for anything.
+    addressOnFile: "We already have your address on file.",
+    addressOnFileProvince: "We already have your address on file ({province}).",
     // `add_dup_detail` — VERBATIM (EN); shown above the name field when re-asking (AC-9)
     dupDetailHint: "There is already a child with that name. Please add a surname or nickname so they are not mixed up.",
     // PLACEHOLDER — the chat typed the next step; a page needs a button
@@ -1847,7 +1922,9 @@ const en = {
     reviewName: "Name",
     reviewBirthDate: "Date of birth",
     reviewProvince: "Address",
-    reviewSkipped: "(skipped)",
+    // 🚫 TASK-566 — `reviewSkipped` is GONE: with every field required there is nothing it could label, and a word for a
+    // state that cannot happen is how the state comes back.
+    reviewRequiredMark: "*",
     // §17c screen 8a — VERBATIM (EN half)
     createdTitle: '"{name}" has been added successfully. ✅',
     // `added_atmax_note` — VERBATIM (EN)
@@ -1906,10 +1983,16 @@ const en = {
       NAME_RESERVED: "「{word}」 is a system command. If that really is the child's name, please tell an admin and they will add them.",
       // PLACEHOLDER (EN) — the server's own sentence exists in Thai only (`parent.service.ts`); `{max}` is the server's
       FAMILY_FULL: "You can register up to {max} children per phone number.",
-      // `add_dup_detail` — VERBATIM
-      NAME_DUPLICATE_NEEDS_DETAIL: "There is already a child with that name. Please add a surname or nickname so they are not mixed up.",
-      // `add_birthdate_bad` — ADAPTED: "or type skip" becomes "or leave it blank" on a page
-      BIRTHDATE_INVALID: "That date format is not valid. Please use DD-MM-YYYY, e.g. 02-12-2024, or leave it blank.",
+      // 🔴 TASK-566 / COPY-REVIEW §8 — the owner ruled it must ask for the child's REAL name. 📋 DRAFT (@Jason's wording,
+      // put on the page by me — the server still returns only the code). ⚠️ The LINE chat keeps its own sentence.
+      NAME_DUPLICATE_NEEDS_DETAIL: "There is already a child with this name. Please enter the child's real name (first name and surname) so they are not mixed up.",
+      // 🔴 TASK-566 — **“or leave it blank” is GONE.** It became FALSE the moment the birthday was required, and
+      // 🔑 *a refusal telling a parent to do something the server now rejects is worse than no message.*
+      BIRTHDATE_INVALID: "That date format is not valid. Please use DD-MM-YYYY, e.g. 02-12-2024.",
+      // 🔴 TASK-566 / COPY-REVIEW §9 — the server's backstop for the two required fields (the `*` should stop a parent
+      // earlier). 📋 DRAFT. 🔑 The address one says **once per family**, so being asked is not read as us losing it.
+      BIRTHDATE_REQUIRED: "Please enter the child's birthday (DD-MM-YYYY, e.g. 02-12-2020).",
+      ADDRESS_REQUIRED: "Please choose the province and enter your address (we only ask once per family).",
       // PLACEHOLDER — TASK-353 (§9): the picked province was not one of the server's 77 names
       PROVINCE_UNKNOWN: "\"{province}\" is not a province we know. Please pick the province again.",
     },
@@ -2190,6 +2273,17 @@ const th: typeof en = {
   },
 
   // ── SPEC-076 / REQ-082 (TASK-265) — ปุ่มแก้วันหมดอายุ และคำเตือน "ชุดเดียว" ที่ใช้ร่วมกันสองที่ ──
+  // 📝 DRAFT (Fern, TASK-572) — ประโยค preview ใช้ของ `expiry.*` ร่วมกัน ไม่เขียนซ้ำ
+  voucherExpiry: {
+    edit: "ต่ออายุ",
+    title: "วันหมดอายุวอยเชอร์ — {student}",
+    savedTitle: "แก้วันหมดอายุวอยเชอร์แล้ว",
+    refusedTitle: "วันหมดอายุนี้เลื่อนไม่ได้ — เพราะว่า",
+    answerEnded: "วอยเชอร์นี้ถูกยกเลิกแล้ว ชั่วโมงจึงหายไปแล้ว การเลื่อนวันจะเปลี่ยนแค่ข้อความบนหน้าจอ — ถ้าต้องการคืนชั่วโมงให้สร้างวอยเชอร์ใบใหม่",
+    answerNotStarted: "อายุนับจากการจองครั้งแรก จึงยังไม่มีอะไรให้ต่อ — จองคาบแรกก่อน แล้ววันหมดอายุจะนับตามคาบนั้น (ถ้าตั้งวันเองตอนนี้จะเป็นการตรึงวันชั่วคราวจากวันขาย และอาจทำให้หมดอายุเร็วขึ้น)",
+    earlier: "วันที่นี้เร็วกว่าวันเดิม — เป็นการลดอายุ ไม่ใช่ต่ออายุ",
+    audience: "การแก้ครั้งนี้ไม่มีการแจ้งใคร ลูกค้าจะเห็นวันใหม่ในข้อความหักชั่วโมงหรือข้อความเตือนครั้งถัดไป",
+  },
   expiry: {
     edit: "แก้วันหมดอายุ",
     title: "วันหมดอายุ — {student}",
@@ -2388,6 +2482,14 @@ const th: typeof en = {
     rateOptional: "ค่าสอนต่อคาบ (ไม่บังคับ)",
     fromDate: "ตั้งแต่วันที่",
     fromDateHint: "ค่าเริ่มต้นคือวันนี้ — คาบก่อนหน้าเป็นประวัติ คงเดิม",
+    // 📝 DRAFT (Fern, TASK-564) — เหตุผลอยู่ในบล็อก EN: ต้องเลือกเอง ไม่มีค่าเริ่มต้น และสองตัวเลือกต้องอ่านไม่เหมือนกัน
+    scopeLabel: "ใช้กับคาบไหน?",
+    scopeThis: "เฉพาะคาบนี้",
+    scopeRest: "คาบนี้และคาบถัดไปทั้งหมด",
+    scopeHint: "เลือกอย่างใดอย่างหนึ่ง ระบบไม่เดาให้",
+    scopeThisDate: "คาบวันที่",
+    coverNote: "{to} สอนแทน {from} ในวันนั้น {from} ไม่ได้สอนคาบนั้น และ {to} ได้ค่าสอนของคาบนั้น",
+    joinNote: "{name} เข้าสอนคาบนั้นเป็นครูคนที่สอง ได้ค่าสอนทั้งสองคน",
     teacherAdded: "เพิ่ม {name} ใน {n} คาบ",
     teacherRemoved: "เอา {name} ออกจาก {n} คาบ",
     teacherSwapped: "{from} → {to} ใน {n} คาบ",
@@ -2446,6 +2548,29 @@ const th: typeof en = {
     menuUnsettled: "ถอนสิทธิ์แอดมินแล้ว แต่ LINE ยังไม่รับการเปลี่ยนเมนู ระบบจะแก้ให้เองเมื่อบัญชีนี้เปิดแอปครั้งถัดไป",
     notKnownTitle: "สิ่งที่หน้านี้แสดงให้ไม่ได้ และเหตุผล",
     empty: "ยังไม่มีบัญชี LINE ที่มีสิทธิ์แอดมิน",
+  },
+  // 📝 DRAFT (Fern, TASK-571) — เหตุผลอยู่ในบล็อก EN: ข้อความแรกคือเรื่องที่ระบบไม่แจ้งใคร ต้องบอกว่าให้ทำอะไรต่อ
+  courseStart: {
+    startLabel: "เริ่มเรียน",
+    edit: "เลื่อนวันเริ่มเรียน",
+    title: "เลื่อนวันเริ่มเรียน — {student}",
+    newStart: "วันเริ่มเรียนใหม่",
+    newStartHint: "คาบแรกจะย้ายมาวันนี้ คาบถัดไปเลื่อนตามสัปดาห์ละคาบ",
+    // 📝 DRAFT (Fern, TASK-574) — ประโยคสุดท้ายใช้คำเดียวกับ TASK-547 โดยเจตนา
+    newStartHintCurrent: "ปัจจุบัน {current} — คาบแรกจะย้ายไปวันใหม่ คาบถัดไปเลื่อนตามสัปดาห์ละคาบ",
+    preview: "ดูว่าจะเปลี่ยนอะไร",
+    forecastTitle: "จะย้าย {n} คาบ:",
+    forecastRow: "{from} → {to}",
+    forecastCaveat: "ระบบจะตรวจอีกครั้งเมื่อกดยืนยัน จึงยังมีสิทธิ์ปฏิเสธได้",
+    warnStale: "การเลื่อนนี้ไม่มีการแจ้งใคร ลูกค้าและครูยังถือตารางเดิมอยู่จนกดยืนยันคอร์สอีกครั้ง — เมื่อวันใหม่ถูกต้องแล้วให้กดยืนยันคอร์สทันที",
+    warnExpiry: "วันหมดอายุจะคำนวณใหม่จากตารางใหม่",
+    warnHandSetExpiry: "คอร์สนี้มีคนตั้งวันหมดอายุไว้เอง การเลื่อนนี้จะแทนที่วันนั้น",
+    confirm: "เลื่อนคาบทั้งหมด",
+    doneTitle: "ย้าย {n} คาบแล้ว — คอร์สเริ่ม {date}",
+    expiryMoved: "วันหมดอายุ: {from} → {to}",
+    skippedTitle: "สัปดาห์ที่ข้ามไป (ครูลา)",
+    reconfirmTitle: "{n} คาบต้องยืนยันใหม่",
+    reconfirmBody: "การยืนยันเดิมเป็นของตารางเดิม จึงถูกล้างไปแล้ว กดยืนยันคอร์สเพื่อส่งตารางใหม่ — คนละหนึ่งข้อความ",
   },
   undo: {
     attendanceBtn: "ย้อนการเข้าเรียน",
@@ -2702,6 +2827,8 @@ const th: typeof en = {
     moveTitle: "ย้ายคาบด้วยมือ",
     moveHint: "ย้ายครู / วัน / เวลา สำหรับกรณีพิเศษ — ถ้าช่องปลายทางมีคาบอยู่แล้วจะย้ายไม่ได้",
     noChange: "ไม่มีการเปลี่ยนแปลง",
+    // 📝 DRAFT (Fern, TASK-564) — ดูบล็อก EN
+    moveThisOnly: "ย้ายเฉพาะคาบนี้ คาบอื่นของคอร์สยังคงเดิม",
     movedTitle: "ย้ายคาบแล้ว",
     moveFailTitle: "ย้ายคาบไม่สำเร็จ",
     moveSlotTaken: "ครูมีคาบในช่วงเวลานี้แล้ว — เลือกวัน/เวลา/ครูอื่น",
@@ -2861,7 +2988,8 @@ const th: typeof en = {
     // ยืนยันหลายรายการ (SPEC-011)
     bulkConfirmSelected: "ยืนยันที่เลือก ({n})",
     bulkSelectRow: "เลือกคาบนี้",
-    bulkSelectAll: "เลือกทั้งหมดที่รอยืนยัน (หน้านี้)",
+    // 📝 DRAFT (Fern, TASK-557) — ป้ายเดิมบอกว่า “ที่รอยืนยัน” แต่ตอนนี้ติ๊กคาบชดเชยได้ด้วย
+    bulkSelectAll: "เลือกทั้งหมดที่ยืนยันได้ (หน้านี้)",
     bulkResultTitle: "ผลการยืนยัน",
     bulkResultSummary: "ยืนยัน {confirmed} · ยืนยันอยู่แล้ว {already} · ข้าม {skipped}",
     bulkOutcomeConfirmed: "ยืนยันแล้ว",
@@ -3449,6 +3577,8 @@ const th: typeof en = {
       incomplete_students: "นักเรียนที่ข้อมูลไม่ครบ",
       yesterday_no_shows: "ไม่มาเรียนเมื่อวาน",
       pending_teacher_links: "คำขอผูก LINE ของครูที่รออนุมัติ",
+      // 📝 DRAFT (Fern, TASK-574) — ใช้คำเดียวกับคำเตือนในกล่องเลื่อนวันเริ่ม: “ตารางเดิม” + “ยืนยันคอร์ส”
+      courses_awaiting_reconfirm: "คอร์สที่เลื่อนแล้วแต่ยังไม่ได้ยืนยันใหม่ (ลูกค้ายังถือตารางเดิม)",
     },
   },
 
@@ -3551,8 +3681,9 @@ const th: typeof en = {
     familyFull: "ครอบครัวนี้มีนักเรียนครบตามจำนวนที่กำหนดแล้วค่ะ", // PLACEHOLDER
     nameLabel: 'กรุณาระบุชื่อนักเรียน เช่น "ส้ม"', // §17c screen 4b — VERBATIM
     birthDateLabel: "กรุณาระบุวันเกิดของนักเรียนค่ะ (วัน-เดือน-ปีค.ศ. )", // §17c screen 5 — VERBATIM
-    birthDatePlaceholder: "วว-ดด-ปปปป (ไม่บังคับ)", // PLACEHOLDER
-    dobPickPlaceholder: "แตะเพื่อเลือกวันเกิด (ไม่บังคับ)", // PLACEHOLDER — TASK-349 §7a
+    // 🔴 TASK-566 — เอา “(ไม่บังคับ)” ออกทั้งสามที่: ข้ามไม่ได้แล้ว และคำใบ้ที่ยังชวนให้ข้ามก็ยังเป็นการชวน
+    birthDatePlaceholder: "วว-ดด-ปปปป",
+    dobPickPlaceholder: "แตะเพื่อเลือกวันเกิด", // PLACEHOLDER — TASK-349 §7a
     typeInstead: "พิมพ์เอง", // PLACEHOLDER — @Sober's pair, TASK-349 §3
     dobPickInstead: "เลือกจากปฏิทินแทน", // PLACEHOLDER
     addrPickInstead: "เลือกจากรายการแทน", // PLACEHOLDER
@@ -3563,7 +3694,10 @@ const th: typeof en = {
     addrPickPlaceholder: "แตะเพื่อเลือก", // PLACEHOLDER
     addrLoading: "กำลังโหลดรายชื่อพื้นที่…", // PLACEHOLDER
     provinceLabel: "กรุณาระบุ เขต แขวง จังหวัด เช่น พระโขนงเหนือ วัฒนา กทม", // §17c screen 6 — VERBATIM
-    provincePlaceholder: "(ไม่บังคับ)", // PLACEHOLDER
+    provincePlaceholder: "เขต/อำเภอ แขวง/ตำบล จังหวัด", // 🔴 TASK-566 — เดิม “(ไม่บังคับ)”
+    // 📝 DRAFT (Fern, TASK-566) — ครอบครัวนี้มีที่อยู่แล้ว จึงไม่ถามซ้ำ
+    addressOnFile: "เรามีที่อยู่ของครอบครัวนี้อยู่แล้วค่ะ",
+    addressOnFileProvince: "เรามีที่อยู่ของครอบครัวนี้อยู่แล้วค่ะ ({province})",
     dupDetailHint: "มีน้องชื่อนี้อยู่แล้ว รบกวนใส่นามสกุลหรือชื่อเล่นเพิ่ม เพื่อไม่ให้สลับกันนะคะ", // `add_dup_detail` — VERBATIM
     formNext: "ต่อไป", // PLACEHOLDER
     confirmTitle: "กรุณาตรวจสอบข้อมูลก่อนบันทึกค่ะ", // §17c screen 7a — VERBATIM
@@ -3573,7 +3707,7 @@ const th: typeof en = {
     reviewName: "ชื่อ", // PLACEHOLDER
     reviewBirthDate: "วันเกิด", // PLACEHOLDER
     reviewProvince: "ที่อยู่", // PLACEHOLDER
-    reviewSkipped: "(ข้าม)", // PLACEHOLDER
+    reviewRequiredMark: "*", // 🚫 TASK-566 — `reviewSkipped` หายไป: ทุกช่องบังคับแล้ว
     createdTitle: 'เพิ่ม "{name}" สำเร็จแล้วค่ะ ✅', // §17c screen 8a — VERBATIM
     createdAtMax: " (ครบ {max} คนแล้ว)", // `added_atmax_note` — VERBATIM
     createdCount: "ตอนนี้มีนักเรียนในระบบ {count} คน", // PLACEHOLDER
@@ -3605,8 +3739,13 @@ const th: typeof en = {
       NAME_REQUIRED: 'กรุณาระบุชื่อนักเรียน เช่น "ส้ม"', // §17c screen 4b — VERBATIM
       NAME_RESERVED: "「{word}」 เป็นคำสั่งของระบบค่ะ ถ้าเป็นชื่อน้องจริง ๆ รบกวนแจ้งแอดมินนะคะ", // `add_name_reserved` — VERBATIM
       FAMILY_FULL: "เพิ่มนักเรียนได้สูงสุด {max} คนต่อเบอร์", // the server's own sentence (`parent.service.ts`) — VERBATIM
-      NAME_DUPLICATE_NEEDS_DETAIL: "มีน้องชื่อนี้อยู่แล้ว รบกวนใส่นามสกุลหรือชื่อเล่นเพิ่ม เพื่อไม่ให้สลับกันนะคะ", // `add_dup_detail` — VERBATIM
-      BIRTHDATE_INVALID: "รูปแบบวันเกิดไม่ถูกต้องค่ะ กรุณาพิมพ์เป็น วัน-เดือน-ปี เช่น 02-12-2024 หรือเว้นว่างไว้", // `add_birthdate_bad` — ADAPTED ("หรือพิมพ์ ข้าม" → "หรือเว้นว่างไว้")
+      // 🔴 TASK-566 / COPY-REVIEW §8 — เจ้าของสั่งให้ถามชื่อจริง 📋 DRAFT (คำของ @Jason หน้านี้เป็นของหน้าเว็บ)
+      NAME_DUPLICATE_NEEDS_DETAIL: "มีน้องชื่อนี้ในครอบครัวแล้ว — กรุณาใส่ชื่อจริงของน้อง (ชื่อ-นามสกุล) เพื่อไม่ให้สับสนกันค่ะ",
+      // 🔴 TASK-566 — ตัด “หรือเว้นว่างไว้” ออก: เว้นว่างไม่ได้แล้ว คำแนะนำที่ระบบปฏิเสธแย่กว่าไม่บอกอะไรเลย
+      BIRTHDATE_INVALID: "รูปแบบวันเกิดไม่ถูกต้องค่ะ กรุณาพิมพ์เป็น วัน-เดือน-ปี เช่น 02-12-2024",
+      // 🔴 TASK-566 / COPY-REVIEW §9 — ด่านสุดท้ายของเซิร์ฟเวอร์ (หน้าเว็บควรกันไว้ก่อนด้วย `*`) 📋 DRAFT
+      BIRTHDATE_REQUIRED: "กรุณาใส่วันเกิดของน้อง (วว-ดด-ปปปป เช่น 02-12-2020)",
+      ADDRESS_REQUIRED: "กรุณาเลือกจังหวัดและใส่ที่อยู่ (ถามครั้งเดียวต่อครอบครัว)",
       PROVINCE_UNKNOWN: "ไม่พบจังหวัด \"{province}\" ในระบบค่ะ กรุณาเลือกจังหวัดอีกครั้ง", // PLACEHOLDER — TASK-353
     },
   },

@@ -382,7 +382,12 @@ export interface CoursePackage {
  * appears nothing FAILS, it just shows Sunday 09:00.** With `Omit` that reader is a compile error instead.
  * 🚫 `CoursePackage` itself is untouched: the plan flow has genuine times and they are none of this type's business.
  */
-export interface CoursePackageView extends Omit<CoursePackage, "startDate" | "weekday" | "startTime"> {
+/**
+ * 🔻 TASK-574 — `startDate` is BACK, because the server sends it now (TASK-573). 🔑 `weekday` and `startTime` are still
+ * omitted: they are **still not sent**, and the reason TASK-545 gave has not changed — *a fabricated value is a plausible
+ * value nobody questions.* ⇒ the omit list shrank by exactly the field that became real, and not by one more.
+ */
+export interface CoursePackageView extends Omit<CoursePackage, "weekday" | "startTime"> {
   leaveQuota: number;
   leaveRemaining: number;
   maxWeek: number;

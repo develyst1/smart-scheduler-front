@@ -78,7 +78,13 @@ describe("§2 — every rate surface hidden by the key (absent, not dashed); eve
     expect(groupCreate).toContain("await create.mutateAsync(withoutRates({");
     expect(groupCreate).toContain("}, canRate));");
     expect(details).toContain("const patch = withoutRates(otherSchedulePatch(facts, draft, teacherIds), canRate);");
-    expect(series).toContain("body: withoutRates(withFromDate({ teacherId: to, ...(rateBaht !== \"\" ? { rateMinor: bahtToMinor(rateBaht) } : {}) }, fromDate), canRate)");
+    // 📌 TASK-564 changed the SCOPE half of this body (`withFromDate` ⇒ an explicit `onDate` / `fromDate`, because the
+    // server now refuses a body naming neither). **What this pin protects is untouched and still pinned: the rate goes
+    // through `withoutRates`**, so a body without the key can never carry `rateMinor`.
+    expect(series).toContain("body: withoutRates({ teacherId: to, ...(rateBaht !== \"\" ? { rateMinor: bahtToMinor(rateBaht) } : {}), ...scoped }, canRate)");
+    // 🚫 and the swap door carries no rate at all — the server allows a cover's rate only with `onDate`, so a field that
+    // could contradict the scope is worse than none.
+    expect(series).not.toMatch(/swap\.mutateAsync[\s\S]{0,200}rateMinor/);
     expect(series).toContain("const patch = withoutRates(");
     expect(modal).toContain("Object.assign(patch, withoutRates(sessionRateChange(rateBaht, rate, rateClear) ?? {}, canRate));");
     expect(flow).toContain("duo: group ? undefined : duoBody(duo, canRate),");

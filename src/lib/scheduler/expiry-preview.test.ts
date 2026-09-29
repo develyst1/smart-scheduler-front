@@ -29,7 +29,11 @@ describe("🔴 §1 — the `expires …` line on the card OPENS the expiry dialo
   it("the expiry is a row of the card's details box, and its full-size button targets the dialog", () => {
     // History: a 14px icon after a label (TASK-311 made the dotted date itself the button); now the date is the
     // `Expires` row's value and the edit is the row's full-size ActionIcon — the same shape as every other edit.
-    const row = card.slice(card.indexOf('label={t("course.expiresLabel")}'), card.indexOf("</CourseDetailRow>"));
+    // 📌 TASK-571 — the slice now ends at the NEXT closing tag rather than the FIRST in the file. The old form worked only
+    // while the expiry was the card's first detail row; adding the start-date row above it made the slice run backwards.
+    // **What this pin protects is unchanged** — the expiry row's own button, icon and value.
+    const at = card.indexOf('label={t("course.expiresLabel")}');
+    const row = card.slice(at, card.indexOf("</CourseDetailRow>", at));
     expect(row).toContain("onClick={() => setExpiryTarget(c)}");
     expect(row).toContain("<ActionIcon");
     expect(row).toContain("<CalendarClock");
@@ -123,7 +127,11 @@ describe("🧹 §2 — the `Create plan` ceiling gate is GONE, and so is its sen
     // commit did not touch for either half of the task.
     const contract = readFileSync(CONTRACT, "utf8");
     expect(contract).not.toContain("exceedsCeiling");
-    expect(contract).not.toContain("ExpiryPreview");
+    // 🔻 TASK-572, declared and NARROWED: this read `not.toContain("ExpiryPreview")`, which also forbade any OTHER
+    // type whose name merely ends in it. `VoucherExpiryPreview` is now declared here — correctly, because unlike the
+    // course's app-level `ExpiryPreview` it IS a wire shape (`POST /vouchers/:id/expiry/preview`). What this pin
+    // protects is unchanged: the COURSE's preview type is not declared in `contract.ts`.
+    expect(contract).not.toMatch(/\b(interface|type) ExpiryPreview\b/);
     expect(codeOf("src/types/app/scheduler/index.ts")).toContain("exceedsCeiling?: boolean;");
   });
 });

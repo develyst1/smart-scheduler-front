@@ -3,6 +3,9 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   setCourseAdminUnlock,
+  changeCourseStart,
+  previewCourseStart,
+  getCourseExpiryHistory,
   confirmBooking,
   undoPreview,
   createBooking,
@@ -75,6 +78,8 @@ import {
   dropCourse,
   resumeCourse,
   updateCourseExpiry,
+  previewVoucherExpiry,
+  updateVoucherExpiry,
   removeCourseRental,
   previewCourseExpiry,
   confirmCourse,
@@ -413,21 +418,75 @@ export const useResumeCourse = () => {
   });
 };
 
-/**
- * REQ-082 AC-1/AC-4 — move a course's expiry. 🚫 The `expiryWarning` on the response is a **warning about a
- * save that already happened**, never a refusal: nothing here or at the call site may use it to block.
- */
 /** TASK-391 — remove a course's rental from its remaining sessions; the same invalidation set as the other course actions. */
 export const useRemoveCourseRental = () => {
   const qc = useQueryClient();
   return useMutation({ mutationFn: (courseId: string) => removeCourseRental(courseId), onSuccess: () => invalidateAll(qc) });
 };
 
+/**
+ * TASK-574 — the forecast. 🚫 A MUTATION even though it writes nothing: it is asked when the admin presses *Preview*,
+ * never on a render, and `retry: false` so a refusal is shown once rather than retried behind the admin's back.
+ */
+export const usePreviewCourseStart = () =>
+  useMutation({
+    mutationFn: ({ courseId, startDate }: { courseId: string; startDate: string }) => previewCourseStart(courseId, startDate),
+    retry: false,
+  });
+
+/**
+ * TASK-571 — the start-date move. 🚫 **Nothing is asked until the admin confirms** (the dialog holds the request), and
+ * every surface refetches afterwards: the dates, the statuses and the expiry all moved.
+ */
+export const useChangeCourseStart = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, startDate }: { courseId: string; startDate: string }) => changeCourseStart(courseId, startDate),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/** TASK-571 — read only, and only while the dialog is open: it answers ONE question (did a person set the expiry?). */
+export const useCourseExpiryHistory = (courseId: string | null) =>
+  useQuery({
+    queryKey: ["course-expiry-history", courseId],
+    queryFn: () => getCourseExpiryHistory(courseId as string),
+    enabled: Boolean(courseId),
+    staleTime: 0,
+  });
+
+/**
+ * REQ-082 AC-1/AC-4 — move a course's expiry. 🚫 The `expiryWarning` on the response is a **warning about a
+ * save that already happened**, never a refusal: nothing here or at the call site may use it to block.
+ */
 export const useUpdateCourseExpiry = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ courseId, expiryDate }: { courseId: string; expiryDate: string }) =>
       updateCourseExpiry(courseId, expiryDate),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/**
+ * 🔴 TASK-568 (BE) → TASK-572 — a VOUCHER's expiry: the preview, then the save.
+ *
+ * 🔑 **`retry: false` on the preview, and it matters here more than on the course's:** this entitlement can REFUSE, the
+ * refusal is a 409 the admin has to READ, and a retried refusal would flash the same sentence twice behind them.
+ * 🚫 The preview invalidates nothing (it writes nothing). The save invalidates everything — the row's date and chip move.
+ */
+export const usePreviewVoucherExpiry = () =>
+  useMutation({
+    mutationFn: ({ voucherId, expiryDate }: { voucherId: string; expiryDate: string }) =>
+      previewVoucherExpiry(voucherId, expiryDate),
+    retry: false,
+  });
+
+export const useUpdateVoucherExpiry = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ voucherId, expiryDate }: { voucherId: string; expiryDate: string }) =>
+      updateVoucherExpiry(voucherId, expiryDate),
     onSuccess: () => invalidateAll(qc),
   });
 };

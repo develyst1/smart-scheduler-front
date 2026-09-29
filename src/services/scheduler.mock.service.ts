@@ -1097,6 +1097,52 @@ export const resumeCourse = (courseId: string, input: { startDate: string; start
   });
 };
 
+/** TASK-571 — offline: one week later, two weeks skipped for the coach's leave, three sessions to reconfirm. */
+/** TASK-574 — offline: the same shape the act will return, plus `forecast: true`. */
+export const previewCourseStart = (courseId: string, startDate: string) =>
+  delay({
+    moves: [{ id: "bk-1", from: "2026-10-06", to: startDate, status: "CONFIRMED", toStatus: "PENDING" }],
+    expiryDate: "2026-12-20",
+    previousExpiryDate: "2026-12-06",
+    needsReconfirm: 3,
+    skippedForLeave: ["2026-10-20"],
+    forecast: true as const,
+  });
+
+export const changeCourseStart = (courseId: string, startDate: string) =>
+  delay({ moved: 6, startDate, expiryDate: "2026-12-20", previousExpiryDate: "2026-12-06", needsReconfirm: 3, skippedForLeave: ["2026-10-20"] });
+export const getCourseExpiryHistory = (courseId: string) =>
+  delay([{ fromDate: "2026-12-01", toDate: "2026-12-06", actor: "admin", changedAt: "2026-09-20T03:00:00.000Z" }]);
+
+/**
+ * TASK-572 — a VOUCHER's expiry, offline. 🔑 **One `mockWarning`, one refusal check, shared by the preview and the save**,
+ * because that is the property that matters about the real pair: they cannot answer differently.
+ * ⚠️ **ENDED refuses here too** — with the server's own code and sentence, so the refusal path is exercisable without a
+ * server. 🚫 NOT STARTED is deliberately NOT reproduced: the fixtures have no booking list, and inventing one here would be
+ * inventing the rule this screen is careful never to own.
+ */
+const voucherRefusal = (voucherId: string) => {
+  const v = MOCK_VOUCHERS.find((x) => x.id === voucherId);
+  if (!v) return { code: "NOT_FOUND", status: 404, message: "ไม่พบวอยเชอร์" };
+  if (v.status === "ENDED") return { code: "VOUCHER_ENDED", status: 409, message: "วอยเชอร์นี้ถูกยกเลิกแล้ว — ต่ออายุไม่ได้" };
+  return null;
+};
+
+export const previewVoucherExpiry = (voucherId: string, expiryDate: string) => {
+  const refusal = voucherRefusal(voucherId);
+  if (refusal) return Promise.reject(new ApiClientError(refusal.code, refusal.message, refusal.status));
+  return delay({ expiryWarning: mockWarning(voucherId, expiryDate) });
+};
+
+export const updateVoucherExpiry = (voucherId: string, expiryDate: string) => {
+  const refusal = voucherRefusal(voucherId);
+  if (refusal) return Promise.reject(new ApiClientError(refusal.code, refusal.message, refusal.status));
+  const v = MOCK_VOUCHERS.find((x) => x.id === voucherId) as any;
+  const previousExpiryDate = v?.expiryDate ?? null;
+  if (v) v.expiryDate = expiryDate;
+  return delay({ voucher: clone(v), expiryWarning: mockWarning(voucherId, expiryDate), previousExpiryDate });
+};
+
 /** REQ-082 AC-4 — the save ALWAYS happens; the warning describes what it left outside. Never a refusal. */
 export const updateCourseExpiry = (courseId: string, expiryDate: string) => {
   const c = coursePackages.find((x) => x.id === courseId) as any;

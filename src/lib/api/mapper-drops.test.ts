@@ -105,6 +105,7 @@ const DROPPED_COURSE: Record<string, string> = {
   courseKind: "PRIVATE/DUO is answered for a row by `coStudent`, which IS mapped",
   coStudent: "the row's own `dto.coStudent` is the sent-and-joined one (TASK-424); the course copy would be a second source",
   classRateMinor: "the row carries `dto.rate` — the three rate facts as sent, including the course default",
+  startDate: "🔻 TASK-574 — the course's own start; a BOOKING row has its own `date`, and the course pages read the course",
 };
 
 /** `dto.student` → `studentName` + `nickname`. */
@@ -177,8 +178,9 @@ describe("TASK-543 — the fields `dtoToBooking` drops, declared", () => {
       expect(field.length).toBeGreaterThan(0);
     }
     // the four reduced objects, plus the (currently empty) top level
-    expect(all.length).toBe(27);
-    expect(sets.map((s) => Object.keys(s).length)).toEqual([0, 16, 6, 3, 2]);
+    expect(all.length).toBe(28);
+    // 🔻 TASK-574 — course 16 → 17: the real `startDate` arrived and a BOOKING row still does not carry it.
+    expect(sets.map((s) => Object.keys(s).length)).toEqual([0, 17, 6, 3, 2]);
   });
 });
 
@@ -229,9 +231,10 @@ describe("TASK-544 — `dtoToTeacher` and `dtoToCourseView` declare their drops"
     expect(teacherBody).toContain("subjectOptions: dto.subjects,");
   });
 
-  it("`dtoToCourseView`: all 18 summary fields carried; the reduced `student` declares its 7", () => {
+  it("`dtoToCourseView`: all 19 summary fields carried; the reduced `student` declares its 7", () => {
     const keys = ifaceKeys("CourseSummary");
-    expect(keys.length).toBe(18);
+    // 🔻 TASK-573/574 — 18 + the real `startDate`, which closed TASK-545's contract question.
+    expect(keys.length).toBe(19);
     expect(dropped(keys, readsIn(courseViewBody, "row"))).toEqual(Object.keys(DROPPED_COURSEVIEW_TOP).sort());
     expect(dropped(ifaceKeys("StudentRef"), readsIn(courseViewBody, "row.student"))).toEqual(
       Object.keys(DROPPED_COURSEVIEW_STUDENT).sort(),
@@ -247,9 +250,16 @@ describe("TASK-544 — `dtoToTeacher` and `dtoToCourseView` declare their drops"
     expect(Object.keys(INVENTED_COURSEVIEW)).toEqual([]);
     // 🔑 and the reason it cannot come back: the view no longer REQUIRES what the summary does not send
     const appTypes = strip(readFileSync("src/types/app/scheduler/index.ts", "utf8"));
-    expect(appTypes).toContain('export interface CoursePackageView extends Omit<CoursePackage, "startDate" | "weekday" | "startTime"> {');
+    // 🔻 TASK-574 — the omit list shrank by EXACTLY the field the server now sends. `weekday` and `startTime` are still
+    // omitted, and TASK-545's reason for that has not changed: they are still not sent, and a plausible fabricated value
+    // is one nobody questions. 🔑 What this pin asserts is unchanged — **the mapper invents nothing** (the literal check
+    // above) and the view cannot demand what its source does not carry.
+    expect(appTypes).toContain('export interface CoursePackageView extends Omit<CoursePackage, "weekday" | "startTime"> {');
+    // and the real field IS carried, as sent
+    expect(courseViewBody).toContain("startDate: row.startDate,");
     // 🚫 `CoursePackage` itself keeps all three — the plan flow has genuine times and they are not this type's business
     const pkg = block(appTypes, "export interface CoursePackage {");
+    // 🚫 `CoursePackage` itself still holds all three — the plan flow's times are real and are not this type's business
     for (const f of ["startDate", "weekday", "startTime"]) expect(pkg).toContain(`${f}:`);
   });
 

@@ -118,6 +118,25 @@ export default function RegisterContent() {
   // TASK-353 (§9) — PICKED ⇒ the province's FULL name for `parents.province`; TYPED ⇒ nothing (the server does not
   // guess, and a wrong bucket is worse than an empty one). `กทม` stays in the LINE; `กรุงเทพมหานคร` goes to the column.
   const pickedProvince = addrMode === "pick" ? provPick?.nameTh ?? "" : "";
+
+  /**
+   * 🔴 TASK-566 (REQ-110 item 10) — **does this household already have an address?** Read off `/status`, `/link` and the
+   * CREATE's own answer. 🚫 **Never re-fetched to find out**: the create returns the new state, so the second child's form
+   * already knows. ⚠️ When it is true the address question is **ABSENT** — *a field you cannot use is a question you are
+   * still asking.*
+   */
+  const [addressOnFile, setAddressOnFile] = useState(false);
+  /** The province the server sent with it — shown back, because an address we cannot show is not one we collected. */
+  const [provinceOnFile, setProvinceOnFile] = useState<string | null>(null);
+  /**
+   * 🔑 TASK-566 (REQ-110 item 10) — **every field is required, and the address only while the household has none.**
+   * ONE expression, read by the Continue button, the Confirm button and the pre-request guard: three doors, one rule.
+   */
+  const formComplete = Boolean(name.trim()) && Boolean(birthDate) && (addressOnFile || Boolean(addressLine));
+  /**
+   * 🔑 TASK-566 — **every field is required**, and the address only while the household has none on file. ONE expression,
+   * read by the Continue button, the Confirm button and the pre-request guard — three doors, one rule.
+   */
   /** AC-9 — set after `NAME_DUPLICATE_NEEDS_DETAIL`; the resubmit carries `detailProvided: true`. */
   const [detailProvided, setDetailProvided] = useState(false);
 
@@ -134,6 +153,8 @@ export default function RegisterContent() {
         fail(st);
         setPhase({ kind: "phone" });
       } else if (st.linked) {
+        setAddressOnFile(st.addressOnFile); // TASK-566 — learned here, not asked for again
+        setProvinceOnFile(st.province);
         setPhase({ kind: "already-linked", phone: st.phone, childCount: st.childCount, confirming: false });
       } else {
         setPhase({ kind: "phone" });
@@ -215,7 +236,9 @@ export default function RegisterContent() {
     });
 
   /** After `/link`: the §6.1 decision, READ off the response — children ⇒ the list, none ⇒ add one. */
-  const afterLink = (children: ChildRef[], canAddMore: boolean) => {
+  const afterLink = (children: ChildRef[], canAddMore: boolean, addressOn = false, province: string | null = null) => {
+    setAddressOnFile(addressOn); // TASK-566 — the link answers with it, so the form never has to ask a second time
+    setProvinceOnFile(province);
     if (children.length === 0) setPhase({ kind: "form" });
     else setPhase({ kind: "linked", children, canAddMore });
   };
@@ -233,7 +256,7 @@ export default function RegisterContent() {
       const l = await withToken((tok) => link(tok, phone));
       setBusy(false);
       if (isRefusal(l)) return fail(l);
-      return afterLink(l.children, l.canAddMore);
+      return afterLink(l.children, l.canAddMore, l.addressOnFile, l.province);
     }
     if ("twoFactor" in r) return setPhase({ kind: "found-2fa", phone: r.phone, childCount: r.childCount });
     setPhase({ kind: "found", phone: r.phone, children: r.children });
@@ -256,10 +279,13 @@ export default function RegisterContent() {
     const r = await withToken((tok) => link(tok, phone, code || undefined));
     setBusy(false);
     if (isRefusal(r)) return fail(r);
-    afterLink(r.children, r.canAddMore);
+    afterLink(r.children, r.canAddMore, r.addressOnFile, r.province);
   };
 
   const submitCreate = async () => {
+    // 🔑 TASK-566 — the two-guard lesson (TASK-564): the button is disabled AND nothing is sent. Every field is required
+    // now, so an empty one is not a request the server should have to refuse.
+    if (!formComplete) return;
     setFailure(null);
     setBusy(true);
     const r = await withToken((tok) =>
@@ -267,8 +293,10 @@ export default function RegisterContent() {
         name: name.trim(),
         // 🔴 A blank is the SKIP and is OMITTED — never sent as "" (TASK-347 §5.1). `api.ts` drops empty keys.
         birthDate: birthDate || undefined,
-        province: pickedProvince || undefined,
-        address: addressLine || undefined,
+        // 🚫 When the household already has an address, neither field is sent — the server ignores them anyway, and a
+        // body that carries what it cannot use is a question we are still asking.
+        province: addressOnFile ? undefined : pickedProvince || undefined,
+        address: addressOnFile ? undefined : addressLine || undefined,
         detailProvided: detailProvided || undefined,
       }),
     );
@@ -282,6 +310,8 @@ export default function RegisterContent() {
         r.code === "NAME_REQUIRED" ||
         r.code === "NAME_RESERVED" ||
         r.code === "BIRTHDATE_INVALID" ||
+        r.code === "BIRTHDATE_REQUIRED" ||
+        r.code === "ADDRESS_REQUIRED" ||
         r.code === "PROVINCE_UNKNOWN"
       ) {
         setPhase({ kind: "form" }); // fixable here — go back to the field
@@ -290,6 +320,9 @@ export default function RegisterContent() {
       }
       return fail(r);
     }
+    // 🔑 The answer carries the new household state — the next child's form needs no second request to know.
+    setAddressOnFile(r.addressOnFile);
+    setProvinceOnFile(r.province);
     setPhase({ kind: "done", result: r });
   };
 
@@ -489,6 +522,7 @@ export default function RegisterContent() {
                 <DatePickerInput
                   label={t("register.birthDateLabel")}
                   placeholder={t("register.dobPickPlaceholder")}
+                  required
                   value={birthDatePicked}
                   onChange={setBirthDatePicked}
                   valueFormat="DD-MM-YYYY"
@@ -500,6 +534,7 @@ export default function RegisterContent() {
                 <TextInput
                   label={t("register.birthDateLabel")}
                   placeholder={t("register.birthDatePlaceholder")}
+                  required
                   value={birthDateTyped}
                   onChange={(e) => setBirthDateTyped(e.currentTarget.value)}
                   inputMode="numeric"
@@ -514,7 +549,16 @@ export default function RegisterContent() {
                 onToggle={() => setDobMode(dobMode === "pick" ? "type" : "pick")}
               />
 
-              {addrMode === "pick" ? (
+              {/* 🔴 TASK-566 — when the household already has an address the question is **ABSENT**: not disabled, not
+                  prefilled-and-locked. 🔑 *A field you cannot use is a question you are still asking* — and the server
+                  ignores an address sent while one is on file, so leaving it on screen could only mislead.
+                  ⚠️ A family that only ever typed its address in the CHAT has none stored, so it IS asked once more — the
+                  note explains that in the parent's terms rather than letting it read as “we lost your address”. */}
+              {addressOnFile ? (
+                <Text fz="xs" c="dimmed" data-address-on-file={provinceOnFile || "yes"}>
+                  {provinceOnFile ? t("register.addressOnFileProvince", { province: provinceOnFile }) : t("register.addressOnFile")}
+                </Text>
+              ) : addrMode === "pick" ? (
                 /* §7b — จังหวัด → เขต/อำเภอ → แขวง/ตำบล, each list read from the dataset by GEOCODE. The tier
                    words follow the province (Bangkok เขต/แขวง, elsewhere อำเภอ/ตำบล). The three picks JOIN into
                    the chat's one-line string — `พระโขนงเหนือ วัฒนา กทม`, that order, that abbreviation. */
@@ -523,6 +567,7 @@ export default function RegisterContent() {
                 <Stack gap="xs">
                   <Select
                     label={t("register.addrProvince")}
+                    required
                     placeholder={book ? t("register.addrPickPlaceholder") : t("register.addrLoading")}
                     data={asOptions(book?.provinces ?? [])}
                     value={provPick?.code ?? null}
@@ -558,18 +603,22 @@ export default function RegisterContent() {
               ) : (
                 <TextInput
                   label={t("register.provinceLabel")}
+                  required
                   placeholder={t("register.provincePlaceholder")}
                   value={provinceTyped}
                   onChange={(e) => setProvinceTyped(e.currentTarget.value)}
                 />
               )}
-              <EntryToggle
-                mode={addrMode}
-                typeLabel={t("register.typeInstead")}
-                pickLabel={t("register.addrPickInstead")}
-                onToggle={() => setAddrMode(addrMode === "pick" ? "type" : "pick")}
-              />
-              <Button disabled={!name.trim()} onClick={() => setPhase({ kind: "confirm" })}>
+              {!addressOnFile && (
+                <EntryToggle
+                  mode={addrMode}
+                  typeLabel={t("register.typeInstead")}
+                  pickLabel={t("register.addrPickInstead")}
+                  onToggle={() => setAddrMode(addrMode === "pick" ? "type" : "pick")}
+                />
+              )}
+              {/* 🔑 Disabled until every required field is filled — and `submitCreate` refuses too (TASK-564's two guards). */}
+              <Button disabled={!formComplete} data-form-next onClick={() => setPhase({ kind: "confirm" })}>
                 {t("register.formNext")}
               </Button>
             </Stack>
@@ -583,11 +632,14 @@ export default function RegisterContent() {
               <Text fw={600}>{t("register.confirmTitle")}</Text>
               <div className="rounded-lg bg-muted-100 p-3 text-sm">
                 <ReviewRow label={t("register.reviewName")} value={name.trim()} />
-                <ReviewRow label={t("register.reviewBirthDate")} value={birthDate || t("register.reviewSkipped")} />
-                <ReviewRow label={t("register.reviewProvince")} value={addressLine || t("register.reviewSkipped")} />
+                {/* 🚫 TASK-566 — no `(skipped)` fallback: nothing here can be empty now, and a fallback for a state that
+                    cannot happen is an invitation to make it happen again. The address row shows what is ON FILE when the
+                    household has one, because that is what will be used. */}
+                <ReviewRow label={t("register.reviewBirthDate")} value={birthDate} />
+                <ReviewRow label={t("register.reviewProvince")} value={addressOnFile ? provinceOnFile || t("register.addressOnFile") : addressLine} />
               </div>
               <Text fz="sm">{t("register.confirmQuestion")}</Text>
-              <Button loading={busy} onClick={submitCreate}>
+              <Button loading={busy} disabled={!formComplete} data-confirm-save onClick={submitCreate}>
                 {t("register.confirmSave")}
               </Button>
               <Button variant="subtle" color="gray" disabled={busy} onClick={() => setPhase({ kind: "form" })}>

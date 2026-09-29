@@ -154,7 +154,7 @@ export default function EditExpiryDialog({
           ) : null
         )}
 
-        {/* The post-save warning — still `ExpiryWarningAlert`'s only caller (TASK-287). */}
+        {/* The post-save warning. 🔻 TASK-572 — no longer `ExpiryWarningAlert`'s ONLY caller: the voucher's expiry edit renders it too, on the terms that component's own comment set (same verb, same question, same DTO). */}
         <ExpiryWarningAlert warning={warning} />
 
         <Group justify="flex-end" gap="sm">

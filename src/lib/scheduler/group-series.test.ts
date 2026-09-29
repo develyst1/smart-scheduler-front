@@ -80,7 +80,9 @@ describe("§2 — the ONE modal's two faces, the wire, the entry points", () => 
     expect(dialogs).toContain('const isGroup = seriesRef.kind === "group";');
     expect(dialogs).toContain("...(!isGroup && draft.kind && draft.kind !== series.kind ? { otherKind: draft.kind } : {}),");
     expect(dialogs).toContain("kindRequired={!isGroup} hideKind={isGroup}");
-    expect(dialogs).toContain("withFromDate(swapBody(seriesRef, series.teacherId, to), fromDate)");
+    // 📌 TASK-564: the scope is now explicit, so `withFromDate` is gone from this door. **What this pin protects — the
+    // GROUP swap body is built by `swapBody` (`{ to }` alone, no `from`) — is unchanged and still pinned.**
+    expect(dialogs).toContain("body: { ...swapBody(seriesRef, series.teacherId, to), ...scoped }");
     expect(svc).toContain("swapOtherSeriesTeacher = async (ref: SeriesRef, body: { from?: string; to: string; fromDate?: string })");
     expect(svc).toContain("seatsCancelled?: number;");
   });

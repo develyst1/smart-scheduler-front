@@ -1,0 +1,157 @@
+[
+  {
+    "id": "V1",
+    "what": "🔴 the SERVER's refusal stops blocking the save (the 409 becomes decoration)",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ExtendVoucherExpiryDialog.tsx",
+        "edits": [
+          {
+            "from": "    if (!voucher || !expiry || refusal || isSameDate(voucher.expiryDate, expiry)) return;",
+            "to": "    if (!voucher || !expiry || isSameDate(voucher.expiryDate, expiry)) return;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V2",
+    "what": "the Save BUTTON opens on a refused date",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ExtendVoucherExpiryDialog.tsx",
+        "edits": [
+          {
+            "from": "              disabled={!voucher || !expiry || !changed || Boolean(refusal)}",
+            "to": "              disabled={!voucher || !expiry || !changed}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V3",
+    "what": "🔴 the server's sentence is replaced by a generic failure message (the reason is thrown away)",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ExtendVoucherExpiryDialog.tsx",
+        "edits": [{ "from": "              <Text fz=\"sm\">{refusal.message}</Text>", "to": "              <Text fz=\"sm\">{t(\"plan.genericError\")}</Text>" }]
+      }
+    ]
+  },
+  {
+    "id": "V4",
+    "what": "the what-to-do answer disappears (a refusal with no way forward)",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ExtendVoucherExpiryDialog.tsx",
+        "edits": [{ "from": "              {answerKey && (", "to": "              {false && answerKey && (" }]
+      }
+    ]
+  },
+  {
+    "id": "V5",
+    "what": "🔴 an UNKNOWN refusal code gets a suggestion anyway (advice invented for a refusal nobody understands)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/voucher-expiry.ts",
+        "edits": [
+          {
+            "from": "  (code && REFUSAL_ANSWER_KEYS[code as keyof typeof REFUSAL_ANSWER_KEYS]) || null;",
+            "to": "  (code && REFUSAL_ANSWER_KEYS[code as keyof typeof REFUSAL_ANSWER_KEYS]) || \"voucherExpiry.answerEnded\";"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V6",
+    "what": "the door re-implements the server's NOT-STARTED rule from the hours (a second, guessing copy)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/voucher-expiry.ts",
+        "edits": [
+          {
+            "from": "  grants.expiry && v.status !== \"ENDED\";",
+            "to": "  grants.expiry && v.status !== \"ENDED\" && (v as { usedHours?: number }).usedHours !== 0;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V7",
+    "what": "the door is offered on an ENDED voucher (a control whose only outcome is a refusal)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/voucher-expiry.ts",
+        "edits": [{ "from": "  grants.expiry && v.status !== \"ENDED\";", "to": "  grants.expiry;" }]
+      }
+    ]
+  },
+  {
+    "id": "V8",
+    "what": "🔕 the audience line goes (silence lets an admin assume the family was told)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    audience: \"Nobody is told by this change. The family sees the new date on their next deduction notice or reminder.\",",
+            "to": "    audience: \"The family has been notified of the new date.\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V9",
+    "what": "a new date KEEPS the previous date's refusal (an answer about a different date)",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ExtendVoucherExpiryDialog.tsx",
+        "edits": [{ "from": "              setPreviewed(null);\n              setRefusal(null);", "to": "              setPreviewed(null);" }]
+      }
+    ]
+  },
+  {
+    "id": "V10",
+    "what": "the preview block computes the cut list instead of rendering the server's",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ExtendVoucherExpiryDialog.tsx",
+        "edits": [
+          {
+            "from": "  const listed = warning.outside.slice(0, MAX_LISTED);",
+            "to": "  const listed = warning.outside.filter((s) => dayjs(s.date).isAfter(warning.expiryDate)).slice(0, MAX_LISTED);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V11",
+    "what": "🔴 the preview and the save stop sharing one body (the save could ask a different date)",
+    "files": [
+      {
+        "file": "src/services/scheduler.service.ts",
+        "edits": [
+          {
+            "from": "  const { data } = await api.patch<UpdateVoucherExpiryResponse>(`/vouchers/${voucherId}/expiry`, voucherExpiryBody(expiryDate));",
+            "to": "  const { data } = await api.patch<UpdateVoucherExpiryResponse>(`/vouchers/${voucherId}/expiry`, { expiryDate });"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V12",
+    "what": "an EARLIER date is no longer named as shortening (the button's word becomes a lie)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/voucher-expiry.ts",
+        "edits": [{ "from": "  Boolean(current && next && next < current);", "to": "  false;" }]
+      }
+    ]
+  }
+]

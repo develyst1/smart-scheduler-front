@@ -86,7 +86,15 @@ describe("§2 — the page, the wire, the links, the key", () => {
     expect(svc).toContain("api.patch<{ updated: number }>(seriesPath(ref), patch)");
     expect(svc).not.toContain("startTime"); // a time change is per-row moves
     expect(dialogs).toContain("body: cancelAllBody(reason, note)");
-    expect(dialogs).toContain("body: withFromDate(swapBody(seriesRef, series.teacherId, to), fromDate)"); // OTHER: `from` is always the primary; GROUP: `{ to }`
+    // 🔴 TASK-564 (REQ-110 item 5) — the teacher doors no longer send `withFromDate`: the server refuses a body that
+    // names NEITHER scope, and `withFromDate` omitted `fromDate` whenever it equalled today — *exactly that body*.
+    // ⇒ each door now carries exactly one of `onDate` / `fromDate`, from `scopeBody`. The route and the `from`-is-the-primary
+    // rule this pin exists for are unchanged.
+    expect(dialogs).toContain("body: { ...swapBody(seriesRef, series.teacherId, to), ...scoped }");
+    expect(dialogs).toContain("const scoped = scopeBody(scope, fromDate);");
+    // 🚫 and `withFromDate` is no longer how either teacher door names its scope
+    expect(dialogs).not.toContain("withFromDate(swapBody");
+    expect(dialogs).not.toContain("withFromDate({ teacherId");
     expect(dialogs).toContain("{END_COURSE_REASONS.map((r) => (");
     expect(dialogs).toContain("useState<string>(fromDateDefault())");
   });
@@ -119,7 +127,7 @@ describe("§2 — the page, the wire, the links, the key", () => {
     expect(ACTION_KEYS_SNAPSHOT.length).toBe(60) /* TASK-518: + the 60th, `calendar.undo` (SPEC-094) */; /* + TASK-432 coach-rate */
     const en = dictionaries.en.otherSeries as Record<string, string>;
     const th = dictionaries.th.otherSeries as Record<string, string>;
-    expect(Object.keys(en).length).toBe(36); /* TASK-442: + confirmGroup · confirmedGroup · cancelAllGroupBody · cancelledGroup */
+    expect(Object.keys(en).length).toBe(43); /* TASK-442: +4 · TASK-564: +7 (the scope question, its two options, its hint, the one-session date label, cover, join) */
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
   });
 });

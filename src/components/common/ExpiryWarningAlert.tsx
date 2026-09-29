@@ -22,6 +22,11 @@ const MAX_LISTED = 5;
  * from, so it can still leave sessions outside. If a second caller ever needs this warning again, the reason
  * to have exactly one of these is unchanged.
  *
+ * ✅ **TASK-572 — the second caller arrived, on the terms this comment set:** a VOUCHER's expiry edit
+ * (`ExtendVoucherExpiryDialog`). **Same verb, same question, same DTO** — a date a person chose, with nothing to infer
+ * from — so it renders here rather than being written twice. 🔑 **Two callers, one renderer; the count in the sentence
+ * above is the only thing that changed.**
+ *
  * 🚫 **It computes nothing.** `warn`, `outside` and `outsideCount` are the server's; this renders them. The BE
  * derives all three from one `expiryImpact` used by both paths, so re-deriving here would be a second opinion
  * about a question that already has an answer — the same rule TASK-261 applied to the clash message.

@@ -103,7 +103,10 @@ describe("§2 — remainingLine, by value; the two pages", () => {
   it("the day editor: the rate column only with key 59 AND unmasked rates; a box per coach ON the day prefilled from the server (0 ⇒ 0); every PATCH through `withoutRates`; the snapshot unchanged (59)", () => {
     expect(editor).toContain("const canRate = can(COACH_RATE_KEY);");
     expect(editor).toContain("const showRates = canRate && rows.some((d) => d.teacherRates !== null && d.teacherRates !== undefined);");
-    expect(editor).toContain('{showRates && <Table.Th>{t("camp.rateCol")}</Table.Th>}');
+    // 📌 TASK-559 added `className="whitespace-nowrap"` to this cell so the LAST column cannot be squeezed (the rate box
+    // was falling off a too-narrow dialog). What this pin protects is unchanged and still pinned: **the column exists only
+    // when `showRates`**. The class is asserted too, so the squeeze fix cannot be undone silently either.
+    expect(editor).toContain('{showRates && <Table.Th className="whitespace-nowrap">{t("camp.rateCol")}</Table.Th>}');
     expect(editor).toContain("{dayRates(d) && (");
     expect(editor).toContain("{d.teacherIds.map((id) => (");
     expect(editor).toContain("value={(dayRates(d)?.[id] ?? 0) / 100}");

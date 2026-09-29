@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { ActionIcon, Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Skeleton, Modal, SegmentedControl, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban, CalendarClock, PackageX } from "lucide-react";
+import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban, CalendarClock, CalendarArrowUp, PackageX } from "lucide-react";
 import { useSetCourseAdminUnlock, useCoursePackages, useRemoveCourseRental, useUpdateCourseRate } from "@/hooks/scheduler";
 import DuoRateLine from "./DuoRateLine";
 import CourseDetailRow, { CourseDetails } from "./CourseDetailRow";
@@ -17,6 +17,8 @@ import PagerBar from "@/components/common/PagerBar";
 import CourseHistoryModal from "./CourseHistoryModal";
 import { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
 import EditExpiryDialog from "./EditExpiryDialog";
+import ChangeStartDateDialog from "./ChangeStartDateDialog";
+import { canOfferStartChange } from "@/lib/scheduler/course-start";
 import { useT } from "@/lib/i18n";
 import { useLoadPhase } from "@/lib/ui/load-phase";
 import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
@@ -85,6 +87,11 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   const [historyId, setHistoryId] = useState<string | null>(null);
   // REQ-082 AC-1 (TASK-265) — the course whose expiry is being moved; `null` = the dialog is closed.
   const [expiryTarget, setExpiryTarget] = useState<CoursePackageView | null>(null);
+  /**
+   * 🔴 TASK-571 (REQ-110 item 6) — the start-date move. The door is offered only where it CAN work (no taught session);
+   * everything finer is the server's own “not started” rule and its refusal arrives verbatim — 🚫 no second copy here.
+   */
+  const [startTarget, setStartTarget] = useState<CoursePackageView | null>(null);
   // TASK-391 (REQ-091 §14) — the course under the two-tap remove-rental dialog.
   const [rentalTarget, setRentalTarget] = useState<CoursePackageView | null>(null);
 
@@ -292,6 +299,23 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                 {/* 🔴 SPEC-076 / REQ-082 AC-1 (TASK-265) — the expiry is editable on ANY course, deliberately NOT
                     lifecycle-gated: REQ-084's resume warning points the admin at THIS control on a course that is
                     `DROPPED` at that moment, so a gate would aim the warning at a control that refuses. */}
+                {/* 🔴 TASK-571 (REQ-110 item 6) — moving the START date. Beside the expiry control because they are the
+                    same kind of act (a date the whole plan hangs on), and hidden where a taught session makes it impossible. */}
+                {canExpiry && canOfferStartChange(c) && (
+                  <CourseDetailRow
+                    label={t("courseStart.startLabel")}
+                    action={
+                      <ActionIcon size="lg" variant="default" onClick={() => setStartTarget(c)} aria-label={t("courseStart.edit")} title={t("courseStart.edit")} data-start-open={c.id}>
+                        <CalendarArrowUp size={16} />
+                      </ActionIcon>
+                    }
+                  >
+                    {/* ✅ TASK-574 — the REAL date. TASK-545 removed an invented `""`, TASK-571 hit the resulting compile
+                        error, and TASK-573 sent the field: the em dash was the honest placeholder for exactly that gap and
+                        it is gone now. 🚫 Still nothing derived. */}
+                    {c.startDate}
+                  </CourseDetailRow>
+                )}
                 <CourseDetailRow
                   label={t("course.expiresLabel")}
                   action={
@@ -449,6 +473,8 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
 
       {/* REQ-082 AC-1 — reachable for every course the filter can show, DROPPED included (see the control). */}
       <EditExpiryDialog course={expiryTarget} onClose={() => setExpiryTarget(null)} />
+      {/* 🔴 TASK-571 — the sessions move and NOBODY is told; the dialog says so, before and after. */}
+      <ChangeStartDateDialog course={startTarget} onClose={() => setStartTarget(null)} />
       <RemoveCourseRentalDialog course={rentalTarget} onClose={() => setRentalTarget(null)} />
     </Stack>
   );

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "R4",
+    "what": "a SYSTEM recompute is read as a person's date (the warning cries wolf on every course)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/course-start.ts",
+        "edits": [
+          {
+            "from": "  (history ?? []).some((r) => typeof r.actor === \"string\" && r.actor.trim().length > 0);",
+            "to": "  (history ?? []).length > 0;"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -13,6 +13,7 @@ import {
   readTeacherTypeOrder,
 } from "@/lib/api/teacher-order-store";
 import { toTeacherView } from "@/lib/scheduler/teacher";
+import { voucherExpiryBody } from "@/lib/scheduler/voucher-expiry";
 import type {
   BookingType,
   BookingStatus,
@@ -64,6 +65,8 @@ import type {
   OwnLeaveResult,
   VoucherSummary,
   VouchersResponse,
+  VoucherExpiryPreview,
+  UpdateVoucherExpiryResponse,
 } from "@/types/api/contract";
 import type {
   ConfirmCourseResult,
@@ -77,6 +80,7 @@ import { ApiClientError } from "@/lib/api/client";
 import type { OtherKind, OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
 import type { GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
 import { groupSeriesBody, type GroupSeriesInput, type GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
+import { startChangeBody, type StartChangeForecast, type StartChangeResult } from "@/lib/scheduler/course-start";
 import * as mock from "./scheduler.mock.service";
 
 const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -1250,6 +1254,41 @@ export const resumeCourse = async (
 };
 
 /**
+ * TASK-574 — the FORECAST: `POST /courses/:id/start-date/preview`, the act's own plan, read-only, **same gate and same
+ * refusals**. ⚠️ It answers `forecast: true` because the act re-checks clashes and each date's teacher gate: **a refusal
+ * after a clean forecast is not a contradiction.**
+ */
+export const previewCourseStart = async (courseId: string, startDate: string): Promise<StartChangeForecast> => {
+  if (useMock) return mock.previewCourseStart(courseId, startDate);
+  const { data } = await api.post<StartChangeForecast>(`/courses/${courseId}/start-date/preview`, startChangeBody(startDate));
+  return data;
+};
+
+/**
+ * 🔴 TASK-570 (BE) → TASK-571 — **move a not-yet-started course's start date.** `POST /courses/:id/start-date`.
+ * The sessions are MOVED in place, a clash refuses the WHOLE move (`SLOT_TAKEN`, naming the date), a coach's blocked
+ * week is SKIPPED and returned, and the expiry is recomputed with the admin as actor.
+ * 🔑 **No notice goes out.** Confirmed sessions become PENDING with `needsReconfirm`; Confirm-course sends the new
+ * schedule later. ⇒ **the caller must say, on screen, that the family still holds the OLD dates until then.**
+ * 🔻 TASK-574 — the preview route now EXISTS (`previewCourseStart` above); `skippedForLeave` is in both answers.
+ */
+export const changeCourseStart = async (courseId: string, startDate: string): Promise<StartChangeResult> => {
+  if (useMock) return mock.changeCourseStart(courseId, startDate);
+  const { data } = await api.post<StartChangeResult>(`/courses/${courseId}/start-date`, startChangeBody(startDate));
+  return data;
+};
+
+/**
+ * TASK-571 — the course's expiry history. 🔑 Read for ONE fact the move needs: **a row with an actor means a person set
+ * that date** (the system's own recomputes are recorded with a null actor), so the move is about to replace it.
+ */
+export const getCourseExpiryHistory = async (courseId: string): Promise<Array<{ fromDate: string; toDate: string; actor: string | null; changedAt: string }>> => {
+  if (useMock) return mock.getCourseExpiryHistory(courseId);
+  const { data } = await api.get<Array<{ fromDate: string; toDate: string; actor: string | null; changedAt: string }>>(`/courses/${courseId}/expiry-history`);
+  return data;
+};
+
+/**
  * SPEC-076 / TASK-264 (REQ-082 AC-1/AC-4) — move a course's expiry.
  *
  * 🔴 **Editable on ANY course, and deliberately NOT lifecycle-gated** — the BE does not gate it either
@@ -1281,6 +1320,28 @@ export const updateCourseExpiry = async (
 export const previewCourseExpiry = async (courseId: string, expiryDate: string): Promise<ExpiryPreview> => {
   if (useMock) return mock.previewCourseExpiry(courseId, expiryDate);
   const { data } = await api.post<ExpiryPreview>(`/courses/${courseId}/expiry/preview`, { expiryDate });
+  return data;
+};
+
+/**
+ * 🔴 TASK-568 (BE) → TASK-572 (REQ-110 item 3) — **a VOUCHER's expiry.** `POST /vouchers/:id/expiry/preview` writes
+ * nothing; `PATCH /vouchers/:id/expiry` records who changed it, from the token.
+ *
+ * 🔑 **Both call the server's ONE `voucherExpiryDecision`**, so the preview cannot say yes to a date the save refuses —
+ * and 🔴 **the two refusals (ENDED · NOT STARTED) therefore arrive at the PREVIEW**, before the admin presses Save.
+ * ⚠️ **They are 409s, and they are ANSWERS, not failures:** the caller shows the server's sentence verbatim and adds what
+ * to do instead (`refusalAnswerKey`). 🚫 Never replaced with a generic message — each one names its own reason.
+ * 🔕 **Nobody is told by either call.** The family reads the new date on their next deduction notice; nothing here sends.
+ */
+export const previewVoucherExpiry = async (voucherId: string, expiryDate: string): Promise<VoucherExpiryPreview> => {
+  if (useMock) return mock.previewVoucherExpiry(voucherId, expiryDate);
+  const { data } = await api.post<VoucherExpiryPreview>(`/vouchers/${voucherId}/expiry/preview`, voucherExpiryBody(expiryDate));
+  return data;
+};
+
+export const updateVoucherExpiry = async (voucherId: string, expiryDate: string): Promise<UpdateVoucherExpiryResponse> => {
+  if (useMock) return mock.updateVoucherExpiry(voucherId, expiryDate);
+  const { data } = await api.patch<UpdateVoucherExpiryResponse>(`/vouchers/${voucherId}/expiry`, voucherExpiryBody(expiryDate));
   return data;
 };
 

@@ -68,6 +68,14 @@ const toList = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.type(screen.getByRole("textbox"), "0812345678");
   await user.click(document.querySelector("button") as HTMLElement);
   await waitFor(() => expect(ticks().length).toBe(2));
+  /**
+   * 🔴 **TASK-567 §2 — the one assertion that was missing.** Two children appearing proved the lookup ANSWERED; it never
+   * proved the lookup was asked about the number that was typed — a stub answers the same either way.
+   * 🔑 **The value has to reach the other side, and the request body is the only place that shows it** — the rule
+   * TASK-559 learned on the camp rate box, applied to the control this page's whole flow hangs on.
+   */
+  const lookup = posts.find((p) => p.url.endsWith("/checkin/shopfront/lookup"));
+  expect((lookup?.body as { phone?: string } | null)?.phone).toBe("0812345678");
 };
 
 describe("🔴 TASK-554 — two children at the shop front, actually clicked", () => {

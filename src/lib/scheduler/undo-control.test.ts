@@ -131,11 +131,14 @@ describe("§2 — the words: three approved labels, and a body that varies with 
     expect(control).toContain("<Text size=\"sm\">{t(UNDO_BODY_KEYS[kind])}</Text>");
   });
   it("✅ TASK-549 — nothing in this block is a draft any more; the toast is his too", () => {
-    // 📌 This pin used to assert the toast's DRAFT marker was PRESENT (the marker was load-bearing: it said "not yet his").
-    // The owner approved every string on 2026-09-28 ("ผ่านหมด"), so the same pin now asserts the opposite — no marker
-    // anywhere — and the letters themselves are held BY VALUE in `i18n/approved-copy.test.ts`.
+    // 📌 This pin used to assert the toast's DRAFT marker was PRESENT (it was load-bearing: it said "not yet his"). The
+    // owner approved every string on 2026-09-28 ("ผ่านหมด"), so it now asserts the opposite — and TASK-557 NARROWED it
+    // from the whole FILE to **this block**: a file-wide absence would have forbidden the next honest draft elsewhere,
+    // which is not the rule. The letters themselves are held BY VALUE in `i18n/approved-copy.test.ts`.
     const raw = readFileSync("src/lib/i18n/dictionaries.ts", "utf8");
-    expect(raw).not.toContain("📝 DRAFT (Fern");
+    const undoBlocks = raw.split(/^  undo: {$/m).slice(1).map((part) => part.split(/^  },$/m)[0]);
+    expect(undoBlocks.length).toBe(2); // both languages
+    for (const block of undoBlocks) expect(block).not.toContain("📝");
     expect(dictionaries.en.undo.done).toBe("Undone");
     expect(dictionaries.th.undo.done).toBe("ย้อนรายการแล้ว");
     // 🔑 and the reason for the one word he was asked about outlives the approval

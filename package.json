@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build && node scripts/copy-standalone-assets.mjs",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "mutation:run": "bun scripts/mutation/run.ts",
+    "mutation:prove": "bun scripts/mutation/prove.ts"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",

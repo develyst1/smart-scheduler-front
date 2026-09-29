@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n";
 import { notify } from "@/lib/ui/notify";
 import { bahtToMinor } from "@/lib/scheduler/discount";
 import { cancelAllBody, fromDateDefault, swapBody, withFromDate, type SeriesRef } from "@/lib/scheduler/other-series";
+import { scopeBody, scopeDateLabelKey, scopeOutcomeKey, type SeriesScope } from "@/lib/scheduler/series-scope";
 import { COACH_RATE_KEY, withoutRates } from "@/lib/scheduler/duo";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { draftFromFacts, teacherRatesMinor, type OtherKind, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
@@ -95,6 +96,10 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
   const [to, setTo] = useState<string | null>(null);
   const [rateBaht, setRateBaht] = useState<number | "">("");
   const [fromDate, setFromDate] = useState<string>(fromDateDefault());
+  // 🔴 TASK-564 (REQ-110 item 5) — the scope the door must ASK for. 🚫 `null` on purpose: Khwan's complaint is that one
+  // teacher change silently rewrote every remaining session, and **a pre-selected “the rest” would reproduce that with
+  // one extra click.** The server refuses a body naming neither scope (400), so this is also the shape it now requires.
+  const [scope, setScope] = useState<SeriesScope>(null);
   const [error, setError] = useState<string | null>(null);
   // REQ-102 §8 (TASK-432) — the optional rate box only with key 59; never `rateMinor` in the body without it.
   const can = useCan();
@@ -103,18 +108,27 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
   const choices = teachers.filter((x) => x.bookable && !onRow.includes(x.id));
   const name = (id: string) => teachers.find((x) => x.id === id)?.nickname ?? id;
   const busy = add.isPending || remove.isPending || swap.isPending;
+  const scoped = scopeBody(scope, fromDate);
   const submit = async () => {
     setError(null);
+    // 🚫 Nothing is sent until a scope is chosen — the same refusal the server makes, made before the request.
+    if (mode !== "remove" && !scoped) return;
     try {
       if (mode === "add" && to) {
-        const r = await add.mutateAsync({ ref: seriesRef, body: withoutRates(withFromDate({ teacherId: to, ...(rateBaht !== "" ? { rateMinor: bahtToMinor(rateBaht) } : {}) }, fromDate), canRate) });
+        // 🔑 EXACTLY one scope key rides (`onDate` or `fromDate`) — never both, never neither.
+        const r = await add.mutateAsync({
+          ref: seriesRef,
+          body: withoutRates({ teacherId: to, ...(rateBaht !== "" ? { rateMinor: bahtToMinor(rateBaht) } : {}), ...scoped }, canRate),
+        });
         notify({ title: t("otherSeries.teacherAdded", { name: name(to), n: r.added }), color: "success" });
       } else if (mode === "remove" && teacherId) {
         const r = await remove.mutateAsync({ ref: seriesRef, teacherId, ...(fromDate !== fromDateDefault() ? { fromDate } : {}) });
         notify({ title: t("otherSeries.teacherRemoved", { name: name(teacherId), n: r.removed }), color: "default" });
       } else if (mode === "swap" && to) {
         // REQ-104 — OTHER sends `{ from, to }` (`from` = the primary); a GROUP sends `{ to }` alone (the server delegates to the group swap, the seats follow).
-        const r = await swap.mutateAsync({ ref: seriesRef, body: withFromDate(swapBody(seriesRef, series.teacherId, to), fromDate) });
+        // 🚫 No `rateMinor` on a swap: the server allows a cover's rate only with `onDate`, and this door has no rate box —
+        // a field that could contradict the scope is worse than none.
+        const r = await swap.mutateAsync({ ref: seriesRef, body: { ...swapBody(seriesRef, series.teacherId, to), ...scoped } });
         notify({ title: t("otherSeries.teacherSwapped", { from: name(series.teacherId), to: name(to), n: r.moved }), color: "success" });
       } else return;
       onClose();
@@ -122,6 +136,7 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
       setError(errOf(e));
     }
   };
+  const outcomeKey = to ? scopeOutcomeKey(mode === "swap" ? "swap" : "add", scope) : null;
   const title = mode === "add" ? t("otherSeries.addTeacher") : mode === "remove" ? t("otherSeries.removeTeacherTitle", { name: name(teacherId ?? "") }) : t("otherSeries.swapPrimaryTitle", { name: name(series.teacherId) });
   return (
     <Modal opened onClose={onClose} centered title={title} data-teacher-dialog={mode}>
@@ -142,12 +157,28 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
           />
         )}
         {mode === "add" && canRate && <NumberInput label={t("otherSeries.rateOptional")} value={rateBaht} onChange={(v) => setRateBaht(typeof v === "number" ? v : "")} min={0} step={50} allowDecimal={false} allowNegative={false} suffix=" ฿" className="max-w-xs" />}
-        <DatePickerInput label={t("otherSeries.fromDate")} description={t("otherSeries.fromDateHint")} value={fromDate} onChange={(v) => v && setFromDate(v)} valueFormat="D MMM YYYY" popoverProps={{ withinPortal: true }} />
+        {/* 🔴 TASK-564 — the question, asked. No option is pre-selected, and Save stays shut until one is. */}
+        {mode !== "remove" && (
+          <Radio.Group label={t("otherSeries.scopeLabel")} description={t("otherSeries.scopeHint")} value={scope ?? ""} onChange={(v) => setScope(v as SeriesScope)} data-series-scope={scope ?? "none"}>
+            <Stack gap={4} mt={4}>
+              <Radio value="this" label={t("otherSeries.scopeThis")} data-scope-this />
+              <Radio value="rest" label={t("otherSeries.scopeRest")} data-scope-rest />
+            </Stack>
+          </Radio.Group>
+        )}
+        {/* The label says what the date MEANS in the chosen scope — one session, or the first of the rest. */}
+        <DatePickerInput label={t(scopeDateLabelKey(scope))} description={mode === "remove" ? t("otherSeries.fromDateHint") : undefined} value={fromDate} onChange={(v) => v && setFromDate(v)} valueFormat="D MMM YYYY" popoverProps={{ withinPortal: true }} />
+        {/* 🔑 A cover and a join are different outcomes with different pay — the screen says which one this is. */}
+        {outcomeKey && (
+          <Text size="xs" c="dimmed" data-scope-outcome={mode}>
+            {mode === "swap" ? t(outcomeKey, { from: name(series.teacherId), to: name(to ?? "") }) : t(outcomeKey, { name: name(to ?? "") })}
+          </Text>
+        )}
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button color={mode === "remove" ? "red" : undefined} loading={busy} disabled={mode !== "remove" && !to} onClick={() => void submit()}>
+          <Button color={mode === "remove" ? "red" : undefined} loading={busy} disabled={mode !== "remove" && (!to || !scoped)} onClick={() => void submit()}>
             {mode === "remove" ? t("otherSeries.removeTeacher") : t("common.save")}
           </Button>
         </Group>

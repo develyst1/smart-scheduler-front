@@ -16,11 +16,13 @@ import { dictionaries } from "./dictionaries";
  * sentence, one line here changes and the promise is still held.** If a reword broke a promise, a shape pin fails and that
  * is a conversation, not a copy edit.
  *
- * ⚠️ **What is NOT here:** everything he was not shown. `lineAdmins.tail` / `alsoTeacher` / `alsoParent` / `afterVisitor` /
- * `confirm` / `removed` / `notKnownTitle` / `empty` are **not in his §D table** — eight of the page's seventeen strings were
- * never in front of him, so they remain drafts held by shape alone. Likewise the discount error strings and the
- * attendee-note hint (both marked DRAFT for their own reasons, untouched by this task), and §E's LINE messages, which are
- * the backend's (TASK-550).
+ * 📌 **TASK-555 — the eight the §D table left out are now approved too** (§D2, on 09-28), so the LINE-admin page is final in
+ * full: **17 of 17.** ✅ **The boundary they were held behind is kept, not deleted** (`UNREVIEWED`, below): the pin now says
+ * *every key on that page is either approved or a declared draft*, so **a string that arrives tomorrow cannot pass as his.**
+ * 🔑 *The mechanism is the valuable part, not the eight rows.*
+ *
+ * ⚠️ **Still NOT here:** the discount error strings and the attendee-note hint (marked DRAFT for their own reasons, and
+ * pinned as still-marked), and §E's LINE messages, which are the backend's (TASK-550).
  */
 
 const en = dictionaries.en as unknown as Record<string, Record<string, string>>;
@@ -87,27 +89,55 @@ const APPROVED: Array<[string, string, string]> = [
     "ถอนสิทธิ์แอดมินแล้ว แต่ LINE ยังไม่รับการเปลี่ยนเมนู ระบบจะแก้ให้เองเมื่อบัญชีนี้เปิดแอปครั้งถัดไป",
     "Admin rights removed. LINE would not accept the menu change — it will settle the next time the account opens the app.",
   ],
+  // §D2 (TASK-555) — the eight the §D table left out by accident. 🔑 **Held back rather than folded in, and approved on
+  // their own on 09-28** — the reason holding them cost nothing: he answered a question he would never have been asked.
+  ["lineAdmins.tail", "ไอดีลงท้าย {tail}", "id ends {tail}"],
+  ["lineAdmins.alsoTeacher", "เป็นครู {name} ด้วย", "Also the coach {name}"],
+  ["lineAdmins.alsoParent", "เป็นผู้ปกครอง {name} ด้วย", "Also the parent {name}"],
+  ["lineAdmins.afterVisitor", "จะไม่มีสิทธิ์พิเศษใด ๆ เหลืออยู่", "It keeps no special access."],
+  ["lineAdmins.confirm", "ถอนสิทธิ์แอดมิน", "Remove admin rights"],
+  ["lineAdmins.removed", "ถอนสิทธิ์แอดมินแล้ว", "Admin rights removed"],
+  ["lineAdmins.notKnownTitle", "สิ่งที่หน้านี้แสดงให้ไม่ได้ และเหตุผล", "What this page cannot show, and why"],
+  ["lineAdmins.empty", "ยังไม่มีบัญชี LINE ที่มีสิทธิ์แอดมิน", "No LINE account has admin rights."],
 ];
 
+/**
+ * 🔑 **The approval BOUNDARY, and it is the valuable part — not the rows.** It is empty today because every string on
+ * the LINE-admin page has now been shown to the owner and approved. **It is kept, not deleted:** the pin below asserts
+ * that every key on that page is either in `APPROVED` or declared here with a reason, so **a new string cannot arrive
+ * and be treated as his.** ⇒ *nobody may read silence as approval*, including about rows that do not exist yet.
+ */
+const UNREVIEWED: Record<string, string> = {};
+
 describe("TASK-549 — the approved copy, by value", () => {
-  it("🔑 all 23 rows are his sentence exactly, in Thai", () => {
+  it("🔑 all 31 rows are his sentence exactly, in Thai", () => {
     for (const [path, thText] of APPROVED) expect(at(th, path)).toBe(thText);
   });
 
-  it("🔑 all 23 rows are his sentence exactly, in English", () => {
+  it("🔑 all 31 rows are his sentence exactly, in English", () => {
     for (const [path, , enText] of APPROVED) expect(at(en, path)).toBe(enText);
   });
 
-  it("the set is the whole of §A–§D that he was shown — 23 rows, not a subset that grew quietly", () => {
-    expect(APPROVED.length).toBe(23);
+  it("the set is the whole of §A–§D2 — 31 rows, not a subset that grew quietly", () => {
+    expect(APPROVED.length).toBe(31);
     const groups = new Set(APPROVED.map(([p]) => p.split(".")[0]));
     expect([...groups].sort()).toEqual(["confirmAction", "lineAdmins", "undo"]);
   });
 
   it("✅ no approved string carries a DRAFT marker any more, and the REASONS stayed", () => {
     const raw = readFileSync("src/lib/i18n/dictionaries.ts", "utf8");
-    // every 📝 DRAFT (Fern, …) marker is gone — the approval is recorded where the words are
-    expect(raw).not.toContain("📝 DRAFT (Fern");
+    // 📌 TASK-557 NARROWED this pin: it was a FILE-WIDE absence, which was true by accident on the day it was written
+    // (every draft had just been approved) and would have forbidden the next honest draft. 🔑 What it MEANS is *no
+    // APPROVED string carries a draft marker*, so it now reads the lines above each approved key — where a marker sits.
+    const lines = raw.split(/\r?\n/);
+    for (const [path] of APPROVED) {
+      const key = path.split(".")[1];
+      const at = lines.findIndex((l) => l.trimStart().startsWith(`${key}:`));
+      expect(at).toBeGreaterThan(0);
+      expect(lines.slice(Math.max(0, at - 8), at).join("\n")).not.toContain("📝");
+    }
+    // and any marker that IS present must name its task, so a nameless draft cannot drift in
+    for (const m of raw.match(/📝 \*{0,2}DRAFT \([^)]*\)/g) ?? []) expect(/TASK-\d+/.test(m)).toBe(true);
     expect((raw.match(/APPROVED by the owner 2026-09-28/g) ?? []).length).toBeGreaterThanOrEqual(3);
     // 📌 and the reasons that must outlive the approval are still on the page
     expect(raw).toContain("“would”, deliberately:");
@@ -115,14 +145,16 @@ describe("TASK-549 — the approved copy, by value", () => {
     expect(raw).toContain("an admin who believes a leave costs the family an entitlement AVOIDS RECORDING IT");
   });
 
-  it("⚠️ the eight §D strings he was NOT shown are still drafts — named, so nobody reads silence as approval", () => {
-    const unreviewed = ["tail", "alsoTeacher", "alsoParent", "afterVisitor", "confirm", "removed", "notKnownTitle", "empty"];
+  it("🔑 the approval BOUNDARY still bites: every key is approved or a DECLARED draft — never merely present", () => {
     const approvedKeys = APPROVED.filter(([p]) => p.startsWith("lineAdmins.")).map(([p]) => p.split(".")[1]);
-    expect(Object.keys(en.lineAdmins).sort()).toEqual([...approvedKeys, ...unreviewed].sort());
-    // they exist and are held by shape only — their words may still change without touching this file
-    for (const k of unreviewed) expect(en.lineAdmins[k].length).toBeGreaterThan(0);
-    const raw = readFileSync("src/lib/i18n/dictionaries.ts", "utf8");
-    expect(raw).toContain("were **never in front of him**, so they are STILL DRAFTS");
+    const declared = Object.keys(UNREVIEWED);
+    // 🔑 This is the pin that refused to treat the eight as approved before they were. Its list changed; it did not.
+    expect(Object.keys(en.lineAdmins).sort()).toEqual([...approvedKeys, ...declared].sort());
+    // every declared draft must say WHY it is not approved — an undeclared one cannot hide behind an empty string
+    for (const [, why] of Object.entries(UNREVIEWED)) expect(why.trim().length).toBeGreaterThanOrEqual(20);
+    // TASK-555: the page is final in full, so the exclusion list is empty — and that is asserted, not assumed
+    expect(declared).toEqual([]);
+    expect(approvedKeys.length).toBe(17);
   });
 
   it("📌 the drafts this task deliberately left alone are still marked as drafts", () => {

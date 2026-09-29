@@ -1070,6 +1070,12 @@ function MoveBookingForm({
           )}
         error={!teacherId ? t("booking.moveTeacherOff") : undefined}
       />
+      {/* 🔑 TASK-564 (REQ-110 item 5) — the move has ALWAYS been one row (`PATCH /bookings/:id`), and it still is: there
+          is no server act that moves “the rest”, so a scope QUESTION here would have exactly one answer. What was missing
+          is that nobody said so — Khwan met her doubt on this screen. A statement, not a choice. */}
+      <Text size="xs" c="dimmed" data-move-scope>
+        {t("booking.moveThisOnly")}
+      </Text>
       <div className="grid grid-cols-2 gap-3">
         <DatePickerInput
           label={t("booking.date")}

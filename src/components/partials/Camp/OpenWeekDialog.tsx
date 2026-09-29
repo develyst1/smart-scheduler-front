@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n";
 import { useTeachers } from "@/hooks/scheduler";
 import { useCampWeekDays, useCreateCampWeek, useUpdateCampWeek, useUpdateCampWeekDay } from "@/hooks/scheduler/useCamp";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
+import { campDialogWidth } from "@/lib/scheduler/camp-dialog-width";
 import { formatDateDisplay } from "@/lib/ui/format";
 import { CAMP_HOURS, CAMP_WINDOW_DEFAULT, changedDayPatches, dayRates, type CampDayFacts } from "@/lib/camp/grid";
 import { useCan } from "@/hooks/scheduler/useMe";
@@ -130,7 +131,10 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} centered size={week ? "lg" : "md"} title={week ? t("camp.editWeekTitle", { name: week.name }) : t("camp.openWeekTitle")}>
+    // 🔴 TASK-559 (REQ-110 item 7) — the width comes from `campDialogWidth`: **wider only when the rate column is
+    // actually shown**, and **capped to the viewport** so the fix cannot move the problem to a narrower screen. The
+    // five-column layout fitted `lg` and still gets it.
+    <Modal opened={opened} onClose={onClose} centered size={campDialogWidth({ isEdit: Boolean(week), showRates })} title={week ? t("camp.editWeekTitle", { name: week.name }) : t("camp.openWeekTitle")}>
       <Stack gap="sm">
         {error && (
           <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
@@ -183,7 +187,9 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
                     <Table.Th>{t("camp.windowStart")}</Table.Th>
                     <Table.Th>{t("camp.windowEnd")}</Table.Th>
                     <Table.Th>{t("camp.coachFrom")} / {t("camp.coachTo")}</Table.Th>
-                    {showRates && <Table.Th>{t("camp.rateCol")}</Table.Th>}
+                    {/* 🔑 The rate column keeps its own width: a squeezed last column is the other half of the same
+                        defect — the box would be there and unusable instead of off-screen. */}
+                    {showRates && <Table.Th className="whitespace-nowrap">{t("camp.rateCol")}</Table.Th>}
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -244,7 +250,7 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
                         </Stack>
                       </Table.Td>
                       {showRates && (
-                        <Table.Td data-rates={d.date}>
+                        <Table.Td data-rates={d.date} className="whitespace-nowrap">
                           {/* One box per coach ON the day, prefilled from the server (`0` ⇒ `0`, not blank); a masked day shows nothing. */}
                           {dayRates(d) && (
                             <Stack gap={2}>

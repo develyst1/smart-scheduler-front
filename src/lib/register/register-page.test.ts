@@ -106,6 +106,9 @@ describe("🔑 every named CODE has a rendering, both languages", () => {
         "NOT_LINKED", "NAME_REQUIRED", "NAME_RESERVED", "FAMILY_FULL", "NAME_DUPLICATE_NEEDS_DETAIL",
         "BIRTHDATE_INVALID",
         "PROVINCE_UNKNOWN", // TASK-352/353 (§9)
+        // 🔻 TASK-565/566 (REQ-110 item 10) — every field is required now; both are the SERVER's backstop behind the `*`.
+        "BIRTHDATE_REQUIRED",
+        "ADDRESS_REQUIRED",
       ].sort(),
     );
   });
@@ -189,19 +192,24 @@ describe("🔴 the date — DD-MM-YYYY text, echoed back before submit, omitted 
   it("🔑 TASK-277 — the confirm screen shows the date back EXACTLY as typed before sending", () => {
     const confirm = page.slice(page.indexOf('phase.kind === "confirm"'), page.indexOf('phase.kind === "done"'));
     expect(confirm).toContain('t("register.reviewBirthDate")');
-    expect(confirm).toContain("birthDate || t(\"register.reviewSkipped\")");
-    expect(confirm).toContain("addressLine || t(\"register.reviewSkipped\")"); // the LINE is what is echoed (TASK-353)
+    // 🔴 TASK-566 INVERTED this pair, and the inversion is the fix: with every field required there is no skip to label,
+    // and a `(skipped)` fallback for a state that cannot happen is how the state comes back. **What this pin protects —
+    // the date is echoed EXACTLY as typed before anything is sent — is unchanged and still pinned.**
+    expect(confirm).toContain("value={birthDate} />");
+    expect(confirm).not.toContain("reviewSkipped");
+    // 🔑 and the address row shows what will actually be USED: the household's own province when one is on file
+    expect(confirm).toContain("addressOnFile ? provinceOnFile || t(\"register.addressOnFile\") : addressLine");
     expect(confirm).toContain("onClick={submitCreate}");
   });
 
-  it("🚫 a blank is the SKIP — the key is OMITTED, never sent as \"\" (TASK-347 §5.1)", () => {
+  it("🚫 an absent value is an OMITTED key, never `\"\"` (TASK-347 §5.1) — and TASK-566: not sent at all when on file", () => {
     const c = api.slice(api.indexOf("export const create"));
     expect(c).toContain("if (input.birthDate) body.birthDate = input.birthDate;");
     expect(c).toContain("if (input.province) body.province = input.province;");
     // `birthDate` / `province` are the ONE stored value each, whichever way in (picked or typed) — see §7a/§7b.
     expect(page).toContain("birthDate: birthDate || undefined,");
-    expect(page).toContain("province: pickedProvince || undefined,");
-    expect(page).toContain("address: addressLine || undefined,");
+    expect(page).toContain("province: addressOnFile ? undefined : pickedProvince || undefined,");
+    expect(page).toContain("address: addressOnFile ? undefined : addressLine || undefined,");
     expect(page).toContain('const birthDate = dobMode === "pick" ? toCustomerDate(birthDatePicked) : birthDateTyped.trim();');
   });
 });
@@ -417,7 +425,9 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
     expect(join).not.toMatch(/\blang\b|nameEn/);
     // and the confirm screen shows the LINE — Thai in both modes — because it shows what will be stored
     const confirm = page.slice(page.indexOf('phase.kind === "confirm"'), page.indexOf('phase.kind === "done"'));
-    expect(confirm).toContain("addressLine || t(\"register.reviewSkipped\")");
+    // 🔴 TASK-566 — see the confirm-screen pin: no `(skipped)` fallback exists now. The LINE is still what is echoed
+    // when the household has no address on file, which is what this pin is about.
+    expect(confirm).toContain(": addressLine} />");
     expect(confirm).not.toMatch(/nameEn|\blang\b/);
   });
 
@@ -444,8 +454,8 @@ describe("§9 (TASK-353) — the PROVINCE travels as its own field, full name; t
   // lines 37–38: `province?` → parents.province, `address?` → parents.note APPENDED) on 2026-09-13.
   it("PICKED ⇒ `province` = the picked FULL name and `address` = the joined line; TYPED ⇒ `address` only; blank ⇒ neither", () => {
     expect(page).toContain('const pickedProvince = addrMode === "pick" ? provPick?.nameTh ?? "" : "";');
-    expect(page).toContain("province: pickedProvince || undefined,");
-    expect(page).toContain("address: addressLine || undefined,");
+    expect(page).toContain("province: addressOnFile ? undefined : pickedProvince || undefined,");
+    expect(page).toContain("address: addressOnFile ? undefined : addressLine || undefined,");
     // the line is the join (`กทม` in the LINE); the province is `nameTh` (`กรุงเทพมหานคร` in the COLUMN) — two forms, two homes
     expect(page).toContain(
       "joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })",
@@ -460,7 +470,9 @@ describe("§9 (TASK-353) — the PROVINCE travels as its own field, full name; t
 
   it("the confirm screen still echoes the LINE; `PROVINCE_UNKNOWN` goes back to the form like the other fixable codes", () => {
     const confirm = page.slice(page.indexOf('phase.kind === "confirm"'), page.indexOf('phase.kind === "done"'));
-    expect(confirm).toContain("addressLine || t(\"register.reviewSkipped\")");
+    // 🔴 TASK-566 — see the confirm-screen pin: no `(skipped)` fallback exists now. The LINE is still what is echoed
+    // when the household has no address on file, which is what this pin is about.
+    expect(confirm).toContain(": addressLine} />");
     expect(confirm).not.toContain("pickedProvince");
     const fixable = page.slice(page.indexOf('r.code === "NAME_REQUIRED"'), page.indexOf('r.code === "NOT_LINKED"'));
     expect(fixable).toContain('r.code === "PROVINCE_UNKNOWN"');

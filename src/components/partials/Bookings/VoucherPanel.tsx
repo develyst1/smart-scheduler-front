@@ -3,13 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { Button, Card, Table, Progress, Text, Badge, Group, Skeleton, Stack, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { Ticket, Search, GraduationCap, Ban } from "lucide-react";
+import { Ticket, Search, GraduationCap, Ban, CalendarClock } from "lucide-react";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import { useVouchers } from "@/hooks/scheduler";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { voucherChip, voucherDoors } from "@/lib/scheduler/voucher";
+import { canOfferExtend } from "@/lib/scheduler/voucher-expiry";
 import { isDeadEntitlement, sortEntitlements } from "@/lib/scheduler/entitlement-order";
 import EndCourseDialog from "./EndCourseDialog";
+import ExtendVoucherExpiryDialog from "./ExtendVoucherExpiryDialog";
 import type { VoucherSummary } from "@/types/api/contract";
 import { formatDateDisplay } from "@/lib/ui/format";
 import PagerBar from "@/components/common/PagerBar";
@@ -43,6 +45,9 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
   const can = useCan();
   const canCancel = can("action:bookings.course-cancel");
   const [endId, setEndId] = useState<string | null>(null);
+  // 🔴 TASK-572 (REQ-110 item 3) — the expiry control, on the COURSE's key (the BE route table reuses it too).
+  const canExpiry = can("action:bookings.course-expiry");
+  const [extend, setExtend] = useState<VoucherSummary | null>(null);
   // `useVouchers` sets `keepPreviousData`, so `isLoading` is true on the first load ONLY — a search or a page
   // change after that left the previous rows on screen with nothing saying they were being replaced.
   const { data, isLoading, isPlaceholderData } = useVouchers({
@@ -177,6 +182,22 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
                           {t("voucher.cancel")}
                         </Button>
                       )}
+                      {/* 🔴 TASK-572 — extend the expiry. Offered on what is KNOWABLE here (the key, and not ENDED);
+                          🚫 the NOT-STARTED rule is the server's and stays there — no field in this row says so, and
+                          the refusal arrives at the preview as an answer. */}
+                      {canOfferExtend({ expiry: canExpiry }, v) && (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          color="blue"
+                          leftSection={<CalendarClock size={14} />}
+                          onClick={() => setExtend(v)}
+                          className="min-h-[44px] sm:min-h-0"
+                          data-voucher-extend={v.id}
+                        >
+                          {t("voucherExpiry.edit")}
+                        </Button>
+                      )}
                       </Group>
                     </Table.Td>
                     </Table.Tr>
@@ -198,6 +219,10 @@ export default function VoucherPanel({ onManage }: { onManage: (id: string) => v
         target={endId ? { kind: "voucher", id: endId } : null}
         onClose={() => setEndId(null)}
       />
+
+      {/* TASK-572 — mounted CLOSED and opened by the row, like the course's expiry dialog: the save invalidates the
+          vouchers, so the row's date and chip re-read themselves. */}
+      <ExtendVoucherExpiryDialog voucher={extend} onClose={() => setExtend(null)} />
     </Stack>
   );
 }

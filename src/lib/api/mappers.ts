@@ -108,6 +108,9 @@ export function dtoToTeacher(dto: TeacherDTO): Teacher {
 export function dtoToCourseView(row: CourseSummary & { student: StudentRef }): CoursePackageView {
   return {
     id: row.id,
+    // 🔻 TASK-574 — as sent. The invented `""` this replaces is why TASK-545's pin exists; the pin still forbids a
+    // literal here, and this is not one.
+    startDate: row.startDate,
     // TASK-421 — a DUO course names both children (the pure `studentLabel`); a Private is the one name as before.
     studentName: studentLabel(row.student.name, row.coStudent),
     courseKind: row.courseKind ?? "PRIVATE",

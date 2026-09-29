@@ -38,6 +38,10 @@ export const REGISTER_CODES = [
   "NAME_DUPLICATE_NEEDS_DETAIL",
   "BIRTHDATE_INVALID",
   "PROVINCE_UNKNOWN", // TASK-352/353 (§9) — `province` was not one of the server's 77 full names
+  // 🔴 TASK-565 (REQ-110 item 10) — every field is REQUIRED now: the ข้าม path is gone from the chat and the page.
+  // Both are the SERVER's backstop: the form stops a parent earlier with a `*`, and these arrive only if it did not.
+  "BIRTHDATE_REQUIRED",
+  "ADDRESS_REQUIRED", // once per household, while none is on file
 ] as const;
 export type RegisterCode = (typeof REGISTER_CODES)[number];
 
@@ -52,7 +56,19 @@ export type LookupResult =
   | { ok: true; outcome: "found"; phone: string; twoFactor: "required"; childCount: number }
   | { ok: true; outcome: "new"; phone: string };
 
-export interface LinkResult {
+/**
+ * 🔑 TASK-565 — **the household's address, on status · link · create.** `addressOnFile` is true exactly when
+ * `parents.province` is set, and `province` is that value (to SHOW it back). ⇒ **the form asks for an address once per
+ * household and then never again — and it learns that from the answer it already has, never from a second request.**
+ * ⚠️ A family that only ever typed its address in the CHAT has no province stored, so it is `false` and **is asked once
+ * more, by design**: *an address we cannot show back to the parent is not one we collected.*
+ */
+export interface HouseholdAddress {
+  addressOnFile: boolean;
+  province: string | null;
+}
+
+export interface LinkResult extends HouseholdAddress {
   ok: true;
   outcome: "linked";
   isNew: boolean;
@@ -60,7 +76,8 @@ export interface LinkResult {
   canAddMore: boolean;
 }
 
-export interface CreateResult {
+/** 🔑 The create ANSWERS with the new state, so adding a second child needs no re-fetch to know the address is on file. */
+export interface CreateResult extends HouseholdAddress {
   ok: true;
   outcome: "created";
   student: { id: string; name: string };
@@ -114,7 +131,7 @@ export const link = (idToken: string, phone: string, code?: string) =>
  */
 export type StatusResult =
   | { ok: true; linked: false }
-  | { ok: true; linked: true; phone: string; childCount: number };
+  | ({ ok: true; linked: true; phone: string; childCount: number } & HouseholdAddress);
 
 /** `/unlink`: the family's LINE binding cleared — EVERY account the family holds. Not linked ⇒ `unlinked: false`, idempotent. */
 export interface UnlinkResult {
@@ -132,9 +149,11 @@ export const unlink = (idToken: string) => post<UnlinkResult>("unlink", { idToke
 export interface CreateInput {
   name: string;
   /**
-   * 🔴 The customer's `DD-MM-YYYY` TEXT, or ABSENT. **Never `""`, never ISO.** A blank is the skip (`ข้าม`)
-   * and must not reach the parser — the server's parser refuses `""` as INVALID (TASK-347 §5.1), so the page
-   * omits the key rather than re-creating that trap from its side.
+   * 🔴 The customer's `DD-MM-YYYY` TEXT. **Never `""`, never ISO.**
+   * 🔻 **TASK-565: it is REQUIRED** — the ข้าม path is gone. It stays OPTIONAL in this type on purpose: an absent key is
+   * how the server is told nothing was given (`BIRTHDATE_REQUIRED`), and `""` would be read as INVALID instead
+   * (TASK-347 §5.1) — *a parent who typed nothing must not be told their date is malformed.* **The page blocks empty
+   * before the request; this shape is what keeps the server's refusal the right one if it ever gets there.**
    */
   birthDate?: string;
   /**

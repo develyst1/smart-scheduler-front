@@ -1,0 +1,117 @@
+[
+  {
+    "id": "R1",
+    "what": "🔴 the stale-schedule warning is dropped (the move tells nobody, and now nothing says so)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/course-start.ts",
+        "edits": [{ "from": "  \"courseStart.warnStale\",\n  \"courseStart.warnExpiry\",", "to": "  \"courseStart.warnExpiry\"," }]
+      }
+    ]
+  },
+  {
+    "id": "R2",
+    "what": "the warning stops saying WHAT TO DO (it names the risk and leaves the admin with it)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    warnStale: \"Nobody is told by this move. Until you run Confirm course, the family and the coach still have the OLD dates — run it as soon as the new dates are right.\",",
+            "to": "    warnStale: \"Nobody is told by this move.\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "R3",
+    "what": "the hand-set-expiry warning is never shown (a colleague's deliberate date replaced in silence)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/course-start.ts",
+        "edits": [{ "from": "  ...(opts.handSetExpiry ? [\"courseStart.warnHandSetExpiry\"] : []),", "to": "" }]
+      }
+    ]
+  },
+  {
+    "id": "R4",
+    "what": "a SYSTEM recompute is read as a person's date (the warning cries wolf on every course)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/course-start.ts",
+        "edits": [
+          {
+            "from": "  (history ?? []).some((r) => typeof r.actor === \"string\" && r.actor.trim().length > 0);",
+            "to": "  (history ?? []).length > 0;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "R5",
+    "what": "🔴 the skipped weeks are PREDICTED on the page instead of read from the answer",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ChangeStartDateDialog.tsx",
+        "edits": [
+          {
+            "from": "            {result.skippedForLeave.length > 0 && (",
+            "to": "            {[] as string[] && (result.skippedForLeave = []).length > 0 && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "R6",
+    "what": "the reconfirm block disappears (the window an admin has to close becomes invisible)",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ChangeStartDateDialog.tsx",
+        "edits": [{ "from": "            {result.needsReconfirm > 0 && (", "to": "            {false && (" }]
+      }
+    ]
+  },
+  {
+    "id": "R7",
+    "what": "🔴 the pre-request guard is removed (the second of the two guards on the commit)",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ChangeStartDateDialog.tsx",
+        "edits": [{ "from": "    if (!startDate || !forecast) return;", "to": "    if (!startDate) return;" }]
+      }
+    ]
+  },
+  {
+    "id": "R8",
+    "what": "the door is offered on a course with a session already taught",
+    "files": [
+      {
+        "file": "src/lib/scheduler/course-start.ts",
+        "edits": [
+          {
+            "from": "  c.usedSessions === 0 && c.status !== \"CANCELLED\" && c.status !== \"COMPLETED\";",
+            "to": "  c.status !== \"CANCELLED\" && c.status !== \"COMPLETED\";"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "R9",
+    "what": "🔴 a refusal is swallowed and success is claimed (the course untouched, the screen says it moved)",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ChangeStartDateDialog.tsx",
+        "edits": [
+          {
+            "from": "      setResult(await move.mutateAsync({ courseId: course.id, startDate }));\n    } catch (e) {\n      // 🔴 The server's own sentence: a clash names the date, a started course says why. The course is untouched.\n      setError(e instanceof ApiClientError ? e.message : (e as Error).message);",
+            "to": "      setResult(await move.mutateAsync({ courseId: course.id, startDate }));\n    } catch (e) {\n      setResult({ moved: 0, startDate: startDate as string, expiryDate: \"\", previousExpiryDate: \"\", needsReconfirm: 0, skippedForLeave: [] });"
+          }
+        ]
+      }
+    ]
+  }
+]
