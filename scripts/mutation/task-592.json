@@ -1,0 +1,87 @@
+[
+  {
+    "id": "K1",
+    "what": "🔴 the permission sentence disappears — the cover is a DEAD control again (the 403 with no explanation)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [{ "from": "        {coverBlocked && (", "to": "        {false && coverBlocked && (" }]
+      }
+    ]
+  },
+  {
+    "id": "K2",
+    "what": "🔴 the Save opens without the key (the body the server refuses with 403)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "            disabled={mode !== \"remove\" && (!to || !scoped || coverBlocked || (needRate && canRate && coverRateMinor == null))}",
+            "to": "            disabled={mode !== \"remove\" && (!to || !scoped || (needRate && canRate && coverRateMinor == null))}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K3",
+    "what": "the pre-request guard goes (the other of the two guards)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [{ "from": "    if (coverBlocked) return;", "to": "" }]
+      }
+    ]
+  },
+  {
+    "id": "K4",
+    "what": "🔴 the block widens and gates an admin WITH the key too (a permission message that narrows someone who was fine)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [{ "from": "  const coverBlocked = needRate && !canRate;", "to": "  const coverBlocked = needRate;" }]
+      }
+    ]
+  },
+  {
+    "id": "K5",
+    "what": "the block widens to the WHOLE-SERIES swap (a rate is not involved there at all)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [{ "from": "  const coverBlocked = needRate && !canRate;", "to": "  const coverBlocked = mode === \"swap\" && !canRate;" }]
+      }
+    ]
+  },
+  {
+    "id": "K6",
+    "what": "🔴 the sentence blames the COACH instead of naming the permission",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    coverNeedsKey: \"A cover is paid at the covering coach's rate, so it needs the coach-rate permission. You do not have it — ask an admin who does, or ask for the permission.\",",
+            "to": "    coverNeedsKey: \"That coach cannot cover this session.\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K7",
+    "what": "the sentence stops saying what to DO (a reason with no next step)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    coverNeedsKey: \"A cover is paid at the covering coach's rate, so it needs the coach-rate permission. You do not have it — ask an admin who does, or ask for the permission.\",",
+            "to": "    coverNeedsKey: \"A cover needs the coach-rate permission, which this account does not have at the moment, so this cannot be saved here.\","
+          }
+        ]
+      }
+    ]
+  }
+]

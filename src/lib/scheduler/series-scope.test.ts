@@ -95,7 +95,9 @@ describe("TASK-564 — the doors ask, and no option is pre-selected", () => {
   it("🔑 Save waits for a scope, and `submit` refuses without one — two guards, because one is a UI state", () => {
     // 🔻 TASK-577 (D10), declared: the condition GREW — a cover with no rate cannot be pressed either. What this pin
     // protects (Save waits for a scope · `submit` refuses without one · two guards) is unchanged and still asserted.
-    expect(dialogs).toContain('disabled={mode !== "remove" && (!to || !scoped || (needRate && canRate && coverRateMinor == null))}');
+    // 🔻 TASK-592, declared: the condition grew again — a cover without the rate PERMISSION cannot be pressed either. The
+    // property this pin protects (Save waits for a scope · `submit` refuses without one · two guards) is unchanged.
+    expect(dialogs).toContain('disabled={mode !== "remove" && (!to || !scoped || coverBlocked || (needRate && canRate && coverRateMinor == null))}');
     expect(dialogs).toContain('if (mode !== "remove" && !scoped) return;');
     // 🔴 TASK-577 (D10) — the same pair for the cover's rate. **A clicked test cannot prove this half:** with the button
     // still disabled, removing the pre-request return changes nothing a click can see. *Two guards need two proofs.*
@@ -196,5 +198,63 @@ describe("TASK-564 — the move box says its scope", () => {
     // 🚫 it must not read as an option
     expect(en.toLowerCase()).not.toContain("choose");
     expect(th).not.toContain("เลือก");
+  });
+});
+
+/**
+ * 🔴 **TASK-584 (BE) → TASK-592 — the owner ruled (a): a COVER requires the rate permission (key 59).**
+ *
+ * 🔑 **The screen catching up with a rule that is already true** — the server refuses it either way. What these pin is the
+ * SHAPE of that catching-up: **the admin without the key is told in words, the admin WITH the key is untouched**, and the
+ * gate is on the COVER alone.
+ */
+describe("🔴 TASK-592 — the cover's permission, and what it must NOT narrow", () => {
+  it("🔑 the block is the COVER plus the missing key — nothing else", () => {
+    expect(dialogs).toContain("const coverBlocked = needRate && !canRate;");
+    // 🚫 it can only be true where a rate is required, which is a swap on ONE session (`coverRateRequired`)
+    expect(coverRateRequired("swap", "this")).toBe(true);
+    expect(coverRateRequired("swap", "rest")).toBe(false);
+    expect(coverRateRequired("add", "this")).toBe(false);
+  });
+
+  it("🔴 two guards again: the Save is shut AND `submit` returns before the request", () => {
+    expect(dialogs).toContain("if (coverBlocked) return;");
+    expect(dialogs).toContain("coverBlocked ||");
+  });
+
+  it("⚠️ an admin WITH the key is UNCHANGED — this adds a state, it does not narrow theirs", () => {
+    // the rate box and its own guard still read exactly as TASK-577 built them
+    expect(dialogs).toContain("{needRate && canRate && (");
+    expect(dialogs).toContain("if (needRate && canRate && coverRateMinor == null) return;");
+    // 🚫 and the permission sentence cannot appear for them, because the block REQUIRES the key to be absent
+    expect(dialogs).toContain("needRate && !canRate");
+  });
+
+  it("📋 the sentence names the PERMISSION and says what to do — in both languages", () => {
+    for (const lang of ["en", "th"] as const) {
+      const s = (dictionaries[lang].otherSeries as Record<string, string>).coverNeedsKey;
+      expect(s.length).toBeGreaterThan(60);
+    }
+    const en = (dictionaries.en.otherSeries as Record<string, string>).coverNeedsKey;
+    const th = (dictionaries.th.otherSeries as Record<string, string>).coverNeedsKey;
+    expect(en).toMatch(/permission/i);
+    expect(th).toContain("สิทธิ์");
+    // 🔑 it says what to DO — a reason with no next step is a dead end with a caption
+    expect(en).toMatch(/ask/i);
+    expect(th).toContain("ขอสิทธิ์");
+    // 🚫 and it blames neither the coach nor the rate
+    expect(en).not.toMatch(/\{name\}|invalid|wrong/i);
+    expect(th).not.toMatch(/\{name\}|ผิด/);
+  });
+
+  it("🔑 ONE cover entry point exists, derived — so no other door can show a dead box", () => {
+    // the only FE sender of a one-date teacher swap is this dialog; the GROUP swap has no `onDate` and no rate at all
+    const group = codeOf("src/components/partials/Calendar/Modal/GroupSwapDialog.tsx");
+    expect(group).not.toContain("onDate");
+    expect(group).not.toContain("rateMinor");
+    expect(dialogs).toContain("swapBody(seriesRef, series.teacherId, to)");
+    // and the dialog is opened from exactly one place
+    const modal = codeOf("src/components/partials/OtherSeries/OtherSeriesModal.tsx");
+    expect((modal.match(/<TeacherDialog/g) ?? []).length).toBe(1);
   });
 });

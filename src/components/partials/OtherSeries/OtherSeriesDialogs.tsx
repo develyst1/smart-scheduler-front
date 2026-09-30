@@ -109,6 +109,16 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
   const needRate = coverRateRequired(mode, scope);
   const carried = knownSeriesRate(series.teacherRates, to);
   const coverRateMinor = rateBaht !== "" ? bahtToMinor(rateBaht) : carried;
+  /**
+   * 🔴 **TASK-584 (BE) → TASK-592 — the owner ruled (a): a COVER requires the rate permission (key 59).**
+   *
+   * The server already refuses it, so 🔑 **this is the screen catching up with a rule that is already true** — not a new
+   * rule, and not a rule of the screen's own. ⇒ **an admin without the key is TOLD, in words, naming the PERMISSION.**
+   * 🚫 **Not a hidden door and not a dead one:** *a control that does nothing is the dead end this whole round was spent
+   * removing* — they can see the cover exists, read why they cannot do it, and go to someone who can.
+   * ⚠️ **Nothing changes for an admin WITH the key** (pinned): this adds a state, it does not narrow theirs.
+   */
+  const coverBlocked = needRate && !canRate;
   const choices = teachers.filter((x) => x.bookable && !onRow.includes(x.id));
   const name = (id: string) => teachers.find((x) => x.id === id)?.nickname ?? id;
   const busy = add.isPending || remove.isPending || swap.isPending;
@@ -120,6 +130,9 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
     // 🔑 Two guards on the cover rate as well: this return AND the Save button. 🚫 Nothing is sent that we already know
     // the server will refuse — a 400 the screen could have prevented is a dead end, which is exactly D10.
     if (needRate && canRate && coverRateMinor == null) return;
+    // 🔴 TASK-592 — the same two-guard shape for the permission: this return AND the Save button. 🚫 We never send a body
+    // we already know the server refuses (403) — *a refusal the screen could have explained is a dead end.*
+    if (coverBlocked) return;
     try {
       if (mode === "add" && to) {
         // 🔑 EXACTLY one scope key rides (`onDate` or `fromDate`) — never both, never neither.
@@ -172,6 +185,13 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
         )}
         {/* 🔴 TASK-577 (D10) — the COVER rate: shown only for a cover, REQUIRED, and empty by necessity (the only rates
             this screen can see belong to coaches already on the row, which are exactly the ones Swap does not offer). */}
+        {/* 🔴 TASK-592 — the reason, in words, where the rate box would be. It names the PERMISSION: 🚫 not the coach, and
+            🚫 not the rate — neither of those is what is missing. */}
+        {coverBlocked && (
+          <Alert color="yellow" variant="light" icon={<AlertTriangle size={15} />} data-cover-needs-key>
+            {t("otherSeries.coverNeedsKey")}
+          </Alert>
+        )}
         {needRate && canRate && (
           <NumberInput
             label={t("otherSeries.coverRate", { name: name(to ?? "") })}
@@ -215,7 +235,7 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
           <Button
             color={mode === "remove" ? "red" : undefined}
             loading={busy}
-            disabled={mode !== "remove" && (!to || !scoped || (needRate && canRate && coverRateMinor == null))}
+            disabled={mode !== "remove" && (!to || !scoped || coverBlocked || (needRate && canRate && coverRateMinor == null))}
             data-teacher-save
             onClick={() => void submit()}
           >

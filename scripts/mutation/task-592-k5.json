@@ -1,0 +1,17 @@
+[
+  {
+    "id": "K5",
+    "what": "the block widens to the WHOLE-SERIES swap (a rate is not involved there at all)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "  const coverBlocked = needRate && !canRate;",
+            "to": "  const coverBlocked = mode === \"swap\" && !canRate;"
+          }
+        ]
+      }
+    ]
+  }
+]

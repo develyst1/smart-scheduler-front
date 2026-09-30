@@ -551,6 +551,10 @@ const en = {
     addTeacher: "Add teacher",
     // 🔴 TASK-577 (D10) — the COVER rate. 📝 DRAFT (Fern, TASK-577). The server pays the COVERING coach and refuses
     // the cover when it has no rate for them, so this box is REQUIRED and the label names whose rate it is.
+    // 🔴 TASK-584 (BE) → TASK-592 — the owner ruled (a). 📝 DRAFT (Fern, TASK-592), reworded from the held TASK-577 drafts.
+    // 🔑 It names the PERMISSION and nothing else: 🚫 not the coach (they are fine), 🚫 not the rate (it is not wrong).
+    // ⚠️ And it says what to DO — ask someone who has it — because a reason with no next step is a dead end with a caption.
+    coverNeedsKey: "A cover is paid at the covering coach's rate, so it needs the coach-rate permission. You do not have it — ask an admin who does, or ask for the permission.",
     coverRate: "{name}'s rate for this session",
     coverRateHint: "The covering coach is paid their own rate for this session. This series has none on file for them yet, so enter it here.",
     rateOptional: "Rate per session (optional)",
@@ -2551,6 +2555,8 @@ const th: typeof en = {
     swapTo: "ครูหลักคนใหม่",
     addTeacher: "เพิ่มครู",
     // 📝 DRAFT (Fern, TASK-577) — ค่าสอนของครูที่มาสอนแทน (บังคับ)
+    // 📝 DRAFT (Fern, TASK-592) — บอกว่าขาด "สิทธิ์" ไม่ใช่ว่าครูหรือค่าสอนมีปัญหา และบอกด้วยว่าต้องทำอะไรต่อ
+    coverNeedsKey: "การสอนแทนจะจ่ายตามค่าสอนของครูที่มาแทน จึงต้องมีสิทธิ์แก้ค่าสอนครู — บัญชีนี้ยังไม่มีสิทธิ์นี้ กรุณาให้แอดมินที่มีสิทธิ์ทำให้ หรือขอสิทธิ์เพิ่ม",
     coverRate: "ค่าสอนของ {name} สำหรับคาบนี้",
     coverRateHint: "ครูที่มาสอนแทนจะได้ค่าสอนของตัวเอง ตารางนี้ยังไม่มีค่าสอนของครูท่านนี้ จึงต้องระบุที่นี่",
     rateOptional: "ค่าสอนต่อคาบ (ไม่บังคับ)",
