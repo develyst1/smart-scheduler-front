@@ -57,6 +57,7 @@ import type {
   PostedSaleResponse,
   ResumeCourseResponse,
   UpdateCourseExpiryResponse,
+  LeaveDayRow,
   SetTeacherWorkDaysResponse,
   TeacherDTO,
   TeachersResponse,
@@ -488,6 +489,17 @@ export const reportOwnLeave = async (body: { date: string; sessionIds?: string[]
   if (useMock) return mock.reportOwnLeave(body);
   const { data } = await api.post<OwnLeaveResult>("/teachers/me/leave", body);
   return data;
+};
+
+/**
+ * 🔴 **TASK-587 (BE) → TASK-589 — the ADMIN's read of recorded leave days**, each with that day's live classes.
+ * 🚫 A READ: nothing is cancelled or moved from it. ⚠️ **A linked teacher is refused (403)**, so the caller asks only on an
+ * admin session — the hook's `enabled`, not a try/catch.
+ */
+export const getLeaveDays = async (from: string, to: string): Promise<LeaveDayRow[]> => {
+  if (useMock) return mock.getLeaveDays(from, to);
+  const { data } = await api.get<{ items: LeaveDayRow[] }>("/teacher-leave-days", { params: { from, to } });
+  return data.items;
 };
 
 /** SPEC-011: confirm many PENDING bookings in one call. Partial-success — per-booking outcome in input order. */

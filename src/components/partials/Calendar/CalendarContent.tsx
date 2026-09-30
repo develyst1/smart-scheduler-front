@@ -9,7 +9,7 @@ import { usePausedTrayCollapsed } from "@/lib/scheduler/paused-tray";
 import { useCancelledTrayCollapsed, useShowCancelled } from "@/lib/scheduler/cancelled-tray";
 import { useLoadPhase } from "@/lib/ui/load-phase";
 import { useT } from "@/lib/i18n";
-import { useBadges, useCalendar, usePausedBookings, useTeachers } from "@/hooks/scheduler";
+import { useBadges, useCalendar, useLeaveDays, usePausedBookings, useTeachers } from "@/hooks/scheduler";
 import { useCan, useMe } from "@/hooks/scheduler/useMe";
 import { columnTeacherIds, isScoped } from "@/lib/scheduler/teacher-scope";
 import { dtoToBooking } from "@/lib/api/mappers";
@@ -21,6 +21,7 @@ import BookingModal from "./Modal/BookingModal";
 import PausedTray from "./PausedTray";
 import CalendarGridSkeleton from "./CalendarGridSkeleton";
 import CampDayBanner from "./CampDayBanner";
+import LeaveDayBanner from "./LeaveDayBanner";
 import ReportLeaveDialog from "./Modal/ReportLeaveDialog";
 import SeriesInRange from "./SeriesInRange";
 import OtherSeriesModal from "@/components/partials/OtherSeries/OtherSeriesModal";
@@ -53,6 +54,13 @@ export default function CalendarContent() {
   // Week starts on Monday. dayjs weeks default to Sunday, so pull Sunday back to the prior Monday.
   const weekStart = dayjs(date).day(dayjs(date).day() === 0 ? -6 : 1);
   const weekDays = Array.from({ length: 7 }, (_, i) => weekStart.add(i, "day").format("YYYY-MM-DD"));
+  /**
+   * 🔴 TASK-589 — the coaches' blocked days over exactly the dates on screen. 🚫 **Never asked on a teacher-scoped session:**
+   * the route refuses a linked teacher (403), and `enabled` is the gate rather than a caught error — *a catch would still
+   * have sent it.*
+   */
+  const leaveRange = view === "day" ? { from: date, to: date } : { from: weekDays[0], to: weekDays[6] };
+  const { data: leaveDays } = useLeaveDays(leaveRange.from, leaveRange.to, !scoped);
 
   const calView = view === "day" ? "day" : "week";
   const { data: teachers = [], isLoading: loadingTeachers } = useTeachers();
@@ -232,6 +240,8 @@ export default function CalendarContent() {
             <>
             {/* REQ-095 Stage 3a — the camp weeks covering this day, as a banner above the grid (no cells). */}
             <CampDayBanner campWeeks={calendar?.campWeeks} date={date} />
+            {/* 🔴 TASK-589 — a coach's blocked day, above the grid where those classes are handled. 🚫 Not a control. */}
+            <LeaveDayBanner rows={leaveDays} dates={[date]} />
             <CalendarGrid
               teachers={filteredTeachers}
               bookings={dayBookings}
@@ -241,6 +251,10 @@ export default function CalendarContent() {
             />
             </>
           ) : (
+            <>
+            {/* ⚠️ In the WEEK view too, unlike the camp banner: an admin plans a week, and a marker you can only see after
+                navigating into the day is one you find only if you were already looking. */}
+            <LeaveDayBanner rows={leaveDays} dates={weekDays} />
             <CalendarWeekGrid
               teachers={filteredTeachers}
               weekDays={weekDays}
@@ -249,6 +263,7 @@ export default function CalendarContent() {
               onCreate={openCreate}
               onSelectCamp={openCamp}
             />
+            </>
           )}
         </div>
 

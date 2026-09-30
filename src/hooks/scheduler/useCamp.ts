@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createCampWeek,
+  deleteCampWeek,
   getCampDayCheckin,
   getCampPrices,
   getCampWeekDays,
@@ -45,6 +46,15 @@ export const useCreateCampWeek = () => {
 export const useUpdateCampWeek = () => {
   const qc = useQueryClient();
   return useMutation({ mutationFn: ({ id, input }: { id: string; input: UpdateCampWeekInput }) => updateCampWeek(id, input), onSuccess: () => invalidate(qc) });
+};
+/**
+ * 🔴 TASK-586 — delete a week. Invalidates the same set as the others: the week is gone from the list AND from the
+ * calendar's banner payload. 🚫 `retry: false` — the refusal counts bookings **at the act**, so a silent retry could
+ * report a different number than the one the admin is reading.
+ */
+export const useDeleteCampWeek = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => deleteCampWeek(id), retry: false, onSuccess: () => invalidate(qc) });
 };
 /** TASK-419 — one day's teachers/window (the swap door, the editor's per-day rows); the grid re-reads (the blocks moved). */
 export const useUpdateCampWeekDay = () => {

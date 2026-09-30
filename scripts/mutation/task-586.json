@@ -1,0 +1,122 @@
+[
+  {
+    "id": "K1",
+    "what": "🔴 the delete refusal is replaced by a generic message (the count and the way out are thrown away)",
+    "files": [
+      {
+        "file": "src/components/partials/Camp/CampContent.tsx",
+        "edits": [
+          {
+            "from": "      setRefusal(e instanceof ApiClientError ? e.message : (e as Error).message);",
+            "to": "      setRefusal(t(\"camp.deleteWeekBody\"));"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K2",
+    "what": "🔴 a refused delete claims success anyway (the toast fires and the box never shows)",
+    "files": [
+      {
+        "file": "src/components/partials/Camp/CampContent.tsx",
+        "edits": [
+          {
+            "from": "      await remove.mutateAsync(confirmDelete.id);\n      notify({ title: t(\"camp.weekDeletedOk\", { name: confirmDelete.name }), color: \"default\" });",
+            "to": "      await remove.mutateAsync(confirmDelete.id).catch(() => undefined);\n      notify({ title: t(\"camp.weekDeletedOk\", { name: confirmDelete.name }), color: \"default\" });"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K3",
+    "what": "Close sends the wrong status (Close becomes Open)",
+    "files": [
+      {
+        "file": "src/components/partials/Camp/CampContent.tsx",
+        "edits": [{ "from": "      await update.mutateAsync({ id, input: { status } });", "to": "      await update.mutateAsync({ id, input: { status: \"OPEN\" } });" }]
+      }
+    ]
+  },
+  {
+    "id": "K4",
+    "what": "🔴 the way BACK disappears — a closed week can never take bookings again from this screen",
+    "files": [
+      {
+        "file": "src/components/partials/Camp/CampContent.tsx",
+        "edits": [{ "from": "                    {can(\"action:camp.week-open\") && w.status === \"CLOSED\" && (", "to": "                    {false && can(\"action:camp.week-open\") && w.status === \"CLOSED\" && (" }]
+      }
+    ]
+  },
+  {
+    "id": "K5",
+    "what": "🔴 the banner hides closed weeks again (a running, staffed, charging week vanishes from the calendar)",
+    "files": [
+      {
+        "file": "src/lib/camp/units.ts",
+        "edits": [{ "from": "    .filter((r) => !r.closed || r.kids > 0);", "to": "    .filter((r) => !r.closed);" }]
+      }
+    ]
+  },
+  {
+    "id": "K6",
+    "what": "the banner shows an EMPTY closed week too (noise an admin learns to ignore)",
+    "files": [
+      {
+        "file": "src/lib/camp/units.ts",
+        "edits": [{ "from": "    .filter((r) => !r.closed || r.kids > 0);", "to": "    .filter(() => true);" }]
+      }
+    ]
+  },
+  {
+    "id": "K7",
+    "what": "🔴 the banner stops MARKING a closed week (it looks like one that can take bookings)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CampDayBanner.tsx",
+        "edits": [{ "from": "          {closed && <span className=\"text-xs text-muted-500\">· {t(\"camp.weekStatus_CLOSED\")}</span>}", "to": "" }]
+      }
+    ]
+  },
+  {
+    "id": "K8",
+    "what": "🔑 the CLOSED chip goes back to reading as \"off\" (the copy over-claims again)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [{ "from": "    weekStatus_CLOSED: \"Closed to new bookings\",", "to": "    weekStatus_CLOSED: \"Cancelled\"," }]
+      }
+    ]
+  },
+  {
+    "id": "K9",
+    "what": "the close message stops saying what carries on (an admin cannot tell a parent what is true)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    weekClosedOk: \"Week {name} is closed to NEW bookings. Everything already booked carries on — the children keep their days, the coaches keep their sessions, and the reminders still go out. You can take bookings again at any time.\",",
+            "to": "    weekClosedOk: \"Week {name} closed.\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K10",
+    "what": "the delete body stops offering the other door (a dead end again)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    deleteWeekBody: \"This removes the week and its days. It only works while nothing is booked — if anything is, we will say how many and you can stop new bookings instead.\",",
+            "to": "    deleteWeekBody: \"This removes the week and its days.\","
+          }
+        ]
+      }
+    ]
+  }
+]

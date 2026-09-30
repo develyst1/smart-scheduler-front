@@ -34,6 +34,7 @@ import {
   getTeachers,
   getTeacherTypeOrder,
   markAttended,
+  getLeaveDays,
   reportOwnLeave,
   updateCourseRate,
   bulkConfirm,
@@ -535,6 +536,19 @@ export const useMarkAttended = () => {
   });
 };
 /** REQ-097 (TASK-407) — the teacher's own leave; the calendar and the bookings re-read (the rows went CANCELLED). */
+/**
+ * 🔴 **TASK-589 — the admin's read of recorded leave days.** 🚫 **`enabled` is the gate, not a try/catch:** the route refuses
+ * a LINKED teacher (403), so a teacher-scoped session must never ASK. *Catching a 403 would still have sent it, and the
+ * console would carry a refusal on every calendar render.*
+ */
+export const useLeaveDays = (from: string, to: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ["leave-days", from, to],
+    queryFn: () => getLeaveDays(from, to),
+    enabled: Boolean(enabled && from && to),
+    staleTime: 60_000,
+  });
+
 export const useReportOwnLeave = () => {
   const qc = useQueryClient();
   return useMutation({

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import dayjs from "dayjs";
-import { ActionIcon, Badge, Button, Card, Group, Loader, Stack, Text, UnstyledButton } from "@mantine/core";
-import { ChevronLeft, ChevronRight, Tent, TentTree } from "lucide-react";
+import { ActionIcon, Alert, Badge, Button, Card, Group, Loader, Modal, Stack, Text, UnstyledButton } from "@mantine/core";
+import { ChevronLeft, ChevronRight, Info, Tent, TentTree } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useCan } from "@/hooks/scheduler/useMe";
-import { useCampWeeks, useUpdateCampWeek } from "@/hooks/scheduler/useCamp";
+import { useCampWeeks, useDeleteCampWeek, useUpdateCampWeek } from "@/hooks/scheduler/useCamp";
 import { formatDateDisplay } from "@/lib/ui/format";
 import { weeksByMonth } from "@/lib/camp/units";
 import { notify } from "@/lib/ui/notify";
@@ -28,16 +28,46 @@ export default function CampContent() {
   const to = dayjs(`${month}-01`).endOf("month").add(7, "day").format("YYYY-MM-DD");
   const { data: weeks = [], isLoading } = useCampWeeks(from, to);
   const update = useUpdateCampWeek();
+  // 🔴 TASK-586 — Delete is a second door with its own refusal; it never shares the status mutation's spinner.
+  const remove = useDeleteCampWeek();
+  /** The week whose delete is being confirmed, and the SERVER's refusal for it (verbatim, never paraphrased). */
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const [refusal, setRefusal] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [openOpen, setOpenOpen] = useState(false);
   const groups = weeksByMonth(weeks.filter((w) => w.startDate.slice(0, 7) === month || w.endDate.slice(0, 7) === month));
 
-  const close = async (id: string, name: string) => {
+  /**
+   * 🔴 **TASK-581 (BE) → TASK-586 — Close stops NEW bookings and nothing else.** Existing bookings stay, the coaches stay
+   * blocked, both reminders keep going, the per-day swap still works, and the days still charge because they still run.
+   * 🔑 **Close ⇒ Open restores the week EXACTLY** (the server proves it by value), which is why the words below say so
+   * without hedging.
+   */
+  const setStatus = async (id: string, name: string, status: "OPEN" | "CLOSED") => {
+    setRefusal(null);
     try {
-      await update.mutateAsync({ id, input: { status: "CLOSED" } });
-      notify({ title: t("camp.weekClosedOk", { name }), color: "default" });
+      await update.mutateAsync({ id, input: { status } });
+      notify({ title: t(status === "CLOSED" ? "camp.weekClosedOk" : "camp.weekOpenedOk", { name }), color: "default" });
     } catch (e) {
       notify({ title: e instanceof ApiClientError ? e.message : (e as Error).message, color: "danger" });
+    }
+  };
+
+  /**
+   * 🔴 **Delete — and the refusal is the point.** The server counts the week's bookings **at the act**, so a camp that
+   * gained one while this dialog was open is refused. ⚠️ **Its sentence already says how many there are and to use Close
+   * instead** ⇒ 🚫 **it is shown VERBATIM and never replaced with a generic failure.** It stays on screen (not a toast)
+   * because it is the answer to the question the admin just asked.
+   */
+  const doDelete = async () => {
+    if (!confirmDelete) return;
+    setRefusal(null);
+    try {
+      await remove.mutateAsync(confirmDelete.id);
+      notify({ title: t("camp.weekDeletedOk", { name: confirmDelete.name }), color: "default" });
+      setConfirmDelete(null);
+    } catch (e) {
+      setRefusal(e instanceof ApiClientError ? e.message : (e as Error).message);
     }
   };
 
@@ -90,8 +120,22 @@ export default function CampContent() {
                       {t(`camp.weekStatus_${w.status}`)}
                     </Badge>
                     {can("action:camp.week-open") && w.status === "OPEN" && (
-                      <Button size="compact-xs" variant="subtle" color="gray" loading={update.isPending && update.variables?.id === w.id} onClick={() => void close(w.id, w.name)}>
+                      <Button size="compact-xs" variant="subtle" color="gray" loading={update.isPending && update.variables?.id === w.id} data-week-close={w.id} onClick={() => void setStatus(w.id, w.name, "CLOSED")}>
                         {t("camp.closeWeek")}
+                      </Button>
+                    )}
+                    {/* 🔑 TASK-586 — the way BACK. A closed week could be closed and never reopened from this screen, and
+                        the server restores it exactly, so the door belongs here on the same key. */}
+                    {can("action:camp.week-open") && w.status === "CLOSED" && (
+                      <Button size="compact-xs" variant="subtle" color="teal" loading={update.isPending && update.variables?.id === w.id} data-week-open={w.id} onClick={() => void setStatus(w.id, w.name, "OPEN")}>
+                        {t("camp.openWeekBack")}
+                      </Button>
+                    )}
+                    {/* ⚠️ Delete is offered only where it can plausibly succeed (no children counted on any day) — but
+                        🔑 that is a CONVENIENCE: the server counts at the act and its refusal is the guard. */}
+                    {can("action:camp.week-open") && kids === 0 && (
+                      <Button size="compact-xs" variant="subtle" color="red" data-week-delete={w.id} onClick={() => { setRefusal(null); setConfirmDelete({ id: w.id, name: w.name }); }}>
+                        {t("camp.deleteWeek")}
                       </Button>
                     )}
                     <Button size="compact-xs" variant="light" onClick={() => setSelected(selected === w.id ? null : w.id)}>
@@ -111,6 +155,27 @@ export default function CampContent() {
       )}
 
       {openOpen && <OpenWeekDialog opened={openOpen} week={null} onClose={() => setOpenOpen(false)} />}
+
+      {/* 🔴 TASK-586 — the delete confirm. The refusal lives HERE, not in a toast: it is the answer to the question the
+          admin just asked, it names the number of bookings, and it tells them to use Close instead. */}
+      <Modal opened={confirmDelete !== null} onClose={() => { setConfirmDelete(null); setRefusal(null); }} centered title={t("camp.deleteWeekTitle", { name: confirmDelete?.name ?? "" })}>
+        <Stack gap="sm">
+          {refusal && (
+            <Alert color="orange" variant="light" icon={<Info size={16} />} data-delete-refusal>
+              {refusal}
+            </Alert>
+          )}
+          <Text fz="sm">{t("camp.deleteWeekBody")}</Text>
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" onClick={() => { setConfirmDelete(null); setRefusal(null); }}>
+              {t("common.cancel")}
+            </Button>
+            <Button color="red" loading={remove.isPending} data-delete-confirm onClick={() => void doDelete()}>
+              {t("camp.deleteWeekConfirm")}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }

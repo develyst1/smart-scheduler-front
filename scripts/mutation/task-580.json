@@ -1,0 +1,122 @@
+[
+  {
+    "id": "A1",
+    "what": "🔴 `canAddMore` is DERIVED from the child count instead of read (the page guesses the cap)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "        else setPhase({ kind: \"already-linked\", phone: st.phone, childCount: st.childCount, canAddMore: st.canAddMore, confirming: false });",
+            "to": "        else setPhase({ kind: \"already-linked\", phone: st.phone, childCount: st.childCount, canAddMore: st.childCount < 5, confirming: false });"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A2",
+    "what": "🔴 D11 — a zero-child linked family goes back to the dead-end screen",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "        if (st.childCount === 0 && st.canAddMore) setPhase({ kind: \"form\" });",
+            "to": "        if (false && st.childCount === 0 && st.canAddMore) setPhase({ kind: \"form\" });"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A3",
+    "what": "🔴 F-B — the way forward disappears from the linked screen (unlink or close, again)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "              {phase.canAddMore ? (\n                <Button variant=\"light\" leftSection={<UserPlus size={16} />} data-add-child onClick={startAnotherChild}>",
+            "to": "              {false ? (\n                <Button variant=\"light\" leftSection={<UserPlus size={16} />} data-add-child onClick={startAnotherChild}>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A4",
+    "what": "⚠️ the cap becomes a DEAD BUTTON instead of a reason (the dead end in a quieter costume)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "                <Text fz=\"sm\" c=\"dimmed\" data-family-full>\n                  {t(\"register.familyFull\")}\n                </Text>",
+            "to": "                <Button variant=\"light\" disabled leftSection={<UserPlus size={16} />}>\n                  {t(\"register.addChild\")}\n                </Button>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A5",
+    "what": "🔴 F-D — the garbled English names come back to the parent's dropdowns",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "    rows.map((r) => ({ value: r.code, label: r.nameTh }));",
+            "to": "    rows.map((r) => ({ value: r.code, label: lang === \"th\" ? r.nameTh : (r as { nameEn?: string }).nameEn ?? r.nameTh }));"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A6",
+    "what": "the English name rides the row again (an unused garbled field waiting for a reader)",
+    "files": [
+      {
+        "file": "src/lib/register/entry.ts",
+        "edits": [
+          {
+            "from": "const uniqueByCode = (rows: { code: string; nameTh: string }[]): AreaPick[] => {\n  const seen = new Map<string, AreaPick>();\n  for (const r of rows) if (!seen.has(r.code)) seen.set(r.code, { code: r.code, nameTh: r.nameTh });",
+            "to": "const uniqueByCode = (rows: { code: string; nameTh: string; nameEn: string }[]): AreaPick[] => {\n  const seen = new Map<string, AreaPick>();\n  for (const r of rows) if (!seen.has(r.code)) seen.set(r.code, { code: r.code, nameTh: r.nameTh, nameEn: r.nameEn } as AreaPick);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A7",
+    "what": "🚫 what is STORED starts following the label (the join reads a display value)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "      ? joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })",
+            "to": "      ? joinAddress({ subDistrict: subPick?.code, district: distPick?.nameTh, province: provPick?.nameTh })"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A8",
+    "what": "the status payload stops carrying the server's answer (the type goes back to a count alone)",
+    "files": [
+      {
+        "file": "src/lib/register/api.ts",
+        "edits": [
+          {
+            "from": "  | ({ ok: true; linked: true; phone: string; childCount: number; canAddMore: boolean } & HouseholdAddress);",
+            "to": "  | ({ ok: true; linked: true; phone: string; childCount: number } & HouseholdAddress);"
+          }
+        ]
+      }
+    ]
+  }
+]

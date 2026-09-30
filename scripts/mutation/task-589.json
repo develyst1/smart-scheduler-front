@@ -1,0 +1,92 @@
+[
+  {
+    "id": "V1",
+    "what": "🔴 the marker stops saying HOW MANY classes (it only says \"blocked\" — an admin must go hunting)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/teacher-scope.ts",
+        "edits": [{ "from": "  m.classes > 0 ? \"leaveDays.markerClasses\" : \"leaveDays.markerAway\";", "to": "  \"leaveDays.markerAway\";" }]
+      }
+    ]
+  },
+  {
+    "id": "V2",
+    "what": "🔴 the count is derived from the page instead of the server's list",
+    "files": [
+      {
+        "file": "src/lib/scheduler/teacher-scope.ts",
+        "edits": [{ "from": "classes: (r.bookings ?? []).length }));", "to": "classes: 1 }));" }]
+      }
+    ]
+  },
+  {
+    "id": "V3",
+    "what": "⚖️ the EMPTY blocked day is hidden (the decision reversed without saying so)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/teacher-scope.ts",
+        "edits": [{ "from": "    .filter((r) => dates.includes(r.date))", "to": "    .filter((r) => dates.includes(r.date) && (r.bookings ?? []).length > 0)" }]
+      }
+    ]
+  },
+  {
+    "id": "V4",
+    "what": "🔴 a teacher-scoped session ASKS the admin read (the route refuses it, 403 on every calendar render)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarContent.tsx",
+        "edits": [{ "from": "useLeaveDays(leaveRange.from, leaveRange.to, !scoped)", "to": "useLeaveDays(leaveRange.from, leaveRange.to, true)" }]
+      }
+    ]
+  },
+  {
+    "id": "V5",
+    "what": "the week view loses the marker (visible only after navigating into the day)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarContent.tsx",
+        "edits": [{ "from": "            <LeaveDayBanner rows={leaveDays} dates={weekDays} />", "to": "" }]
+      }
+    ]
+  },
+  {
+    "id": "V6",
+    "what": "🚫 the marker becomes a CONTROL (a click where nothing may be acted on)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/LeaveDayBanner.tsx",
+        "edits": [{ "from": "          data-leave-marker={`${m.teacherId}|${m.date}`}", "to": "          onClick={() => undefined}\n          data-leave-marker={`${m.teacherId}|${m.date}`}" }]
+      }
+    ]
+  },
+  {
+    "id": "V7",
+    "what": "the marker drops WHOSE day it is",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [{ "from": "    markerClasses: \"{name} is away — {n} class(es) to handle\",", "to": "    markerClasses: \"A coach is away — {n} class(es) to handle\"," }]
+      }
+    ]
+  },
+  {
+    "id": "V8",
+    "what": "🔴 the words say CANCELLED (nothing on that day is cancelled)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [{ "from": "    markerAway: \"{name} is away — nothing booked\",", "to": "    markerAway: \"{name} is away — classes cancelled\"," }]
+      }
+    ]
+  },
+  {
+    "id": "V9",
+    "what": "the read asks for a range that is not what is on screen (markers for days nobody is looking at)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarContent.tsx",
+        "edits": [{ "from": "  const leaveRange = view === \"day\" ? { from: date, to: date } : { from: weekDays[0], to: weekDays[6] };", "to": "  const leaveRange = { from: weekDays[0], to: weekDays[6] };" }]
+      }
+    ]
+  }
+]

@@ -1128,6 +1128,19 @@ const voucherRefusal = (voucherId: string) => {
   return null;
 };
 
+/**
+ * TASK-589 — the admin's leave-day read, offline. Two days in the window: one WITH classes (there is work) and one
+ * WITHOUT (a coach simply away), because the screen treats those two as different things.
+ */
+export const getLeaveDays = (from: string, to: string) =>
+  delay([
+    { teacherId: "t1", teacherName: "เอ", date: from, reason: "ไปหาหมอ", createdBy: "admin", bookings: [
+      { id: "bk-1", date: from, startTime: "10:00:00", endTime: "11:00:00", status: "CONFIRMED" as const, bookingType: "COURSE_PACKAGE" },
+      { id: "bk-2", date: from, startTime: "13:00:00", endTime: "14:00:00", status: "PENDING" as const, bookingType: "COURSE_PACKAGE" },
+    ] },
+    { teacherId: "t2", teacherName: "บี", date: to, reason: null, createdBy: "admin", bookings: [] },
+  ]);
+
 export const previewVoucherExpiry = (voucherId: string, expiryDate: string) => {
   const refusal = voucherRefusal(voucherId);
   if (refusal) return Promise.reject(new ApiClientError(refusal.code, refusal.message, refusal.status));

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "A2",
+    "what": "🔴 D11 — a zero-child linked family goes back to the dead-end screen",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "        if (st.childCount === 0 && st.canAddMore) setPhase({ kind: \"form\" });",
+            "to": "        if (false && st.childCount === 0 && st.canAddMore) setPhase({ kind: \"form\" });"
+          }
+        ]
+      }
+    ]
+  }
+]

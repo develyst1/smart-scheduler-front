@@ -68,15 +68,28 @@ type Phase =
   | { kind: "liff-failed"; detail: string }
   | { kind: "phone"; unlinked?: boolean }
   /** §10.3 — the server said this account is bound: the MASKED phone and a count, as sent. `confirming` = second tap. */
-  | { kind: "already-linked"; phone: string; childCount: number; confirming: boolean }
+  | { kind: "already-linked"; phone: string; childCount: number; canAddMore: boolean; confirming: boolean }
   | { kind: "found"; phone: string; children: ChildRef[] }
   | { kind: "found-2fa"; phone: string; childCount: number }
   | { kind: "linked"; children: ChildRef[]; canAddMore: boolean }
-  | { kind: "form"; dupName?: string }
+  /** 🔴 TASK-591 — `dupMessage` is the SERVER's sentence for this refusal (its body carries both languages). */
+  | { kind: "form"; dupName?: string; dupMessage?: string }
   | { kind: "confirm" }
   | { kind: "done"; result: CreateResult };
 
-type Failure = { code: RegisterCode | "UNREACHABLE"; word?: string; max?: number; name?: string; province?: string };
+/**
+ * 🔴 TASK-591 — two new details ride: `missing` (WHICH address part is absent) and `message` (the duplicate refusal's own
+ * words, in both languages, **from the server**). 🔑 The page renders them; it keeps no copy of that sentence.
+ */
+type Failure = {
+  code: RegisterCode | "UNREACHABLE";
+  word?: string;
+  max?: number;
+  name?: string;
+  province?: string;
+  missing?: Array<"province" | "district" | "subDistrict">;
+  message?: { TH?: string; EN?: string };
+};
 
 /** §2 (TASK-357) — a button whose label may wrap on a narrow phone instead of being cut. Height follows the text. */
 const WRAP_LABEL = { root: { height: "auto", minHeight: 36, paddingTop: 6, paddingBottom: 6 }, label: { whiteSpace: "normal" as const, textAlign: "center" as const } };
@@ -103,21 +116,25 @@ export default function RegisterContent() {
   const birthDate = dobMode === "pick" ? toCustomerDate(birthDatePicked) : birthDateTyped.trim();
   // §7b — same shape: three picks joined, or the plain field. `addressLine` is the one-line string the customer
   // stores (TASK-353: into `parents.note`); the PICKED province also travels on its own, full name, for the column.
-  const [addrMode, setAddrMode] = useState<"pick" | "type">("pick");
-  const [provinceTyped, setProvinceTyped] = useState("");
+  /**
+   * 🔴 **TASK-590 (BE) → TASK-591 — the TYPED address mode is GONE, and its absence is the contract.** The server no longer
+   * reads a pre-joined line; it needs **three parts**, and a typed line has no province to give. ⇒ **three pickers, always.**
+   * 🚫 Not "kept and validated": a mode whose output the server ignores is a mode that sends the wrong thing eventually.
+   * 📌 The birthday's type-instead toggle is untouched — that one still produces what the server reads.
+   */
   const [book, setBook] = useState<AddressBook | null>(null);
   const [provPick, setProvPick] = useState<AreaPick | null>(null);
   const [distPick, setDistPick] = useState<AreaPick | null>(null);
   const [subPick, setSubPick] = useState<AreaPick | null>(null);
   const [districts, setDistricts] = useState<AreaPick[]>([]);
   const [subDistricts, setSubDistricts] = useState<AreaPick[]>([]);
-  const addressLine =
-    addrMode === "pick"
-      ? joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })
-      : provinceTyped.trim();
+  /** Display only — 🚫 never sent. The server builds the stored line from the three parts, in its own order. */
+  const addressLine = joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh });
+  /** 🔑 All THREE, or the address is not answered. Two parts do not submit — the same shape the server requires. */
+  const addressComplete = Boolean(provPick?.nameTh && distPick?.nameTh && subPick?.nameTh);
   // TASK-353 (§9) — PICKED ⇒ the province's FULL name for `parents.province`; TYPED ⇒ nothing (the server does not
   // guess, and a wrong bucket is worse than an empty one). `กทม` stays in the LINE; `กรุงเทพมหานคร` goes to the column.
-  const pickedProvince = addrMode === "pick" ? provPick?.nameTh ?? "" : "";
+  const pickedProvince = provPick?.nameTh ?? "";
 
   /**
    * 🔴 TASK-566 (REQ-110 item 10) — **does this household already have an address?** Read off `/status`, `/link` and the
@@ -132,7 +149,13 @@ export default function RegisterContent() {
    * 🔑 TASK-566 (REQ-110 item 10) — **every field is required, and the address only while the household has none.**
    * ONE expression, read by the Continue button, the Confirm button and the pre-request guard: three doors, one rule.
    */
-  const formComplete = Boolean(name.trim()) && Boolean(birthDate) && (addressOnFile || Boolean(addressLine));
+  const formComplete = Boolean(name.trim()) && Boolean(birthDate) && (addressOnFile || addressComplete);
+  /**
+   * 🔴 **TASK-591 — the phone of an UNLINKED account, carried from `/lookup`'s "new".** `/link` writes nothing for a new
+   * number, so the family is created by `/create` WITH this phone, in one transaction with the child.
+   * 🚫 **Nothing is half-linked, because nothing is written until the child is accepted.**
+   */
+  const [newPhone, setNewPhone] = useState<string | null>(null);
   /**
    * 🔑 TASK-566 — **every field is required**, and the address only while the household has none on file. ONE expression,
    * read by the Continue button, the Confirm button and the pre-request guard — three doors, one rule.
@@ -155,7 +178,11 @@ export default function RegisterContent() {
       } else if (st.linked) {
         setAddressOnFile(st.addressOnFile); // TASK-566 — learned here, not asked for again
         setProvinceOnFile(st.province);
-        setPhase({ kind: "already-linked", phone: st.phone, childCount: st.childCount, confirming: false });
+        // 🔴 TASK-580 (D11 · F-B) — a linked family with NO children went to a screen offering only "unlink" or "close":
+        // a dead end for the very family that is trying to register. **Zero children ⇒ straight to the form**, the same rule
+        // `afterLink` already uses. 🚫 The CAP itself is never computed here — `canAddMore` is the server's word.
+        if (st.childCount === 0 && st.canAddMore) setPhase({ kind: "form" });
+        else setPhase({ kind: "already-linked", phone: st.phone, childCount: st.childCount, canAddMore: st.canAddMore, confirming: false });
       } else {
         setPhase({ kind: "phone" });
       }
@@ -171,16 +198,22 @@ export default function RegisterContent() {
   // §7b — the dataset is loaded ONLY here, only when the form is on screen, only in pick mode. If the chunk
   // cannot be fetched (an old phone, a bad signal) the plain field takes over — the escape hatch, automatically.
   useEffect(() => {
-    if (phase.kind !== "form" || addrMode !== "pick" || book) return;
+    if (phase.kind !== "form" || book) return;
     let alive = true;
     loadAddressBook().then(
       (b) => alive && setBook(b),
-      () => alive && setAddrMode("type"),
+      /**
+       * ⚠️ **TASK-591 — there is no typed fallback any more** (the server needs three parts, and a typed line has none).
+       * A dataset that will not load leaves the three pickers disabled with their "loading" placeholder, and the submit
+       * shut — 🔑 **which is honest: without the list we cannot produce an address the server will accept.**
+       * 🚫 We do not send two parts and hope.
+       */
+      () => alive && setBook(null),
     );
     return () => {
       alive = false;
     };
-  }, [phase.kind, addrMode, book]);
+  }, [phase.kind, book]);
 
   const pickProvince = async (code: string | null) => {
     const p = book?.provinces.find((x) => x.code === code) ?? null;
@@ -206,7 +239,9 @@ export default function RegisterContent() {
   // §10.2 — the option LABEL follows the language (DISPLAY); the option VALUE is the geocode either way, and what
   // is picked, joined and sent is `nameTh` regardless — the stored strings are Thai.
   const asOptions = (rows: AreaPick[]) =>
-    rows.map((r) => ({ value: r.code, label: lang === "th" ? r.nameTh : r.nameEn }));
+    // 🔴 TASK-580 §2 (F-D) — THAI names in both languages: the dataset's English is garbled (*"Khnong Tntnai"*), the Thai
+    // is correct, and the Thai is what we store. The field LABELS are still translated; only the area names are not.
+    rows.map((r) => ({ value: r.code, label: r.nameTh }));
 
   /**
    * §C0 — `TOKEN_EXPIRED` ⇒ re-init LIFF and retry ONCE. Nothing else is retried: `TOKEN_WRONG_CHANNEL` is a
@@ -233,6 +268,8 @@ export default function RegisterContent() {
       max: (r as Refusal).max,
       name: (r as Refusal).name,
       province: (r as Refusal).province,
+      missing: (r as Refusal).missing,
+      message: (r as Refusal).message,
     });
 
   /** After `/link`: the §6.1 decision, READ off the response — children ⇒ the list, none ⇒ add one. */
@@ -250,13 +287,16 @@ export default function RegisterContent() {
     setBusy(false);
     if (isRefusal(r)) return fail(r);
     if (r.outcome === "new") {
-      // 🔑 A NEW family: `/link` CREATES the parent (§C5.1), exactly as the chat does on phone entry. Then the
-      // form — there are no children to list, and the contract's `isNew` is that fact.
-      setBusy(true);
-      const l = await withToken((tok) => link(tok, phone));
-      setBusy(false);
-      if (isRefusal(l)) return fail(l);
-      return afterLink(l.children, l.canAddMore, l.addressOnFile, l.province);
+      /**
+       * 🔴 **TASK-590 (BE) → TASK-591 — `/link` is NOT called for a new number any more, and that is the fix.** It used to
+       * CREATE the parent at the phone step, which is how a family could exist with no child (D11). The new contract writes
+       * **nothing** until the first child is accepted ⇒ **we keep the phone and go to the form; `/create` carries it.**
+       * 🚫 No binding, no menus, no session change — so there is no half-linked state to recover from.
+       */
+      setNewPhone(r.phone);
+      setAddressOnFile(false); // a new household has none on file, so the address is asked
+      setProvinceOnFile(null);
+      return setPhase({ kind: "form" });
     }
     if ("twoFactor" in r) return setPhase({ kind: "found-2fa", phone: r.phone, childCount: r.childCount });
     setPhase({ kind: "found", phone: r.phone, children: r.children });
@@ -279,6 +319,17 @@ export default function RegisterContent() {
     const r = await withToken((tok) => link(tok, phone, code || undefined));
     setBusy(false);
     if (isRefusal(r)) return fail(r);
+    /**
+     * 🔻 **TASK-591 — `/link` has two arms now.** This path is reached from the "found" screens, so the answer should be
+     * `"linked"` — but the type says it may be `"new"`, and 🔑 **that is a real race: the family could have been archived
+     * between the lookup and the tap.** ⇒ handle it as the phone step does rather than casting it away.
+     */
+    if (r.outcome === "new") {
+      setNewPhone(r.phone);
+      setAddressOnFile(false);
+      setProvinceOnFile(null);
+      return setPhase({ kind: "form" });
+    }
     afterLink(r.children, r.canAddMore, r.addressOnFile, r.province);
   };
 
@@ -295,8 +346,12 @@ export default function RegisterContent() {
         birthDate: birthDate || undefined,
         // 🚫 When the household already has an address, neither field is sent — the server ignores them anyway, and a
         // body that carries what it cannot use is a question we are still asking.
+        // 🔴 TASK-591 — THREE parts, never a joined line: the server builds the stored string itself.
         province: addressOnFile ? undefined : pickedProvince || undefined,
-        address: addressOnFile ? undefined : addressLine || undefined,
+        district: addressOnFile ? undefined : distPick?.nameTh || undefined,
+        subDistrict: addressOnFile ? undefined : subPick?.nameTh || undefined,
+        // 🔑 The phone of an UNLINKED account: the family and this child are created in ONE transaction.
+        phone: newPhone ?? undefined,
         detailProvided: detailProvided || undefined,
       }),
     );
@@ -305,16 +360,37 @@ export default function RegisterContent() {
       // AC-9 — more detail, never a rename: back to the form with the hint, and the next submit says so.
       if (r.code === "NAME_DUPLICATE_NEEDS_DETAIL") {
         setDetailProvided(true);
-        setPhase({ kind: "form", dupName: (r as Refusal).name });
+        setPhase({
+          kind: "form",
+          dupName: (r as Refusal).name,
+          // 🔑 The server's own words, in the reader's language — the page holds them for this render only and keeps no copy.
+          dupMessage: (lang === "th" ? (r as Refusal).message?.TH : (r as Refusal).message?.EN) ?? undefined,
+        });
+        // 🔴 TASK-577 F-E — and NOTHING else. This used to fall through to `fail(r)` as well, so the same refusal drew
+        // TWO boxes: the red one at the top of the page (the owner APPROVED words) and an orange one above the field
+        // (the chat OLD words). 🔑 The owner ruled a REWORD, so there is one box — and it carries the approved sentence,
+        // at the field, which is where the parent has to act.
+        setFailure(null);
+        return;
       } else if (
         r.code === "NAME_REQUIRED" ||
         r.code === "NAME_RESERVED" ||
         r.code === "BIRTHDATE_INVALID" ||
         r.code === "BIRTHDATE_REQUIRED" ||
         r.code === "ADDRESS_REQUIRED" ||
+        // 🔴 TASK-591 — fixable here too, and the words NAME the missing part rather than calling the address wrong.
+        r.code === "ADDRESS_INCOMPLETE" ||
         r.code === "PROVINCE_UNKNOWN"
       ) {
         setPhase({ kind: "form" }); // fixable here — go back to the field
+      } else if (r.code === "PHONE_NOW_REGISTERED") {
+        /**
+         * 🔴 **TASK-591 — somebody registered that number between our lookup and this save.** 🚫 Nothing was written for us
+         * (the family and the child are one transaction), so the honest place to send them is back to the phone step —
+         * **still unlinked, and told why.**
+         */
+        setNewPhone(null);
+        setPhase({ kind: "phone" });
       } else if (r.code === "NOT_LINKED") {
         setPhase({ kind: "phone" }); // the family is not bound; start from the phone
       }
@@ -323,6 +399,8 @@ export default function RegisterContent() {
     // 🔑 The answer carries the new household state — the next child's form needs no second request to know.
     setAddressOnFile(r.addressOnFile);
     setProvinceOnFile(r.province);
+    // 🔑 The family exists now (created WITH this child), so the phone has done its one job and must not ride again.
+    setNewPhone(null);
     setPhase({ kind: "done", result: r });
   };
 
@@ -330,7 +408,7 @@ export default function RegisterContent() {
     setName("");
     setBirthDateTyped("");
     setBirthDatePicked(null);
-    setProvinceTyped("");
+
     setProvPick(null);
     setDistPick(null);
     setSubPick(null);
@@ -389,6 +467,18 @@ export default function RegisterContent() {
                   n: phase.childCount,
                 })}
               </Text>
+              {/* 🔴 TASK-580 (D11 · Tanya's F-B) — the way OUT of this screen for a family that came to add a child.
+                  🚫 The button is not shown-and-disabled at the cap: ⚠️ **a family at the cap gets the SENTENCE instead**,
+                  because a dead control with no explanation is the same dead end in a quieter costume. */}
+              {phase.canAddMore ? (
+                <Button variant="light" leftSection={<UserPlus size={16} />} data-add-child onClick={startAnotherChild}>
+                  {t("register.addChild")}
+                </Button>
+              ) : (
+                <Text fz="sm" c="dimmed" data-family-full>
+                  {t("register.familyFull")}
+                </Text>
+              )}
               <Text fz="xs" c="dimmed">
                 {t("register.closeHint")}
               </Text>
@@ -504,9 +594,13 @@ export default function RegisterContent() {
           {phase.kind === "form" && (
             <Stack gap="sm">
               {phase.dupName && (
-                /* AC-9 — the server asked for MORE DETAIL; the field keeps what was typed and the hint says why. */
-                <Alert color="orange" variant="light">
-                  {t("register.dupDetailHint")}
+                /* AC-9 — the server asked for MORE DETAIL; the field keeps what was typed and the box says why.
+                   🔴 TASK-577 F-E — ONE box, at the field, where the parent has to act (the page-top alert no longer
+                   fires for this code). 🔻 **TASK-591 — and the WORDS are the server's now:** TASK-590 sends them in both
+                   languages, so 🚫 the page keeps no copy at all. *Three homes in three rounds — the chat's words, an
+                   approved reword held here, now the server's body — and the drift is exactly why they moved.* */
+                <Alert color="orange" variant="light" data-dup-box>
+                  {phase.dupMessage}
                 </Alert>
               )}
               <TextInput
@@ -558,7 +652,16 @@ export default function RegisterContent() {
                 <Text fz="xs" c="dimmed" data-address-on-file={provinceOnFile || "yes"}>
                   {provinceOnFile ? t("register.addressOnFileProvince", { province: provinceOnFile }) : t("register.addressOnFile")}
                 </Text>
-              ) : addrMode === "pick" ? (
+              ) : (
+                <>
+                {/* 🔴 TASK-591 — a family we ALREADY know, asked again because the address is three parts now.
+                    ⚠️ It must not read as "we lost your address": what they gave us was valid when they gave it, and
+                    `newPhone === null` is exactly "this account is already linked" — so the sentence is shown only to them. */}
+                {newPhone === null && (
+                  <Text fz="xs" c="dimmed" data-address-ask-again>
+                    {t("register.addressAskAgain")}
+                  </Text>
+                )}
                 /* §7b — จังหวัด → เขต/อำเภอ → แขวง/ตำบล, each list read from the dataset by GEOCODE. The tier
                    words follow the province (Bangkok เขต/แขวง, elsewhere อำเภอ/ตำบล). The three picks JOIN into
                    the chat's one-line string — `พระโขนงเหนือ วัฒนา กทม`, that order, that abbreviation. */
@@ -600,23 +703,11 @@ export default function RegisterContent() {
                     comboboxProps={{ withinPortal: true }}
                   />
                 </Stack>
-              ) : (
-                <TextInput
-                  label={t("register.provinceLabel")}
-                  required
-                  placeholder={t("register.provincePlaceholder")}
-                  value={provinceTyped}
-                  onChange={(e) => setProvinceTyped(e.currentTarget.value)}
-                />
+                </>
               )}
-              {!addressOnFile && (
-                <EntryToggle
-                  mode={addrMode}
-                  typeLabel={t("register.typeInstead")}
-                  pickLabel={t("register.addrPickInstead")}
-                  onToggle={() => setAddrMode(addrMode === "pick" ? "type" : "pick")}
-                />
-              )}
+              {/* 🔻 TASK-591 — the address's "type instead" toggle is GONE. The server needs three parts and a typed line
+                  has no province to give, so a typed mode could only ever produce a body the server refuses.
+                  🚫 Removed rather than left disabled: a control that cannot succeed is worse than no control. */}
               {/* 🔑 Disabled until every required field is filled — and `submitCreate` refuses too (TASK-564's two guards). */}
               <Button disabled={!formComplete} data-form-next onClick={() => setPhase({ kind: "confirm" })}>
                 {t("register.formNext")}
@@ -683,20 +774,33 @@ export default function RegisterContent() {
   );
 }
 
-/** One rendering per NAMED CODE — the words for a decision the server made. 🚫 Never a server `message`. */
+/**
+ * One rendering per NAMED CODE — the words for a decision the server made.
+ *
+ * 🔴 **TASK-590 (BE) → TASK-591 — and ONE exception, on instruction: when the server sends the WORDS, they win.** The
+ * duplicate-name refusal now arrives with both languages in its body. 🔑 **One sentence, one source** — *so the chat, the
+ * page and the server cannot drift into three versions of the same refusal, which is exactly what happened to this one.*
+ * 🚫 **No local copy of it survives as a fallback:** a fallback is a second source.
+ */
 function FailureAlert({ failure }: { failure: Failure }) {
-  const t = useT();
+  const { t, lang } = useI18n();
+  const sent = lang === "th" ? failure.message?.TH : failure.message?.EN;
   const text =
     failure.code === "UNREACHABLE"
       ? t("register.connectFail")
-      : t(`register.code.${failure.code}`, {
+      : (sent ??
+        t(`register.code.${failure.code}`, {
           word: failure.word ?? "",
           max: failure.max ?? "",
           name: failure.name ?? "",
           province: failure.province ?? "",
-        });
+          // 🔑 `ADDRESS_INCOMPLETE` NAMES the part: "we still need the sub-district", not "that is wrong".
+          missing: (failure.missing ?? []).map((m) => t(`register.addrPart_${m}`)).join(", "),
+        }));
   return (
-    <Alert color="red" icon={<AlertTriangle size={16} />} variant="light">
+    // 🔑 TASK-591 — the code rides on the element, so a test can name WHICH refusal it is reading instead of hunting for
+    // text that also appears in a field label.
+    <Alert color="red" icon={<AlertTriangle size={16} />} variant="light" data-failure={failure.code}>
       {text}
     </Alert>
   );

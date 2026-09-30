@@ -920,10 +920,52 @@ export interface UserDTO {
 }
 
 /** REQ-097 (TASK-406) — `POST /teachers/me/leave` ⇒ what the server cancelled and whom it told. */
+/**
+ * `POST /teachers/me/leave` — 🔴 **TASK-582 (BE) → TASK-588: ONE route, TWO acts, and the answer says which one ran.**
+ *
+ * **Today or the past** ⇒ the original cancel: `cancelled` classes, their ids, the families told. 🚫 **No `mode` key —
+ * its ABSENCE is the old path**, and nothing was added to that answer.
+ * **A FUTURE date** ⇒ `mode: "advance"`: the day is recorded, **its live classes are LISTED**, and 🚫 **nothing is
+ * cancelled and nobody is told** — so `cancelled` is 0, `bookingIds` empty and `familiesNotified` 0, *which is a
+ * statement rather than an accident*. `alreadyRecorded` means the day was already on record (the first record stands).
+ */
+export interface LeaveDayClass {
+  id: string;
+  date: IsoDate;
+  startTime: string;
+  endTime: string;
+  status: BookingStatus;
+  bookingType: string | null;
+}
+/**
+ * 🔴 **TASK-587 (BE) → TASK-589 — the ADMIN's read: `GET /teacher-leave-days?from&to`.**
+ *
+ * The owner ruled that the classes on a blocked day are *"listed for the admin to handle by hand"* — 🔑 **which presupposes
+ * the admin KNOWS.** Nothing told them, and nothing ever did. This is the read that makes the day visible.
+ * 🚫 **It is not a control:** nothing is cancelled or moved from it. `bookings` is the SAME answer the teacher's own act
+ * returns (`leaveDayBookings`) — one query, two readers.
+ * ⚠️ **A LINKED teacher is refused (403)**, so the caller must not ask on a teacher-scoped session.
+ */
+export interface LeaveDayRow {
+  teacherId: string;
+  /** The coach's nickname — whose day it is, which is half of what makes the marker actionable. */
+  teacherName: string;
+  date: IsoDate;
+  reason: string | null;
+  createdBy: string | null;
+  bookings: LeaveDayClass[];
+}
+
 export interface OwnLeaveResult {
   cancelled: number;
   bookingIds: string[];
   familiesNotified: number;
+  /** Present ONLY on the advance act — the discriminator. */
+  mode?: "advance";
+  leave?: { date: IsoDate; reason: string | null };
+  alreadyRecorded?: boolean;
+  /** The classes already booked on that day. 🚫 Nothing was done to them: an admin handles them by hand. */
+  bookings?: LeaveDayClass[];
 }
 
 /** REQ-092 Stage 4 (TASK-387) — a role: a named bundle of keys (registry order, menus then actions), LIVE for its holders. */

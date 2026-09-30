@@ -39,6 +39,8 @@ export const useConfirmAllOtherSeries = () => door((ref: SeriesRef) => confirmAl
 export const useCancelAllOtherSeries = () => door(({ ref, body }: { ref: SeriesRef; body: { reasonCode: EndCourseReason; note?: string } }) => cancelAllOtherSeries(ref, body));
 export const useAddOtherSeriesTeacher = () => door(({ ref, body }: { ref: SeriesRef; body: { teacherId: string; rateMinor?: number; fromDate?: string } }) => addOtherSeriesTeacher(ref, body));
 export const useRemoveOtherSeriesTeacher = () => door(({ ref, teacherId, fromDate }: { ref: SeriesRef; teacherId: string; fromDate?: string }) => removeOtherSeriesTeacher(ref, teacherId, fromDate));
-export const useSwapOtherSeriesTeacher = () => door(({ ref, body }: { ref: SeriesRef; body: { from?: string; to: string; fromDate?: string } }) => swapOtherSeriesTeacher(ref, body));
+// 🔴 TASK-577 (D10) — `onDate` and `rateMinor` were missing from this type while the door was already sending the
+// first and needed the second: a COVER is one row (`onDate`) paid at the covering coach rate (`rateMinor`).
+export const useSwapOtherSeriesTeacher = () => door(({ ref, body }: { ref: SeriesRef; body: { from?: string; to: string; fromDate?: string; onDate?: string; rateMinor?: number } }) => swapOtherSeriesTeacher(ref, body));
 export const useAddOtherSeriesDates = () => door(({ ref, dates }: { ref: SeriesRef; dates: string[] }) => addOtherSeriesDates(ref, dates));
 export const useUpdateOtherSeries = () => door(({ ref, patch }: { ref: SeriesRef; patch: OtherSeriesHeaderPatch }) => updateOtherSeries(ref, patch));

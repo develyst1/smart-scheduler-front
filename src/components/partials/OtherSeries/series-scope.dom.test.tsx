@@ -2,7 +2,7 @@ import { describe, expect, it, mock, beforeEach, afterEach } from "bun:test";
 import { createElement as h } from "react";
 import { MantineProvider } from "@mantine/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nProvider } from "@/lib/i18n";
 
@@ -102,12 +102,28 @@ describe("🔴 TASK-564 — the scope question, clicked", () => {
     expect(sent).toEqual([]);
   });
 
-  it("🔑 SWAP + “this session only” ⇒ the body carries `onDate` and no `fromDate`", async () => {
+  /**
+ * 🔴 **TASK-577 (D10, Tanya TEST-076) — this test used to assert the dead end.** It read *"no rate on a swap … this door
+ * offers no rate box"* and passed — while every save it describes came back `400 RATE_REQUIRED` on sid, because a cover
+ * REQUIRES the covering coach's rate and the screen had no way to give one. 🔑 **The pin was faithful to the code and the
+ * code was wrong** — which is why the proof is now the whole act: the door is shut, the rate is entered, the PATCH carries it.
+ */
+  it("🔴 TASK-577 (D10) — SWAP + “this session only” is a COVER: the door waits for the rate, then the PATCH CARRIES it", async () => {
     const user = userEvent.setup();
     mount("swap");
     await pickTeacher(user);
 
     await user.click(document.querySelector("[data-scope-this]") as HTMLElement);
+    // 🔴 the dead end, now closed at the door instead of at the server: no rate ⇒ shut, and pressing it sends NOTHING
+    const box = await waitFor(() => document.querySelector("[data-cover-rate]") as HTMLInputElement);
+    expect(box.getAttribute("data-cover-rate")).toBe("none");
+    expect(saveBtn().disabled).toBe(true);
+    await user.click(saveBtn());
+    expect(sent).toEqual([]);
+
+    // 📌 `fireEvent.change`, not `user.type`: Mantine's `NumberInput` is masked and per-keystroke typing does not drive
+    // it under happy-dom (TASK-559). 🔑 And the proof is the BODY, not the box — TASK-567's rule.
+    fireEvent.change(box, { target: { value: "650" } });
     await waitFor(() => expect(saveBtn().disabled).toBe(false));
     await user.click(saveBtn());
 
@@ -115,10 +131,26 @@ describe("🔴 TASK-564 — the scope question, clicked", () => {
     expect(sent[0].method).toBe("PATCH");
     expect(sent[0].url).toBe("/other-series/k-1/teacher");
     const body = sent[0].body as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(["from", "onDate", "to"]);
+    expect(Object.keys(body).sort()).toEqual(["from", "onDate", "rateMinor", "to"]);
     expect(body.from).toBe("t1");
     expect(body.to).toBe("t2");
-    // 🚫 no rate on a swap: the server allows a cover's rate only with `onDate`, and this door offers no rate box
+    // 🔑 satang, and the COVERING coach's — the owner's ruling, at the boundary the server reads
+    expect(body.rateMinor).toBe(65000);
+  });
+
+  it("🚫 …and over the REST of the series there is no rate box and no rate in the body — the server writes none", async () => {
+    const user = userEvent.setup();
+    mount("swap");
+    await pickTeacher(user);
+
+    await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
+    expect(document.querySelector("[data-cover-rate]")).toBeNull();
+    await waitFor(() => expect(saveBtn().disabled).toBe(false));
+    await user.click(saveBtn());
+
+    await waitFor(() => expect(sent.length).toBe(1));
+    const body = sent[0].body as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["from", "fromDate", "to"]);
     expect(body.rateMinor).toBeUndefined();
   });
 

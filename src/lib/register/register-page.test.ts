@@ -109,6 +109,11 @@ describe("🔑 every named CODE has a rendering, both languages", () => {
         // 🔻 TASK-565/566 (REQ-110 item 10) — every field is required now; both are the SERVER's backstop behind the `*`.
         "BIRTHDATE_REQUIRED",
         "ADDRESS_REQUIRED",
+        // 🔻 TASK-590 (BE) → TASK-591, declared: the address is THREE parts now, and a new family's first child is ONE
+        // call — so two codes join the table. `ADDRESS_INCOMPLETE` carries `missing` (which part), and
+        // `PHONE_NOW_REGISTERED` is the window between our lookup and the save.
+        "ADDRESS_INCOMPLETE",
+        "PHONE_NOW_REGISTERED",
       ].sort(),
     );
   });
@@ -134,9 +139,24 @@ describe("🔑 every named CODE has a rendering, both languages", () => {
     expect(page).toContain('province: failure.province ?? "",');
   });
 
-  it("🚫 no server `message` is ever rendered — the page owns the words", () => {
-    expect(page).not.toMatch(/\.message\b/);
-    expect(api).not.toMatch(/message/);
+  /**
+   * 🔴 **TASK-590 (BE) → TASK-591 — REVERSED for ONE code, on @Sober's instruction.** This pin read *"no server `message`
+   * is ever rendered — the page owns the words"*, and that was right while the server sent codes only.
+   * **The duplicate-name refusal now arrives WITH ITS WORDS, in both languages** ⇒ 🔑 **the page renders what it sends and
+   * keeps NO local copy: one sentence, one source.** *That sentence has had three homes in three rounds — the chat's words,
+   * an approved reword held here (TASK-577), now the server's body; the drift is exactly why it moved.*
+   * ✅ **What the pin still protects, stated precisely: every OTHER code's words are the page's**, and a server `message` is
+   * rendered only when one is sent.
+   */
+  it("🔻 TASK-591 — the server's `message` is rendered when it sends one; every other code's words are the page's", () => {
+    expect(page).toContain("failure.message?.TH : failure.message?.EN");
+    expect(page).toContain("sent ??");
+    // 🚫 no local copy of the duplicate sentence survives, in either language
+    expect((en.register as Record<string, unknown>).dupDetailHint).toBeUndefined();
+    expect((th.register as Record<string, unknown>).dupDetailHint).toBeUndefined();
+    // and every code still has its own rendering for the case where no `message` rides
+    expect(en.register.code.ADDRESS_INCOMPLETE).toContain("{missing}");
+    expect(th.register.code.ADDRESS_INCOMPLETE).toContain("{missing}");
   });
 });
 
@@ -209,7 +229,17 @@ describe("🔴 the date — DD-MM-YYYY text, echoed back before submit, omitted 
     // `birthDate` / `province` are the ONE stored value each, whichever way in (picked or typed) — see §7a/§7b.
     expect(page).toContain("birthDate: birthDate || undefined,");
     expect(page).toContain("province: addressOnFile ? undefined : pickedProvince || undefined,");
-    expect(page).toContain("address: addressOnFile ? undefined : addressLine || undefined,");
+    // 🔻 TASK-591, declared: `address` (the pre-joined line) is GONE from the contract — THREE parts ride instead, plus the
+    // unlinked account's phone. **The rule this pin protects — an absent value is an OMITTED key, never empty string — is
+    // unchanged, and now covers five fields.**
+    expect(page).toContain("district: addressOnFile ? undefined : distPick?.nameTh || undefined,");
+    expect(page).toContain("subDistrict: addressOnFile ? undefined : subPick?.nameTh || undefined,");
+    expect(page).not.toContain("address: addressOnFile ? undefined : addressLine");
+    const c2 = api.slice(api.indexOf("export const create"));
+    expect(c2).toContain("if (input.district) body.district = input.district;");
+    expect(c2).toContain("if (input.subDistrict) body.subDistrict = input.subDistrict;");
+    expect(c2).toContain("if (input.phone) body.phone = input.phone;");
+    expect(c2).not.toContain("body.address");
     expect(page).toContain('const birthDate = dobMode === "pick" ? toCustomerDate(birthDatePicked) : birthDateTyped.trim();');
   });
 });
@@ -243,16 +273,40 @@ describe("§7b — the address is three cascading picks that JOIN into the chat'
     expect(page).toContain("districts.find((x) => x.code === code)");
   });
 
-  it("the escape hatch — `พิมพ์เอง / Type it instead` reveals the existing free-text field; a failed load falls back to it", () => {
+  /**
+   * 🔴 **TASK-591 — the address's escape hatch is GONE, and its absence IS the contract.** The server no longer reads a
+   * pre-joined line: it needs **three parts**, and a typed line has no province to give ⇒ **a typed mode could only ever
+   * produce a body the server refuses.** 🚫 Removed rather than left disabled — *a control that cannot succeed is worse than
+   * no control.* ⚠️ **A dataset that will not load now leaves the pickers disabled and the submit shut**, which is honest:
+   * without the list we cannot produce an address the server will accept. 📌 The BIRTHDAY's own toggle is untouched.
+   */
+  /**
+   * 🔴 **TASK-591 — the legacy ask is for families we ALREADY know, and only them.** A brand-new family has never given us
+   * an address, so telling them we are asking *again* would be a small lie on their first screen.
+   * 🔑 **Pinned at the source because the clicked proof cannot be trusted here: the mutation that shows the sentence to
+   * everyone CRASHES Bun** (exit 9, no summary), so the DOM run of that mutant yields nothing. *A rule whose only proof is
+   * a run that can crash has no proof on the days it crashes.*
+   */
+  it("🔴 TASK-591 — the ask-again sentence is shown ONLY to an already-linked family", () => {
+    expect(page).toContain("{newPhone === null && (");
+    expect(page).toContain("data-address-ask-again");
+    expect(page).not.toContain("{true && (");
+  });
+
+  it("🔻 TASK-591 — the address has ONE mode (three picks) and no typed fallback", () => {
     const f = form();
-    expect(f).toContain('addrMode === "pick" ? (');
-    expect(f).toContain("onChange={(e) => setProvinceTyped(e.currentTarget.value)}");
-    expect(f).toContain('onToggle={() => setAddrMode(addrMode === "pick" ? "type" : "pick")}');
-    expect(page).toContain('() => alive && setAddrMode("type")');
+    expect(f).not.toContain("addrMode");
+    expect(f).not.toContain("setProvinceTyped");
+    expect(page).not.toContain("setAddrMode");
+    expect(page).toContain("() => alive && setBook(null),");
+    // the birthday's toggle stays — that one produces exactly what the server reads
+    expect(f).toContain('pickLabel={t("register.dobPickInstead")}');
   });
 
   it("🔑 the dataset is loaded DYNAMICALLY, from `entry.ts` only, and only while the form is on screen", () => {
-    expect(page).toContain('if (phase.kind !== "form" || addrMode !== "pick" || book) return;');
+    // 🔻 TASK-591: the `addrMode` term went with the typed mode; the rest of the rule — loaded only while the form is on
+    // screen, only once — is unchanged.
+    expect(page).toContain('if (phase.kind !== "form" || book) return;');
     expect(page).not.toContain("thai-address-universal");
     // the ONLY place in the app that names the package is the dynamic import in entry.ts
     const entry = codeOf("src/lib/register/entry.ts");
@@ -297,7 +351,24 @@ describe("§5 / §6.1 — what the page does its own way", () => {
   it("AC-9 — a duplicate re-asks for MORE DETAIL and resubmits with `detailProvided: true`, never a rename", () => {
     expect(page).toContain('if (r.code === "NAME_DUPLICATE_NEEDS_DETAIL") {');
     expect(page).toContain("setDetailProvided(true);");
-    expect(page).toContain('t("register.dupDetailHint")');
+    // 🔻 TASK-577 F-E, declared — the box is still there and still above the name field; what changed is WHOSE WORDS it
+    // carries. It rendered `dupDetailHint` (the LINE chat's "add a surname or nickname") while the owner's APPROVED reword
+    // was drawn a second time at the top of the page ⇒ TWO boxes for one refusal. The owner ruled a REWORD, so:
+    // 🔻 TASK-591 — the THIRD round for this one sentence: TASK-577 moved the box's words to the owner's approved reword
+    // held HERE; **TASK-590 now sends them from the server in both languages**, so the box renders `phase.dupMessage` and
+    // 🚫 the page keeps no copy. *One sentence, one source — the drift is why it moved.*
+    expect(page).toContain("{phase.dupMessage}");
+    expect(page).toContain("dupMessage: (lang === ");
+    // 🔑 ONE box, by count: this refusal no longer also raises the page-top failure alert
+    const dupAt = page.indexOf('if (r.code === "NAME_DUPLICATE_NEEDS_DETAIL") {');
+    const dupBranch = page.slice(dupAt, dupAt + 400);
+    expect(dupBranch).toContain("setFailure(null);");
+    expect(dupBranch).toContain("return;");
+    expect((page.match(/NAME_DUPLICATE_NEEDS_DETAIL/g) ?? []).length).toBe(1); /* 🔻 TASK-591: the branch only — the words are the server's */
+    // 🚫 and the old sentence cannot come back: the key is deleted from both dictionaries
+    expect(page).not.toContain("dupDetailHint");
+    expect((dictionaries.en.register as Record<string, string>).dupDetailHint).toBeUndefined();
+    expect((dictionaries.th.register as Record<string, string>).dupDetailHint).toBeUndefined();
     expect(api).toContain("if (input.detailProvided) body.detailProvided = true;");
   });
 
@@ -333,11 +404,15 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
   it("toggling changes `lang` and NOTHING else — the toggle calls setLang; the page reads `lang` for the date locale only", () => {
     expect(toggle).toContain("onChange={(v) => setLang(v as Lang)}");
     expect(toggle).not.toMatch(/setPhase|localStorage|fetch|reload/);
-    // every `lang` on the page: the destructure, the DatesProvider locale, (TASK-351) the tier LABEL choice, and
-    // (TASK-355) the option LABEL choice — all four are RENDERING; nothing keyed on it sets state (no `[lang]`
-    // effect, no setter on a `lang` branch)
-    expect((page.match(/\blang\b/g) ?? []).length).toBe(4);
-    expect(page).toContain('label: lang === "th" ? r.nameTh : r.nameEn');
+    // every `lang` on the page: the destructure, the DatesProvider locale, and (TASK-351) the tier LABEL choice — all
+    // three are RENDERING; nothing keyed on it sets state (no `[lang]` effect, no setter on a `lang` branch)
+    // 🔻 TASK-580 §2 — THREE now, not four: the option LABEL no longer reads `lang`, because the dataset's English is
+    // garbled (Tanya's F-D). See the §8b pin below for the full declaration.
+    // 🔻 TASK-591: SIX now. The three above, plus **the language of the SERVER's own refusal sentence** — read in the
+    // duplicate branch, destructured in `FailureAlert`, and used there to pick `message.TH` / `message.EN`.
+    // 🔑 **Every one of the six is still RENDERING or SELECTING; none sets state**, which is the property this pin is for.
+    expect((page.match(/\blang\b/g) ?? []).length).toBe(6);
+    expect(page).toContain("rows.map((r) => ({ value: r.code, label: r.nameTh }))");
     expect(page).toContain("<DatesProvider settings={{ locale: lang, firstDayOfWeek: 0 }}>");
     expect(page).not.toMatch(/\[lang\]/);
     expect(page).not.toMatch(/lang [!=]== "(th|en)"[^\n]*set[A-Z]/);
@@ -404,21 +479,29 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
     expect(th.register.addrProvince).toBe("จังหวัด");
   });
 
-  // ── TASK-355 §10.2 — REVERSED for the option LABELS, not deleted. TASK-351 asserted "VALUES stay Thai in both
-  // languages: the option labels and the joined string are `nameTh`, never `nameEn`". The owner's EN screen showed
-  // Thai inside the dropdowns ("ตัวเลือก … ข้างใน dropdown เป็นภาษาไทย แม้จะเปลี่ยนภาษาเป็นภาษาอังกฤษ") and he wants
-  // English there. What is DISPLAYED in the list follows `lang` (the dataset's `nameEn`, already loaded — no new
-  // bytes). What is STORED does not: the option VALUE is the geocode, the JOIN and the two SENT strings read `nameTh`
-  // — the `§9.1` repair path and the report depend on the Thai spelling. The right half is kept below.
-  it("§8b (reversed by TASK-355 §10.2) — option LABELS follow the language; the JOIN and the SEND stay `nameTh`", () => {
-    // labels: display only, keyed on `lang`; the value is the geocode either way
-    expect(page).toContain('rows.map((r) => ({ value: r.code, label: lang === "th" ? r.nameTh : r.nameEn }))');
-    // the right half, kept: nothing stored ever reads `nameEn`
+  /**
+   * ── The history of this one line, because 🔴 **TASK-580 reverses the OWNER and that has to be visible here:**
+   *
+   * **TASK-351:** Thai in both languages. **TASK-355 §10.2:** English labels in EN mode — *the owner asked for them*
+   * ("ตัวเลือก … ข้างใน dropdown เป็นภาษาไทย แม้จะเปลี่ยนภาษาเป็นภาษาอังกฤษ"). **TASK-580 §2:** Thai in both languages
+   * again, because Tanya's F-D shows what the package actually ships: ***"Khnong Tntnai"* for คลองตันเหนือ.**
+   * 🔑 **The owner asked for READABLE English and this dataset cannot supply it** — garbled English on a parent's phone
+   * serves him worse than Thai does. ⚠️ **It stays his call: @Sober is carrying it up, and TASK-580's report says so.**
+   * 🚫 We did not patch the package's strings, and 🚫 we did not transliterate our own.
+   * ✅ Unchanged through all three rounds: **the option VALUE is the geocode, and everything STORED or SENT is `nameTh`**
+   * — the `§9.1` repair path and the report depend on the Thai spelling.
+   */
+  it("§8b (TASK-580) — option labels are THAI in both languages; the JOIN and the SEND are unchanged", () => {
+    expect(page).toContain("rows.map((r) => ({ value: r.code, label: r.nameTh }))");
+    // 🔑 and it cannot come back by accident: the field is gone from the TYPE, so a future reader is a compile error
+    expect(codeOf("src/lib/register/entry.ts")).not.toContain("nameEn");
+    // the right half, unchanged since TASK-351: nothing stored ever reads the English name
     expect(page).toContain(
       "joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })",
     );
-    expect(page).toContain('const pickedProvince = addrMode === "pick" ? provPick?.nameTh ?? "" : "";');
-    expect((page.match(/nameEn/g) ?? []).length).toBe(1); // the ONE occurrence is the label above
+    // 🔻 TASK-591: the typed mode is gone, so the picked province is simply the pick.
+    expect(page).toContain('const pickedProvince = provPick?.nameTh ?? "";');
+    expect((page.match(/nameEn/g) ?? []).length).toBe(0); // 🔻 TASK-580: not one reader left anywhere on the page
     const entry = codeOf("src/lib/register/entry.ts");
     const join = entry.slice(entry.indexOf("export const joinAddress"), entry.indexOf("export interface AddressBook"));
     expect(join).toContain("everydayProvinceName(parts.province)");
@@ -436,26 +519,37 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
     expect(th.register.addrProvince).toBe("จังหวัด");
   });
 
-  it("§4 nit 2 — the typing instruction shows in TYPED mode only; in pick mode the tier labels ARE the instruction", () => {
+  /**
+   * 🔻 **TASK-591 — there is no typed address mode left to instruct.** The instruction existed for the free-text province
+   * field; the server needs three parts now, so the field and its label are both gone. 🔑 **What survives is the half that
+   * was always the real rule: in the pickers, the TIER LABELS are the instruction** — and `provinceLabel` must not return.
+   */
+  it("§4 nit 2 (TASK-591) — the tier labels ARE the instruction, and the typed province label is GONE", () => {
     const form = page.slice(page.indexOf('phase.kind === "form"'), page.indexOf('phase.kind === "confirm"'));
-    const pickStart = form.indexOf('addrMode === "pick" ? (');
-    const typedStart = form.indexOf('label={t("register.provinceLabel")}');
-    expect(pickStart).toBeGreaterThan(0);
-    expect(typedStart).toBeGreaterThan(pickStart);
-    const pickRegion = form.slice(pickStart, typedStart);
-    expect(pickRegion).toContain("onChange={pickSubDistrict}"); // the region is the picker
-    expect(pickRegion).not.toContain("provinceLabel");
-    expect((form.match(/register\.provinceLabel/g) ?? []).length).toBe(1); // exactly once: the typed field's label
+    expect(form).toContain("onChange={pickSubDistrict}");
+    expect(form).not.toContain("provinceLabel");
+    expect((form.match(/register\.provinceLabel/g) ?? []).length).toBe(0);
+    // the tier labels are what the parent reads, and they follow the province (Bangkok เขต/แขวง, elsewhere อำเภอ/ตำบล)
+    expect(form).toContain("label={tier.district}");
+    expect(form).toContain("label={tier.subDistrict}");
   });
 });
 
 describe("§9 (TASK-353) — the PROVINCE travels as its own field, full name; the LINE goes to `address`", () => {
   // Field names confirmed against TASK-352's `📜 THE FIELD NAMES` block and the live route (`routes/register.ts`
   // lines 37–38: `province?` → parents.province, `address?` → parents.note APPENDED) on 2026-09-13.
-  it("PICKED ⇒ `province` = the picked FULL name and `address` = the joined line; TYPED ⇒ `address` only; blank ⇒ neither", () => {
-    expect(page).toContain('const pickedProvince = addrMode === "pick" ? provPick?.nameTh ?? "" : "";');
+  /**
+   * 🔻 **TASK-591 — the PROVINCE still travels as its own field, and the LINE no longer travels at all.** TASK-353 sent the
+   * province (for `parents.province`) **and** a pre-joined line (for `parents.note`); **TASK-590's server builds that line
+   * itself from three parts**, so the page sends the parts and 🚫 never the join. ✅ **The half this pin exists for is
+   * unchanged: the province is the picked FULL name, and nothing here maps or joins anything.**
+   * 📌 The joined line survives for ONE job — the confirm screen's echo — which is display, not the wire.
+   */
+  it("§9 (TASK-591) — the three parts travel; the province is the picked FULL name; the JOIN is display only", () => {
+    expect(page).toContain('const pickedProvince = provPick?.nameTh ?? "";');
     expect(page).toContain("province: addressOnFile ? undefined : pickedProvince || undefined,");
-    expect(page).toContain("address: addressOnFile ? undefined : addressLine || undefined,");
+    expect(page).toContain("district: addressOnFile ? undefined : distPick?.nameTh || undefined,");
+    expect(page).toContain("subDistrict: addressOnFile ? undefined : subPick?.nameTh || undefined,");
     // the line is the join (`กทม` in the LINE); the province is `nameTh` (`กรุงเทพมหานคร` in the COLUMN) — two forms, two homes
     expect(page).toContain(
       "joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })",
@@ -464,7 +558,8 @@ describe("§9 (TASK-353) — the PROVINCE travels as its own field, full name; t
     // api.ts forwards both as-is and drops blanks — no rule, no join, no mapping
     const c = api.slice(api.indexOf("export const create"));
     expect(c).toContain("if (input.province) body.province = input.province;");
-    expect(c).toContain("if (input.address) body.address = input.address;");
+    // 🔻 TASK-591: `address` is no longer part of the contract, and api.ts still forwards as-is with no rule of its own
+    expect(c).not.toContain("body.address");
     expect(api).not.toMatch(/joinAddress|TH_PROVINCES|thai-address|includes\(/);
   });
 
@@ -551,16 +646,22 @@ describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked accoun
     expect((page.match(/childCount === 1/g) ?? []).length).toBe(1); // one ternary, one place
   });
 
-  it("§10.2 — the dataset's English name rides the row (loaded with the Thai — no new bytes) and is never joined", () => {
+  it("🔻 TASK-580 §2 — the English name no longer rides the row at all (the type forbids a reader)", () => {
     const entry = codeOf("src/lib/register/entry.ts");
-    expect(entry).toContain("nameEn: r.nameEn");
+    // 📌 It was carried "for the option LABEL in EN mode only". That label is Thai now, so the field is DELETED rather
+    // than left unused: **an unused garbled field is a reader waiting to happen.**
+    expect(entry).not.toContain("nameEn");
+    expect(entry).toContain("const uniqueByCode = (rows: { code: string; nameTh: string }[]): AreaPick[] =>");
     expect(entry).not.toMatch(/import\("thai-address-universal"\)[\s\S]*nameEn[\s\S]*join\(/);
   });
 
   it("§10.3 — on open, after the token: `status`; linked ⇒ the warning with the SERVER's masked phone; else the phone field", () => {
     const init = page.slice(page.indexOf("const initLiff"), page.indexOf("useEffect(() => {"));
     expect(init).toContain("const st = await status(s.idToken);");
-    expect(init).toContain('setPhase({ kind: "already-linked", phone: st.phone, childCount: st.childCount, confirming: false });');
+    // 🔻 TASK-580 (D11 · Tanya's F-B), declared: the phase carries the server's `canAddMore`, and a linked family with
+    // ZERO children goes straight to the form instead of to a screen offering only "unlink" or "close".
+    expect(init).toContain('if (st.childCount === 0 && st.canAddMore) setPhase({ kind: "form" });');
+    expect(init).toContain('setPhase({ kind: "already-linked", phone: st.phone, childCount: st.childCount, canAddMore: st.canAddMore, confirming: false });');
     expect(init).toContain('setPhase({ kind: "phone" });');
     // Rule 1: the page branches on the server's `linked`, and on nothing else
     expect(init).toContain("} else if (st.linked) {");
@@ -570,7 +671,8 @@ describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked accoun
   it("§10.3 — the page never masks and never holds a full number; a count, no names", () => {
     // no masking anywhere on the page or in api.ts — the `08x-xxx-xxxx` comes from the server as-is
     for (const src of [page, api]) expect(src).not.toMatch(/replace\(\/\\d|padEnd|"x"\.repeat|x{3}|maskPhone|slice\(0, 2\)/);
-    expect(api).toContain('{ ok: true; linked: true; phone: string; childCount: number }');
+    // 🔻 TASK-580: + `canAddMore`, the server's own answer. Still a count and a flag — 🚫 no names, no children.
+    expect(api).toContain('{ ok: true; linked: true; phone: string; childCount: number; canAddMore: boolean }');
     const statusType = api.slice(api.indexOf("export type StatusResult"), api.indexOf("export interface UnlinkResult"));
     expect(statusType).not.toMatch(/name|children|nickname|parentId/);
     const screen = page.slice(page.indexOf('phase.kind === "already-linked"'), page.indexOf('phase.kind === "phone" &&'));

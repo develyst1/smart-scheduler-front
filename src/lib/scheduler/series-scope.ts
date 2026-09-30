@@ -44,3 +44,32 @@ export const scopeDateLabelKey = (scope: SeriesScope): string =>
  */
 export const scopeOutcomeKey = (mode: "add" | "swap", scope: SeriesScope): string | null =>
   scope !== "this" ? null : mode === "swap" ? "otherSeries.coverNote" : "otherSeries.joinNote";
+
+/**
+ * 🔴 **TASK-577 (D10, Tanya TEST-076 on sid) — a COVER cannot be saved without a rate, and the screen had no way to
+ * give one.** `400 RATE_REQUIRED`, every time, for Khwan's exact case.
+ *
+ * **The dead end is a closed loop between three rules that each look right alone:**
+ *  1. **Who Swap OFFERS** — `bookable && not already on the row`. **By construction, a coach with no rate in this series.**
+ *  2. **What the series rate list ACCEPTS** — `assertRatesOnBooking`: a rate may be set only for a teacher **on the row**
+ *     (`400 VALIDATION` otherwise) ⇒ 🚫 **the covering coach cannot be given a rate in advance.**
+ *  3. **What the save REQUIRES** — with `onDate`: `rateMinor ?? seriesRateOf(rows, to)`, and **`null` is refused** (never
+ *     the covered teacher's rate by default — the owner's ruling is that the COVERING coach's rate is paid).
+ * ⇒ 🔑 **The only exit is `rateMinor` in the swap body**, which this door deliberately never sent.
+ *
+ * ⚖️ **Entered, not carried, and the reason is not a preference:** the only rates the FE can see are
+ * `series.teacherRates`, which the server builds from the header row's primary and extras — **exactly the coaches Swap
+ * excludes.** *There is never a rate to carry for a coach who is eligible to cover.*
+ * ⚠️ **Only for `this` (a cover).** Over the rest of the series the server writes no rate at all, so a box there would
+ * offer a number that goes nowhere — the old comment's fear ("a field that could contradict the scope"), answered by
+ * showing it **only in the scope where it means something** rather than by having none.
+ */
+export const coverRateRequired = (mode: "add" | "remove" | "swap", scope: SeriesScope): boolean => mode === "swap" && scope === "this";
+
+/**
+ * The rate this series already records for a teacher, or `null`. 🔑 **Kept even though it answers `null` for every coach
+ * the Swap door can offer** — it is the check that makes "entered, not carried" true rather than assumed, and if the DTO
+ * ever carries earlier rows' rates (the server's own fallback scans them), the box fills itself.
+ */
+export const knownSeriesRate = (rates: Record<string, number> | undefined, teacherId: string | null): number | null =>
+  teacherId && rates && typeof rates[teacherId] === "number" ? rates[teacherId] : null;

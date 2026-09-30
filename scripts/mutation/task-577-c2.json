@@ -1,0 +1,17 @@
+[
+  {
+    "id": "C2",
+    "what": "🔴 the rate rides on the WHOLE-SERIES swap too (a field the server ignores, contradicting the scope)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/series-scope.ts",
+        "edits": [
+          {
+            "from": "export const coverRateRequired = (mode: \"add\" | \"remove\" | \"swap\", scope: SeriesScope): boolean => mode === \"swap\" && scope === \"this\";",
+            "to": "export const coverRateRequired = (mode: \"add\" | \"remove\" | \"swap\", scope: SeriesScope): boolean => mode === \"swap\";"
+          }
+        ]
+      }
+    ]
+  }
+]

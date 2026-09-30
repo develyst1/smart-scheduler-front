@@ -63,8 +63,17 @@ export const removeOtherSeriesTeacher = async (ref: SeriesRef, teacherId: string
   return data;
 };
 
-/** OTHER: `from` must be the primary (the server's 400 otherwise). GROUP: `{ to }` alone — `swapBody` builds it. */
-export const swapOtherSeriesTeacher = async (ref: SeriesRef, body: { from?: string; to: string; fromDate?: string }): Promise<{ moved: number }> => {
+/**
+ * OTHER: `from` must be the primary (the server's 400 otherwise). GROUP: `{ to }` alone — `swapBody` builds it.
+ * 🔴 **TASK-577 (D10)** — the scope rides too, and on a COVER (`onDate`) so does `rateMinor`: the server pays the
+ * COVERING coach and **refuses the cover outright when it has no rate for them** (`400 RATE_REQUIRED`), because the
+ * alternative is paying the covered teacher's rate by default. 🚫 The type used to name only `fromDate`, while the door
+ * was already sending `onDate` — *a body wider than its type is how a required field goes missing without a compile error.*
+ */
+export const swapOtherSeriesTeacher = async (
+  ref: SeriesRef,
+  body: { from?: string; to: string; fromDate?: string; onDate?: string; rateMinor?: number },
+): Promise<{ moved: number }> => {
   if (useMockData) return mock.swapTeacher(ref, body);
   const { data } = await api.patch<{ moved: number }>(seriesPath(ref, "/teacher"), body);
   return data;

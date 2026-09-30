@@ -4,6 +4,7 @@ import type { CampDayCheckin, CampDayEntry, CampPackage, CampPrices, CampWeek, C
 import type { CampDayPatch } from "@/lib/camp/grid";
 import { datesBetween, type CampDayStatusWrite, type CampHalf, type SellCampInput } from "@/lib/camp/units";
 import type { CreateCampWeekInput, UpdateCampWeekInput } from "./camp.service";
+import { ApiClientError } from "@/lib/api/client";
 
 const delay = <T>(v: T, ms = 100) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
@@ -42,6 +43,28 @@ export const createCampWeek = (input: CreateCampWeekInput) => {
   };
   weeks.push(w);
   return delay(clone(w));
+};
+
+/**
+ * TASK-586 — delete a week, offline. ⚠️ **It REFUSES the same way the server does when the week has day bookings** — the
+ * code and a sentence that says how many and points at Close — so the refusal path is exercisable without a server.
+ */
+export const deleteCampWeek = (id: string) => {
+  const w = weeks.find((x) => x.id === id);
+  if (!w) return Promise.reject(new ApiClientError("NOT_FOUND", "ไม่พบสัปดาห์แคมป์", 404));
+  const kids = Object.values(w.dayCounts ?? {}).reduce((a: number, b: number) => a + b, 0);
+  if (kids > 0) {
+    return Promise.reject(
+      new ApiClientError(
+        "CAMP_WEEK_HAS_BOOKINGS",
+        `ลบสัปดาห์ ${w.name} ไม่ได้: มีการจองวันแคมป์ ${kids} รายการ — ใช้ "ปิดรับ" แทน เพื่อหยุดรับจองใหม่ (การจองเดิมยังอยู่)`,
+        409,
+      ),
+    );
+  }
+  const i = weeks.findIndex((x) => x.id === id);
+  if (i >= 0) weeks.splice(i, 1);
+  return delay({ deleted: true as const });
 };
 
 export const updateCampWeek = (id: string, input: UpdateCampWeekInput) => {

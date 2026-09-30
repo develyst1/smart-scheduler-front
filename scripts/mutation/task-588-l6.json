@@ -1,0 +1,17 @@
+[
+  {
+    "id": "L6",
+    "what": "the advance result is shown for the CANCEL act too (today's cancel claims nothing was cancelled)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "      if (isAdvanceResult(res)) {",
+            "to": "      if (true || isAdvanceResult(res)) {"
+          }
+        ]
+      }
+    ]
+  }
+]

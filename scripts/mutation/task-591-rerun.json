@@ -1,0 +1,32 @@
+[
+  {
+    "id": "W9",
+    "what": "the legacy ask is shown to a BRAND-NEW family too (asked \"again\" when they were never asked)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "                {newPhone === null && (",
+            "to": "                {true && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W11",
+    "what": "the phone keeps riding after the family exists (a second child re-points the family)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "    setNewPhone(null);\n    setPhase({ kind: \"done\", result: r });",
+            "to": "    setPhase({ kind: \"done\", result: r });"
+          }
+        ]
+      }
+    ]
+  }
+]

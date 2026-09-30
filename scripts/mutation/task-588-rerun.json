@@ -1,0 +1,66 @@
+[
+  {
+    "id": "L1",
+    "what": "🔴 `sessionIds` rides on a future date again (the server 400s it — the dead end item 2 exists to close)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/teacher-scope.ts",
+        "edits": [
+          {
+            "from": "  if (advance) return { date, reason: reason.trim() };",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L3",
+    "what": "🔴 the chooser is shown but DISABLED instead of absent (a greyed control still offers a meaning the act lacks)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "        {advance ? (",
+            "to": "        {false ? ("
+          },
+          {
+            "from": "                  checked={ticked.includes(r.id)}\n                  onChange={(e) => toggle(r.id, e.currentTarget.checked)}",
+            "to": "                  checked={ticked.includes(r.id)}\n                  disabled={advance}\n                  onChange={(e) => toggle(r.id, e.currentTarget.checked)}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L6",
+    "what": "the advance result is shown for the CANCEL act too (today's cancel claims nothing was cancelled)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "      if (isAdvanceResult(res)) {",
+            "to": "      if (true || isAdvanceResult(res)) {"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L10",
+    "what": "the class list is computed on the page instead of read from the server's answer",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "                  {(done.bookings ?? []).map((b) => (",
+            "to": "                  {rows.map((b) => ("
+          }
+        ]
+      }
+    ]
+  }
+]

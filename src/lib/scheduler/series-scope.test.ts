@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
-import { SERIES_SCOPES, scopeBody, scopeChosen, scopeDateLabelKey, scopeOutcomeKey } from "./series-scope";
+import { coverRateRequired, knownSeriesRate, SERIES_SCOPES, scopeBody, scopeChosen, scopeDateLabelKey, scopeOutcomeKey } from "./series-scope";
 import { dictionaries } from "@/lib/i18n/dictionaries";
 
 const codeOf = (p: string) =>
@@ -62,9 +62,44 @@ describe("TASK-564 — the doors ask, and no option is pre-selected", () => {
     expect(dialogs).toContain('value={scope ?? ""}');
   });
 
+  /**
+ * 🔴 **TASK-577 (D10) — the cover's rate, as rules.** These live here rather than only in the clicked test because the
+ * clicked proof cannot reach them: the mutant that makes the rate ride on a WHOLE-SERIES swap **crashes Bun outright**
+ * (exit `0xC0000409`) instead of failing, so the DOM run yields no counts at all. 🔑 *A rule whose only proof is a run
+ * that can crash is a rule with no proof on the days it crashes.*
+ */
+  it("🔴 the rate belongs to a COVER and nothing else — one session, a swap, and neither of the other doors", () => {
+    expect(coverRateRequired("swap", "this")).toBe(true);
+    // 🚫 over the REST of the series the server writes no rate at all ⇒ a box there would offer a number that goes nowhere
+    expect(coverRateRequired("swap", "rest")).toBe(false);
+    // 🚫 an ADD on one session is a JOIN (both paid, each at their own rate) — its rate box is the optional one
+    expect(coverRateRequired("add", "this")).toBe(false);
+    expect(coverRateRequired("remove", "this")).toBe(false);
+    // 🚫 and never before a scope is chosen
+    expect(coverRateRequired("swap", null)).toBe(false);
+  });
+
+  it("⚖️ ENTERED, not carried — and this is the check that makes that a fact rather than a preference", () => {
+    // The only rates this screen can see are `series.teacherRates`, which the server builds from the header row's
+    // primary and extras. Swap offers `bookable && !onRow` ⇒ 🔑 **the two sets cannot overlap**, so there is never a rate
+    // to carry for a coach who is eligible to cover.
+    expect(knownSeriesRate({ t1: 50000 }, "t1")).toBe(50000);
+    expect(knownSeriesRate({ t1: 50000 }, "t2")).toBeNull();
+    expect(knownSeriesRate(undefined, "t2")).toBeNull();
+    expect(knownSeriesRate({ t1: 50000 }, null)).toBeNull();
+    // the door's own filter, pinned at the source: the excluded set IS the rate-bearing set
+    expect(dialogs).toContain("const onRow = [series.teacherId, ...series.additionalTeacherIds];");
+    expect(dialogs).toContain("const choices = teachers.filter((x) => x.bookable && !onRow.includes(x.id));");
+  });
+
   it("🔑 Save waits for a scope, and `submit` refuses without one — two guards, because one is a UI state", () => {
-    expect(dialogs).toContain('disabled={mode !== "remove" && (!to || !scoped)}');
+    // 🔻 TASK-577 (D10), declared: the condition GREW — a cover with no rate cannot be pressed either. What this pin
+    // protects (Save waits for a scope · `submit` refuses without one · two guards) is unchanged and still asserted.
+    expect(dialogs).toContain('disabled={mode !== "remove" && (!to || !scoped || (needRate && canRate && coverRateMinor == null))}');
     expect(dialogs).toContain('if (mode !== "remove" && !scoped) return;');
+    // 🔴 TASK-577 (D10) — the same pair for the cover's rate. **A clicked test cannot prove this half:** with the button
+    // still disabled, removing the pre-request return changes nothing a click can see. *Two guards need two proofs.*
+    expect(dialogs).toContain("if (needRate && canRate && coverRateMinor == null) return;");
   });
 
   it("the server's refusal reaches the admin as its own sentence", () => {

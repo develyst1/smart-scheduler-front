@@ -420,7 +420,9 @@ const en = {
     status_ABSENT: "Absent",
     status_CANCELLED: "Cancelled",
     weekStatus_OPEN: "Open",
-    weekStatus_CLOSED: "Closed",
+    // 🔴 TASK-586 — 📝 DRAFT (Fern, TASK-586). "Closed" alone read as *cancelled / hidden / off*, and Close now means ONE
+    // thing: no NEW bookings. The week is still running, still staffed, still charging. Every string below says so.
+    weekStatus_CLOSED: "Closed to new bookings",
     daysLeft: "{n} days left",
     creditLine: "{total} days bought · {used} used · {planned} planned",
     boughtOn: "Bought {date}",
@@ -447,8 +449,15 @@ const en = {
     teachers: "Teachers",
     weekOpenedOk: "Week {name} opened",
     weekSavedOk: "Week {name} saved",
-    closeWeek: "Close",
-    weekClosedOk: "Week {name} closed — no new days can be planned into it",
+    // 📝 DRAFT (Fern, TASK-586) — the BUTTON says what it does, not what it sounds like.
+    closeWeek: "Stop new bookings",
+    openWeekBack: "Take bookings again",
+    weekClosedOk: "Week {name} is closed to NEW bookings. Everything already booked carries on — the children keep their days, the coaches keep their sessions, and the reminders still go out. You can take bookings again at any time.",
+    deleteWeek: "Delete",
+    deleteWeekTitle: "Delete week {name}?",
+    deleteWeekBody: "This removes the week and its days. It only works while nothing is booked — if anything is, we will say how many and you can stop new bookings instead.",
+    deleteWeekConfirm: "Delete the week",
+    weekDeletedOk: "Week {name} deleted",
     roster: "Roster",
     hideRoster: "Hide",
     noWeeks: "No camp weeks this month.",
@@ -493,6 +502,16 @@ const en = {
     rateCol: "Rate per coach (฿)",
   },
   // REQ-097 (TASK-407) — the teacher's own leave (a linked account)
+  /**
+   * 🔴 TASK-587 (BE) → TASK-589 — the ADMIN's marker for a coach's blocked day. 📝 DRAFT (Fern, TASK-589).
+   * 🔑 Two facts, because either alone is useless: WHOSE day, and WHETHER THERE IS WORK. A marker that only said
+   * "blocked" would send an admin hunting for the classes.
+   * ⚠️ Deliberately NOT the word "cancelled" anywhere — nothing on that day is cancelled.
+   */
+  leaveDays: {
+    markerClasses: "{name} is away — {n} class(es) to handle",
+    markerAway: "{name} is away — nothing booked",
+  },
   teacherLeave: {
     door: "Report leave",
     title: "Report my leave",
@@ -502,6 +521,18 @@ const en = {
     reason: "Reason",
     reasonHint: "Why you cannot teach (3–200 characters)",
     warning: "Families of the ticked sessions will be told; their make-ups are added by the system.",
+    // 🔴 TASK-582 (BE) → TASK-588 — the ADVANCE act (a future date). 📝 DRAFT (Fern, TASK-588), from @Jason's §15 order:
+    // the day is blocked for new bookings · these classes are already booked and an ADMIN will handle them ·
+    // 🔑 NOTHING HAS BEEN CANCELLED. ⚠️ The last clause is the one a teacher must not get wrong: one who believes their
+    // classes were cancelled will not turn up.
+    advanceHint: "This date is in the future, so reporting leave blocks the whole day for new bookings. There is nothing to tick: classes already booked are not cancelled.",
+    submitAdvance: "Block this day",
+    advanceTitle: "{date} — you are recorded as away",
+    advanceAlready: "This day was already on record; the first entry stands.",
+    advanceBlocked: "No new class can be booked with you that day.",
+    advanceClasses: "{n} class(es) are already booked that day. An admin will handle them by hand:",
+    advanceNoClasses: "Nothing is booked with you that day.",
+    advanceNothingCancelled: "NOTHING HAS BEEN CANCELLED. Those classes are still on the schedule and the families have not been told — please treat them as going ahead until an admin tells you otherwise.",
     submit: "Report leave ({n} sessions)",
     done: "{n} sessions cancelled · {families} families told",
   },
@@ -518,6 +549,10 @@ const en = {
     swapPrimaryTitle: "Swap the primary teacher ({name})",
     swapTo: "New primary teacher",
     addTeacher: "Add teacher",
+    // 🔴 TASK-577 (D10) — the COVER rate. 📝 DRAFT (Fern, TASK-577). The server pays the COVERING coach and refuses
+    // the cover when it has no rate for them, so this box is REQUIRED and the label names whose rate it is.
+    coverRate: "{name}'s rate for this session",
+    coverRateHint: "The covering coach is paid their own rate for this session. This series has none on file for them yet, so enter it here.",
     rateOptional: "Rate per session (optional)",
     fromDate: "From date",
     fromDateHint: "Today by default — earlier rows are history and stay as they are.",
@@ -1905,9 +1940,18 @@ const en = {
     // 🔴 TASK-566 — the household already has an address, so the question is ABSENT and this says why in the parent's
     // terms. 📝 DRAFT (Fern, TASK-566), pinned by shape: it must say we HAVE it, and must not ask for anything.
     addressOnFile: "We already have your address on file.",
+    // 🔴 TASK-591 — 📝 DRAFT (Fern, TASK-591). A family we already know, asked for the address again because we now keep
+    // it in three parts. ⚠️ It must NOT read as "we lost your address" — what they gave us was valid when they gave it.
+    addressAskAgain: "We keep addresses in three parts now (province, district, sub-district). Could you pick yours? We only ask once.",
+    addrPart_province: "the province",
+    addrPart_district: "the district",
+    addrPart_subDistrict: "the sub-district",
     addressOnFileProvince: "We already have your address on file ({province}).",
-    // `add_dup_detail` — VERBATIM (EN); shown above the name field when re-asking (AC-9)
-    dupDetailHint: "There is already a child with that name. Please add a surname or nickname so they are not mixed up.",
+    // 🔻 TASK-577 F-E — `dupDetailHint` is DELETED (both languages). It was the LINE chat sentence (`add_dup_detail`,
+    // "add a surname or nickname") shown above the name field, while the owner APPROVED reword was drawn a second time at
+    // the top of the page. The owner ruled ONE box with his words ⇒ the page now renders
+    // `register.code.NAME_DUPLICATE_NEEDS_DETAIL` there and this key is gone rather than left unused.
+    // ⚠️ The CHAT keeps its own copy of the old sentence — COPY-REVIEW §8 says so and asks whether it should match.
     // PLACEHOLDER — the chat typed the next step; a page needs a button
     formNext: "Continue",
     // §17c screen 7a — VERBATIM (EN half)
@@ -1992,7 +2036,13 @@ const en = {
       // 🔴 TASK-566 / COPY-REVIEW §9 — the server's backstop for the two required fields (the `*` should stop a parent
       // earlier). 📋 DRAFT. 🔑 The address one says **once per family**, so being asked is not read as us losing it.
       BIRTHDATE_REQUIRED: "Please enter the child's birthday (DD-MM-YYYY, e.g. 02-12-2020).",
-      ADDRESS_REQUIRED: "Please choose the province and enter your address (we only ask once per family).",
+      ADDRESS_REQUIRED: "Please choose the province, the district and the sub-district (we only ask once per family).",
+      // 🔴 TASK-590 (BE) → TASK-591 — 📝 DRAFT (Fern, TASK-591). 🔑 It NAMES the part that is missing: "you need the
+      // sub-district" is a different sentence from "that is wrong", and only one of them tells a parent what to do.
+      ADDRESS_INCOMPLETE: "We still need {missing}.",
+      // 🔴 Someone registered that number between our check and this save. 🚫 Nothing of ours was written; they are still
+      // unlinked, and the honest next step is the phone again. ⚠️ Not worded as their mistake.
+      PHONE_NOW_REGISTERED: "That number has just been registered. Please enter it again to join that family.",
       // PLACEHOLDER — TASK-353 (§9): the picked province was not one of the server's 77 names
       PROVINCE_UNKNOWN: "\"{province}\" is not a province we know. Please pick the province again.",
     },
@@ -2387,7 +2437,8 @@ const th: typeof en = {
     status_ABSENT: "ขาด",
     status_CANCELLED: "ยกเลิก",
     weekStatus_OPEN: "เปิด",
-    weekStatus_CLOSED: "ปิดแล้ว",
+    // 📝 DRAFT (Fern, TASK-586) — "ปิดแล้ว" อ่านเหมือนยกเลิก/ปิดทั้งสัปดาห์ ทั้งที่ยังเรียนอยู่ ยังมีครู และยังคิดเงิน
+    weekStatus_CLOSED: "ปิดรับจองใหม่",
     daysLeft: "เหลือ {n} วัน",
     creditLine: "ซื้อ {total} วัน · ใช้แล้ว {used} · วางแผน {planned}",
     boughtOn: "ซื้อเมื่อ {date}",
@@ -2414,8 +2465,14 @@ const th: typeof en = {
     teachers: "ครู",
     weekOpenedOk: "เปิดสัปดาห์ {name} แล้ว",
     weekSavedOk: "บันทึกสัปดาห์ {name} แล้ว",
-    closeWeek: "ปิด",
-    weekClosedOk: "ปิดสัปดาห์ {name} แล้ว — วางแผนวันใหม่เข้าไม่ได้อีก",
+    closeWeek: "ปิดรับจองใหม่",
+    openWeekBack: "เปิดรับจองอีกครั้ง",
+    deleteWeek: "ลบ",
+    deleteWeekTitle: "ลบสัปดาห์ {name}?",
+    deleteWeekBody: "จะลบสัปดาห์นี้และวันทั้งหมดในสัปดาห์ ทำได้เฉพาะเมื่อยังไม่มีการจอง — ถ้ามี ระบบจะบอกจำนวน และเลือกปิดรับจองใหม่แทนได้",
+    deleteWeekConfirm: "ลบสัปดาห์นี้",
+    weekDeletedOk: "ลบสัปดาห์ {name} แล้ว",
+    weekClosedOk: "สัปดาห์ {name} ปิดรับจองใหม่แล้ว การจองเดิมยังอยู่ทั้งหมด — น้องยังเรียนตามวันเดิม ครูยังสอนคาบเดิม และข้อความเตือนยังส่งตามปกติ เปิดรับจองอีกครั้งได้ทุกเมื่อ",
     roster: "รายชื่อ",
     hideRoster: "ซ่อน",
     noWeeks: "เดือนนี้ยังไม่มีสัปดาห์แคมป์",
@@ -2455,6 +2512,11 @@ const th: typeof en = {
     dayEdited: "(แก้แล้ว)",
     rateCol: "เรทครู (฿)",
   },
+  // 📝 DRAFT (Fern, TASK-589) — ใครลา และมีงานให้จัดการกี่คาบ 🚫 ไม่ใช้คำว่า "ยกเลิก" เพราะไม่มีการยกเลิกคาบใด
+  leaveDays: {
+    markerClasses: "{name} ลา — มี {n} คาบต้องจัดการ",
+    markerAway: "{name} ลา — ไม่มีคาบในวันนั้น",
+  },
   teacherLeave: {
     door: "แจ้งลาสอน",
     title: "แจ้งลาสอนของฉัน",
@@ -2464,6 +2526,15 @@ const th: typeof en = {
     reason: "เหตุผล",
     reasonHint: "สอนไม่ได้เพราะอะไร (3–200 ตัวอักษร)",
     warning: "ผู้ปกครองของคาบที่ติ๊กจะได้รับแจ้ง และระบบจะเพิ่มคาบชดเชยให้",
+    // 📝 DRAFT (Fern, TASK-588) — ลาล่วงหน้า: ปิดรับจองใหม่ทั้งวัน · คาบที่มีอยู่แล้วแอดมินจะจัดการ · 🔑 ยังไม่มีการยกเลิกคาบใด
+    advanceHint: "วันที่เลือกเป็นวันในอนาคต การลาจะปิดรับจองใหม่ทั้งวัน — ไม่ต้องเลือกคาบ เพราะคาบที่จองไว้แล้วจะไม่ถูกยกเลิก",
+    submitAdvance: "ปิดรับจองวันนี้",
+    advanceTitle: "{date} — บันทึกวันลาของคุณแล้ว",
+    advanceAlready: "วันนี้มีบันทึกวันลาอยู่แล้ว ระบบใช้บันทึกเดิม",
+    advanceBlocked: "จะไม่มีการจองคาบใหม่กับคุณในวันนั้น",
+    advanceClasses: "มีคาบที่จองไว้แล้ว {n} คาบในวันนั้น แอดมินจะจัดการให้ทีละคาบ:",
+    advanceNoClasses: "วันนั้นยังไม่มีคาบที่จองกับคุณ",
+    advanceNothingCancelled: "ยังไม่มีการยกเลิกคาบใด คาบเหล่านั้นยังอยู่ในตารางและยังไม่ได้แจ้งผู้ปกครอง — กรุณาถือว่าคาบยังสอนตามปกติจนกว่าแอดมินจะแจ้งเปลี่ยนแปลง",
     submit: "แจ้งลา ({n} คาบ)",
     done: "ยกเลิก {n} คาบ · แจ้งผู้ปกครอง {families} ครอบครัว",
   },
@@ -2479,6 +2550,9 @@ const th: typeof en = {
     swapPrimaryTitle: "สลับครูหลัก ({name})",
     swapTo: "ครูหลักคนใหม่",
     addTeacher: "เพิ่มครู",
+    // 📝 DRAFT (Fern, TASK-577) — ค่าสอนของครูที่มาสอนแทน (บังคับ)
+    coverRate: "ค่าสอนของ {name} สำหรับคาบนี้",
+    coverRateHint: "ครูที่มาสอนแทนจะได้ค่าสอนของตัวเอง ตารางนี้ยังไม่มีค่าสอนของครูท่านนี้ จึงต้องระบุที่นี่",
     rateOptional: "ค่าสอนต่อคาบ (ไม่บังคับ)",
     fromDate: "ตั้งแต่วันที่",
     fromDateHint: "ค่าเริ่มต้นคือวันนี้ — คาบก่อนหน้าเป็นประวัติ คงเดิม",
@@ -3697,8 +3771,13 @@ const th: typeof en = {
     provincePlaceholder: "เขต/อำเภอ แขวง/ตำบล จังหวัด", // 🔴 TASK-566 — เดิม “(ไม่บังคับ)”
     // 📝 DRAFT (Fern, TASK-566) — ครอบครัวนี้มีที่อยู่แล้ว จึงไม่ถามซ้ำ
     addressOnFile: "เรามีที่อยู่ของครอบครัวนี้อยู่แล้วค่ะ",
+    // 📝 DRAFT (Fern, TASK-591) — ⚠️ ต้องไม่อ่านเหมือน "เราทำที่อยู่ของคุณหาย" เพราะที่ให้มาตอนนั้นถูกต้องแล้ว
+    addressAskAgain: "ตอนนี้เราเก็บที่อยู่เป็นสามส่วน (จังหวัด อำเภอ/เขต ตำบล/แขวง) รบกวนเลือกให้ด้วยค่ะ ถามครั้งเดียวเท่านั้น",
+    addrPart_province: "จังหวัด",
+    addrPart_district: "อำเภอ/เขต",
+    addrPart_subDistrict: "ตำบล/แขวง",
     addressOnFileProvince: "เรามีที่อยู่ของครอบครัวนี้อยู่แล้วค่ะ ({province})",
-    dupDetailHint: "มีน้องชื่อนี้อยู่แล้ว รบกวนใส่นามสกุลหรือชื่อเล่นเพิ่ม เพื่อไม่ให้สลับกันนะคะ", // `add_dup_detail` — VERBATIM
+    // 🔻 TASK-577 F-E — `dupDetailHint` ถูกลบทั้งสองภาษา (เหลือกล่องเดียวตามคำอนุมัติของเจ้าของ)
     formNext: "ต่อไป", // PLACEHOLDER
     confirmTitle: "กรุณาตรวจสอบข้อมูลก่อนบันทึกค่ะ", // §17c screen 7a — VERBATIM
     confirmQuestion: "ข้อมูลถูกต้องหรือไม่คะ?", // §17c screen 7b — VERBATIM (the question only)
@@ -3745,7 +3824,10 @@ const th: typeof en = {
       BIRTHDATE_INVALID: "รูปแบบวันเกิดไม่ถูกต้องค่ะ กรุณาพิมพ์เป็น วัน-เดือน-ปี เช่น 02-12-2024",
       // 🔴 TASK-566 / COPY-REVIEW §9 — ด่านสุดท้ายของเซิร์ฟเวอร์ (หน้าเว็บควรกันไว้ก่อนด้วย `*`) 📋 DRAFT
       BIRTHDATE_REQUIRED: "กรุณาใส่วันเกิดของน้อง (วว-ดด-ปปปป เช่น 02-12-2020)",
-      ADDRESS_REQUIRED: "กรุณาเลือกจังหวัดและใส่ที่อยู่ (ถามครั้งเดียวต่อครอบครัว)",
+      ADDRESS_REQUIRED: "กรุณาเลือกจังหวัด อำเภอ/เขต และตำบล/แขวง (ถามครั้งเดียวต่อครอบครัว)",
+      // 📝 DRAFT (Fern, TASK-591) — บอกว่าขาดส่วนไหน ไม่ใช่บอกว่าที่อยู่ผิด
+      ADDRESS_INCOMPLETE: "ยังขาด{missing}ค่ะ",
+      PHONE_NOW_REGISTERED: "เบอร์นี้เพิ่งถูกลงทะเบียนไปแล้ว กรุณาใส่เบอร์อีกครั้งเพื่อเข้าร่วมครอบครัวนั้นค่ะ",
       PROVINCE_UNKNOWN: "ไม่พบจังหวัด \"{province}\" ในระบบค่ะ กรุณาเลือกจังหวัดอีกครั้ง", // PLACEHOLDER — TASK-353
     },
   },

@@ -155,8 +155,11 @@ describe("🔴 TASK-567 — no clicked test may type into a masked input and bel
     // 📌 Exactly one today: the camp week dialog, the file this rule was learned from — and it SATISFIES the rule,
     // because it asserts the PATCH body as well as the box. If this ever reaches zero, the sweep has stopped meaning
     // anything and should be re-pointed rather than left green.
-    expect(inScope.map((f) => f.replace(/\\/g, "/"))).toEqual([
+    // 🔻 TASK-577 added the second one: the series COVER rate is a `NumberInput` too, and that test asserts the PATCH's
+    // `rateMinor` — 🔑 **the sweep caught its own new sibling the moment it appeared**, which is what the list is for.
+    expect(inScope.map((f) => f.replace(/\\/g, "/")).sort()).toEqual([
       "src/components/partials/Camp/open-week-dialog.dom.test.tsx",
+      "src/components/partials/OtherSeries/series-scope.dom.test.tsx",
     ]);
   });
 

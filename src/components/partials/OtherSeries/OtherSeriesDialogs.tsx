@@ -9,7 +9,7 @@ import { useT } from "@/lib/i18n";
 import { notify } from "@/lib/ui/notify";
 import { bahtToMinor } from "@/lib/scheduler/discount";
 import { cancelAllBody, fromDateDefault, swapBody, withFromDate, type SeriesRef } from "@/lib/scheduler/other-series";
-import { scopeBody, scopeDateLabelKey, scopeOutcomeKey, type SeriesScope } from "@/lib/scheduler/series-scope";
+import { coverRateRequired, knownSeriesRate, scopeBody, scopeDateLabelKey, scopeOutcomeKey, type SeriesScope } from "@/lib/scheduler/series-scope";
 import { COACH_RATE_KEY, withoutRates } from "@/lib/scheduler/duo";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { draftFromFacts, teacherRatesMinor, type OtherKind, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
@@ -105,6 +105,10 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
   const can = useCan();
   const canRate = can(COACH_RATE_KEY);
   const onRow = [series.teacherId, ...series.additionalTeacherIds];
+  // 🔴 TASK-577 (D10) — a COVER is refused without a rate, and the FE has none to carry for anyone it can offer.
+  const needRate = coverRateRequired(mode, scope);
+  const carried = knownSeriesRate(series.teacherRates, to);
+  const coverRateMinor = rateBaht !== "" ? bahtToMinor(rateBaht) : carried;
   const choices = teachers.filter((x) => x.bookable && !onRow.includes(x.id));
   const name = (id: string) => teachers.find((x) => x.id === id)?.nickname ?? id;
   const busy = add.isPending || remove.isPending || swap.isPending;
@@ -113,6 +117,9 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
     setError(null);
     // 🚫 Nothing is sent until a scope is chosen — the same refusal the server makes, made before the request.
     if (mode !== "remove" && !scoped) return;
+    // 🔑 Two guards on the cover rate as well: this return AND the Save button. 🚫 Nothing is sent that we already know
+    // the server will refuse — a 400 the screen could have prevented is a dead end, which is exactly D10.
+    if (needRate && canRate && coverRateMinor == null) return;
     try {
       if (mode === "add" && to) {
         // 🔑 EXACTLY one scope key rides (`onDate` or `fromDate`) — never both, never neither.
@@ -128,7 +135,14 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
         // REQ-104 — OTHER sends `{ from, to }` (`from` = the primary); a GROUP sends `{ to }` alone (the server delegates to the group swap, the seats follow).
         // 🚫 No `rateMinor` on a swap: the server allows a cover's rate only with `onDate`, and this door has no rate box —
         // a field that could contradict the scope is worse than none.
-        const r = await swap.mutateAsync({ ref: seriesRef, body: { ...swapBody(seriesRef, series.teacherId, to), ...scoped } });
+        // 🔴 TASK-577 — the rate rides ONLY on a cover (`onDate`), and only with the key: the server refuses a rate
+        // without key 59 (403) and refuses a cover WITHOUT one (400) — so an admin holding neither cannot save this,
+        // which is a permission question, not a thing to paper over with a number.
+        const rateOnCover = needRate && coverRateMinor != null ? { rateMinor: coverRateMinor } : {};
+        const r = await swap.mutateAsync({
+          ref: seriesRef,
+          body: withoutRates({ ...swapBody(seriesRef, series.teacherId, to), ...scoped, ...rateOnCover }, canRate),
+        });
         notify({ title: t("otherSeries.teacherSwapped", { from: name(series.teacherId), to: name(to), n: r.moved }), color: "success" });
       } else return;
       onClose();
@@ -156,6 +170,24 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
             renderOption={({ option, checked }) => <TeacherOption option={option} checked={checked} teachers={teachers} />}
           />
         )}
+        {/* 🔴 TASK-577 (D10) — the COVER rate: shown only for a cover, REQUIRED, and empty by necessity (the only rates
+            this screen can see belong to coaches already on the row, which are exactly the ones Swap does not offer). */}
+        {needRate && canRate && (
+          <NumberInput
+            label={t("otherSeries.coverRate", { name: name(to ?? "") })}
+            description={t("otherSeries.coverRateHint")}
+            value={rateBaht !== "" ? rateBaht : carried != null ? carried / 100 : ""}
+            onChange={(v) => setRateBaht(typeof v === "number" ? v : "")}
+            min={0}
+            step={50}
+            allowDecimal={false}
+            allowNegative={false}
+            suffix=" ฿"
+            required
+            className="max-w-xs"
+            data-cover-rate={coverRateMinor ?? "none"}
+          />
+        )}
         {mode === "add" && canRate && <NumberInput label={t("otherSeries.rateOptional")} value={rateBaht} onChange={(v) => setRateBaht(typeof v === "number" ? v : "")} min={0} step={50} allowDecimal={false} allowNegative={false} suffix=" ฿" className="max-w-xs" />}
         {/* 🔴 TASK-564 — the question, asked. No option is pre-selected, and Save stays shut until one is. */}
         {mode !== "remove" && (
@@ -178,7 +210,15 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
           <Button variant="default" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button color={mode === "remove" ? "red" : undefined} loading={busy} disabled={mode !== "remove" && (!to || !scoped)} onClick={() => void submit()}>
+          {/* 🔴 TASK-577 — the second guard: a cover with no rate cannot even be pressed. 🚫 An admin WITHOUT key 59
+              sees no box and is not blocked here — the server refuses that save, and that hole is reported, not hidden. */}
+          <Button
+            color={mode === "remove" ? "red" : undefined}
+            loading={busy}
+            disabled={mode !== "remove" && (!to || !scoped || (needRate && canRate && coverRateMinor == null))}
+            data-teacher-save
+            onClick={() => void submit()}
+          >
             {mode === "remove" ? t("otherSeries.removeTeacher") : t("common.save")}
           </Button>
         </Group>

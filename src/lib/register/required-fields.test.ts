@@ -29,7 +29,11 @@ describe("TASK-566 — the two guards, and the answer that is used", () => {
     expect(page).toContain("disabled={!formComplete} data-form-next");
     expect(page).toContain("disabled={!formComplete} data-confirm-save");
     // ONE rule behind all three doors
-    expect(page).toContain("const formComplete = Boolean(name.trim()) && Boolean(birthDate) && (addressOnFile || Boolean(addressLine));");
+    // 🔻 TASK-591, declared: the address arm is `addressComplete` now — ALL THREE parts, because the server requires three
+    // and a joined line is no longer sent. **The rule this pin protects — ONE `formComplete` behind all three doors, and the
+    // submit refusing as well as the button disabling — is unchanged.**
+    expect(page).toContain("const formComplete = Boolean(name.trim()) && Boolean(birthDate) && (addressOnFile || addressComplete);");
+    expect(page).toContain("const addressComplete = Boolean(provPick?.nameTh && distPick?.nameTh && subPick?.nameTh);");
   });
 
   it("🔑 the household's address is learned from the ANSWERS — never re-fetched (the other mutation that slipped)", () => {

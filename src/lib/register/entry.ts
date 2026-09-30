@@ -27,9 +27,16 @@ export const toCustomerDate = (widgetValue: string | null): string =>
 export interface AreaPick {
   code: string;
   nameTh: string;
-  /** TASK-355 §10.2 — the dataset's English name, for the option LABEL in EN mode only. Never joined, never sent. */
-  nameEn: string;
 }
+/**
+ * 🔴 **TASK-580 §2 (Tanya's F-D) — `nameEn` is GONE from this type, deliberately.**
+ *
+ * The dataset ships **garbled** English (*"Khnong Tntnai"* for คลองตันเหนือ), and TASK-355 used it for the option label in
+ * EN mode — the ONE place any of it reached a screen. **The Thai is correct, and the Thai is what we store and send**, so the
+ * value was never wrong; only the label was. ⇒ **Thai names in both languages** (the FIELD labels are still translated).
+ * 🚫 We do not own the package's strings and did not patch them. 🔑 **Removing the field rather than the call site means a
+ * future reader arrives as a compile error instead of as garbled text on a parent's phone** — TASK-545's rule, reused.
+ */
 
 /**
  * `§7b` — Bangkok's tiers are **เขต / แขวง**; every other province's are **อำเภอ / ตำบล** (the two words are
@@ -70,9 +77,9 @@ export interface AddressBook {
 }
 
 /** Rows come per postal code, so a sub-district with two codes appears twice — collapse on the geocode. */
-const uniqueByCode = (rows: { code: string; nameTh: string; nameEn: string }[]): AreaPick[] => {
+const uniqueByCode = (rows: { code: string; nameTh: string }[]): AreaPick[] => {
   const seen = new Map<string, AreaPick>();
-  for (const r of rows) if (!seen.has(r.code)) seen.set(r.code, { code: r.code, nameTh: r.nameTh, nameEn: r.nameEn });
+  for (const r of rows) if (!seen.has(r.code)) seen.set(r.code, { code: r.code, nameTh: r.nameTh });
   return [...seen.values()];
 };
 

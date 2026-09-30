@@ -71,11 +71,31 @@ export interface CampWeekLite {
   dayCounts: Record<string, number>;
 }
 
-/** The OPEN weeks covering a calendar date, each with that day's count — the banner's rows. Pure. */
-export const bannerWeeksFor = <W extends CampWeekLite>(weeks: readonly W[] | undefined, date: string): Array<{ week: W; kids: number }> =>
+/**
+ * The camp weeks covering a calendar date, each with that day's count — the banner's rows. Pure.
+ *
+ * 🔴 **TASK-586 — this used to drop every CLOSED week, and that was written when Close meant "camp off".**
+ * **@Jason's TASK-581 half made Close mean ONE thing: no NEW bookings.** A closed week's **existing bookings stay, its
+ * coaches stay blocked, both reminders still go out, the per-day swap still works, and its days still CHARGE.**
+ * ⇒ 🔑 **Hiding it cost the admin the one fact the banner exists to carry: that camp is running on this date.** An admin
+ * looking at a Tuesday with eight children and two coaches at camp saw an empty strip — *and the calendar's own cells do
+ * not carry camp days, so there was nothing else on that screen to tell them.*
+ *
+ * ⚖️ **Decided (TASK-586, declared to @Sober rather than changed quietly):**
+ *  · **OPEN ⇒ always shown**, even at zero, because it can still be sold into and the row is the door to that.
+ *  · **CLOSED ⇒ shown only on a day that has children**, because that is exactly "still running"; a closed week with an
+ *    empty day has nothing to sell and nothing to run, and showing it would be noise the admin learns to ignore.
+ * 📌 The row says which it is (`closed`), so the banner can mark it — **a week that cannot take bookings must not look
+ * like one that can.**
+ */
+export const bannerWeeksFor = <W extends CampWeekLite>(
+  weeks: readonly W[] | undefined,
+  date: string,
+): Array<{ week: W; kids: number; closed: boolean }> =>
   (weeks ?? [])
-    .filter((w) => w.status === "OPEN" && w.startDate <= date && date <= w.endDate)
-    .map((w) => ({ week: w, kids: w.dayCounts[date] ?? 0 }));
+    .filter((w) => w.startDate <= date && date <= w.endDate)
+    .map((w) => ({ week: w, kids: w.dayCounts[date] ?? 0, closed: w.status !== "OPEN" }))
+    .filter((r) => !r.closed || r.kids > 0);
 
 /** Weeks grouped by their start month (`YYYY-MM`), each group in date order. Pure. */
 export const weeksByMonth = <W extends { startDate: string }>(weeks: readonly W[]): Array<{ month: string; weeks: W[] }> => {

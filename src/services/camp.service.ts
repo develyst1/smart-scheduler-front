@@ -73,6 +73,18 @@ export const updateCampWeek = async (id: string, input: UpdateCampWeekInput): Pr
  * rows (each slot-checked — `409 SLOT_TAKEN` names date · hour · teacher, nothing written), refuses a bad window
  * (`400`), a closed week (`409`), a date outside the week (`404`). The swap door and the editor both come here.
  */
+/**
+ * 🔴 **TASK-560 (BE) → TASK-586 — delete a week created by mistake. NO body on purpose:** *"is it empty?"* is the
+ * SERVER's question and it asks it **at the moment of the act**, so a camp that gained a booking while the dialog was
+ * open is refused — with **how many** and **what to do instead** in the refusal's own sentence.
+ * 🚫 The caller never pre-decides it: a hidden button is a convenience, never the guard.
+ */
+export const deleteCampWeek = async (id: string): Promise<{ deleted: true }> => {
+  if (useMockData) return mock.deleteCampWeek(id);
+  const { data } = await api.delete<{ deleted: true }>(`/camp/weeks/${id}`);
+  return data;
+};
+
 export const updateCampWeekDay = async (weekId: string, date: string, body: CampDayPatch): Promise<CampWeekDayResult> => {
   if (useMockData) return mock.updateCampWeekDay(weekId, date, body);
   const { data } = await api.patch<CampWeekDayResult>(`/camp/weeks/${weekId}/days/${date}`, body);

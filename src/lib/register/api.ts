@@ -42,6 +42,18 @@ export const REGISTER_CODES = [
   // Both are the SERVER's backstop: the form stops a parent earlier with a `*`, and these arrive only if it did not.
   "BIRTHDATE_REQUIRED",
   "ADDRESS_REQUIRED", // once per household, while none is on file
+  /**
+   * 🔴 **TASK-590 (BE) → TASK-591 — the address is THREE parts now** (the owner: province + district + sub-district).
+   * 🔑 **`ADDRESS_INCOMPLETE` carries `missing`, and that is the point of it:** it names WHICH part is absent, so the page
+   * asks for **that part** instead of saying the address is wrong. *"You need the sub-district" is a different sentence
+   * from "that is wrong", and only one of them tells a parent what to do.*
+   */
+  "ADDRESS_INCOMPLETE",
+  /**
+   * 🔴 **TASK-590 — the phone became a family between `/link` and `/create`.** A new family's first child is now ONE call,
+   * so the window exists: go back to the phone step. 🚫 Not an error to swallow — someone else registered that number.
+   */
+  "PHONE_NOW_REGISTERED",
 ] as const;
 export type RegisterCode = (typeof REGISTER_CODES)[number];
 
@@ -51,6 +63,12 @@ export interface ChildRef {
   nickname: string | null;
 }
 
+/**
+ * 🔴 **TASK-590 (BE) → TASK-591 — `/link` on a NEW phone writes NOTHING.** No parent, no binding, no roster move: it
+ * answers `outcome: "new"` and the session is untouched. ⇒ 🔑 **a new family is created by `/create` WITH `phone`, in one
+ * transaction with its first child** — *so there is no half-linked state to show, because there is no half-linked state.*
+ * 🔻 `isNew` is gone from the answer.
+ */
 export type LookupResult =
   | { ok: true; outcome: "found"; phone: string; children: ChildRef[] }
   | { ok: true; outcome: "found"; phone: string; twoFactor: "required"; childCount: number }
@@ -68,13 +86,13 @@ export interface HouseholdAddress {
   province: string | null;
 }
 
-export interface LinkResult extends HouseholdAddress {
-  ok: true;
-  outcome: "linked";
-  isNew: boolean;
-  children: ChildRef[];
-  canAddMore: boolean;
-}
+/**
+ * 🔻 **TASK-591 — `isNew` is GONE and `/link` has two arms.** An EXISTING phone links at once (`"linked"`); a NEW phone
+ * 🚫 **writes nothing** and answers `"new"` — *there is nothing to report about a family that does not exist yet.*
+ */
+export type LinkResult =
+  | ({ ok: true; outcome: "linked"; children: ChildRef[]; canAddMore: boolean } & HouseholdAddress)
+  | { ok: true; outcome: "new"; phone: string };
 
 /** 🔑 The create ANSWERS with the new state, so adding a second child needs no re-fetch to know the address is on file. */
 export interface CreateResult extends HouseholdAddress {
@@ -96,6 +114,15 @@ export interface Refusal {
   max?: number; // FAMILY_FULL
   name?: string; // NAME_DUPLICATE_NEEDS_DETAIL
   province?: string; // PROVINCE_UNKNOWN
+  /** 🔴 TASK-591 — `ADDRESS_INCOMPLETE`: WHICH parts are absent, so the page can ask for exactly those. */
+  missing?: Array<"province" | "district" | "subDistrict">;
+  /**
+   * 🔴 **TASK-590 — `NAME_DUPLICATE_NEEDS_DETAIL` now arrives WITH ITS WORDS, in both languages.**
+   * 🔑 **The page renders what the server sends and keeps no copy of that sentence** — *one sentence, one source.*
+   * 📌 Its third home in three rounds: the chat's words, then an approved reword held locally (TASK-577), now the
+   * server's own body. **The local copy is DELETED, not left as a fallback** — a fallback is a second source.
+   */
+  message?: { TH?: string; EN?: string };
 }
 
 /** The one thing the page cannot get a code for: the network itself. Rendered as `register.connectFail`. */
@@ -129,9 +156,14 @@ export const link = (idToken: string, phone: string, code?: string) =>
  * TASK-355 (`§10.3`) — `/status`: *"is this LINE account already someone's?"* The phone comes MASKED from the
  * server (`08x-xxx-xxxx`); the page renders it and never holds a full number. A COUNT, never names (TASK-047).
  */
+/**
+ * 🔴 TASK-578 (BE) → TASK-580 — **`canAddMore` is the SERVER's answer, not a sum done here.** The cap lives in one place
+ * (`MAX_STUDENTS_PER_PARENT`) and this page does not know it. 🔑 A linked family can still add a child, and a linked family
+ * with **zero** children could not reach the form at all until this field existed (D11 · Tanya's F-B — *one defect, not two*).
+ */
 export type StatusResult =
   | { ok: true; linked: false }
-  | ({ ok: true; linked: true; phone: string; childCount: number } & HouseholdAddress);
+  | ({ ok: true; linked: true; phone: string; childCount: number; canAddMore: boolean } & HouseholdAddress);
 
 /** `/unlink`: the family's LINE binding cleared — EVERY account the family holds. Not linked ⇒ `unlinked: false`, idempotent. */
 export interface UnlinkResult {
@@ -157,13 +189,23 @@ export interface CreateInput {
    */
   birthDate?: string;
   /**
-   * TASK-353 (`REQ-088 §9`) — two fields, two homes. `province` is the PICKED province's FULL name (`กรุงเทพมหานคร`,
-   * never `กทม`) → `parents.province`, the column the report groups on; `address` is the joined LINE in the
-   * customer's format (`พระโขนงเหนือ วัฒนา กทม`) → APPENDED to `parents.note`. PICKED ⇒ both · TYPED ⇒ `address`
-   * only (the server will not guess a province) · blank ⇒ neither. Both are forwarded as-is; nothing here decides.
+   * 🔴 **TASK-590 (BE) → TASK-591 — THREE PARTS, and the page no longer joins them.** The owner ruled province +
+   * district + sub-district; **the server builds the stored line itself**, in the page's order and spelling.
+   * 🔻 **`address` (the pre-joined line) is no longer read and is GONE from this type** — *a field the server ignores is
+   * a field that will be sent wrong eventually.*
+   * ⚠️ **The server checks the SHAPE only: three non-empty parts and a real province.** 🚫 **It does NOT check that the
+   * district belongs to the province** — so nothing on this side may be worded as if it did.
    */
   province?: string;
-  address?: string;
+  district?: string;
+  subDistrict?: string;
+  /**
+   * 🔴 **TASK-591 — a NEW family's first child is ONE call.** When `/lookup` said `"new"`, the page carries the phone here
+   * and the server creates **the family WITH this child, in one transaction** ⇒ 🚫 **nothing is half-linked, because
+   * nothing is written until the child is accepted.** An already-linked account's `phone` is IGNORED by the server
+   * (never re-pointed), so it is sent only on the unlinked path.
+   */
+  phone?: string;
   /** AC-9 — after `NAME_DUPLICATE_NEEDS_DETAIL`: the FULLER name, with this flag, never a rename. */
   detailProvided?: boolean;
 }
@@ -174,7 +216,9 @@ export const create = (idToken: string, input: CreateInput) => {
   // 🔑 Skips are OMITTED keys, not empty strings — see `CreateInput.birthDate`.
   if (input.birthDate) body.birthDate = input.birthDate;
   if (input.province) body.province = input.province;
-  if (input.address) body.address = input.address;
+  if (input.district) body.district = input.district;
+  if (input.subDistrict) body.subDistrict = input.subDistrict;
+  if (input.phone) body.phone = input.phone;
   if (input.detailProvided) body.detailProvided = true;
   return post<CreateResult>("create", body);
 };

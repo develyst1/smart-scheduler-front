@@ -98,6 +98,12 @@ export const runAndClassify = (opts: RunOptions, baseline: number): RunOutcome =
   else if (r.error && /timed? ?out|ETIMEDOUT/i.test(String(r.error.message))) killed = { reason: "KILLED (time limit)" };
   else if (r.signal) killed = { reason: `KILLED (signal ${r.signal})` };
   else if (r.error) killed = { reason: `ERROR (${r.error.message})` };
+  // 🔻 TASK-577 — the FOURTH way a run yields no counts: the test runner ITSELF crashed. A mutant took Bun down with
+  // `0xC0000409` (STATUS_STACK_BUFFER_OVERRUN) — no signal, no error, no summary, just an exit status. 🔑 **Saying "NO
+  // SUMMARY" and stopping there sends the reader looking for a missing print; naming the status sends them to the crash.**
+  else if (typeof r.status === "number" && r.status !== 0 && r.status !== 1) {
+    killed = { reason: `NO SUMMARY (the test runner exited ${r.status} — 0x${(r.status >>> 0).toString(16)})` };
+  }
 
   return { verdict: classify(output, baseline, killed), bytes };
 };

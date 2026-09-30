@@ -1,0 +1,122 @@
+[
+  {
+    "id": "C1",
+    "what": "🔴 the cover's rate stops riding the body (D10 exactly: the save goes back to 400 RATE_REQUIRED)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "        const rateOnCover = needRate && coverRateMinor != null ? { rateMinor: coverRateMinor } : {};",
+            "to": "        const rateOnCover = {};"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "C2",
+    "what": "🔴 the rate rides on the WHOLE-SERIES swap too (a field the server ignores, contradicting the scope)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/series-scope.ts",
+        "edits": [
+          {
+            "from": "export const coverRateRequired = (mode: \"add\" | \"remove\" | \"swap\", scope: SeriesScope): boolean => mode === \"swap\" && scope === \"this\";",
+            "to": "export const coverRateRequired = (mode: \"add\" | \"remove\" | \"swap\", scope: SeriesScope): boolean => mode === \"swap\";"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "C3",
+    "what": "the pre-request guard goes (a cover with no rate is sent and the server refuses it — the dead end, again)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [{ "from": "    if (needRate && canRate && coverRateMinor == null) return;", "to": "" }]
+      }
+    ]
+  },
+  {
+    "id": "C4",
+    "what": "the Save button opens on a cover with no rate (the other of the two guards)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "            disabled={mode !== \"remove\" && (!to || !scoped || (needRate && canRate && coverRateMinor == null))}",
+            "to": "            disabled={mode !== \"remove\" && (!to || !scoped)}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "C5",
+    "what": "🔴 the rate box disappears (the screen is back to having no way to enter it at all)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [{ "from": "        {needRate && canRate && (", "to": "        {false && needRate && canRate && (" }]
+      }
+    ]
+  },
+  {
+    "id": "C6",
+    "what": "baht are sent as baht, not satang (the covering coach is paid 650 satang)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "  const coverRateMinor = rateBaht !== \"\" ? bahtToMinor(rateBaht) : carried;",
+            "to": "  const coverRateMinor = rateBaht !== \"\" ? Number(rateBaht) : carried;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "C7",
+    "what": "🔴 F-E — the OLD chat words come back in the surviving box (the screenshot satisfied, the ruling not)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "                  {t(\"register.code.NAME_DUPLICATE_NEEDS_DETAIL\", { name: phase.dupName })}",
+            "to": "                  {t(\"register.nameLabel\")}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "C8",
+    "what": "🔴 F-E — the second box comes back (the refusal also raises the page-top alert again)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [{ "from": "        setFailure(null);\n        return;", "to": "        setFailure(null);" }]
+      }
+    ]
+  },
+  {
+    "id": "C9",
+    "what": "a rate rides without the coach-rate key (the server answers 403 and nothing saves)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "          body: withoutRates({ ...swapBody(seriesRef, series.teacherId, to), ...scoped, ...rateOnCover }, canRate),",
+            "to": "          body: { ...swapBody(seriesRef, series.teacherId, to), ...scoped, ...rateOnCover },"
+          }
+        ]
+      }
+    ]
+  }
+]

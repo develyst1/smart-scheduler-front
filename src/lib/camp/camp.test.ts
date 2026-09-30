@@ -46,14 +46,31 @@ describe("§1 — the pure arithmetic (units ⇒ days + ½), value-tested", () =
     expect(card).not.toMatch(/totalUnits\s*-|usedUnits\s*\+|expir/i);
   });
 
-  it("the banner's date math: only OPEN weeks covering the date, each with that day's server count; weeks group by month", () => {
+  /**
+   * 🔴 **TASK-586 — CHANGED DELIBERATELY, and this pin is where the change is argued.** It used to read *"only OPEN weeks"*,
+   * written when Close meant "camp off". **@Jason's TASK-581 made Close mean ONE thing: no NEW bookings** — a closed week's
+   * children keep their days, its coaches keep their blocks, both reminders go out and its days still charge.
+   * ⇒ 🔑 **Hiding it cost the admin the fact the banner exists to carry: camp is RUNNING on this date**, and the calendar's
+   * cells do not show camp days, so nothing else on that screen said so.
+   * ⚖️ **The rule now: OPEN always (it can still be sold into) · CLOSED only on a day that HAS children** (that is exactly
+   * "still running"; an empty closed day has nothing to sell and nothing to run, and would be noise) — **and the row says
+   * which it is, so the banner marks it.**
+   */
+  it("the banner's date math (TASK-586): OPEN always · CLOSED only where children are · weeks group by month", () => {
     const weeks = [
       { id: "a", name: "Camp A", startDate: "2026-10-05", endDate: "2026-10-09", status: "OPEN" as const, dayCounts: { "2026-10-06": 7 } },
       { id: "b", name: "Camp B", startDate: "2026-10-06", endDate: "2026-10-06", status: "CLOSED" as const, dayCounts: { "2026-10-06": 2 } },
       { id: "c", name: "Camp C", startDate: "2026-11-02", endDate: "2026-11-06", status: "OPEN" as const, dayCounts: {} },
     ];
-    expect(bannerWeeksFor(weeks, "2026-10-06")).toEqual([{ week: weeks[0], kids: 7 }]);
-    expect(bannerWeeksFor(weeks, "2026-10-07")).toEqual([{ week: weeks[0], kids: 0 }]); // covered, nobody planned that day
+    // 🔑 the CLOSED week is on the strip for that day, because two children are at camp — and it is FLAGGED closed
+    expect(bannerWeeksFor(weeks, "2026-10-06")).toEqual([
+      { week: weeks[0], kids: 7, closed: false },
+      { week: weeks[1], kids: 2, closed: true },
+    ]);
+    // an OPEN week shows at zero (it can still be sold into); 🚫 a CLOSED week with nobody in it does NOT
+    expect(bannerWeeksFor(weeks, "2026-10-07")).toEqual([{ week: weeks[0], kids: 0, closed: false }]);
+    const shut = [{ ...weeks[1], startDate: "2026-10-07", endDate: "2026-10-07", dayCounts: {} }];
+    expect(bannerWeeksFor(shut, "2026-10-07")).toEqual([]);
     expect(bannerWeeksFor(weeks, "2026-10-10")).toEqual([]);
     expect(bannerWeeksFor(undefined, "2026-10-06")).toEqual([]);
     expect(weeksByMonth(weeks).map((g) => [g.month, g.weeks.map((w) => w.id)])).toEqual([["2026-10", ["a", "b"]], ["2026-11", ["c"]]]);
@@ -128,7 +145,7 @@ describe("§2 — the wire and the doors", () => {
     expect(redeem).toContain("const withCredit = packages.filter((p) => p.credit > 0);"); // the server's number, shown as choices — not a rule
   });
 
-  it("the calendar day banner renders from `campWeeks`: name · n kids, one row per open week, nothing on an uncovered day; click ⇒ the Camp menu", () => {
+  it("the calendar day banner renders from `campWeeks`: name · n kids, a CLOSED week MARKED (TASK-586), nothing on an uncovered day; click ⇒ the Camp menu", () => {
     const weeks = [
       { id: "a", name: "Camp A", startDate: "2026-10-05", endDate: "2026-10-09", status: "OPEN" as const, dayCounts: { "2026-10-06": 7 } },
       { id: "b", name: "Closed B", startDate: "2026-10-06", endDate: "2026-10-06", status: "CLOSED" as const, dayCounts: { "2026-10-06": 2 } },
@@ -137,7 +154,11 @@ describe("§2 — the wire and the doors", () => {
     expect(html).toContain('data-camp-banner="2026-10-06"');
     expect(html).toContain("Camp A");
     expect(html).toContain("7");
-    expect(html).not.toContain("Closed B");
+    // 🔻 TASK-586 — it IS on the strip now (two children are at camp that day), and it says it is closed to new bookings
+    expect(html).toContain("Closed B");
+    expect(html).toContain('data-week-closed="yes"');
+    expect(html).toContain('data-week-closed="no"');
+    expect(html).toContain("Closed to new bookings");
     expect(html).toContain('href="/scheduler/camp"');
     const base = render(h("span", null)).replace("<span></span>", "");
     expect(render(h(CampDayBanner, { campWeeks: weeks, date: "2026-10-20" }))).toBe(base);
@@ -152,10 +173,61 @@ describe("§2 — the wire and the doors", () => {
   it("copy: camp 60 · nav.camp — both languages; the Camp card door on every student row", () => {
     const en = dictionaries.en.camp as Record<string, string>;
     const th = dictionaries.th.camp as Record<string, string>;
-    expect(Object.keys(en).length).toBe(80); // TASK-457: +3 (coachFrom · coachTo · coachWindowHint) · TASK-444: +1 (rateCol) · TASK-402: 60 · TASK-404: +9 (undo ×7, qr ×2) · TASK-419: +7 (the window + per-day editor)
+    expect(Object.keys(en).length).toBe(86); /* TASK-586: +6 (take-bookings-again · delete ×4 · the deleted toast) — the Close/Open/Delete screen */ // TASK-457: +3 (coachFrom · coachTo · coachWindowHint) · TASK-444: +1 (rateCol) · TASK-402: 60 · TASK-404: +9 (undo ×7, qr ×2) · TASK-419: +7 (the window + per-day editor)
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     expect(dictionaries.en.nav.camp).toBe("Camp");
     expect(dictionaries.th.nav.camp.length).toBeGreaterThan(0);
     expect(codeOf("src/components/partials/People/PeopleContent.tsx")).toContain("<CampCardModal student={{ id: campTarget.id, name: campTarget.nickname || campTarget.name }}");
+  });
+});
+
+/**
+ * 🔴 **TASK-586 — the words for Close / Open / Delete must not over-claim.**
+ *
+ * **Close stops NEW bookings and nothing else:** the children keep their days, the coaches keep their sessions, both
+ * reminders still go out, the per-day swap still works and the days still charge. ⇒ 🔑 **no string on this screen may read
+ * as *cancelled*, *hidden* or *switched off*, in either language** — *an admin who reads "ปิดแล้ว" as "the camp is off"
+ * will tell a parent the wrong thing, and the screen will have been the source.*
+ */
+describe("🔴 TASK-586 — the camp lifecycle copy says what Close DOES, in both languages", () => {
+  const KEYS = ["weekStatus_CLOSED", "closeWeek", "openWeekBack", "weekClosedOk", "deleteWeek", "deleteWeekTitle", "deleteWeekBody", "deleteWeekConfirm", "weekDeletedOk"] as const;
+
+  it("every key exists in both languages", () => {
+    for (const lang of ["en", "th"] as const) {
+      const camp = dictionaries[lang].camp as Record<string, string>;
+      for (const k of KEYS) expect({ lang, k, ok: (camp[k] ?? "").length > 0 }).toEqual({ lang, k, ok: true });
+    }
+  });
+
+  it("🚫 nothing reads as CANCELLED, HIDDEN or OFF", () => {
+    const en = dictionaries.en.camp as Record<string, string>;
+    const th = dictionaries.th.camp as Record<string, string>;
+    for (const k of KEYS) {
+      // 🔑 `deleteWeek*` may speak of removing the WEEK — that is what it does — but never of cancelling bookings.
+      expect({ k, en: en[k] }).toEqual({ k, en: expect.not.stringMatching(/cancel|hidden|hide|switched off|turned off/i) });
+      expect({ k, th: th[k] }).toEqual({ k, th: expect.not.stringMatching(/ยกเลิก|ซ่อน|ปิดทั้งสัปดาห์/) });
+    }
+  });
+
+  it("🔑 the CLOSED chip and the button both name NEW bookings — not the week", () => {
+    expect((dictionaries.en.camp as Record<string, string>).weekStatus_CLOSED).toMatch(/new bookings/i);
+    expect((dictionaries.th.camp as Record<string, string>).weekStatus_CLOSED).toContain("จองใหม่");
+    expect((dictionaries.en.camp as Record<string, string>).closeWeek).toMatch(/new bookings/i);
+    expect((dictionaries.th.camp as Record<string, string>).closeWeek).toContain("จองใหม่");
+  });
+
+  it("✅ the close message says what CARRIES ON, and that it is reversible — the server restores the week exactly", () => {
+    const en = (dictionaries.en.camp as Record<string, string>).weekClosedOk;
+    const th = (dictionaries.th.camp as Record<string, string>).weekClosedOk;
+    for (const s of [en, th]) expect(s.length).toBeGreaterThan(60);
+    expect(en).toMatch(/carries on|carry on/i);
+    expect(en).toMatch(/again/i); // 🔑 no hedging: Close ⇒ Open restores it exactly (proven by value on the BE)
+    expect(th).toContain("การจองเดิมยังอยู่");
+    expect(th).toContain("อีกครั้ง");
+  });
+
+  it("🔴 the delete body points at the other door instead of dead-ending", () => {
+    expect((dictionaries.en.camp as Record<string, string>).deleteWeekBody).toMatch(/stop new bookings/i);
+    expect((dictionaries.th.camp as Record<string, string>).deleteWeekBody).toContain("ปิดรับจองใหม่");
   });
 });

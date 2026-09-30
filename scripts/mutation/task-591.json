@@ -1,0 +1,137 @@
+[
+  {
+    "id": "W1",
+    "what": "🔴 TWO address parts are enough to submit (the body the server refuses, sent from a page that could have stopped it)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "  const addressComplete = Boolean(provPick?.nameTh && distPick?.nameTh && subPick?.nameTh);",
+            "to": "  const addressComplete = Boolean(provPick?.nameTh && distPick?.nameTh);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W2",
+    "what": "🔴 the district and sub-district stop riding (the server gets one part and refuses)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "        district: addressOnFile ? undefined : distPick?.nameTh || undefined,\n        subDistrict: addressOnFile ? undefined : subPick?.nameTh || undefined,",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W3",
+    "what": "🔴 the unlinked account's PHONE stops riding (`403 NOT_LINKED`, and no family is ever created)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [{ "from": "        phone: newPhone ?? undefined,", "to": "" }]
+      }
+    ]
+  },
+  {
+    "id": "W4",
+    "what": "🔴 the page goes back to writing at the phone step (D11's cause: a family with no child)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "      setNewPhone(r.phone);\n      setAddressOnFile(false); // a new household has none on file, so the address is asked\n      setProvinceOnFile(null);\n      return setPhase({ kind: \"form\" });",
+            "to": "      setBusy(true);\n      const l = await withToken((tok) => link(tok, phone));\n      setBusy(false);\n      if (isRefusal(l)) return fail(l);\n      if (l.outcome === \"new\") return setPhase({ kind: \"form\" });\n      return afterLink(l.children, l.canAddMore, l.addressOnFile, l.province);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W5",
+    "what": "🔴 the duplicate refusal goes back to a LOCAL sentence (three sources again)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [{ "from": "                  {phase.dupMessage}", "to": "                  {t(\"register.code.NAME_DUPLICATE_NEEDS_DETAIL\", { name: phase.dupName })}" }]
+      }
+    ]
+  },
+  {
+    "id": "W6",
+    "what": "🔴 the server's `message` is ignored — the page's own words win again",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [{ "from": "  const sent = lang === \"th\" ? failure.message?.TH : failure.message?.EN;", "to": "  const sent = undefined as string | undefined;" }]
+      }
+    ]
+  },
+  {
+    "id": "W7",
+    "what": "⚠️ `ADDRESS_INCOMPLETE` stops naming the part (\"that is wrong\" instead of \"you need the sub-district\")",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [{ "from": "      ADDRESS_INCOMPLETE: \"We still need {missing}.\",", "to": "      ADDRESS_INCOMPLETE: \"That address is not valid.\"," }]
+      }
+    ]
+  },
+  {
+    "id": "W8",
+    "what": "⚠️ the legacy ask reads as a LOSS (\"we no longer have your address\")",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    addressAskAgain: \"We keep addresses in three parts now (province, district, sub-district). Could you pick yours? We only ask once.\",",
+            "to": "    addressAskAgain: \"Your address is missing — it is gone from our records. Please enter it again.\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W9",
+    "what": "the legacy ask is shown to a BRAND-NEW family too (asked \"again\" when they were never asked)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [{ "from": "                {newPhone === null && (", "to": "                {true && (" }]
+      }
+    ]
+  },
+  {
+    "id": "W10",
+    "what": "🔴 `PHONE_NOW_REGISTERED` is swallowed (the parent stays on a form that can never succeed)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "      } else if (r.code === \"PHONE_NOW_REGISTERED\") {",
+            "to": "      } else if (false && r.code === \"PHONE_NOW_REGISTERED\") {"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W11",
+    "what": "the phone keeps riding after the family exists (a second child re-points the family)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [{ "from": "    setNewPhone(null);\n    setPhase({ kind: \"done\", result: r });", "to": "    setPhase({ kind: \"done\", result: r });" }]
+      }
+    ]
+  }
+]

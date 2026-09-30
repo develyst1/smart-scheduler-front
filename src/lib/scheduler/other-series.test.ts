@@ -90,7 +90,9 @@ describe("§2 — the page, the wire, the links, the key", () => {
     // names NEITHER scope, and `withFromDate` omitted `fromDate` whenever it equalled today — *exactly that body*.
     // ⇒ each door now carries exactly one of `onDate` / `fromDate`, from `scopeBody`. The route and the `from`-is-the-primary
     // rule this pin exists for are unchanged.
-    expect(dialogs).toContain("body: { ...swapBody(seriesRef, series.teacherId, to), ...scoped }");
+    // 🔻 TASK-577 (D10), declared: + the cover's rate on `onDate`, through `withoutRates`. The route and the
+    // `from`-is-the-primary rule this pin exists for are unchanged.
+    expect(dialogs).toContain("withoutRates({ ...swapBody(seriesRef, series.teacherId, to), ...scoped, ...rateOnCover }, canRate)");
     expect(dialogs).toContain("const scoped = scopeBody(scope, fromDate);");
     // 🚫 and `withFromDate` is no longer how either teacher door names its scope
     expect(dialogs).not.toContain("withFromDate(swapBody");
@@ -127,7 +129,7 @@ describe("§2 — the page, the wire, the links, the key", () => {
     expect(ACTION_KEYS_SNAPSHOT.length).toBe(60) /* TASK-518: + the 60th, `calendar.undo` (SPEC-094) */; /* + TASK-432 coach-rate */
     const en = dictionaries.en.otherSeries as Record<string, string>;
     const th = dictionaries.th.otherSeries as Record<string, string>;
-    expect(Object.keys(en).length).toBe(43); /* TASK-442: +4 · TASK-564: +7 (the scope question, its two options, its hint, the one-session date label, cover, join) */
+    expect(Object.keys(en).length).toBe(45); /* TASK-442: +4 · TASK-564: +7 (the scope question, its two options, its hint, the one-session date label, cover, join) · TASK-577: +2 (the COVER rate box's label and its hint — D10) */
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
   });
 });

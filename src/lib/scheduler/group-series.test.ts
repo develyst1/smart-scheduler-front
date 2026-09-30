@@ -82,8 +82,11 @@ describe("§2 — the ONE modal's two faces, the wire, the entry points", () => 
     expect(dialogs).toContain("kindRequired={!isGroup} hideKind={isGroup}");
     // 📌 TASK-564: the scope is now explicit, so `withFromDate` is gone from this door. **What this pin protects — the
     // GROUP swap body is built by `swapBody` (`{ to }` alone, no `from`) — is unchanged and still pinned.**
-    expect(dialogs).toContain("body: { ...swapBody(seriesRef, series.teacherId, to), ...scoped }");
-    expect(svc).toContain("swapOtherSeriesTeacher = async (ref: SeriesRef, body: { from?: string; to: string; fromDate?: string })");
+    // 🔻 TASK-577 (D10), declared: the swap body now also carries the COVER's rate (`onDate` only) and goes through
+    // `withoutRates`, so a rate never rides without key 59. **The thing this pin protects — the GROUP swap body is built
+    // by `swapBody` (`{ to }` alone, no `from`) — is unchanged and still pinned.**
+    expect(dialogs).toContain("withoutRates({ ...swapBody(seriesRef, series.teacherId, to), ...scoped, ...rateOnCover }, canRate)");
+    expect(svc).toContain("body: { from?: string; to: string; fromDate?: string; onDate?: string; rateMinor?: number },");
     expect(svc).toContain("seatsCancelled?: number;");
   });
   it("entry points: a GROUP row's block offers `Manage plan` (key AND host; closes first) with `{ kind: 'group' }`; `Series in range` lists groups with the group chip and opens the same modal by ref", () => {

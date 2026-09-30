@@ -1,0 +1,156 @@
+[
+  {
+    "id": "L1",
+    "what": "🔴 `sessionIds` rides on a future date again (the server 400s it — the dead end item 2 exists to close)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/teacher-scope.ts",
+        "edits": [
+          {
+            "from": "  if (advance) return { date, reason: reason.trim() };",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L2",
+    "what": "🔴 the chooser is shown on a future date (ticks that mean \"cancel this one\", where nothing is cancelled)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "        {advance ? (",
+            "to": "        {false ? ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L3",
+    "what": "🔴 the chooser is shown but DISABLED instead of absent (a greyed control still offers a meaning the act lacks)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "        {advance ? (",
+            "to": "        {false ? ("
+          },
+          {
+            "from": "                  checked={ticked.includes(r.id)}\n                  onChange={(e) => toggle(r.id, e.currentTarget.checked)}",
+            "to": "                  checked={ticked.includes(r.id)}\n                  disabled={advance}\n                  onChange={(e) => toggle(r.id, e.currentTarget.checked)}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L4",
+    "what": "🔴 \"NOTHING HAS BEEN CANCELLED\" disappears from the result (a teacher may not turn up)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "            <Alert color=\"orange\" variant=\"light\" icon={<AlertTriangle size={15} />} data-leave-nothing-cancelled>\n              {t(\"teacherLeave.advanceNothingCancelled\")}\n            </Alert>",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L5",
+    "what": "🔴 the words stop saying it: the clause becomes a vague reassurance",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    advanceNothingCancelled: \"NOTHING HAS BEEN CANCELLED. Those classes are still on the schedule and the families have not been told — please treat them as going ahead until an admin tells you otherwise.\",",
+            "to": "    advanceNothingCancelled: \"An admin will be in touch.\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L6",
+    "what": "the advance result is shown for the CANCEL act too (today's cancel claims nothing was cancelled)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "      if (isAdvanceResult(res)) {",
+            "to": "      if (true || isAdvanceResult(res)) {"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L7",
+    "what": "🔴 the act is decided from the DATE WE SENT instead of from the answer",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "      if (isAdvanceResult(res)) {",
+            "to": "      if (advance) {"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L8",
+    "what": "today's ticks stop gating the submit (the old path's guard goes)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "            disabled={(!advance && ticked.length === 0) || reason.trim().length === 0}",
+            "to": "            disabled={reason.trim().length === 0}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L9",
+    "what": "the future/today fork inverts (today is treated as advance and the other way round)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/teacher-scope.ts",
+        "edits": [
+          {
+            "from": "export const isAdvanceLeaveDate = (date: string, today: string): boolean => Boolean(date && today) && date > today;",
+            "to": "export const isAdvanceLeaveDate = (date: string, today: string): boolean => Boolean(date && today) && date >= today;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L10",
+    "what": "the class list is computed on the page instead of read from the server's answer",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "                  {(done.bookings ?? []).map((b) => (",
+            "to": "                  {rows.map((b) => ("
+          }
+        ]
+      }
+    ]
+  }
+]
