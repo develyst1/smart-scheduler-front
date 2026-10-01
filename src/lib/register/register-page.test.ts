@@ -357,8 +357,13 @@ describe("§5 / §6.1 — what the page does its own way", () => {
     // 🔻 TASK-591 — the THIRD round for this one sentence: TASK-577 moved the box's words to the owner's approved reword
     // held HERE; **TASK-590 now sends them from the server in both languages**, so the box renders `phase.dupMessage` and
     // 🚫 the page keeps no copy. *One sentence, one source — the drift is why it moved.*
-    expect(page).toContain("{phase.dupMessage}");
-    expect(page).toContain("dupMessage: (lang === ");
+    // 🔻 TASK-593 nit 1, declared: the phase carries the server's BOTH-LANGUAGE pair and **the language is chosen at
+    // RENDER** — it used to hold one sentence picked at refusal time, so the box stayed English after switching to ไทย.
+    // 🔑 The class: **a rendered value captured into state instead of the data it was rendered from.**
+    expect(page).toContain('{lang === "th" ? phase.dupMessage?.TH : phase.dupMessage?.EN}');
+    expect(page).toContain("dupMessage: (r as Refusal).message,");
+    // 🚫 no language is chosen where the refusal is STORED — that was nit 1's defect, and this is the pin against it
+    expect(page).not.toContain("dupMessage: (lang ===");
     // 🔑 ONE box, by count: this refusal no longer also raises the page-top failure alert
     const dupAt = page.indexOf('if (r.code === "NAME_DUPLICATE_NEEDS_DETAIL") {');
     const dupBranch = page.slice(dupAt, dupAt + 400);
@@ -641,7 +646,12 @@ describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked accoun
     expect(en.register.alreadyLinkedTo).toContain("({n} children)");
     expect(en.register.alreadyLinkedToOne).not.toContain("children");
     expect(th.register.alreadyLinkedToOne).toBe(th.register.alreadyLinkedTo);
-    expect(th.register.alreadyLinkedTo).toBe("ผูกกับเบอร์ {phone} (นักเรียน {n} คน) ไม่ต้องทำอะไรเพิ่มค่ะ");
+    // 🔻 TASK-593 nit 2, declared: **"ไม่ต้องทำอะไรเพิ่ม" / "Nothing more to do here" is GONE — it became FALSE** when
+    // TASK-580 put an Add-a-child button directly under it. 🔑 Nobody edited the sentence; a change elsewhere made it wrong.
+    // ✅ What this pin protects — the 1-vs-many English split, Thai with no plural, one ternary in one place — is unchanged.
+    expect(th.register.alreadyLinkedTo).toBe("ผูกกับเบอร์ {phone} (นักเรียน {n} คน)");
+    expect(en.register.alreadyLinkedTo).not.toMatch(/nothing more/i);
+    expect(th.register.alreadyLinkedTo).not.toContain("ไม่ต้องทำอะไรเพิ่ม");
     expect(page).toContain('phase.childCount === 1 ? "register.alreadyLinkedToOne" : "register.alreadyLinkedTo"');
     expect((page.match(/childCount === 1/g) ?? []).length).toBe(1); // one ternary, one place
   });
@@ -723,7 +733,11 @@ describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked accoun
         const i = lines.findIndex((l) => new RegExp(`^\\s*${k}:`).test(l));
         expect(i).toBeGreaterThan(0);
         const around = lines.slice(Math.max(0, i - 3), i + 2).join("\n");
-        expect(around).toContain("PLACEHOLDER");
+        // 🔻 TASK-593 nit 2, declared: two of these are now **my DRAFT** rather than an untouched PLACEHOLDER, because the
+        // clause *"Nothing more to do here"* had become FALSE. 🔑 **The rule this pin protects is unchanged and is now said
+        // exactly: an UNAPPROVED string must DECLARE itself** — as `PLACEHOLDER` (nobody has written it yet) or as
+        // `DRAFT (Fern, …)` (I wrote it and the owner has not seen it). 🚫 What may not happen is a silent third state.
+        expect(around).toMatch(/PLACEHOLDER|DRAFT \(Fern/);
       }
     }
   });

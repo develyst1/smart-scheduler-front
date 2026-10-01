@@ -72,8 +72,15 @@ type Phase =
   | { kind: "found"; phone: string; children: ChildRef[] }
   | { kind: "found-2fa"; phone: string; childCount: number }
   | { kind: "linked"; children: ChildRef[]; canAddMore: boolean }
-  /** 🔴 TASK-591 — `dupMessage` is the SERVER's sentence for this refusal (its body carries both languages). */
-  | { kind: "form"; dupName?: string; dupMessage?: string }
+  /**
+   * 🔴 **TASK-591 → TASK-593 nit 1 — the server's BOTH-LANGUAGE body, not one rendered sentence.**
+   *
+   * This used to hold `dupMessage?: string`, chosen with the language **at refusal time**. ⇒ **switching the page to ไทย
+   * re-rendered everything except that box**, because the string had already been picked. 🔑 **The class: a RENDERED value
+   * captured into state instead of the DATA it was rendered from** — *state remembers; a render follows.*
+   * ✅ The pair now rides whole and the language is chosen **at render**, exactly as `FailureAlert` already did.
+   */
+  | { kind: "form"; dupName?: string; dupMessage?: { TH?: string; EN?: string } }
   | { kind: "confirm" }
   | { kind: "done"; result: CreateResult };
 
@@ -363,8 +370,8 @@ export default function RegisterContent() {
         setPhase({
           kind: "form",
           dupName: (r as Refusal).name,
-          // 🔑 The server's own words, in the reader's language — the page holds them for this render only and keeps no copy.
-          dupMessage: (lang === "th" ? (r as Refusal).message?.TH : (r as Refusal).message?.EN) ?? undefined,
+          // 🔑 The server's own words, BOTH languages, untouched — 🚫 no language is chosen here (nit 1).
+          dupMessage: (r as Refusal).message,
         });
         // 🔴 TASK-577 F-E — and NOTHING else. This used to fall through to `fail(r)` as well, so the same refusal drew
         // TWO boxes: the red one at the top of the page (the owner APPROVED words) and an orange one above the field
@@ -600,7 +607,8 @@ export default function RegisterContent() {
                    languages, so 🚫 the page keeps no copy at all. *Three homes in three rounds — the chat's words, an
                    approved reword held here, now the server's body — and the drift is exactly why they moved.* */
                 <Alert color="orange" variant="light" data-dup-box>
-                  {phase.dupMessage}
+                  {/* 🔑 nit 1 — the language is chosen HERE, on every render, so the box follows the TH/EN toggle. */}
+                  {lang === "th" ? phase.dupMessage?.TH : phase.dupMessage?.EN}
                 </Alert>
               )}
               <TextInput
@@ -662,11 +670,20 @@ export default function RegisterContent() {
                     {t("register.addressAskAgain")}
                   </Text>
                 )}
-                /* §7b — จังหวัด → เขต/อำเภอ → แขวง/ตำบล, each list read from the dataset by GEOCODE. The tier
-                   words follow the province (Bangkok เขต/แขวง, elsewhere อำเภอ/ตำบล). The three picks JOIN into
-                   the chat's one-line string — `พระโขนงเหนือ วัฒนา กทม`, that order, that abbreviation. */
-                /* §4 nit 2 — the typing instruction (`provinceLabel`) is NOT shown here: in pick mode the tier
-                   labels ARE the instruction. It stays on the typed field below. */
+                {/* 🔴 **D12 (TASK-593) — these two blocks RENDERED AS PAGE TEXT on a parent's form.**
+                    They were valid where they used to sit — the expression position after `addrMode === "pick" ? (` — and
+                    TASK-591's removal of the typed mode left them in JSX CHILDREN, where a block comment is TEXT, not a comment.
+                    ⚠️ **And writing the closing marker inside a comment CLOSES it** — the check below caught me doing exactly
+                    that in this very block, one minute after I fixed the original. *The hazard reproduces itself in its own
+                    explanation, which is why the enforcement matters more than the fix.*
+                    🔑 **Nothing caught it, and the reason belongs here: our source pins strip comments before asserting**
+                    (`codeOf`), so a comment that had BECOME text was invisible to exactly the tests that read this file.
+                    ⇒ `src/lib/ui/jsx-text-comments.test.ts` reads the PARSED tree instead, where this cannot hide.
+
+                    §7b — จังหวัด → เขต/อำเภอ → แขวง/ตำบล, each list read from the dataset by GEOCODE. The tier words follow
+                    the province (Bangkok เขต/แขวง, elsewhere อำเภอ/ตำบล). The three picks JOIN into the chat's one-line
+                    string — `พระโขนงเหนือ วัฒนา กทม` — for the confirm echo ONLY; 🚫 the wire gets the three parts.
+                    §4 nit 2 — the tier LABELS are the instruction here; the typed field and its `provinceLabel` are gone. */}
                 <Stack gap="xs">
                   <Select
                     label={t("register.addrProvince")}
@@ -680,8 +697,12 @@ export default function RegisterContent() {
                     clearable
                     comboboxProps={{ withinPortal: true }}
                   />
+                  {/* 🔴 TASK-593 nit 3 — REQUIRED, and now STARRED. All three parts are required (the server refuses two),
+                      and the province carried the only star ⇒ 🔑 *one starred and one not teaches a parent the star means
+                      nothing.* 🚫 The star is not decoration: `addressComplete` needs all three. */}
                   <Select
                     label={tier.district}
+                    required
                     placeholder={t("register.addrPickPlaceholder")}
                     data={asOptions(districts)}
                     value={distPick?.code ?? null}
@@ -693,6 +714,7 @@ export default function RegisterContent() {
                   />
                   <Select
                     label={tier.subDistrict}
+                    required
                     placeholder={t("register.addrPickPlaceholder")}
                     data={asOptions(subDistricts)}
                     value={subPick?.code ?? null}

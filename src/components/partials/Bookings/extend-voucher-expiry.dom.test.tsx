@@ -195,7 +195,7 @@ describe("🔴 TASK-572 — the voucher expiry control, clicked", () => {
     expect(saveBtn().disabled).toBe(true);
     expect(saves()).toEqual([]);
     // 🚫 the forecast block is not shown beside a refusal — there is no plan to show
-    expect(document.querySelector("[data-voucher-preview]")).toBeNull();
+    expect(document.querySelectorAll("[data-voucher-preview]").length).toBe(0);
   });
 
   it("🔴 a refused date cannot be saved even if the button is pressed — the pre-request guard", async () => {
@@ -220,7 +220,7 @@ describe("🔴 TASK-572 — the voucher expiry control, clicked", () => {
     refusePreviewWith = null;
     await pickDay(user, "16");
     await waitFor(() => expect(previews().length).toBe(2));
-    expect(document.querySelector("[data-voucher-refusal]")).toBeNull();
+    expect(document.querySelectorAll("[data-voucher-refusal]").length).toBe(0);
     expect(saveBtn().disabled).toBe(false);
   });
 

@@ -140,7 +140,13 @@ describe("§4 — `Report leave`: one call, the ticks from the scoped day, the b
     expect(leaveDialog).toContain("if (isAdvanceResult(res)) {");
     expect(leaveDialog).not.toMatch(/length\s*[<>]=?\s*(3|200)\b/);
     expect(leaveDialog).toContain('t("teacherLeave.done", { n: res.cancelled, families: res.familiesNotified })');
+    // 🔻 TASK-595, declared: the same-day warning is now GUARDED. It promises the ticked sessions' families are told and
+    // the make-ups added — true on the cancel path, FALSE on an advance date, where it sat directly under a hint saying
+    // nothing is cancelled. ✅ What this pin protected (the sentence is still the one shown when a cancel happens) stands:
+    // the string is unchanged and it is still here — it is the CONDITION that is new, and the guard is the pin now.
     expect(leaveDialog).toContain('{t("teacherLeave.warning")}');
+    expect(leaveDialog).toContain("{!advance && (");
+    expect(leaveDialog).toContain("data-leave-cancel-warning");
     expect(dataHooks(leaveDialog)).toEqual(["useCalendar", "useReportOwnLeave"]); // nothing outside the set
     expect(schedSvc).toContain('api.post<OwnLeaveResult>("/teachers/me/leave", body)');
     expect(codeOf("src/hooks/scheduler/useScheduler.ts")).toContain("mutationFn: (body: { date: string; sessionIds?: string[]; reason: string }) => reportOwnLeave(body),");

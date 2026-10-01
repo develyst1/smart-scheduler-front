@@ -34,6 +34,8 @@ interface Props {
   onCreate: (teacherId: string, time: string) => void;
   /** REQ-095 §11 (TASK-419) — a merged camp block opens the camp PANEL, never the booking modal. */
   onSelectCamp?: (block: CampBlock) => void;
+  /** 🔴 TASK-593 nit 4 — the ids of weeks CLOSED to new bookings, from the payload's own `status` (`closedWeekIds`). */
+  closedWeeks?: ReadonlySet<string>;
 }
 
 // พื้น/ขอบการ์ด + dot ตามสถานะ — `./calendar-status`, shared with the week grid AND the legend.
@@ -41,7 +43,7 @@ interface Props {
 // tradeoff the owner saw in both previews before choosing it, not an oversight.
 // 🚫 Do not re-declare either map here (see that file).
 
-export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCreate, onSelectCamp }: Props) {
+export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCreate, onSelectCamp, closedWeeks }: Props) {
   const t = useT();
   // Display-only preference (SPEC-046) — shared with the week grid via the cell-display store. It hides lines,
   // it never filters bookings, so the day cell honours the SAME toggles the week cell does.
@@ -119,6 +121,7 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
             display={display}
             campCell={(teacherId) => campCells.get(`${teacherId}|${time}`)}
             onSelectCamp={onSelectCamp}
+            closedWeeks={closedWeeks}
             bookings={bookings}
           />
         ))}
@@ -137,6 +140,7 @@ function Row({
   display,
   campCell,
   onSelectCamp,
+  closedWeeks,
   bookings,
 }: {
   time: string;
@@ -149,6 +153,8 @@ function Row({
   display: CellDisplay;
   campCell: (teacherId: string) => { start?: CampBlock; covered?: true } | undefined;
   onSelectCamp?: (block: CampBlock) => void;
+  /** 🔴 TASK-593 nit 4 — the ids of weeks CLOSED to new bookings, from the payload's own `status` (`closedWeekIds`). */
+  closedWeeks?: ReadonlySet<string>;
 }) {
   const t = useT();
   const can = useCan();
@@ -164,7 +170,7 @@ function Row({
         if (camp?.start) {
           return (
             <div key={tc.id} className="min-h-20 border-l border-t border-muted-100 p-1.5" style={{ gridRow: `span ${camp.start.hours}` }}>
-              <CampBlockCell block={camp.start} onSelect={(b) => onSelectCamp?.(b)} />
+              <CampBlockCell block={camp.start} closed={closedWeeks?.has(camp.start.campWeekId) ?? false} onSelect={(b) => onSelectCamp?.(b)} />
             </div>
           );
         }

@@ -194,3 +194,51 @@ describe("🔵 TASK-321 — the diff line and the header name one fact ONE way",
     expect(en.plan.pausedNoEnd).toBe("Paused — no dates until it resumes");
   });
 });
+
+/**
+ * 🔴 **TASK-595 — the leave dialog's words, after the derivation.** Tanya found ONE stale sentence (the same-day warning
+ * on a future date, now guarded — pinned by CLICK in `report-leave-advance.dom.test.tsx`, both ways). 🔑 **Deriving what
+ * ELSE on that dialog was written for the today path turned up a second one, in Thai only**, and this is where it is held.
+ * 📌 *One dialog, two acts, is exactly where the wrong words get shown* — my own line from TASK-588, and it cost me a
+ * string I had read past twice.
+ */
+describe("TASK-595 — the leave dialog says nothing that belongs to the other act", () => {
+  it("🔴 `noSessions` says THE CHOSEN DAY, not \"today\" — the branch it lives on also serves PAST dates", () => {
+    // 🔻 Declared: the Thai was "ไม่มีคาบของคุณในวันนี้" (**today**) while its own English says **on this day**, and the
+    // chooser it belongs to is shown for today AND any past date ⇒ on a past date the Thai named the wrong day.
+    // 🔑 The two languages must make the SAME statement; that is what the pin holds, not a particular wording.
+    expect(en.teacherLeave.noSessions).toBe("No sessions of yours on this day.");
+    expect(th.teacherLeave.noSessions).toBe("ไม่มีคาบของคุณในวันนั้น");
+    expect(th.teacherLeave.noSessions).not.toContain("วันนี้");
+  });
+
+  it("✅ the CANCEL act's warning is unchanged — the fix guarded WHERE it shows, never the sentence", () => {
+    // 🚫 This is the string Tanya reported, and it is deliberately NOT reworded: on today's path it is exactly right,
+    // and 🔑 *half a rule is not a rule* — a fix that softened the sentence would weaken the one place it is needed.
+    expect(en.teacherLeave.warning).toBe("Families of the ticked sessions will be told; their make-ups are added by the system.");
+    expect(th.teacherLeave.warning).toBe("ผู้ปกครองของคาบที่ติ๊กจะได้รับแจ้ง และระบบจะเพิ่มคาบชดเชยให้");
+    // and the ADVANCE hint still makes the opposite promise, in both languages — the contradiction the guard removed
+    expect(en.teacherLeave.advanceHint).toContain("not cancelled");
+    expect(th.teacherLeave.advanceHint).toContain("ไม่ถูกยกเลิก");
+  });
+
+  it("🔑 nothing ELSE the dialog shows on BOTH acts names an act — the derivation, as an assertion", () => {
+    // The strings rendered before submit on EITHER date: the title, the date label, the reason label and its hint.
+    // 🚫 None may promise a cancellation, a notice to a family, a make-up, or block-for-new-bookings — each of those
+    // belongs to exactly one act, and a shared string that names one is the defect class this task is about.
+    const shared = [
+      en.teacherLeave.title,
+      en.teacherLeave.date,
+      en.teacherLeave.reason,
+      en.teacherLeave.reasonHint,
+      th.teacherLeave.title,
+      th.teacherLeave.date,
+      th.teacherLeave.reason,
+      th.teacherLeave.reasonHint,
+    ].join(" | ");
+    expect(shared).not.toMatch(/cancel|make-up|notified|told|blocked/i);
+    expect(shared).not.toMatch(/ยกเลิก|ชดเชย|แจ้งผู้ปกครอง|ปิดรับจอง/);
+    // 🔑 and the check has something to read: a pin over an empty list would pass forever
+    expect(shared.length).toBeGreaterThan(40);
+  });
+});

@@ -100,7 +100,7 @@ describe("🔑 TASK-532 — the Undo control, actually clicked", () => {
 
     // the item is there, and the dialog is NOT — this is the state D4 never got past
     const item = await screen.findByText("Undo check-in");
-    expect(screen.queryByText("Undo this check-in?")).toBeNull();
+    expect(screen.queryAllByText("Undo this check-in?").length).toBe(0);
 
     await user.click(item);
 
@@ -149,9 +149,9 @@ describe("🔑 TASK-532 — the Undo control, actually clicked", () => {
 
   it("a row with nothing to undo renders NO control — nothing to click, and NO preview is asked", async () => {
     mount(row({ id: "bk-plain", status: "CONFIRMED", checkinChannel: null }));
-    expect(screen.queryByText("Undo attendance")).toBeNull();
-    expect(screen.queryByText("Undo check-in")).toBeNull();
-    expect(screen.queryByText("Undo leave")).toBeNull();
+    expect(screen.queryAllByText("Undo attendance").length).toBe(0);
+    expect(screen.queryAllByText("Undo check-in").length).toBe(0);
+    expect(screen.queryAllByText("Undo leave").length).toBe(0);
     expect(calls).toEqual([]);
     expect(gets).toEqual([]);
   });
@@ -185,8 +185,8 @@ describe("🔴 TASK-547 — the forecast, clicked", () => {
     await user.click(await screen.findByText("Undo attendance"));
     expect(await screen.findByText(/Nothing else follows/i)).toBeTruthy();
     // 🚫 no invented quota or make-up line anywhere
-    expect(screen.queryByText(/return the leave/i)).toBeNull();
-    expect(screen.queryByText(/make-up session on/i)).toBeNull();
+    expect(screen.queryAllByText(/return the leave/i).length).toBe(0);
+    expect(screen.queryAllByText(/make-up session on/i).length).toBe(0);
     // and it is still confirmable
     await waitFor(() => expect(confirmBtn().disabled).toBe(false));
   });
@@ -216,8 +216,8 @@ describe("🔴 TASK-547 — the forecast, clicked", () => {
     await waitFor(() => expect(previewBox()).toBe("failed"));
     expect(screen.getByText(/could not check what this would change/i)).toBeTruthy();
     // 🚫 no confident forecast: not one line, and not the "nothing else follows" reassurance either
-    expect(screen.queryByText(/If nothing changes before you confirm/i)).toBeNull();
-    expect(screen.queryByText(/Nothing else follows/i)).toBeNull();
+    expect(screen.queryAllByText(/If nothing changes before you confirm/i).length).toBe(0);
+    expect(screen.queryAllByText(/Nothing else follows/i).length).toBe(0);
     // ✅ a preview outage must not stop a legitimate undo — the act is the authority
     expect(confirmBtn().disabled).toBe(false);
     await user.click(confirmBtn());

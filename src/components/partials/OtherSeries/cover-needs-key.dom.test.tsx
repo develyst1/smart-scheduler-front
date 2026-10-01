@@ -93,7 +93,7 @@ describe("🔴 TASK-592 — without the rate permission, a cover is EXPLAINED, n
     expect(box.textContent).toMatch(/permission/i);
     expect(box.textContent).not.toMatch(/บี|invalid rate|wrong/i);
     // 🚫 no rate box at all for this identity (they could not use one)
-    expect(document.querySelector("[data-cover-rate]")).toBeNull();
+    expect(document.querySelectorAll("[data-cover-rate]").length).toBe(0);
 
     // 🔴 two guards: the Save is shut, and pressing it anyway sends NOTHING
     expect(saveBtn().disabled).toBe(true);
@@ -108,7 +108,7 @@ describe("🔴 TASK-592 — without the rate permission, a cover is EXPLAINED, n
     await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
 
     // no permission sentence, because no rate is involved over the rest of the series
-    expect(document.querySelector("[data-cover-needs-key]")).toBeNull();
+    expect(document.querySelectorAll("[data-cover-needs-key]").length).toBe(0);
     await waitFor(() => expect(saveBtn().disabled).toBe(false));
     await user.click(saveBtn());
 
@@ -125,7 +125,7 @@ describe("🔴 TASK-592 — without the rate permission, a cover is EXPLAINED, n
     await pickTeacher(user);
     await user.click(document.querySelector("[data-scope-this]") as HTMLElement);
 
-    expect(document.querySelector("[data-cover-needs-key]")).toBeNull();
+    expect(document.querySelectorAll("[data-cover-needs-key]").length).toBe(0);
     // the optional rate box is hidden without the key, exactly as before TASK-592 (REQ-102 §8)
     expect([...document.querySelectorAll("input")].some((i) => /฿/.test(i.getAttribute("value") ?? ""))).toBe(false);
     await waitFor(() => expect(saveBtn().disabled).toBe(false));

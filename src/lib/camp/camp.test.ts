@@ -9,7 +9,7 @@ import { ACTION_KEYS_SNAPSHOT } from "@/lib/rbac/actions";
 import { MENU_KEYS } from "@/lib/rbac/menus";
 import { NAV_ITEMS } from "@/components/layout/AdminLayout/AdminLayout.config";
 import CampDayBanner from "@/components/partials/Calendar/CampDayBanner";
-import { bannerWeeksFor, creditDays, creditLabel, datesBetween, redeemBody, sellCampBody, weeksByMonth } from "./units";
+import { bannerWeeksFor, closedWeekIds, creditDays, creditLabel, datesBetween, redeemBody, sellCampBody, weeksByMonth } from "./units";
 
 /**
  * REQ-095 Stage 3a / SPEC-082 / TASK-402 — Balance camp on the FE: the Camp menu (weeks · roster · sell · redeem ·
@@ -76,6 +76,17 @@ describe("§1 — the pure arithmetic (units ⇒ days + ½), value-tested", () =
     expect(weeksByMonth(weeks).map((g) => [g.month, g.weeks.map((w) => w.id)])).toEqual([["2026-10", ["a", "b"]], ["2026-11", ["c"]]]);
     expect(datesBetween("2026-10-05", "2026-10-09")).toEqual(["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09"]);
     expect(datesBetween("2026-10-05", "2026-10-05")).toEqual(["2026-10-05"]);
+
+    /**
+     * 🔴 **TASK-593 nit 4 — the CELLS' closed set, and it must come from the same ONE source the banner reads.**
+     * 🔑 This fixture is chosen so the two plausible sources DISAGREE: **"b" is CLOSED and HAS children**, **"c" is OPEN
+     * and has NO day counts at all.** ⇒ a set derived from the counts would answer `["c"]`, the exact opposite of the
+     * truth, and a fixture where closed weeks happened to be the empty ones could not tell the two apart.
+     * (📌 *A fixture that agrees with itself cannot tell two sources apart* — TASK-589's lesson, applied here on purpose.)
+     */
+    expect([...closedWeekIds(weeks)]).toEqual(["b"]);
+    expect(closedWeekIds(weeks).has("c")).toBe(false);
+    expect([...closedWeekIds(undefined)]).toEqual([]);
   });
 
   it("the bodies: sell (days only on DAILY, firstWeek only with ticks, dates sorted) · redeem (dates sorted)", () => {

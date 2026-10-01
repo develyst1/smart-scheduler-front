@@ -150,3 +150,11 @@ export type CheckinKind = "session" | "camp";
 export const checkinEndpointFor = (kind: CheckinKind): "/checkin" | "/checkin/camp" => (kind === "camp" ? "/checkin/camp" : "/checkin");
 /** The camp token's own refusal — the clock icon, not the cross (the session's page keeps its 400 sentence match). */
 export const CAMP_TOKEN_EXPIRED = "CAMP_TOKEN_EXPIRED";
+
+/**
+ * 🔴 **TASK-593 nit 4 — the closed weeks in the calendar payload, as a set of ids.** The banner has always known this
+ * (`bannerWeeksFor`); the CELLS did not, so a closed week's blocks looked exactly like an open week's in the week view.
+ * 🔑 **Same rule, one source: the server's `status`, never anything derived.**
+ */
+export const closedWeekIds = (weeks: readonly CampWeekLite[] | undefined): Set<string> =>
+  new Set((weeks ?? []).filter((w) => w.status !== "OPEN").map((w) => w.id));

@@ -1,0 +1,137 @@
+[
+  {
+    "id": "D1",
+    "what": "🔴 D12 comes back — a developer comment in JSX children, rendered as page text on the parent's form",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "                {newPhone === null && (",
+            "to": "                /* a comment where a comment cannot live */\n                {newPhone === null && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D2",
+    "what": "🔴 the check stops reading the PARSED tree and goes back to text (the shape that hid D12 from every pin)",
+    "files": [
+      {
+        "file": "src/lib/ui/jsx-text-comments.test.ts",
+        "edits": [{ "from": "    if (ts.isJsxText(node)) {", "to": "    if (false && ts.isJsxText(node)) {" }]
+      }
+    ]
+  },
+  {
+    "id": "D3",
+    "what": "the sweep stops looking at `.tsx` files (it would pass on an empty list)",
+    "files": [
+      {
+        "file": "src/lib/ui/jsx-text-comments.test.ts",
+        "edits": [{ "from": "    else if (name.endsWith(\".tsx\")) files.push(full);", "to": "    else if (name.endsWith(\".never\")) files.push(full);" }]
+      }
+    ]
+  },
+  {
+    "id": "D4",
+    "what": "🔴 nit 1 — the duplicate sentence is captured at refusal time again (it stops following the language)",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "          dupMessage: (r as Refusal).message,",
+            "to": "          dupMessage: { EN: (r as Refusal).message?.EN },"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D5",
+    "what": "⚠️ nit 2 — \"Nothing more to do here\" returns, above a button that IS something more to do",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    alreadyLinkedTo: \"Linked to {phone} ({n} children).\",",
+            "to": "    alreadyLinkedTo: \"Linked to {phone} ({n} children). Nothing more to do here.\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D6",
+    "what": "⚠️ nit 3 — the sub-district loses its star while staying required",
+    "files": [
+      {
+        "file": "src/components/partials/Register/RegisterContent.tsx",
+        "edits": [
+          {
+            "from": "                  <Select\n                    label={tier.subDistrict}\n                    required",
+            "to": "                  <Select\n                    label={tier.subDistrict}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D7",
+    "what": "🔴 nit 4 — a closed week's cell loses its mark in the WEEK view (it looks like one that can take bookings)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarWeekGrid.tsx",
+        "edits": [
+          {
+            "from": "closed={closedWeeks?.has(item.campWeekId) ?? false} ",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D8",
+    "what": "nit 4 — the closed set is derived from something other than the server's status",
+    "files": [
+      {
+        "file": "src/lib/camp/units.ts",
+        "edits": [
+          {
+            "from": "  new Set((weeks ?? []).filter((w) => w.status !== \"OPEN\").map((w) => w.id));",
+            "to": "  new Set((weeks ?? []).filter((w) => Object.keys(w.dayCounts ?? {}).length === 0).map((w) => w.id));"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D9",
+    "what": "🔴 nit 5's attribution breaks — the FE starts counting rows instead of printing the server's number",
+    "files": [
+      {
+        "file": "src/lib/camp/grid.ts",
+        "edits": [{ "from": "          kidCount: b.campKidCount ?? null,", "to": "          kidCount: (b.campKidCount ?? 0) + 6," }]
+      }
+    ]
+  },
+  {
+    "id": "D10",
+    "what": "the merge pools two DAYS into one block (a week's cells would share one day's count)",
+    "files": [
+      {
+        "file": "src/lib/camp/grid.ts",
+        "edits": [
+          {
+            "from": "      if (last && last.kind === \"camp\" && last.campWeekDayId === b.campWeekDayId && hhmm(last.endTime) === hhmm(b.startTime)) {",
+            "to": "      if (last && last.kind === \"camp\" && hhmm(last.endTime) === hhmm(b.startTime)) {"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -155,7 +155,7 @@ describe("🔴 TASK-571 — the start-date move, clicked", () => {
 
     expect(await screen.findByText("คอร์สนี้เริ่มเรียนแล้ว ย้ายวันเริ่มไม่ได้")).toBeTruthy();
     // 🚫 no forecast ⇒ the commit stays shut, and pressing it sends nothing
-    expect(document.querySelector("[data-start-forecast]")).toBeNull();
+    expect(document.querySelectorAll("[data-start-forecast]").length).toBe(0);
     expect(confirmBtn().disabled).toBe(true);
     await user.click(confirmBtn());
     expect(commits()).toEqual([]);
@@ -169,7 +169,7 @@ describe("🔴 TASK-571 — the start-date move, clicked", () => {
     await waitFor(() => expect(confirmBtn().disabled).toBe(false));
 
     await pickADate(user); // a different date
-    await waitFor(() => expect(document.querySelector("[data-start-forecast]")).toBeNull());
+    await waitFor(() => expect(document.querySelectorAll("[data-start-forecast]").length).toBe(0));
     expect(confirmBtn().disabled).toBe(true);
   });
 
@@ -211,7 +211,7 @@ describe("🔴 TASK-571 — the start-date move, clicked", () => {
     expect(await screen.findByText(/3 sessions need confirming again/i)).toBeTruthy();
     expect(screen.getByText(/run confirm course to send the new schedule/i)).toBeTruthy();
     // 🚫 and nothing claims anyone was told by the move itself
-    expect(screen.queryByText(/notified/i)).toBeNull();
+    expect(screen.queryAllByText(/notified/i).length).toBe(0);
   });
 
   it("🔴 a REFUSED move: the server's sentence, and the course is untouched (no result shown)", async () => {
@@ -227,7 +227,7 @@ describe("🔴 TASK-571 — the start-date move, clicked", () => {
     expect(screen.getByText(/may still refuse/i)).toBeTruthy();
     // 🚫 no success anywhere: the dialog is still asking, and it was attempted once
     expect(document.querySelector("[data-start-dialog]")?.getAttribute("data-start-dialog")).toBe("ask");
-    expect(document.querySelector("[data-start-result]")).toBeNull();
+    expect(document.querySelectorAll("[data-start-result]").length).toBe(0);
     expect(commits().length).toBe(1);
   });
 
@@ -235,7 +235,7 @@ describe("🔴 TASK-571 — the start-date move, clicked", () => {
     history = [{ fromDate: "2026-12-01", toDate: "2026-12-06", actor: null, changedAt: "2026-09-20T03:00:00.000Z" }];
     mount();
     expect(await screen.findByText(/nobody is told by this move/i)).toBeTruthy();
-    expect(screen.queryByText(/by hand/i)).toBeNull();
+    expect(screen.queryAllByText(/by hand/i).length).toBe(0);
     expect(document.querySelector("[data-start-warnings]")?.getAttribute("data-start-warnings")).toBe("plain");
   });
 });

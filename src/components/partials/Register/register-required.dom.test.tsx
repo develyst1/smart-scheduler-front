@@ -134,7 +134,7 @@ describe("🔴 TASK-566 — every field required, clicked", () => {
     // …and pressing it anyway sends nothing and does not reach the confirm screen
     await user.click(nextBtn());
     expect(sent.some((r) => r.path === "create")).toBe(false);
-    expect(saveBtn()).toBeNull();
+    expect(!!saveBtn()).toBe(false);
   });
 
   it("🔑 a name alone is not enough, and neither is a name + birthday — the address is required too", async () => {
@@ -163,7 +163,7 @@ describe("🔴 TASK-566 — every field required, clicked", () => {
     // 🔴 TASK-591 — three picks. **Two of them do not submit**, which the test below this one proves.
     await pickAddress(user);
     // 🚫 and a BRAND-NEW family is not told we are asking "again" — they were never asked before (W9)
-    expect(document.querySelector("[data-address-ask-again]")).toBeNull();
+    expect(document.querySelectorAll("[data-address-ask-again]").length).toBe(0);
 
     await waitFor(() => expect(nextBtn().disabled).toBe(false));
     await user.click(nextBtn());
@@ -208,8 +208,8 @@ describe("🔴 TASK-566 — every field required, clicked", () => {
     await waitFor(() => expect(nextBtn()).toBeTruthy());
 
     // 🚫 ABSENT, not disabled and not prefilled-and-locked
-    expect(screen.queryByLabelText(/address/i)).toBeNull();
-    expect(screen.queryByLabelText(/province/i)).toBeNull();
+    expect(screen.queryAllByLabelText(/address/i).length).toBe(0);
+    expect(screen.queryAllByLabelText(/province/i).length).toBe(0);
     // and the page says why, with the province it already holds
     expect(document.querySelector("[data-address-on-file]")).toBeTruthy();
     expect(screen.getByText(/already have your address on file/i).textContent).toContain("กรุงเทพมหานคร");
@@ -254,6 +254,57 @@ describe("🔴 TASK-566 — every field required, clicked", () => {
     // and the placeholders ARE on screen, so the check has something to read (a pin that sees nothing proves nothing)
     expect(document.querySelectorAll("[placeholder]").length).toBeGreaterThan(0);
   });
+
+  /**
+   * 🔴 **TASK-593 nit 3 — the star, on EVERY field the door demands.** The province carried the only star while all three
+   * address parts were required, and 🔑 *one starred and one not teaches a parent the star means nothing.*
+   *
+   * 📌 **Why this is not merely a prop pin.** Mantine draws the star FROM `required`, so "starred" and "required in the
+   * DOM" are one fact, and pinning the star alone would only say the prop is still typed. What makes it a statement about
+   * the FORM is the pairing below: the fields are listed, every one of them is starred — **and the sub-district, the part
+   * that had no star, is the same part the test "TWO parts do not submit" proves the door refuses.** ⇒ the star is the
+   * door's rule made visible, and a field that loses its star while the door still demands it fails HERE.
+   */
+  it("🔴 every field the door demands carries the star — all five, the address parts included", async () => {
+    const user = userEvent.setup();
+    await toForm(user);
+    // the second and third pickers are disabled until the one above them is picked, so walk down to make all three real
+    await pick(user, 0, "กรุงเทพมหานคร");
+    await pick(user, 1, "วัฒนา");
+
+    /** A control's own `<label for=…>`, and whether that label SHOWS the star (Mantine's ` *` span, `data-required`). */
+    const star = (el: HTMLElement) => {
+      const label = document.querySelector(`label[for='${el.id}']`) as HTMLElement | null;
+      expect(label).toBeTruthy();
+      return {
+        starred: (label as HTMLElement).getAttribute("data-required") === "true",
+        shown: /\*\s*$/.test((label as HTMLElement).textContent ?? ""),
+        // 🔑 `hasAttribute`, not `.required`: the birthday's picker is a `<button required>`, and `HTMLButtonElement`
+        // has no `required` PROPERTY — reading the property answered `undefined` for the one field with a widget.
+        required: el.hasAttribute("required"),
+      };
+    };
+    const fields: Array<[string, HTMLElement]> = [
+      ["name", byLabel(/name/i)],
+      ["date of birth", byLabel(/date of birth/i)],
+      ["province", combos()[0]],
+      ["district", combos()[1]],
+      ["sub-district", combos()[2]],
+    ];
+    // 🔑 the list is the point: FIVE controls, and not one of them may be the odd one out
+    expect(fields.length).toBe(5);
+    for (const [what, el] of fields) {
+      expect({ what, ...star(el) }).toEqual({ what, starred: true, shown: true, required: true });
+    }
+    // 🚫 and no OTHER labelled control on this form is starred-but-optional or optional-but-starred: the two agree everywhere
+    const labels = [...document.querySelectorAll("label[for]")] as HTMLElement[];
+    for (const label of labels) {
+      const el = document.getElementById(label.getAttribute("for") as string);
+      if (!el) continue;
+      const req = el.hasAttribute("required");
+      expect([label.getAttribute("data-required") === "true", /\*\s*$/.test(label.textContent ?? "")]).toEqual([req, req]);
+    }
+  });
 });
 
 /**
@@ -271,8 +322,8 @@ describe("🔴 TASK-580 — the linked family's way forward, clicked", () => {
 
     // the form, straight away — and the already-linked screen is not what they get
     await waitFor(() => expect(nextBtn()).toBeTruthy());
-    expect(document.querySelector("[data-add-child]")).toBeNull();
-    expect(screen.queryByText(/already/i)).toBeNull();
+    expect(document.querySelectorAll("[data-add-child]").length).toBe(0);
+    expect(screen.queryAllByText(/already/i).length).toBe(0);
     // 🚫 nothing has been asked of the server beyond the status read that got us here
     expect(sent.map((r) => r.path)).toEqual(["status"]);
   });
@@ -289,7 +340,7 @@ describe("🔴 TASK-580 — the linked family's way forward, clicked", () => {
       expect(el).toBeTruthy();
       return el as HTMLButtonElement;
     });
-    expect(document.querySelector("[data-family-full]")).toBeNull();
+    expect(document.querySelectorAll("[data-family-full]").length).toBe(0);
     await user.click(add);
     await waitFor(() => expect(nextBtn()).toBeTruthy());
     expect(sent.map((r) => r.path)).toEqual(["status"]);
@@ -306,7 +357,7 @@ describe("🔴 TASK-580 — the linked family's way forward, clicked", () => {
     });
     expect(full.textContent).toMatch(/reached the limit/i);
     // 🚫 not a disabled button: there is no button at all, and nothing left the app
-    expect(document.querySelector("[data-add-child]")).toBeNull();
+    expect(document.querySelectorAll("[data-add-child]").length).toBe(0);
     expect(sent.map((r) => r.path)).toEqual(["status"]);
   });
 
@@ -318,14 +369,14 @@ describe("🔴 TASK-580 — the linked family's way forward, clicked", () => {
     statusAnswer = { ok: true, linked: true, phone: "08x-xxx-5678", childCount: 1, canAddMore: false, addressOnFile: true, province: null };
     mount();
     await waitFor(() => expect(document.querySelector("[data-family-full]")).toBeTruthy());
-    expect(document.querySelector("[data-add-child]")).toBeNull();
+    expect(document.querySelectorAll("[data-add-child]").length).toBe(0);
   });
 
   it("🔴 …and the server's YES wins over a large one", async () => {
     statusAnswer = { ok: true, linked: true, phone: "08x-xxx-5678", childCount: 9, canAddMore: true, addressOnFile: true, province: null };
     mount();
     await waitFor(() => expect(document.querySelector("[data-add-child]")).toBeTruthy());
-    expect(document.querySelector("[data-family-full]")).toBeNull();
+    expect(document.querySelectorAll("[data-family-full]").length).toBe(0);
   });
 });
 
@@ -350,7 +401,7 @@ describe("🔴 TASK-591 — three parts, one transaction, clicked", () => {
 
     await waitFor(() => expect(nextBtn().disabled).toBe(true));
     await user.click(nextBtn());
-    expect(saveBtn()).toBeNull();
+    expect(!!saveBtn()).toBe(false);
     expect(sent.some((r) => r.path === "create")).toBe(false);
   });
 
@@ -381,7 +432,7 @@ describe("🔴 TASK-591 — three parts, one transaction, clicked", () => {
     expect(sent.some((r) => r.path === "link")).toBe(false);
     // 🔑 and the page has not moved to a linked state: the form is still there, with the phone still pending
     expect(nextBtn()).toBeTruthy();
-    expect(document.querySelector("[data-add-child]")).toBeNull();
+    expect(document.querySelectorAll("[data-add-child]").length).toBe(0);
   });
 
   it("⚠️ a LEGACY household with nothing on file is ASKED — and the ask does not read as a loss", async () => {

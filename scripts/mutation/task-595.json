@@ -1,0 +1,72 @@
+[
+  {
+    "id": "W1",
+    "what": "🔴 the stale warning comes back on a FUTURE date — it promises families are told under a hint saying nothing is cancelled",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [{ "from": "        {!advance && (", "to": "        {true && (" }]
+      }
+    ]
+  },
+  {
+    "id": "W2",
+    "what": "🔴 the guard INVERTS — the warning shows only on the advance date and today loses it",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [{ "from": "        {!advance && (", "to": "        {advance && (" }]
+      }
+    ]
+  },
+  {
+    "id": "W3",
+    "what": "⚠️ the sentence is silenced EVERYWHERE — the half-a-rule fix: today loses a warning it needs",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [{ "from": "        {!advance && (", "to": "        {false && (" }]
+      }
+    ]
+  },
+  {
+    "id": "W4",
+    "what": "the marker the pins select on is renamed (is the selector load-bearing, or would an absent element pass?)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [{ "from": "data-leave-cancel-warning", "to": "data-leave-cancel-note" }]
+      }
+    ]
+  },
+  {
+    "id": "W5",
+    "what": "🔴 the derivation's own find returns — the Thai `noSessions` says \"today\" on a branch that also serves PAST dates",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    noSessions: \"ไม่มีคาบของคุณในวันนั้น\",",
+            "to": "    noSessions: \"ไม่มีคาบของคุณในวันนี้\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W6",
+    "what": "⚠️ the advance hint stops saying nothing is cancelled — the promise the guard exists to protect",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "so reporting leave blocks the whole day for new bookings. There is nothing to tick: classes already booked are not cancelled.",
+            "to": "so reporting leave blocks the whole day for new bookings. There is nothing to tick."
+          }
+        ]
+      }
+    ]
+  }
+]

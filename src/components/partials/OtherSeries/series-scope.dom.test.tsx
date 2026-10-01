@@ -144,7 +144,7 @@ describe("🔴 TASK-564 — the scope question, clicked", () => {
     await pickTeacher(user);
 
     await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
-    expect(document.querySelector("[data-cover-rate]")).toBeNull();
+    expect(document.querySelectorAll("[data-cover-rate]").length).toBe(0);
     await waitFor(() => expect(saveBtn().disabled).toBe(false));
     await user.click(saveBtn());
 
@@ -175,7 +175,7 @@ describe("🔴 TASK-564 — the scope question, clicked", () => {
     await user.click(document.querySelector("[data-scope-this]") as HTMLElement);
     // the outcome line appears and names the join, not a cover
     expect(await screen.findByText(/joins that session as a second coach/i)).toBeTruthy();
-    expect(screen.queryByText(/covers for/i)).toBeNull();
+    expect(screen.queryAllByText(/covers for/i).length).toBe(0);
 
     await user.click(saveBtn());
     await waitFor(() => expect(sent.length).toBe(1));
@@ -190,7 +190,7 @@ describe("🔴 TASK-564 — the scope question, clicked", () => {
     await pickTeacher(user);
 
     await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
-    expect(screen.queryByText(/joins that session as a second coach/i)).toBeNull();
+    expect(screen.queryAllByText(/joins that session as a second coach/i).length).toBe(0);
 
     await user.click(saveBtn());
     await waitFor(() => expect(sent.length).toBe(1));

@@ -164,9 +164,15 @@ export default function ReportLeaveDialog({ opened, initialDate, onClose }: { op
           minRows={2}
           required
         />
-        <Text size="xs" c="orange">
-          {t("teacherLeave.warning")}
-        </Text>
+        {/* 🔴 TASK-595 — this line belongs to the CANCEL act ONLY. It says the ticked sessions' families will be told and
+            the make-ups added; on an advance date 🚫 nothing is cancelled, nobody is told and no make-up is owed, so on a
+            future date it described an act that was not happening — directly contradicting the blue hint above it.
+            🔑 TASK-588 removed the chooser and reworded the button; this sentence sat outside both. */}
+        {!advance && (
+          <Text size="xs" c="orange" data-leave-cancel-warning>
+            {t("teacherLeave.warning")}
+          </Text>
+        )}
         <Group justify="flex-end" gap="sm">
           <Button variant="subtle" onClick={onClose}>
             {t("common.cancel")}

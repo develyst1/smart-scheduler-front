@@ -117,7 +117,7 @@ describe("🔴 TASK-559 — the camp rate box, actually used", () => {
     render(h(MantineProvider, null, h(I18nProvider, null, h(Fresh, { opened: true, week: WEEK as never, onClose: () => {} }))) as never);
 
     await waitFor(() => expect(document.querySelector("[data-day-table]")).toBeTruthy());
-    expect(document.querySelector("[data-rate-box='t1']")).toBeNull();
+    expect(document.querySelectorAll("[data-rate-box='t1']").length).toBe(0);
     expect(document.body.innerHTML).not.toContain("92rem");
   });
 });

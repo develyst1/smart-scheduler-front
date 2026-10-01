@@ -82,6 +82,12 @@ const mount = (initialDate: string) => {
     h(QueryClientProvider, { client: qc }, h(MantineProvider, null, h(I18nProvider, null, h(ReportLeaveDialog, { opened: true, initialDate, onClose: () => {} })))) as never,
   );
 };
+/**
+ * 🔴 **TASK-595 — every "it is not there" assertion in this file reads a COUNT, never the node.** `expect(node).toBeNull()`
+ * makes the runner print the RECEIVED value on failure, and a happy-dom element serializes its whole document graph:
+ * **my first run of W1/W2 produced ~307 MB and was KILLED at the time limit ⇒ NO RESULT, not a verdict.**
+ * 🔑 *An assertion whose failure message cannot be read is an assertion that cannot report.* A count prints `1` vs `0`.
+ */
 const submitBtn = () => document.querySelector("[data-leave-submit]") as HTMLButtonElement;
 const leaves = () => sent.filter((r) => r.url === "/teachers/me/leave");
 const typeReason = async (user: ReturnType<typeof userEvent.setup>) => {
@@ -103,7 +109,28 @@ describe("🔴 TASK-588 — a FUTURE date is the advance act, clicked", () => {
     });
     // 🚫 not one checkbox, disabled or otherwise: a tick would mean "cancel this one", and nothing is cancelled
     expect(document.querySelectorAll('input[type="checkbox"]').length).toBe(0);
-    expect(document.querySelector("[data-leave-rows]")).toBeNull();
+    expect(document.querySelectorAll("[data-leave-rows]").length).toBe(0);
+  });
+
+  /**
+   * 🔴 **TASK-595 — the same-day warning is ABSENT on a future date.** It says *the ticked sessions' families will be told
+   * and the make-ups are added*; on this path 🚫 **nothing is cancelled, nobody is told and no make-up is owed** ⇒ it
+   * described an act that was not happening, **directly under a blue hint saying nothing is cancelled.**
+   * 🔑 **Pinned BOTH ways** — absent here, **present on today** in the second half of this file — because *half a rule is
+   * not a rule*, and today's path must not lose a warning it genuinely needs.
+   */
+  it("🔴 TASK-595 — no same-day warning on a future date, and no cancel words anywhere on the screen", async () => {
+    mount(FUTURE);
+    await waitFor(() => expect(document.querySelector("[data-leave-advance-notice]")).toBeTruthy());
+
+    // 🚫 the element is GONE, not emptied
+    expect(document.querySelectorAll("[data-leave-cancel-warning]").length).toBe(0);
+    // 🔑 and read the WORDS too, in case the sentence reappears somewhere else on the dialog: nothing here promises a
+    // family will be told or a make-up added. (The blue hint's own "not cancelled" is the opposite claim and stays.)
+    const screenText = document.body.textContent ?? "";
+    expect(screenText).not.toMatch(/families of the ticked/i);
+    expect(screenText).not.toMatch(/make-up/i);
+    expect(screenText).toMatch(/not cancelled/i);
   });
 
   it("🔑 the body carries NO `sessionIds` — the server 400s them on a future date", async () => {
@@ -169,7 +196,7 @@ describe("✅ TASK-588 — TODAY is the old act, untouched", () => {
     const boxes = [...document.querySelectorAll('input[type="checkbox"]')] as HTMLInputElement[];
     expect(boxes.length).toBe(2);
     expect(boxes.every((b) => b.checked)).toBe(true);
-    expect(document.querySelector("[data-leave-advance-notice]")).toBeNull();
+    expect(document.querySelectorAll("[data-leave-advance-notice]").length).toBe(0);
 
     // untick one ⇒ the subset rides, exactly as before
     await user.click(boxes[1]);
@@ -180,7 +207,19 @@ describe("✅ TASK-588 — TODAY is the old act, untouched", () => {
     expect(leaves()[0].body.date).toBe(TODAY);
     expect(leaves()[0].body.sessionIds).toEqual(["bk-1"]);
     // 🚫 and the advance words never appear on this path
-    expect(document.querySelector("[data-leave-nothing-cancelled]")).toBeNull();
+    expect(document.querySelectorAll("[data-leave-nothing-cancelled]").length).toBe(0);
+  });
+
+  /** 🔴 **TASK-595's other half** — today's path KEEPS the warning, word for word. 🔑 *Half a rule is not a rule:* a fix
+   *  that silenced the sentence everywhere would have removed the one place a teacher must read it. */
+  it("🔴 TASK-595 — the same-day warning is PRESENT on today, and still says families are told", async () => {
+    mount(TODAY);
+    await waitFor(() => expect(document.querySelector("[data-leave-rows]")).toBeTruthy());
+
+    const warn = document.querySelector("[data-leave-cancel-warning]") as HTMLElement | null;
+    expect(warn).toBeTruthy();
+    expect((warn as HTMLElement).textContent).toMatch(/families of the ticked/i);
+    expect((warn as HTMLElement).textContent).toMatch(/make-up/i);
   });
 
   it("🚫 every class ticked ⇒ still no `sessionIds` (the whole day is the server's own set) — unchanged", async () => {

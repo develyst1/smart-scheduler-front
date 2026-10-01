@@ -123,8 +123,8 @@ describe("🔴 TASK-586 — the camp week's Close / Open / Delete, clicked", () 
   it("⚠️ the open week's row offers Close, the closed one offers the way back — never both on one row", async () => {
     mount();
     await find("[data-week-close='w-open']");
-    expect(document.querySelector("[data-week-open='w-open']")).toBeNull();
-    expect(document.querySelector("[data-week-close='w-shut']")).toBeNull();
+    expect(document.querySelectorAll("[data-week-open='w-open']").length).toBe(0);
+    expect(document.querySelectorAll("[data-week-close='w-shut']").length).toBe(0);
     expect(document.querySelector("[data-week-open='w-shut']")).toBeTruthy();
   });
 
@@ -157,7 +157,7 @@ describe("🔴 TASK-586 — the camp week's Close / Open / Delete, clicked", () 
     await user.click(await find("[data-delete-confirm]"));
 
     await waitFor(() => expect(deletes("w-shut").length).toBe(1));
-    expect(document.querySelector("[data-delete-refusal]")).toBeNull();
+    expect(document.querySelectorAll("[data-delete-refusal]").length).toBe(0);
     expect(notices.length).toBe(1);
   });
 
@@ -165,7 +165,7 @@ describe("🔴 TASK-586 — the camp week's Close / Open / Delete, clicked", () 
     mount();
     await find("[data-week-close='w-open']");
     // `w-open` has 3 kid-days, so the button is absent…
-    expect(document.querySelector("[data-week-delete='w-open']")).toBeNull();
+    expect(document.querySelectorAll("[data-week-delete='w-open']").length).toBe(0);
     // …and that is a CONVENIENCE: the refusal test above proves the guard is the server's, not this absence
     expect(document.querySelector("[data-week-delete='w-shut']")).toBeTruthy();
   });

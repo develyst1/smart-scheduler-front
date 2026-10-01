@@ -1,0 +1,87 @@
+[
+  {
+    "id": "X1",
+    "what": "🔴 a converted assertion goes back to handing the NODE to the matcher, in a real DOM test",
+    "files": [
+      {
+        "file": "src/components/partials/Camp/camp-week-lifecycle.dom.test.tsx",
+        "edits": [
+          {
+            "from": "expect(document.querySelectorAll(\"[data-delete-refusal]\").length).toBe(0);",
+            "to": "expect(document.querySelector(\"[data-delete-refusal]\")).toBeNull();"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "X2",
+    "what": "🔴 the check stops recognising `toBeNull` as a matcher that prints what it received",
+    "files": [
+      {
+        "file": "src/lib/ui/dom-assert-readable.test.ts",
+        "edits": [{ "from": "  \"toBeNull\",\n  \"toBeFalsy\",", "to": "  \"toBeFalsy\"," }]
+      }
+    ]
+  },
+  {
+    "id": "X3",
+    "what": "🔴 the check stops recognising a node-producing expression at all (it would pass on everything)",
+    "files": [
+      {
+        "file": "src/lib/ui/dom-assert-readable.test.ts",
+        "edits": [{ "from": "  return NODE_PRODUCING.some((n) => t.includes(n));", "to": "  return false;" }]
+      }
+    ]
+  },
+  {
+    "id": "X4",
+    "what": "the sweep stops finding `.dom.test.tsx` files (a check over an empty list passes forever)",
+    "files": [
+      {
+        "file": "src/lib/ui/dom-assert-readable.test.ts",
+        "edits": [{ "from": "else if (name.endsWith(\".dom.test.tsx\")) out.push", "to": "else if (name.endsWith(\".dom.test.never\")) out.push" }]
+      }
+    ]
+  },
+  {
+    "id": "X5",
+    "what": "⚠️ the check starts CRYING WOLF — `toBeTruthy` joins the list, though its failure prints `null`",
+    "files": [
+      {
+        "file": "src/lib/ui/dom-assert-readable.test.ts",
+        "edits": [{ "from": "  \"toBeInTheDocument\",\n] as const;", "to": "  \"toBeInTheDocument\",\n  \"toBeTruthy\",\n] as const;" }]
+      }
+    ]
+  },
+  {
+    "id": "X6",
+    "what": "⚠️ crying wolf the other way — `.length` stops counting as a small read, so every converted count is flagged",
+    "files": [
+      {
+        "file": "src/lib/ui/dom-assert-readable.test.ts",
+        "edits": [{ "from": "const SMALL_READS = [\n  \".length\",", "to": "const SMALL_READS = [" }]
+      }
+    ]
+  },
+  {
+    "id": "X7",
+    "what": "🔴 the `!x` escape is removed — a boolean is treated as the node it was built from",
+    "files": [
+      {
+        "file": "src/lib/ui/dom-assert-readable.test.ts",
+        "edits": [{ "from": "  if (t.startsWith(\"!\")) return false; // `!x` / `!!x` is a boolean, whatever x was", "to": "" }]
+      }
+    ]
+  },
+  {
+    "id": "X8",
+    "what": "the one indirection is dropped — a helper that RETURNS a node stops being tracked",
+    "files": [
+      {
+        "file": "src/lib/ui/dom-assert-readable.test.ts",
+        "edits": [{ "from": "        if (producesNode(node.initializer.body.getText(sf))) nodeNames.add(`${name}()`);", "to": "        void name;" }]
+      }
+    ]
+  }
+]

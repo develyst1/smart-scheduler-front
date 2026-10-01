@@ -11,6 +11,7 @@ import { useLoadPhase } from "@/lib/ui/load-phase";
 import { useT } from "@/lib/i18n";
 import { useBadges, useCalendar, useLeaveDays, usePausedBookings, useTeachers } from "@/hooks/scheduler";
 import { useCan, useMe } from "@/hooks/scheduler/useMe";
+import { closedWeekIds } from "@/lib/camp/units";
 import { columnTeacherIds, isScoped } from "@/lib/scheduler/teacher-scope";
 import { dtoToBooking } from "@/lib/api/mappers";
 import type { Booking } from "@/types/app/scheduler";
@@ -69,6 +70,13 @@ export default function CalendarContent() {
   const { shown: showCancelled } = useShowCancelled();
   const { data: calendar, isLoading: loadingCalendar } = useCalendar(date, calView, showCancelled);
   const cancelledBookings = (calendar?.cancelled ?? []).map(dtoToBooking);
+  /**
+   * 🔴 **TASK-593 nit 4 — which camp weeks are CLOSED, read once from the payload the banner already reads.**
+   * The banner has always marked a closed week; the CELLS did not, so the week view showed one exactly like an open one.
+   * 🔑 **My own TASK-586 rule: the marker is WHY showing a closed week is safe** — a week that cannot take a booking must
+   * not look like one that can. 🚫 One source, the server's `status`; nothing derived here.
+   */
+  const closedWeeks = closedWeekIds(calendar?.campWeeks);
   const { collapsed: cancelledTrayCollapsed } = useCancelledTrayCollapsed();
   const { data: badgeTypes = [] } = useBadges();
   // REQ-076 AC-9 — the tray's own list. Deliberately NOT filtered by the calendar's date/teacher/badge
@@ -244,6 +252,7 @@ export default function CalendarContent() {
             <LeaveDayBanner rows={leaveDays} dates={[date]} />
             <CalendarGrid
               teachers={filteredTeachers}
+              closedWeeks={closedWeeks}
               bookings={dayBookings}
               onSelectBooking={openView}
               onCreate={openCreate}
@@ -257,6 +266,7 @@ export default function CalendarContent() {
             <LeaveDayBanner rows={leaveDays} dates={weekDays} />
             <CalendarWeekGrid
               teachers={filteredTeachers}
+              closedWeeks={closedWeeks}
               weekDays={weekDays}
               bookings={weekBookings}
               onSelectBooking={openView}

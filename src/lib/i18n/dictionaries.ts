@@ -1986,8 +1986,11 @@ const en = {
     // TASK-355 §10.3 — the linked-account screen. All PLACEHOLDER (@Porter's to write); the MEANING of the unlink
     // strings is the writer's, not placeholder: it clears the FAMILY's LINE connection, every linked account.
     alreadyLinkedTitle: "This LINE account is already linked",
-    alreadyLinkedTo: "Linked to {phone} ({n} children). Nothing more to do here.", // PLACEHOLDER
-    alreadyLinkedToOne: "Linked to {phone} (1 child). Nothing more to do here.", // PLACEHOLDER — TASK-357 §3: n === 1
+    // 🔴 TASK-593 nit 2 — 📝 DRAFT (Fern, TASK-593). **"Nothing more to do here" became FALSE** when TASK-580 gave this
+    // screen an Add-a-child button: the sentence sat directly above a control that IS something more to do.
+    // 🔑 Nobody edited it; a change elsewhere made it wrong — *the same family as the comments that became lies.*
+    alreadyLinkedTo: "Linked to {phone} ({n} children).",
+    alreadyLinkedToOne: "Linked to {phone} (1 child).", // TASK-357 §3: n === 1
     // TASK-357 §2 — SHORT on purpose: the previous label cut at "…LINE conn" on a 360-px phone. The test pins a
     // LENGTH bound (≤ 26) and the button wraps; the MEANING stays the writer's: the whole family, every account.
     unlinkButton: "Unlink this family's LINE", // PLACEHOLDER
@@ -2526,7 +2529,9 @@ const th: typeof en = {
     title: "แจ้งลาสอนของฉัน",
     date: "วันที่",
     sessions: "คาบของฉันในวันนั้น",
-    noSessions: "ไม่มีคาบของคุณในวันนี้",
+    // 🔻 TASK-595 — was "ในวันนี้" ("today") while its own English says "on this day": the same class as the warning
+    // above, found by the derivation. This branch serves TODAY **and any PAST date**, so the today word was wrong there.
+    noSessions: "ไม่มีคาบของคุณในวันนั้น",
     reason: "เหตุผล",
     reasonHint: "สอนไม่ได้เพราะอะไร (3–200 ตัวอักษร)",
     warning: "ผู้ปกครองของคาบที่ติ๊กจะได้รับแจ้ง และระบบจะเพิ่มคาบชดเชยให้",
@@ -3799,8 +3804,9 @@ const th: typeof en = {
     close: "ปิด", // PLACEHOLDER
     closeHint: "ปิดหน้านี้ได้เลยค่ะ", // borrowed from `checkin.closeHint`
     alreadyLinkedTitle: "บัญชี LINE นี้ผูกกับครอบครัวไว้แล้วค่ะ", // PLACEHOLDER — TASK-355 §10.3
-    alreadyLinkedTo: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน) ไม่ต้องทำอะไรเพิ่มค่ะ", // PLACEHOLDER
-    alreadyLinkedToOne: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน) ไม่ต้องทำอะไรเพิ่มค่ะ", // PLACEHOLDER — Thai has no plural; same sentence (key parity)
+    // 📝 DRAFT (Fern, TASK-593) nit 2 — ตัดคำว่า "ไม่ต้องทำอะไรเพิ่ม" ออก เพราะมีปุ่มเพิ่มนักเรียนอยู่ใต้ประโยคนี้แล้ว
+    alreadyLinkedTo: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน)",
+    alreadyLinkedToOne: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน)", // Thai has no plural; same sentence (key parity)
     unlinkButton: "ปลด LINE ของครอบครัวนี้", // PLACEHOLDER — TASK-357 §2: short, wraps; the MEANING is still the whole family
     unlinkWarning:
       "จะยกเลิกการเชื่อมต่อ LINE ของทั้งครอบครัว — ถ้าผู้ปกครองอีกท่านผูก LINE ไว้ด้วย จะถูกปลดไปพร้อมกันค่ะ สามารถผูกใหม่ได้ภายหลัง", // PLACEHOLDER

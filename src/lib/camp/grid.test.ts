@@ -23,6 +23,8 @@ const codeOf = (path: string) =>
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
     .replace(/^\s*\/\/.*$/gm, "");
 const dayGrid = codeOf("src/components/partials/Calendar/CalendarGrid.tsx");
+/** 🔴 TASK-593 nit 5 — the camp CELL, where the kid count is printed. */
+const cell = codeOf("src/components/partials/Calendar/CampBlockCell.tsx");
 const weekGrid = codeOf("src/components/partials/Calendar/CalendarWeekGrid.tsx");
 const content = codeOf("src/components/partials/Calendar/CalendarContent.tsx");
 const panel = codeOf("src/components/partials/Calendar/Modal/CampBlockPanel.tsx");
@@ -120,9 +122,15 @@ describe("§3 — the grids, the panel, the modal that never opens", () => {
     expect(dayGrid).toContain("for (const item of mergeCampCells(mine)) {");
     expect(dayGrid).toContain("if (camp?.covered) return null;");
     expect(dayGrid).toContain("style={{ gridRow: `span ${camp.start.hours}` }}");
-    expect(dayGrid).toContain("<CampBlockCell block={camp.start} onSelect={(b) => onSelectCamp?.(b)} />");
+    // 🔻 TASK-593 nit 4, declared: both cells now receive `closed` — **a closed week's block is MARKED in the week view
+    // too, which is my own TASK-586 rule** (*the marker is WHY showing a closed week is safe*). The banner carried it and
+    // the cells did not. ✅ What this pin protects — ONE shared cell, folded through `mergeCampCells`, spanning in the day
+    // grid — is unchanged.
+    expect(dayGrid).toContain("<CampBlockCell block={camp.start} closed={closedWeeks?.has(camp.start.campWeekId) ?? false} onSelect={(b) => onSelectCamp?.(b)} />");
     expect(weekGrid).toContain("const items = mergeCampCells(cellBookings(tc.id, day));");
-    expect(weekGrid).toContain('if (item.kind === "camp") return <CampBlockCell key={item.id} block={item} size="sm" onSelect={(blk) => onSelectCamp?.(blk)} />;');
+    expect(weekGrid).toContain('if (item.kind === "camp") return <CampBlockCell key={item.id} block={item} closed={closedWeeks?.has(item.campWeekId) ?? false} size="sm" onSelect={(blk) => onSelectCamp?.(blk)} />;');
+    // 🔑 and ONE source for "which weeks are closed": the payload's own `status`, read once on the page
+    expect(content).toContain("const closedWeeks = closedWeekIds(calendar?.campWeeks);");
   });
   it("🔴 a CAMP row NEVER opens the booking modal: `openView` routes it to the panel; the grids hand blocks to `onSelectCamp`", () => {
     const view = content.slice(content.indexOf("const openView = (booking: Booking) => {"), content.indexOf("const openCreate = "));
@@ -183,5 +191,63 @@ describe("§4 — the week editor and the tag/legend", () => {
       for (const k of ["campHours", "campTeachersToday", "campSwap", "campSwapTo", "campSwapConfirm", "campSwappedOk", "campOpenRoster"]) expect((dictionaries[lang].calendar as Record<string, string>)[k]?.length).toBeGreaterThan(0);
       for (const k of ["windowStart", "windowEnd", "datesImmutable", "weekLevelHint", "perDay", "applyToEveryDay", "dayEdited"]) expect((dictionaries[lang].camp as Record<string, string>)[k]?.length).toBeGreaterThan(0);
     }
+  });
+});
+
+/**
+ * 🔴 **TASK-593 nit 5 — "7 คน" on a 1-child week: WHICH SIDE IS WRONG?**
+ *
+ * ⚖️ **Attributed to the PAYLOAD, and these are the three facts that attribute it:**
+ *  1. **the cell prints `block.kidCount` and nothing else** — no sum, no count of rows, no arithmetic at all;
+ *  2. **`kidCount` is `b.campKidCount` copied straight off the booking** in `mergeCampCells`;
+ *  3. **a block never spans two DAYS** — the merge continues only while `campWeekDayId` matches AND the hours are
+ *     contiguous, so a week's cells cannot pool their counts into one number.
+ * ⇒ 🔑 **Whatever number appears is the number the server sent for that booking**, and the FE cannot inflate it.
+ * 🚫 **So the FE half is STOPPED** and the number is @Jason's to explain (the DAY-count ruling: `campKidCount` is the same
+ * on every block of a date). 📌 *These assertions exist so the attribution is re-checkable rather than a claim in a report.*
+ */
+describe("🔴 TASK-593 nit 5 — the kid count is the SERVER's, and the FE cannot inflate it", () => {
+  it("the cell renders `kidCount` verbatim — 🚫 no arithmetic anywhere near it", () => {
+    expect(cell).toContain("{typeof block.kidCount === \"number\" && <span data-camp-kids={block.kidCount}>");
+    // 🚫 nothing that could add, count or accumulate
+    expect(cell).not.toMatch(/reduce|\.length|\+ 1|sum/);
+  });
+
+  it("`mergeCampCells` copies the payload's number and merges only WITHIN one day", () => {
+    const grid = codeOf("src/lib/camp/grid.ts");
+    expect(grid).toContain("kidCount: b.campKidCount ?? null,");
+    expect(grid).toContain("last.campWeekDayId === b.campWeekDayId && hhmm(last.endTime) === hhmm(b.startTime)");
+    // 🔑 and the merge never touches `kidCount` again — a merged block keeps the first row's server number
+    const merge = grid.slice(grid.indexOf("export const mergeCampCells"), grid.indexOf("export const campDayFactsOf") + 1 || undefined);
+    expect(merge).not.toMatch(/kidCount\s*[+*]/);
+    expect(merge).not.toContain("last.kidCount");
+  });
+
+  it("🔑 value-tested: two contiguous hours of ONE day fold into one block carrying THAT day's number, unchanged", () => {
+    const row = (id: string, date: string, startTime: string, endTime: string, kid: number, dayId: string) =>
+      ({
+        id,
+        date,
+        startTime,
+        endTime,
+        status: "CONFIRMED",
+        bookingType: "OTHER",
+        other: { kind: "CAMP" },
+        displayName: "Camp A",
+        teacherId: "t1",
+        campWeekId: "w-1",
+        campWeekDayId: dayId,
+        campKidCount: kid,
+      }) as never;
+    const [one] = mergeCampCells([row("a", "2026-10-05", "10:00", "11:00", 1, "d-1"), row("b", "2026-10-05", "11:00", "12:00", 1, "d-1")]);
+    expect(one.kind).toBe("camp");
+    if (one.kind === "camp") {
+      expect(one.hours).toBe(2);
+      expect(one.kidCount).toBe(1); // 🚫 not 2 — the hours merged, the count did not
+    }
+    // two DAYS never merge, so each keeps its own day's number
+    const two = mergeCampCells([row("a", "2026-10-05", "10:00", "11:00", 1, "d-1"), row("b", "2026-10-06", "10:00", "11:00", 7, "d-2")]);
+    expect(two).toHaveLength(2);
+    expect(two.map((i) => (i.kind === "camp" ? i.kidCount : null))).toEqual([1, 7]);
   });
 });

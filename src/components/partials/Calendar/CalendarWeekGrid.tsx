@@ -28,6 +28,8 @@ interface Props {
   onCreate: (teacherId: string, time: string, date: string) => void;
   /** REQ-095 §11 (TASK-419) — a merged camp block opens the camp PANEL, never the booking modal. */
   onSelectCamp?: (block: CampBlock) => void;
+  /** 🔴 TASK-593 nit 4 — the ids of weeks CLOSED to new bookings, from the payload's own `status` (`closedWeekIds`). */
+  closedWeeks?: ReadonlySet<string>;
 }
 
 // พื้น/ขอบ + dot ตามสถานะ — `./calendar-status`, shared with the day grid AND the legend that explains both.
@@ -41,6 +43,7 @@ export default function CalendarWeekGrid({
   onSelectBooking,
   onCreate,
   onSelectCamp,
+  closedWeeks,
 }: Props) {
   const { lang, t } = useI18n();
   // Display-only preference (SPEC-046 re-cut) — it hides lines, it never filters bookings.
@@ -118,7 +121,7 @@ export default function CalendarWeekGrid({
                   }`}
                 >
                   {items.map((item) => {
-                    if (item.kind === "camp") return <CampBlockCell key={item.id} block={item} size="sm" onSelect={(blk) => onSelectCamp?.(blk)} />;
+                    if (item.kind === "camp") return <CampBlockCell key={item.id} block={item} closed={closedWeeks?.has(item.campWeekId) ?? false} size="sm" onSelect={(blk) => onSelectCamp?.(blk)} />;
                     const b = item.booking;
                     const accent = BOOKING_STATUS_COLOR[b.status];
                     return (
