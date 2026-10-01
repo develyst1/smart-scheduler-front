@@ -1,0 +1,137 @@
+[
+  {
+    "id": "Z1",
+    "what": "🔴 THE MERGE'S OWN DEFECT: `closedWeeks` is dropped from the day grid's destructure (type and usage left standing)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarGrid.tsx",
+        "edits": [
+          {
+            "from": "onCreate, onSelectCamp, closedWeeks }: Props) {",
+            "to": "onCreate, onSelectCamp }: Props) {"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Z2",
+    "what": "🔴 the same drop in the WEEK grid — it would have broken just as quietly",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarWeekGrid.tsx",
+        "edits": [
+          {
+            "from": "  closedWeeks,\n",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Z3",
+    "what": "🔴 the page stops HANDING the set to the week grid (the prop is simply not passed)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarContent.tsx",
+        "edits": [
+          {
+            "from": "            <CalendarWeekGrid\n              teachers={filteredTeachers}\n              closedWeeks={closedWeeks}",
+            "to": "            <CalendarWeekGrid\n              teachers={filteredTeachers}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Z4",
+    "what": "the day grid stops passing it down to `Row` (the last link before the cell)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarGrid.tsx",
+        "edits": [
+          {
+            "from": "            closedWeeks={closedWeeks}\n",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Z5",
+    "what": "🔴 the shared cell stops MARKING a closed week (the attribute an admin's screen turns on)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CampBlockCell.tsx",
+        "edits": [
+          {
+            "from": "      data-camp-closed={closed ? \"yes\" : \"no\"}\n",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Z6",
+    "what": "🔴 the props-wired check stops reporting anything (it would pass on every file forever)",
+    "files": [
+      {
+        "file": "src/lib/ui/props-wired.test.ts",
+        "edits": [
+          {
+            "from": "    if (reachable.has(name)) continue;",
+            "to": "    if (true || reachable.has(name)) continue;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Z7",
+    "what": "the props-wired check stops understanding INLINE props types (only a named interface would be checked)",
+    "files": [
+      {
+        "file": "src/lib/ui/props-wired.test.ts",
+        "edits": [
+          {
+            "from": "  if (typeNode && ts.isTypeLiteralNode(typeNode)) members.push(...typeNode.members);",
+            "to": "  if (false && typeNode && ts.isTypeLiteralNode(typeNode)) members.push();"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Z8",
+    "what": "⚠️ the `unwired-on-purpose` escape stops being a DECISION and silences everything",
+    "files": [
+      {
+        "file": "src/lib/ui/props-wired.test.ts",
+        "edits": [
+          {
+            "from": "    if (m.getFullText(sf).includes(UNWIRED_MARKER)) continue;",
+            "to": "    if (m.getFullText(sf).includes(\"\")) continue;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Z9",
+    "what": "⚠️ the derivation own find: the page stops passing `onSelectCamp` to the week grid (a camp block that opens nothing)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarContent.tsx",
+        "edits": [
+          {
+            "from": "              onSelectCamp={openCamp}\n            />\n            </>\n          )}",
+            "to": "            />\n            </>\n          )}"
+          }
+        ]
+      }
+    ]
+  }
+]

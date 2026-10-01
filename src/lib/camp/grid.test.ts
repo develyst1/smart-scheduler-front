@@ -132,6 +132,44 @@ describe("§3 — the grids, the panel, the modal that never opens", () => {
     // 🔑 and ONE source for "which weeks are closed": the payload's own `status`, read once on the page
     expect(content).toContain("const closedWeeks = closedWeekIds(calendar?.campWeeks);");
   });
+
+  /**
+   * 🔴 **TASK-605 — the WIRING, link by link, because a dropped link passed 921 tests.**
+   *
+   * A `develop` merge kept Palm's `times` and dropped our `closedWeeks` from `CalendarGrid`'s destructure, **while the
+   * prop type and the usage above both survived** ⇒ the build failed and **the suite did not**, because the test above
+   * asserts how the set is DERIVED and the one below it asserts how the cell is CALLED — 🚫 **nothing asserted that the
+   * grid is GIVEN the set.** 🔑 *The suite does not type-check the app; the build is a separate gate* — so the chain is
+   * pinned here, where a missing link is a red test rather than a red build.
+   * 📌 Same family as TASK-596: **a wiring with no fixture is a wiring nothing is asking about.**
+   */
+  it("🔴 TASK-605 — `closedWeeks` is wired END TO END: derived once, handed to BOTH grids, destructured by each, down to the cell", () => {
+    // 1 — derived once, on the page (the same single source the test above protects)
+    expect(content).toContain("const closedWeeks = closedWeekIds(calendar?.campWeeks);");
+    // 2 — handed to BOTH grids. 🔑 The day view was the one that broke; the week view would have broken just as quietly.
+    expect(content).toMatch(/<CalendarGrid[\s\S]{0,400}?closedWeeks=\{closedWeeks\}/);
+    expect(content).toMatch(/<CalendarWeekGrid[\s\S]{0,400}?closedWeeks=\{closedWeeks\}/);
+    // 3 — 🔴 THE DROPPED LINK: each grid must DESTRUCTURE it. Palm's `times` is in the same destructure and stays his.
+    expect(dayGrid).toMatch(/export default function CalendarGrid\(\{[^}]*\bclosedWeeks\b[^}]*\}: Props\)/);
+    expect(dayGrid).toMatch(/export default function CalendarGrid\(\{[^}]*\btimes\b[^}]*\}: Props\)/);
+    expect(weekGrid).toMatch(/export default function CalendarWeekGrid\(\{[\s\S]*?\bclosedWeeks\b[\s\S]*?\}/);
+    // 4 — the day grid passes it down one more level, and `Row` reaches it
+    expect(dayGrid).toContain("closedWeeks={closedWeeks}");
+    expect(dayGrid).toMatch(/function Row\(\{[\s\S]*?\bclosedWeeks\b[\s\S]*?\}/);
+    // 5 — and the shared cell is what finally MARKS it: the attribute an admin's screen turns on
+    expect(cell).toContain('data-camp-closed={closed ? "yes" : "no"}');
+    expect(cell).toContain("data-camp-closed-tag");
+
+    // ⚠️ **The derivation §2 asked for, and it found one more.** The props that can be dropped at a CALL SITE in
+    // silence are the OPTIONAL ones: a required prop left out is a type error, so the build still shouts. In this file
+    // those are `times?` (Palm's), `onSelectCamp?` and `closedWeeks?` — and 🔴 **`onSelectCamp` was wired at BOTH call
+    // sites and pinned at NEITHER**, while the test below asserts only what the grids DO with it once they have it.
+    // 🔑 *A dropped `onSelectCamp` is a camp block that opens nothing — a dead control, which is worse than a missing
+    // marker.* ⇒ pinned here, in both views.
+    expect(content.match(/onSelectCamp=\{openCamp\}/g)?.length).toBe(2);
+    expect(content).toMatch(/<CalendarGrid[\s\S]{0,400}?onSelectCamp=\{openCamp\}/);
+    expect(content).toMatch(/<CalendarWeekGrid[\s\S]{0,400}?onSelectCamp=\{openCamp\}/);
+  });
   it("🔴 a CAMP row NEVER opens the booking modal: `openView` routes it to the panel; the grids hand blocks to `onSelectCamp`", () => {
     const view = content.slice(content.indexOf("const openView = (booking: Booking) => {"), content.indexOf("const openCreate = "));
     expect(view).toContain("if (isCampRow(booking)) {");

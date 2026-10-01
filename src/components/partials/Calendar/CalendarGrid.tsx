@@ -45,7 +45,7 @@ interface Props {
 // tradeoff the owner saw in both previews before choosing it, not an oversight.
 // 🚫 Do not re-declare either map here (see that file).
 
-export default function CalendarGrid({ teachers, bookings, times = [], onSelectBooking, onCreate, onSelectCamp }: Props) {
+export default function CalendarGrid({ teachers, bookings, times = [], onSelectBooking, onCreate, onSelectCamp, closedWeeks }: Props) {
   const t = useT();
   // The rows on screen, in the day's own order — the filter picks slots, it never reorders them.
   const visibleSlots = useMemo<string[]>(() => (times.length === 0 ? [...TIME_SLOTS] : TIME_SLOTS.filter((s) => times.includes(s))), [times]);
