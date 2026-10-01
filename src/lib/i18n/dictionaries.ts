@@ -1787,7 +1787,11 @@ const en = {
       incomplete_students: "Students with incomplete info",
       yesterday_no_shows: "No-shows yesterday",
       pending_teacher_links: "Teacher LINE link requests awaiting approval",
-      // 🔻 TASK-573 (BE) → TASK-574 — the card that answers my TASK-571 finding. 📝 DRAFT (Fern, TASK-574).
+      // 🔻 TASK-573 (BE) → TASK-574 — the card that answers my TASK-571 finding.
+      // ✅ APPROVED (owner 2026-10-01, §12 — "เอาแบบยาว", the LONG wording). 🔴 §10's shorter draft
+      // ("คอร์สที่เลื่อนวันเริ่มแล้ว รอยืนยันใหม่" / "Courses with a moved start date, awaiting re-confirmation") is
+      // SUPERSEDED. 🔑 The ruling kept the agreement pin BELOW this with it: the length is not the point — the SHARED
+      // WORDS are, and the shorter draft does not carry them.
       // 🔑 Worded to AGREE with the dialog's own warning, deliberately: both say the family still holds the OLD dates and
       // both name Confirm course as the act that ends it. *Two warnings describing one state differently teach an admin to
       // trust neither* — so they share vocabulary, and the card is the shorter one because it is a list row.
@@ -3662,7 +3666,7 @@ const th: typeof en = {
       incomplete_students: "นักเรียนที่ข้อมูลไม่ครบ",
       yesterday_no_shows: "ไม่มาเรียนเมื่อวาน",
       pending_teacher_links: "คำขอผูก LINE ของครูที่รออนุมัติ",
-      // 📝 DRAFT (Fern, TASK-574) — ใช้คำเดียวกับคำเตือนในกล่องเลื่อนวันเริ่ม: “ตารางเดิม” + “ยืนยันคอร์ส”
+      // ✅ APPROVED (owner 2026-10-01, §12 — แบบยาว) — ใช้คำเดียวกับคำเตือนในกล่องเลื่อนวันเริ่ม: “ตารางเดิม” + “ยืนยันคอร์ส”
       courses_awaiting_reconfirm: "คอร์สที่เลื่อนแล้วแต่ยังไม่ได้ยืนยันใหม่ (ลูกค้ายังถือตารางเดิม)",
     },
   },

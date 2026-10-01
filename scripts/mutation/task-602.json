@@ -1,0 +1,96 @@
+[
+  {
+    "id": "Y1",
+    "what": "🔴 the CARD adopts §10's SUPERSEDED short draft — the agreement breaks in both languages (the row this task is about)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "      courses_awaiting_reconfirm: \"Courses moved but not re-confirmed (the family still has the old dates)\",",
+            "to": "      courses_awaiting_reconfirm: \"Courses with a moved start date, awaiting re-confirmation\","
+          },
+          {
+            "from": "      courses_awaiting_reconfirm: \"คอร์สที่เลื่อนแล้วแต่ยังไม่ได้ยืนยันใหม่ (ลูกค้ายังถือตารางเดิม)\",",
+            "to": "      courses_awaiting_reconfirm: \"คอร์สที่เลื่อนวันเริ่มแล้ว รอยืนยันใหม่\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Y2",
+    "what": "🔴 §10's draft adopted in THAI ONLY — the half-drift a one-language pin would not see (TASK-571's R2, re-aimed)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "      courses_awaiting_reconfirm: \"คอร์สที่เลื่อนแล้วแต่ยังไม่ได้ยืนยันใหม่ (ลูกค้ายังถือตารางเดิม)\",",
+            "to": "      courses_awaiting_reconfirm: \"คอร์สที่เลื่อนวันเริ่มแล้ว รอยืนยันใหม่\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Y3",
+    "what": "🔴 the DIALOG's warning loses the shared words (TASK-571's R2, re-run: the other side of the same agreement)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    warnStale: \"Nobody is told by this move. Until you run Confirm course, the family and the coach still have the OLD dates — run it as soon as the new dates are right.\",",
+            "to": "    warnStale: \"Nobody is told by this move.\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Y4",
+    "what": "⚠️ the pin is quietly NARROWED to English — a Thai-only drift would pass",
+    "files": [
+      {
+        "file": "src/lib/scheduler/course-start.test.ts",
+        "edits": [
+          {
+            "from": "    for (const lang of [\"en\", \"th\"] as const) {\n      checked.push(lang);",
+            "to": "    for (const lang of [\"en\"] as const) {\n      checked.push(lang);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Y5",
+    "what": "the record drifts back to DRAFT though the owner ruled §12",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "      // ✅ APPROVED (owner 2026-10-01, §12 — \"เอาแบบยาว\", the LONG wording). 🔴 §10's shorter draft",
+            "to": "      // 📝 DRAFT (Fern, TASK-574). 🔴 §10's shorter draft"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Y6",
+    "what": "the card label is emptied (a pin that only matches patterns would pass on an empty string)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "      courses_awaiting_reconfirm: \"Courses moved but not re-confirmed (the family still has the old dates)\",",
+            "to": "      courses_awaiting_reconfirm: \"\","
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -215,8 +215,18 @@ describe("TASK-574 — the forecast", () => {
     expect(codeOf("src/lib/api/mappers.ts")).toContain("startDate: row.startDate,");
   });
 
+  /**
+   * 🔑 **The claim is unchanged; the owner's ruling only settled WHICH wording carries it.**
+   * ⚖️ **§12 ruled 2026-10-01: the LONG wording wins** ("เอาแบบยาว"), and **§10's shorter draft is SUPERSEDED** — it was
+   * filed for the BE side and 🚫 **it never carried the shared words**, which is the whole reason this pin exists.
+   * 📌 ***The pin was never about which draft won; it was about the two never drifting apart.*** ⇒ three things added:
+   * the languages checked are themselves asserted (a pin narrowed to one language is a weaker pin, silently), the
+   * superseded wording is refused BY NAME, and the APPROVED marker is held so the record cannot drift back to "draft".
+   */
   it("🔑 the dialog's warning and the attention card AGREE — same state, same vocabulary", () => {
+    const checked: string[] = [];
     for (const lang of ["en", "th"] as const) {
+      checked.push(lang);
       const warn = (dictionaries[lang].courseStart as unknown as Record<string, string>).warnStale;
       const cardLabel = (dictionaries[lang].attention as unknown as { checks: Record<string, string> }).checks.courses_awaiting_reconfirm;
       expect(cardLabel.trim().length).toBeGreaterThan(0);
@@ -227,6 +237,16 @@ describe("TASK-574 — the forecast", () => {
       // …and the dialog names the act that ends it (the card is a list row and points at the course)
       expect(warn).toMatch(lang === "en" ? /confirm course/i : /ยืนยันคอร์ส/);
       expect(cardLabel).toMatch(lang === "en" ? /re-confirmed/i : /ยืนยันใหม่/);
+      // 🔴 §10's SUPERSEDED draft, refused by name: it is not wrong, it is SILENT about the consequence ⇒ adopting it
+      // here would break the agreement while every other assertion in this test still passed.
+      expect(cardLabel).not.toBe(lang === "en" ? "Courses with a moved start date, awaiting re-confirmation" : "คอร์สที่เลื่อนวันเริ่มแล้ว รอยืนยันใหม่");
     }
+    // 🔑 both languages were actually examined — 🚫 a loop quietly narrowed to one would pass while the other drifted
+    expect(checked).toEqual(["en", "th"]);
+    // ⚖️ and the record says APPROVED, not DRAFT: the owner ruled §12 on 2026-10-01.
+    // 🔑 BOTH markers are counted, not just "one exists": the mutation that removed the ENGLISH marker SURVIVED a
+    // `toContain`, because the Thai line carries the same prefix ⇒ *one source standing in for another is the bug this
+    // whole pin is about*, and I had written it into the pin itself.
+    expect(readFileSync("src/lib/i18n/dictionaries.ts", "utf8").split("✅ APPROVED (owner 2026-10-01, §12").length - 1).toBe(2);
   });
 });
