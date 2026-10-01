@@ -6,7 +6,7 @@ import { AlertTriangle, ArrowLeftRight, CalendarPlus, CheckCheck, Pencil, UserMi
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { notify } from "@/lib/ui/notify";
-import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
+import { formatDateWithDay, formatTimeDisplay } from "@/lib/ui/format";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { useAllBookings, useTeachers } from "@/hooks/scheduler";
 import { useConfirmAllOtherSeries, useOtherSeries } from "@/hooks/scheduler/useOtherSeries";
@@ -169,7 +169,7 @@ export default function OtherSeriesModal({ series: ref, opened, onClose, onOpenB
                 data-row={r.bookingId}
                 data-status={r.status}
               >
-                <span className="tabular-nums">{formatDateDisplay(r.date)}</span>
+                <span className="tabular-nums">{formatDateWithDay(r.date)}</span>
                 <span className="min-w-0 flex-1 truncate text-muted-600">
                   {name(r.teacherId)}
                   {r.additionalTeacherIds.length > 0 ? ` + ${r.additionalTeacherIds.map(name).join(", ")}` : ""}
@@ -187,7 +187,7 @@ export default function OtherSeriesModal({ series: ref, opened, onClose, onOpenB
           <Stack gap={6}>
             {series.rows.map((r) => (
               <div key={r.bookingId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" data-row-seats={r.bookingId}>
-                <span className="tabular-nums text-muted-600">{formatDateDisplay(r.date)}</span>
+                <span className="tabular-nums text-muted-600">{formatDateWithDay(r.date)}</span>
                 {(r.seats ?? []).length === 0 ? (
                   <span className="text-xs text-muted-500">{t("booking.groupRosterEmpty")}</span>
                 ) : (

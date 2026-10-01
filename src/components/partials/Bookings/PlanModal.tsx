@@ -21,7 +21,7 @@ import { Textarea, Tooltip } from "@mantine/core";
 import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Ticket, UserMinus, X } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
-import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
+import { formatDateDisplay, formatDateWithDay, formatTimeDisplay } from "@/lib/ui/format";
 import { useT } from "@/lib/i18n";
 import { studentLabel } from "@/lib/scheduler/duo";
 import { ApiClientError } from "@/lib/api/client";
@@ -755,7 +755,7 @@ function SessionTable({
             const isExtra = s.bookingType === "SINGLE_SESSION"; // SPEC-033 — a charged extra, not a plan row
             return (
               <Table.Tr key={s.id} className={locked ? "opacity-60" : ""}>
-                <Table.Td className="tabular-nums">{formatDateDisplay(s.date)}</Table.Td>
+                <Table.Td className="tabular-nums">{formatDateWithDay(s.date)}</Table.Td>
                 <Table.Td className="tabular-nums">{formatTimeDisplay(s.startTime)}</Table.Td>
                 <Table.Td>{s.teacher?.nickname ?? "—"}</Table.Td>
                 <Table.Td>{s.subject?.name ?? "—"}</Table.Td>
@@ -1314,7 +1314,7 @@ function PlanDiffConfirm({
           <Table.Tbody>
             {preview.resultingSessions.map((s) => (
               <Table.Tr key={s.id}>
-                <Table.Td className="tabular-nums">{formatDateDisplay(s.date)}</Table.Td>
+                <Table.Td className="tabular-nums">{formatDateWithDay(s.date)}</Table.Td>
                 <Table.Td className="tabular-nums">{formatTimeDisplay(s.startTime)}</Table.Td>
                 <Table.Td>{s.teacher?.nickname ?? "—"}</Table.Td>
                 <Table.Td>

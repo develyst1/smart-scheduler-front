@@ -24,6 +24,8 @@ interface Props {
   teachers: TeacherView[];
   weekDays: string[]; // 7 วัน (YYYY-MM-DD) เรียงตามลำดับ
   bookings: Booking[];
+  /** The hours to show; empty = every slot. The week grid has no time rows, so it drops the other bookings. */
+  times?: string[];
   onSelectBooking: (booking: Booking) => void;
   onCreate: (teacherId: string, time: string, date: string) => void;
   /** REQ-095 §11 (TASK-419) — a merged camp block opens the camp PANEL, never the booking modal. */
@@ -40,6 +42,7 @@ export default function CalendarWeekGrid({
   teachers,
   weekDays,
   bookings,
+  times = [],
   onSelectBooking,
   onCreate,
   onSelectCamp,
@@ -65,7 +68,9 @@ export default function CalendarWeekGrid({
           b.teachers.some((tc) => tc.id === teacherId) &&
           b.date === date &&
           !b.pendingSlot &&
-          !OFF_CALENDAR_STATUSES.includes(b.status),
+          !OFF_CALENDAR_STATUSES.includes(b.status) &&
+          // the time filter: the week grid has no hour rows, so it hides the bookings outside the chosen hours
+          (times.length === 0 || times.includes(b.startTime.slice(0, 5))),
       )
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
 

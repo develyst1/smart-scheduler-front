@@ -4,10 +4,13 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 import { ActionIcon, Button, CloseButton, MultiSelect, Paper, SegmentedControl, TextInput, Tooltip } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users, Tag, Search, CalendarOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, UserSearch, Users, Tag, Search, CalendarOff, Clock, Layers, Check } from "lucide-react";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
-import type { BadgeType, TeacherType, TeacherView } from "@/types/app/scheduler";
-import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
+import { BOOKING_TYPE_VAR } from "@/components/common/BookingCellBody";
+import { BOOKING_TYPE_OPTIONS } from "./Calendar.config";
+import type { BadgeType, BookingType, TeacherType, TeacherView } from "@/types/app/scheduler";
+import { TEACHER_TYPE_LABEL, TIME_SLOTS } from "@/types/app/scheduler";
+import { formatTimeDisplay } from "@/lib/ui/format";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { useI18n } from "@/lib/i18n";
 
@@ -29,6 +32,12 @@ interface Props {
   onChangeBadgeValueIds?: (ids: string[]) => void;
   studentQuery?: string;
   onChangeStudentQuery?: (q: string) => void;
+  /** The hours to show; `[]` = every slot. Day view drops the other rows, week view drops the other bookings. */
+  selectedTimes?: string[];
+  onChangeTimes?: (times: string[]) => void;
+  /** The booking types to show — the legend's own list; `[]` = every type. */
+  selectedBookingTypes?: string[];
+  onChangeBookingTypes?: (types: string[]) => void;
   /** REQ-097 (TASK-407) — a linked account: no teacher/type pickers (the calendar is mine already). */
   scoped?: boolean;
   /** REQ-097 — `Report leave`, present only for a linked account holding the key. */
@@ -53,6 +62,10 @@ export default function CalendarHeader({
   onChangeBadgeValueIds,
   studentQuery = "",
   onChangeStudentQuery,
+  selectedTimes = [],
+  onChangeTimes,
+  selectedBookingTypes = [],
+  onChangeBookingTypes,
   scoped = false,
   onReportLeave,
 }: Props) {
@@ -246,6 +259,56 @@ export default function CalendarHeader({
               aria-label={t("calendar.filterBadge")}
             />
           )}
+
+          {/* The booking-type filter: the same six types the legend explains (`BOOKING_TYPE_OPTIONS`), in its order,
+              so what staff read under the grid is what they can filter by. Each option carries the cell's own colour
+              swatch, so the list and the grid stay one language. */}
+          <MultiSelect
+            label={t("calendar.bookingType")}
+            placeholder={selectedBookingTypes.length > 0 ? undefined : t("calendar.allBookingTypes")}
+            value={selectedBookingTypes}
+            onChange={onChangeBookingTypes}
+            data={BOOKING_TYPE_OPTIONS.map((bt) => ({ value: bt, label: t(`bookingType.${bt}`) }))}
+            renderOption={({ option, checked }) => (
+              <div className="flex w-full items-center gap-2">
+                <span aria-hidden className="h-3 w-1.5 shrink-0 rounded-sm" style={{ backgroundColor: `rgb(${BOOKING_TYPE_VAR[option.value as BookingType]})` }} />
+                <span className="flex-1">{option.label}</span>
+                {checked && <Check size={14} aria-hidden />}
+              </div>
+            )}
+            leftSection={<Layers size={15} />}
+            size="sm"
+            radius="md"
+            clearable
+            searchable
+            maxDropdownHeight={280}
+            className="min-w-44 basis-0 grow-[4]"
+            classNames={{
+              pillsList: "!flex-nowrap overflow-x-auto scroll-smooth py-0.5",
+            }}
+            aria-label={t("calendar.filterBookingType")}
+          />
+
+          {/* The hour filter, last in the row — the one filter that is about the grid's rows rather than who is in
+              them, so it reads after the who/what pickers and stays visible for a scoped (teacher) account too. */}
+          <MultiSelect
+            label={t("calendar.time")}
+            placeholder={selectedTimes.length > 0 ? undefined : t("calendar.allTimes")}
+            value={selectedTimes}
+            onChange={onChangeTimes}
+            data={TIME_SLOTS.map((slot) => ({ value: slot, label: formatTimeDisplay(slot) }))}
+            leftSection={<Clock size={15} />}
+            size="sm"
+            radius="md"
+            clearable
+            searchable
+            maxDropdownHeight={280}
+            className="min-w-44 basis-0 grow-[4]"
+            classNames={{
+              pillsList: "!flex-nowrap overflow-x-auto scroll-smooth py-0.5",
+            }}
+            aria-label={t("calendar.filterTime")}
+          />
         </div>
       )}
     </Paper>

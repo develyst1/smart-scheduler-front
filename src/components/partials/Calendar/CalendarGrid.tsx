@@ -30,6 +30,8 @@ import { groupTone, inClashPair } from "@/lib/scheduler/group-clash";
 interface Props {
   teachers: TeacherView[];
   bookings: Booking[];
+  /** The hours to draw; empty = every slot. A hidden hour also breaks a camp block in two, so the spans stay true. */
+  times?: string[];
   onSelectBooking: (booking: Booking) => void;
   onCreate: (teacherId: string, time: string) => void;
   /** REQ-095 §11 (TASK-419) — a merged camp block opens the camp PANEL, never the booking modal. */
@@ -43,8 +45,10 @@ interface Props {
 // tradeoff the owner saw in both previews before choosing it, not an oversight.
 // 🚫 Do not re-declare either map here (see that file).
 
-export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCreate, onSelectCamp, closedWeeks }: Props) {
+export default function CalendarGrid({ teachers, bookings, times = [], onSelectBooking, onCreate, onSelectCamp }: Props) {
   const t = useT();
+  // The rows on screen, in the day's own order — the filter picks slots, it never reorders them.
+  const visibleSlots = useMemo<string[]>(() => (times.length === 0 ? [...TIME_SLOTS] : TIME_SLOTS.filter((s) => times.includes(s))), [times]);
   // Display-only preference (SPEC-046) — shared with the week grid via the cell-display store. It hides lines,
   // it never filters bookings, so the day cell honours the SAME toggles the week cell does.
   const { display } = useCellDisplay();
@@ -75,7 +79,9 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
     const m = new Map<string, { start?: CampBlock; covered?: true }>();
     for (const tc of activeTeachers) {
       const mine = bookings
-        .filter((b) => b.teacherId === tc.id && !b.pendingSlot && !OFF_CALENDAR_STATUSES.includes(b.status))
+        // Merge over the VISIBLE hours only: an hour the filter hides breaks the run, so a block never spans a row
+        // that is not drawn (which would push the columns out of step).
+        .filter((b) => b.teacherId === tc.id && !b.pendingSlot && !OFF_CALENDAR_STATUSES.includes(b.status) && visibleSlots.includes(b.startTime.slice(0, 5)))
         .sort((a, b) => a.startTime.localeCompare(b.startTime));
       for (const item of mergeCampCells(mine)) {
         if (item.kind !== "camp") continue;
@@ -84,7 +90,7 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
       }
     }
     return m;
-  }, [bookings, activeTeachers]);
+  }, [bookings, activeTeachers, visibleSlots]);
 
   return (
     <div className="rounded-2xl border border-muted-200 bg-content1 shadow-sm">
@@ -110,7 +116,7 @@ export default function CalendarGrid({ teachers, bookings, onSelectBooking, onCr
         ))}
 
         {/* Time rows */}
-        {TIME_SLOTS.map((time) => (
+        {visibleSlots.map((time) => (
           <Row
             key={time}
             time={time}

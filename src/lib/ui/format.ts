@@ -7,6 +7,15 @@ export const formatDateDisplay = (iso: string | null | undefined): string =>
   iso ? dayjs(iso).format("DD/MMM/YY") : "";
 
 /**
+ * The same date with its WEEKDAY in front (`Mon 28/Sep/26`) — for the plan and series modals, where the rows are a
+ * schedule and "which day is that?" is the question staff ask of every line. Weekday names stay English in both
+ * languages: the rows are the backend's own schedule rows, not translated copy.
+ * 🚫 Not a replacement for `formatDateDisplay`: a one-off date elsewhere reads fine without the weekday.
+ */
+export const formatDateWithDay = (iso: string | null | undefined): string =>
+  iso ? dayjs(iso).format("ddd DD/MMM/YY") : "";
+
+/**
  * 🔴 TASK-324 — **a stored time (`HH:mm:ss`) → what a human reads (`HH:mm`).** Empty/absent → `""`, the same
  * contract `formatDateDisplay` keeps.
  *
