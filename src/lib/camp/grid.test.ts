@@ -170,6 +170,22 @@ describe("§3 — the grids, the panel, the modal that never opens", () => {
     expect(content).toMatch(/<CalendarGrid[\s\S]{0,400}?onSelectCamp=\{openCamp\}/);
     expect(content).toMatch(/<CalendarWeekGrid[\s\S]{0,400}?onSelectCamp=\{openCamp\}/);
   });
+  /**
+   * 🔴 **TASK-622 — `leaveDays` is the next OPTIONAL prop on both grids, so it gets the pin TASK-605 says optional props need:**
+   * dropped at a call site it is a blocked day that reads as free again — the exact defect REQ-111 D reported — and no
+   * type error says so. (`date` on the day grid is required, so the build already shouts for that one.)
+   */
+  it("🔴 TASK-622 — `leaveDays` is wired END TO END: indexed once, handed to BOTH grids, destructured by each, down to the day cell", () => {
+    expect(content).toContain("const leaveIndex = useMemo(() => leaveDayIndex(leaveDays), [leaveDays]);");
+    expect(content.match(/leaveDays=\{leaveIndex\}/g)?.length).toBe(2);
+    expect(content).toMatch(/<CalendarGrid[\s\S]{0,500}?leaveDays=\{leaveIndex\}/);
+    expect(content).toMatch(/<CalendarGrid[\s\S]{0,500}?date=\{date\}/);
+    expect(content).toMatch(/<CalendarWeekGrid[\s\S]{0,500}?leaveDays=\{leaveIndex\}/);
+    expect(dayGrid).toMatch(/export default function CalendarGrid\(\{[^}]*\bleaveDays\b[^}]*\}: Props\)/);
+    expect(weekGrid).toMatch(/export default function CalendarWeekGrid\(\{[\s\S]*?\bleaveDays\b[\s\S]*?\}/);
+    expect(dayGrid).toContain("leaveOf={(teacherId) => leaveDays?.get(leaveDayKey(teacherId, date))}");
+    expect(dayGrid).toMatch(/function Row\(\{[\s\S]*?\bleaveOf\b[\s\S]*?\}/);
+  });
   it("🔴 a CAMP row NEVER opens the booking modal: `openView` routes it to the panel; the grids hand blocks to `onSelectCamp`", () => {
     const view = content.slice(content.indexOf("const openView = (booking: Booking) => {"), content.indexOf("const openCreate = "));
     expect(view).toContain("if (isCampRow(booking)) {");

@@ -133,6 +133,9 @@ export default function BookingsTable() {
   const { confirm: askConfirm, confirmDialog } = useConfirm();
   const [selected, setSelected] = useState<string[]>([]);
   const [results, setResults] = useState<BulkConfirmResult[] | null>(null);
+  // TASK-621 — the names of the rows as they were AT THE CLICK. The list reloads the moment the confirm returns, and
+  // under a status filter the rows just confirmed are no longer in it — so the live `rows` cannot name them.
+  const [resultNames, setResultNames] = useState<Map<string, string>>(new Map());
 
   // Selection only makes sense within a single page/filter view → clear when the query changes.
   useEffect(() => setSelected([]), [query]);
@@ -146,9 +149,10 @@ export default function BookingsTable() {
   // 🔑 “Select all” = every CONFIRMABLE row on this page (pending AND make-ups), never every row.
   const toggleAllTickable = () => setSelected(allTickableSelected ? [] : tickableIds);
 
-  // TASK-227 — what the booking is CALLED, for the bulk-confirm list. Falling back to the raw id was already
-  // the "row not found" case; `displayName` itself is never blank by contract.
-  const bookingName = (id: string) => rows.find((b) => b.id === id)?.displayName ?? id;
+  // TASK-227 — what the booking is CALLED, for the bulk-confirm list; `displayName` itself is never blank by contract.
+  // TASK-621 — read from the copy kept at the click, never the live `rows`: "row not found" was not a rare case, it was
+  // every confirmed row under a status filter. The id fallback is now only an id that was never on screen.
+  const bookingName = (id: string) => resultNames.get(id) ?? id;
 
   const handleBulkConfirm = async () => {
     if (selected.length === 0) return;
@@ -161,8 +165,10 @@ export default function BookingsTable() {
       }))
     )
       return;
+    const names = new Map(rows.filter((b) => selected.includes(b.id)).map((b) => [b.id, b.displayName]));
     try {
       const res = await bulk.mutateAsync(selected);
+      setResultNames(names);
       setResults(res);
       setSelected([]);
     } catch {

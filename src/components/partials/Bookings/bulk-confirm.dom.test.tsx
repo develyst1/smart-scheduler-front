@@ -34,6 +34,9 @@ const ROWS = [
   bookingType: "COURSE_PACKAGE",
   badges: [],
 }));
+/** TASK-621 — what the next list read returns. A test may make the reload drop the rows it just confirmed. */
+let listed = ROWS;
+let reloadDropsConfirmed = false;
 
 const realClient = await import("@/lib/api/client");
 mock.module("@/lib/api/client", () => ({
@@ -44,7 +47,12 @@ mock.module("@/lib/api/client", () => ({
     get: async () => ({ data: { items: [], total: 0 } }),
     post: async (url: string, body: unknown) => {
       posts.push({ url, body });
-      return { data: { results: (body as { ids: string[] }).ids.map((id) => ({ id, outcome: "confirmed" })) } };
+      const ids = (body as { ids: string[] }).ids;
+      if (!reloadDropsConfirmed) return { data: { results: ids.map((id) => ({ id, outcome: "confirmed" })) } };
+      // the make-up is skipped (it stays in the list); every other id is confirmed and leaves the filtered list
+      const results = ids.map((id) => ({ id, outcome: id === "bk-extended" ? "skipped" : "confirmed" }));
+      listed = listed.filter((r) => !results.some((x) => x.id === r.id && x.outcome === "confirmed"));
+      return { data: { results } };
     },
   },
 }));
@@ -55,7 +63,7 @@ const realHooks = await import("@/hooks/scheduler");
 mock.module("@/hooks/scheduler", () => ({
   ...realHooks,
   useTeachers: () => ({ data: [{ id: "t1", name: "ครูเอ", nickname: "เอ", type: "FULL_TIME" }] }),
-  useAllBookings: () => ({ data: { items: ROWS, total: ROWS.length }, isLoading: false, isPlaceholderData: false }),
+  useAllBookings: () => ({ data: { items: listed, total: listed.length }, isLoading: false, isPlaceholderData: false }),
 }));
 
 const BookingsTable = (await import("./BookingsTable")).default;
@@ -83,6 +91,8 @@ const pressDialogConfirm = async (user: ReturnType<typeof userEvent.setup>) => {
 afterEach(cleanup);
 beforeEach(() => {
   posts.length = 0;
+  listed = ROWS;
+  reloadDropsConfirmed = false;
 });
 
 describe("🔴 TASK-557 — a mixed selection, actually clicked", () => {
@@ -140,5 +150,38 @@ describe("🔴 TASK-557 — a mixed selection, actually clicked", () => {
     await waitFor(() => expect(header.getAttribute("data-indeterminate")).toBe("true"));
     await user.click(extended);
     await waitFor(() => expect(header.checked).toBe(true));
+  });
+});
+
+describe("🔴 TASK-621 — the results dialog names every booking, even after the list reloads without it", () => {
+  /**
+   * Khwan's screenshot: with a status filter on, the rows she had just confirmed LEFT the list when it reloaded, so a
+   * name looked up in the live list missed and the dialog printed the raw booking id. SKIPPED rows kept their names
+   * because they never left. 🔑 The reload is what breaks it, so the reload is what this test performs.
+   */
+  it("🔑 confirm two rows, the reload drops the confirmed one ⇒ every result line shows a name, never an id", async () => {
+    reloadDropsConfirmed = true;
+    const user = userEvent.setup();
+    mount();
+    await waitFor(() => expect(rowTicks().length).toBe(3));
+    const [, pending, extended] = rowTicks();
+    await user.click(pending);
+    await user.click(extended);
+
+    const submit = [...document.querySelectorAll("button")].find((b) => /selected|เลือก/i.test(b.textContent ?? "")) as HTMLElement;
+    await user.click(submit);
+    await pressDialogConfirm(user);
+
+    await waitFor(() => expect(bulkCall()).toBeTruthy());
+    // the confirmed row really is gone from the list — the condition the bug needs
+    expect(listed.some((r) => r.id === "bk-pending")).toBe(false);
+    const dialog = await waitFor(() => {
+      const d = [...document.querySelectorAll('[role="dialog"]')].find((x) => x.querySelector(".mantine-Badge-root"));
+      expect(d).toBeTruthy();
+      return d as HTMLElement;
+    });
+    expect(dialog.textContent).toContain("เด็ก 1"); // confirmed, no longer listed
+    expect(dialog.textContent).toContain("เด็ก 2"); // skipped, still listed
+    expect(dialog.textContent).not.toContain("bk-");
   });
 });

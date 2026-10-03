@@ -110,6 +110,25 @@ export const leaveMarkersFor = (
 // second opinion about a question that already has an answer — *my first version re-sorted with `localeCompare`, which put
 // บี before เอ and disagreed with the list the server sent.* **Filter and shape only.**
 
+/** 🔴 TASK-622 — the key one coach's blocked day is looked up by, in the grid cells. */
+export const leaveDayKey = (teacherId: string, date: string): string => `${teacherId}|${date}`;
+
+/**
+ * 🔴 **TASK-622 — the blocked days, indexed for the CELLS.** The strip above the grid was not enough: the customer still read
+ * the day as free, because the cells under it still offered `+`. Same rows, same shape as the strip's markers — the cell's
+ * mark reuses the strip's own sentence, so the two can never say different things.
+ * 📌 A Map rather than a Set: the mark on an existing class needs the name and the count the strip's sentence carries.
+ */
+export const leaveDayIndex = (
+  rows: readonly { teacherId: string; teacherName: string; date: string; bookings?: readonly unknown[] }[] | undefined,
+): ReadonlyMap<string, LeaveMarker> =>
+  new Map(
+    (rows ?? []).map((r) => [
+      leaveDayKey(r.teacherId, r.date),
+      { teacherId: r.teacherId, teacherName: r.teacherName, date: r.date, classes: (r.bookings ?? []).length },
+    ]),
+  );
+
 /** The copy key for one marker: 🔑 a day WITH classes says there is work; an empty one says the coach is away. */
 export const leaveMarkerKey = (m: { classes: number }): string =>
   m.classes > 0 ? "leaveDays.markerClasses" : "leaveDays.markerAway";

@@ -12,7 +12,7 @@ import { useT } from "@/lib/i18n";
 import { useBadges, useCalendar, useLeaveDays, usePausedBookings, useTeachers } from "@/hooks/scheduler";
 import { useCan, useMe } from "@/hooks/scheduler/useMe";
 import { closedWeekIds } from "@/lib/camp/units";
-import { columnTeacherIds, isScoped } from "@/lib/scheduler/teacher-scope";
+import { columnTeacherIds, isScoped, leaveDayIndex } from "@/lib/scheduler/teacher-scope";
 import { dtoToBooking } from "@/lib/api/mappers";
 import type { Booking } from "@/types/app/scheduler";
 import CalendarHeader, { type CalendarView } from "./CalendarHeader";
@@ -66,6 +66,8 @@ export default function CalendarContent() {
    */
   const leaveRange = view === "day" ? { from: date, to: date } : { from: weekDays[0], to: weekDays[6] };
   const { data: leaveDays } = useLeaveDays(leaveRange.from, leaveRange.to, !scoped);
+  // 🔴 TASK-622 — the same rows, indexed for the CELLS: the strip alone left the day reading as free.
+  const leaveIndex = useMemo(() => leaveDayIndex(leaveDays), [leaveDays]);
 
   const calView = view === "day" ? "day" : "week";
   const { data: teachers = [], isLoading: loadingTeachers } = useTeachers();
@@ -270,6 +272,8 @@ export default function CalendarContent() {
               onSelectBooking={openView}
               onCreate={openCreate}
               onSelectCamp={openCamp}
+              date={date}
+              leaveDays={leaveIndex}
             />
             </>
           ) : (
@@ -286,6 +290,7 @@ export default function CalendarContent() {
               onSelectBooking={openView}
               onCreate={openCreate}
               onSelectCamp={openCamp}
+              leaveDays={leaveIndex}
             />
             </>
           )}

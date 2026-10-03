@@ -2,7 +2,7 @@
 
 import dayjs from "dayjs";
 import "dayjs/locale/th";
-import { Plus } from "lucide-react";
+import { Plus, UserX } from "lucide-react";
 import { TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
@@ -19,6 +19,7 @@ import { useCan } from "@/hooks/scheduler/useMe";
 import { mergeCampCells, type CampBlock } from "@/lib/camp/grid";
 import CampBlockCell from "./CampBlockCell";
 import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE } from "./calendar-status";
+import { leaveDayKey, leaveMarkerKey, type LeaveMarker } from "@/lib/scheduler/teacher-scope";
 
 interface Props {
   teachers: TeacherView[];
@@ -32,6 +33,8 @@ interface Props {
   onSelectCamp?: (block: CampBlock) => void;
   /** 🔴 TASK-593 nit 4 — the ids of weeks CLOSED to new bookings, from the payload's own `status` (`closedWeekIds`). */
   closedWeeks?: ReadonlySet<string>;
+  /** 🔴 TASK-622 — the coaches' blocked days by `leaveDayKey` (`leaveDayIndex`): greyed, no `+`, classes marked. */
+  leaveDays?: ReadonlyMap<string, LeaveMarker>;
 }
 
 // พื้น/ขอบ + dot ตามสถานะ — `./calendar-status`, shared with the day grid AND the legend that explains both.
@@ -47,6 +50,7 @@ export default function CalendarWeekGrid({
   onCreate,
   onSelectCamp,
   closedWeeks,
+  leaveDays,
 }: Props) {
   const { lang, t } = useI18n();
   // Display-only preference (SPEC-046 re-cut) — it hides lines, it never filters bookings.
@@ -117,13 +121,16 @@ export default function CalendarWeekGrid({
             {weekDays.map((day) => {
               // TASK-419 — contiguous CAMP hours fold into ONE item (render-only); every other row stays its own.
               const items = mergeCampCells(cellBookings(tc.id, day));
-              const canBook = bookableOnDate(tc, day);
+              // 🔴 TASK-622 — a blocked day is not bookable: it greys like a non-working one and offers no `+`. Its classes stay live.
+              const leave = leaveDays?.get(leaveDayKey(tc.id, day));
+              const canBook = bookableOnDate(tc, day) && !leave;
               return (
                 <div
                   key={day}
                   className={`min-h-24 space-y-1 border-l border-t border-muted-100 p-1.5 ${
                     canBook ? "" : "bg-muted-50/80"
                   }`}
+                  data-leave-day={leave ? "yes" : undefined}
                 >
                   {items.map((item) => {
                     if (item.kind === "camp") return <CampBlockCell key={item.id} block={item} closed={closedWeeks?.has(item.campWeekId) ?? false} size="sm" onSelect={(blk) => onSelectCamp?.(blk)} />;
@@ -157,6 +164,8 @@ export default function CalendarWeekGrid({
                           <span className="min-w-0 flex-1 truncate text-xs font-semibold text-cal-ink">
                             {b.displayName}
                           </span>
+                          {/* 🔴 TASK-622 — the class is still on, but its coach is away: the strip's own sentence. */}
+                          {leave && <LeaveMark marker={leave} size={12} />}
                           {/* REQ-089 item 5 — the server's `courseLast`, as a stamp on the name row. */}
                           <LastStamp booking={b} size="sm" />
                           {/* REQ-091 — the server's rental row: red unpaid, green paid. */}
@@ -224,5 +233,19 @@ export default function CalendarWeekGrid({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * 🔴 TASK-622 — the "on leave" mark on a class that sits on its coach's blocked day. Visual (a grey icon); its label is the
+ * strip's approved sentence (`leaveMarkerKey`), so the cell and the strip cannot say different things. 🚫 No new wording.
+ */
+export function LeaveMark({ marker, size }: { marker: LeaveMarker; size: number }) {
+  const { t } = useI18n();
+  const label = t(leaveMarkerKey(marker), { name: marker.teacherName, n: String(marker.classes), date: marker.date });
+  return (
+    <span role="img" aria-label={label} title={label} className="inline-flex shrink-0 text-muted-500" data-leave-mark>
+      <UserX size={size} aria-hidden />
+    </span>
   );
 }

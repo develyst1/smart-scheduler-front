@@ -14,6 +14,8 @@ import { useCan } from "@/hooks/scheduler/useMe";
 import { useMemo } from "react";
 import { mergeCampCells, type CampBlock } from "@/lib/camp/grid";
 import CampBlockCell from "./CampBlockCell";
+import { LeaveMark } from "./CalendarWeekGrid";
+import { leaveDayKey, type LeaveMarker } from "@/lib/scheduler/teacher-scope";
 import {
   ClashMark,
   groupToneClass,
@@ -38,6 +40,10 @@ interface Props {
   onSelectCamp?: (block: CampBlock) => void;
   /** 🔴 TASK-593 nit 4 — the ids of weeks CLOSED to new bookings, from the payload's own `status` (`closedWeekIds`). */
   closedWeeks?: ReadonlySet<string>;
+  /** 🔴 TASK-622 — the day on screen: the cells have no date of their own, and a blocked day is per coach AND date. */
+  date: string;
+  /** 🔴 TASK-622 — the coaches' blocked days by `leaveDayKey` (`leaveDayIndex`): the column greyed, no `+`, classes marked. */
+  leaveDays?: ReadonlyMap<string, LeaveMarker>;
 }
 
 // พื้น/ขอบการ์ด + dot ตามสถานะ — `./calendar-status`, shared with the week grid AND the legend.
@@ -45,7 +51,7 @@ interface Props {
 // tradeoff the owner saw in both previews before choosing it, not an oversight.
 // 🚫 Do not re-declare either map here (see that file).
 
-export default function CalendarGrid({ teachers, bookings, times = [], onSelectBooking, onCreate, onSelectCamp, closedWeeks }: Props) {
+export default function CalendarGrid({ teachers, bookings, times = [], onSelectBooking, onCreate, onSelectCamp, closedWeeks, date, leaveDays }: Props) {
   const t = useT();
   // The rows on screen, in the day's own order — the filter picks slots, it never reorders them.
   const visibleSlots = useMemo<string[]>(() => (times.length === 0 ? [...TIME_SLOTS] : TIME_SLOTS.filter((s) => times.includes(s))), [times]);
@@ -129,6 +135,7 @@ export default function CalendarGrid({ teachers, bookings, times = [], onSelectB
             onSelectCamp={onSelectCamp}
             closedWeeks={closedWeeks}
             bookings={bookings}
+            leaveOf={(teacherId) => leaveDays?.get(leaveDayKey(teacherId, date))}
           />
         ))}
         </div>
@@ -148,6 +155,7 @@ function Row({
   onSelectCamp,
   closedWeeks,
   bookings,
+  leaveOf,
 }: {
   time: string;
   teachers: TeacherView[];
@@ -161,6 +169,8 @@ function Row({
   onSelectCamp?: (block: CampBlock) => void;
   /** 🔴 TASK-593 nit 4 — the ids of weeks CLOSED to new bookings, from the payload's own `status` (`closedWeekIds`). */
   closedWeeks?: ReadonlySet<string>;
+  /** 🔴 TASK-622 — this coach's blocked day, if today is one. 🚫 The column is KEPT (greyed), never dropped like a day off. */
+  leaveOf: (teacherId: string) => LeaveMarker | undefined;
 }) {
   const t = useT();
   const can = useCan();
@@ -182,8 +192,13 @@ function Row({
         }
         const booking = findBooking(tc.id, time);
         const accent = booking ? BOOKING_STATUS_COLOR[booking.status] : "default";
+        const leave = leaveOf(tc.id);
         return (
-          <div key={tc.id} className="min-h-20 border-l border-t border-muted-100 p-1.5">
+          <div
+            key={tc.id}
+            className={`min-h-20 border-l border-t border-muted-100 p-1.5 ${leave ? "bg-muted-50/80" : ""}`}
+            data-leave-day={leave ? "yes" : undefined}
+          >
             {booking ? (
               <button
                 type="button"
@@ -206,6 +221,8 @@ function Row({
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold text-cal-ink">
                     {booking.displayName}
                   </span>
+                  {/* 🔴 TASK-622 — the class is still on, but its coach is away: the strip's own sentence. */}
+                  {leave && <LeaveMark marker={leave} size={14} />}
                   {/* REQ-089 item 5 — the server's `courseLast`, as a stamp on the name row. */}
                   <LastStamp booking={booking} />
                   {/* REQ-091 — the server's rental row: red unpaid, green paid. */}
@@ -279,6 +296,9 @@ function Row({
                   </span>
                 )}
               </button>
+            ) : leave ? (
+              /* 🔴 TASK-622 — the coach is away: grey, and no `+` (the server would refuse it with TEACHER_ON_LEAVE). */
+              <div className="h-full min-h-16 w-full" aria-hidden />
             ) : !canBook ? (
               <div className="h-full min-h-16 w-full rounded-xl border border-dashed border-muted-200" aria-hidden />
             ) : (
