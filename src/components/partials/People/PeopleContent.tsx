@@ -44,6 +44,7 @@ import { archivedParentsQuery } from "@/lib/people/parent-archive";
 import { EMPTY_BIRTHDAY, birthdayQuery, formatDob, type BirthdayState } from "@/lib/people/birthday-filter";
 import { useBirthdayStudents } from "@/hooks/scheduler/useStudents";
 import BirthdayFilter from "./BirthdayFilter";
+import NoParentList from "./NoParentList";
 import CampCardModal from "@/components/partials/Camp/CampCardModal";
 import { Tent } from "lucide-react";
 import { useCan } from "@/hooks/scheduler/useMe";
@@ -117,6 +118,13 @@ export default function PeopleContent() {
   const [birthday, setBirthday] = useState<BirthdayState>(EMPTY_BIRTHDAY);
   const birthdayParams = birthdayQuery(birthday, debounced);
   const { data: birthdayRows, isLoading: loadingBirthday, error: birthdayError } = useBirthdayStudents(birthdayParams);
+  // 🔴 TASK-664 — the children with NO parent linked (`GET /students?noParent=true`, TASK-663). OFF by default: until it is
+  // turned on, nothing is asked and the page is exactly as before. It is the same `GET /students` read, so the search and
+  // a set birthday range COMPOSE with it on the server. Live students only (the server's default), whatever
+  // `Show archived` says: the question is "who can a parent not see", and an archived child is not booked.
+  const [noParent, setNoParent] = useState(false);
+  const noParentParams = noParent ? { ...(birthdayParams ?? (debounced.trim() ? { q: debounced.trim() } : {})), noParent: "true", limit: 200 } : null;
+  const { data: noParentRows, isLoading: loadingNoParent } = useBirthdayStudents(noParentParams);
   const runParentArchive = async () => {
     if (!parentArchiveTarget) return;
     const { parent, restore } = parentArchiveTarget;
@@ -225,6 +233,13 @@ export default function PeopleContent() {
         </div>
         <Group gap="md">
           <BirthdayFilter value={birthday} onChange={setBirthday} error={birthdayError ? (birthdayError instanceof ApiClientError ? birthdayError.message : String(birthdayError)) : null} />
+          <Switch
+            size="sm"
+            label={`${t("student.noParentFilter")}${noParent && noParentRows ? ` (${noParentRows.length})` : ""}`}
+            checked={noParent}
+            onChange={(e) => setNoParent(e.currentTarget.checked)}
+            data-no-parent-filter={noParent ? "on" : "off"}
+          />
           <Switch size="sm" label={t("people.showArchived")} checked={showArchived} onChange={toggleShowArchived} />
           {can("action:people.parent-create") && (
             <Button leftSection={<UserPlus size={16} />} onClick={() => setParentModal({ open: true, parent: null })}>
@@ -248,6 +263,12 @@ export default function PeopleContent() {
           🔴 `parents.length || PAGE_SIZE` — `keepPreviousData` still holds the page being replaced, so asking
           for that many matches the height already on screen exactly. `PAGE_SIZE` covers the first load, where
           there is nothing to match. */}
+      {/* 🔴 TASK-664 — on, the no-parent list REPLACES the page's lists (families, birthday, archived parents); off, every
+          line below is exactly as before. */}
+      {noParent ? (
+        <NoParentList rows={noParentRows} loading={loadingNoParent} />
+      ) : (
+      <>
       {birthdayParams !== null ? (
         /* REQ-099 — the student list in the server's order: name · nickname · DOB or — · the family's phone. */
         <Card padding="md" withBorder data-birthday-list={birthdayRows?.length ?? 0}>
@@ -554,6 +575,8 @@ export default function PeopleContent() {
             </Card>
           ))}
         </Stack>
+      )}
+      </>
       )}
 
       <ParentFormModal

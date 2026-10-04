@@ -32,6 +32,21 @@ export const errorProblems = (e: unknown): string[] => {
   return Array.isArray(problems) ? problems.filter((p): p is string => typeof p === "string") : [];
 };
 
+/** TASK-662 — one zod issue at EXACTLY `["student","phone"]`: a new student with no phone-shaped parent phone (TASK-644). */
+const isStudentPhoneIssue = (d: unknown): d is { message: string } =>
+  typeof d === "object" && d !== null && "path" in d && "message" in d && Array.isArray(d.path) &&
+  d.path.length === 2 && d.path[0] === "student" && d.path[1] === "phone" &&
+  typeof d.message === "string";
+
+/**
+ * 🔴 TASK-662 (Porter's narrowest grant) — the server's SPECIFIC sentence for a phoneless new student. `lib/validate.ts`
+ * answers every `VALIDATION` with one generic line by design (TASK-296), so the sentence that tells the admin what to do
+ * rides only in `details`. Used ONLY for `VALIDATION` with that one path; every other error's message is untouched, and
+ * `details` is still carried whole. 🔑 *An interceptor is judged by what it leaves alone.*
+ */
+const studentPhoneSentence = (e: ApiError["error"]): string | undefined =>
+  e.code === "VALIDATION" && Array.isArray(e.details) ? e.details.find(isStudentPhoneIssue)?.message : undefined;
+
 const baseURL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "/api";
 
@@ -77,7 +92,7 @@ api.interceptors.response.use(
     if (body?.error) {
       throw new ApiClientError(
         body.error.code,
-        body.error.message,
+        studentPhoneSentence(body.error) ?? body.error.message,
         error.response.status,
         body.error.details,
       );

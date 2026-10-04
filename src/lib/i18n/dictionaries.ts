@@ -983,6 +983,16 @@ const en = {
     addNew: "Add new student “{name}”",
     searchHint: "Type to search for a student",
     parentPhone: "Parent phone (optional)",
+    // 🔴 TASK-662 — ✅ owner-approved 2026-10-05, verbatim (COPY-DRAFT-parent-phone-required-teamB-2026-10-04.md §1).
+    // The REQUIRED label for a NEW student on booking / course / voucher; the import keeps `parentPhone` above.
+    parentPhoneRequired: "Parent phone",
+    parentPhoneRequiredError: "A new student needs a parent phone, so the parent can see the classes in LINE.",
+    // 🔴 TASK-664 — ✅ owner-approved 2026-10-05, as drafted (COPY-DRAFT-no-household-visible-teamB-2026-10-05.md §1–2).
+    // Quiet and factual by design (Porter): the reason is said once, in the People filter's explainer, never on every row.
+    noParentTag: "No parent linked",
+    noParentFilter: "Students with no parent linked",
+    noParentExplainer: "Parents can't see these students' classes in LINE until a parent is linked.",
+    noParentEmpty: "Every student has a parent linked.",
     parentPhoneHint: "Links the student to a guardian — one phone can cover several children",
     phoneExample: "e.g. 0812345678",
   },
@@ -2956,6 +2966,14 @@ const th: typeof en = {
     addNew: "เพิ่มนักเรียนใหม่ “{name}”",
     searchHint: "พิมพ์เพื่อค้นหานักเรียน",
     parentPhone: "เบอร์ผู้ปกครอง (ถ้ามี)",
+    // 🔴 TASK-662 — ✅ owner-approved 2026-10-05 (see the EN block).
+    parentPhoneRequired: "เบอร์ผู้ปกครอง",
+    parentPhoneRequiredError: "นักเรียนใหม่ต้องมีเบอร์ผู้ปกครอง เพื่อให้ผู้ปกครองเห็นคลาสของน้องใน LINE ได้",
+    // 🔴 TASK-664 — ✅ owner-approved 2026-10-05 (see the EN block).
+    noParentTag: "ยังไม่มีผู้ปกครอง",
+    noParentFilter: "นักเรียนที่ยังไม่มีผู้ปกครอง",
+    noParentExplainer: "นักเรียนในรายการนี้ ผู้ปกครองจะไม่เห็นคลาสใน LINE จนกว่าจะผูกกับผู้ปกครอง",
+    noParentEmpty: "ไม่มีนักเรียนที่ยังไม่มีผู้ปกครอง",
     parentPhoneHint: "ใช้ผูกนักเรียนกับผู้ปกครอง — เบอร์เดียวมีลูกได้หลายคน",
     phoneExample: "เช่น 0812345678",
   },

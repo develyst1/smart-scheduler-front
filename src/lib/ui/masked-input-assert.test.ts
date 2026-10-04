@@ -160,6 +160,7 @@ describe("🔴 TASK-567 — no clicked test may type into a masked input and bel
     // 🔻 TASK-634 added the THIRD: the group swap's optional rate is a `NumberInput` too, and its test asserts the
     // PATCH's `rateMinor` — 🔑 **the sweep found the new sibling by itself again**, which is the whole point of the list.
     expect(inScope.map((f) => f.replace(/\\/g, "/")).sort()).toEqual([
+      "src/components/partials/Bookings/parent-phone-task662.dom.test.tsx",
       "src/components/partials/Calendar/Modal/group-swap-rate-key-revoked.dom.test.tsx",
       "src/components/partials/Calendar/Modal/group-swap-rate.dom.test.tsx",
       "src/components/partials/Camp/open-week-dialog.dom.test.tsx",

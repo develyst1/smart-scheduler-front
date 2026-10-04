@@ -240,7 +240,7 @@ export default function ImportBalanceModal({ opened, onClose }: Props) {
         {/* Remounted after each save: clearing `value` alone leaves StudentSelect's own search text on screen,
             so the previous family's name sits in the box looking like it didn't save. Keyed on the counter, the
             field comes back genuinely empty and the cursor lands here for the next family. */}
-        <StudentSelect key={savedCount} value={student} onChange={setStudent} required />
+        <StudentSelect key={savedCount} value={student} onChange={setStudent} required requireParentPhone={false} />
 
         {kind === "COURSE" ? (
           <>

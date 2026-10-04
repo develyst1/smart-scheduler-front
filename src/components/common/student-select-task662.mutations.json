@@ -1,0 +1,137 @@
+[
+  {
+    "id": "P1",
+    "what": "🔴 the default flipped to FALSE — every caller that does not say otherwise (course, plan, voucher, Team A's booking, camp) takes a phoneless new student again",
+    "files": [
+      {
+        "file": "src/components/common/StudentSelect.tsx",
+        "edits": [
+          {
+            "from": "requireParentPhone = true }: Props) {",
+            "to": "requireParentPhone = false }: Props) {"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "P2",
+    "what": "🔴 the import modal's `false` removed — the owner's exemption is lost and an import without a phone is refused",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/ImportBalanceModal.tsx",
+        "edits": [
+          {
+            "from": "onChange={setStudent} required requireParentPhone={false} />",
+            "to": "onChange={setStudent} required />"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "P3",
+    "what": "🔴 the 9-digit floor lowered to 8 — the picker passes a phone the server refuses (the refusal moves back to the save)",
+    "files": [
+      {
+        "file": "src/components/common/StudentSelect.tsx",
+        "edits": [
+          {
+            "from": "return t.replace(/\\D/g, \"\").length >= 9;",
+            "to": "return t.replace(/\\D/g, \"\").length >= 8;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "P4",
+    "what": "⚠️ the block applied to a NOT-required picker too — Team A's optional อื่นๆ student would be silently dropped from the booking (declared, TASK-662 §Questions Q3)",
+    "files": [
+      {
+        "file": "src/components/common/StudentSelect.tsx",
+        "edits": [
+          {
+            "from": "const blocks = (v: StudentSelectValue | null) => !!required && phoneMissing(v);",
+            "to": "const blocks = (v: StudentSelectValue | null) => phoneMissing(v);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "P5",
+    "what": "🔴 the strict screen keeps the “(optional)” label — the label says optional and the form refuses (Porter's condition)",
+    "files": [
+      {
+        "file": "src/components/common/StudentSelect.tsx",
+        "edits": [
+          {
+            "from": "label={t(requireParentPhone ? \"student.parentPhoneRequired\" : \"student.parentPhone\")}",
+            "to": "label={t(\"student.parentPhone\")}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "C1",
+    "what": "🔴 the interceptor fires on ANY VALIDATION issue — every validation refusal would read as whichever issue came first, not the server's line (Porter's condition)",
+    "files": [
+      {
+        "file": "src/lib/api/client.ts",
+        "edits": [
+          {
+            "from": "  d.path.length === 2 && d.path[0] === \"student\" && d.path[1] === \"phone\" &&",
+            "to": "  true &&"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "C2",
+    "what": "🔴 the path check loosened — a deeper path (student.phone.x) is taken as the student's phone",
+    "files": [
+      {
+        "file": "src/lib/api/client.ts",
+        "edits": [
+          {
+            "from": "  d.path.length === 2 && d.path[0] === \"student\"",
+            "to": "  d.path[0] === \"student\""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "C3",
+    "what": "🔴 the code check dropped — a student.phone issue under another code (CONFLICT) is rewritten too",
+    "files": [
+      {
+        "file": "src/lib/api/client.ts",
+        "edits": [
+          {
+            "from": "e.code === \"VALIDATION\" && Array.isArray(e.details)",
+            "to": "Array.isArray(e.details)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "C4",
+    "what": "🔴 the interceptor stops using the sentence — the admin reads only the generic line beside a label that just told them what to do",
+    "files": [
+      {
+        "file": "src/lib/api/client.ts",
+        "edits": [
+          {
+            "from": "studentPhoneSentence(body.error) ?? body.error.message,",
+            "to": "body.error.message,"
+          }
+        ]
+      }
+    ]
+  }
+]

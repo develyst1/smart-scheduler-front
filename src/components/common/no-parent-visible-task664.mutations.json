@@ -1,0 +1,107 @@
+[
+  {
+    "id": "T1",
+    "what": "🔴 the tag shown on EVERY row — a marker everyone learns to ignore (Porter)",
+    "files": [
+      {
+        "file": "src/components/common/StudentSelect.tsx",
+        "edits": [
+          {
+            "from": "{r.parentId === null ? (",
+            "to": "{true ? ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "T2",
+    "what": "🔴 the tag never shown — the parentless child is unmarked again",
+    "files": [
+      {
+        "file": "src/components/common/StudentSelect.tsx",
+        "edits": [
+          {
+            "from": "{r.parentId === null ? (",
+            "to": "{false ? ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "T3",
+    "what": "⚠️ the tag made a warning (red) — the 'not scary' pin must catch a drift",
+    "files": [
+      {
+        "file": "src/components/common/StudentSelect.tsx",
+        "edits": [
+          {
+            "from": "\"shrink-0 rounded bg-muted-100 px-1.5 py-px text-[10px] font-medium text-muted-600\"",
+            "to": "\"shrink-0 rounded bg-red-100 px-1.5 py-px text-[10px] font-medium text-red-600\""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "F1",
+    "what": "🔴 the People filter ON by default — the page changes for everyone",
+    "files": [
+      {
+        "file": "src/components/partials/People/PeopleContent.tsx",
+        "edits": [
+          {
+            "from": "const [noParent, setNoParent] = useState(false);",
+            "to": "const [noParent, setNoParent] = useState(true);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "F2",
+    "what": "🔴 `noParent` not sent — the 'filtered' list is every student",
+    "files": [
+      {
+        "file": "src/components/partials/People/PeopleContent.tsx",
+        "edits": [
+          {
+            "from": "noParent: \"true\", limit: 200 } : null;",
+            "to": "limit: 200 } : null;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "T4",
+    "what": "🔒 judgement 1 broken — the parentless row is no longer PICKABLE",
+    "files": [
+      {
+        "file": "src/components/common/StudentSelect.tsx",
+        "edits": [
+          {
+            "from": "<Combobox.Option value={r.id} key={r.id}>",
+            "to": "<Combobox.Option value={r.id} key={r.id} disabled={r.parentId === null}>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "F3",
+    "what": "🔒 judgement 3 broken — an action button appears on each row (a promise the product cannot keep)",
+    "files": [
+      {
+        "file": "src/components/partials/People/NoParentList.tsx",
+        "edits": [
+          {
+            "from": "<span className=\"min-w-0\">\n                <span className=\"font-medium\">{s.name}</span>",
+            "to": "<span className=\"min-w-0\">\n                <button type=\"button\">link</button>\n                <span className=\"font-medium\">{s.name}</span>"
+          }
+        ]
+      }
+    ]
+  }
+]
