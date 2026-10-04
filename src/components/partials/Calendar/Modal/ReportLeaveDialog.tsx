@@ -10,7 +10,7 @@ import { useT } from "@/lib/i18n";
 import { notify } from "@/lib/ui/notify";
 import { formatTimeDisplay } from "@/lib/ui/format";
 import { calendarDayBookings } from "@/lib/api/mappers";
-import { useCalendar, useReportOwnLeave } from "@/hooks/scheduler";
+import { useCalendar, useReportOwnLeave, useReportTeacherLeave } from "@/hooks/scheduler";
 import { isAdvanceLeaveDate, isAdvanceResult, leaveBody, leaveDefaultTicks } from "@/lib/scheduler/teacher-scope";
 import { StatusChip } from "@/components/common/BookingBadges";
 import type { OwnLeaveResult } from "@/types/api/contract";
@@ -30,11 +30,41 @@ import type { OwnLeaveResult } from "@/types/api/contract";
  * ⚠️ **And the advance result says the thing a teacher must not get wrong: NOTHING HAS BEEN CANCELLED.** *A teacher who
  * believes their classes were cancelled will not turn up.*
  */
-export default function ReportLeaveDialog({ opened, initialDate, onClose }: { opened: boolean; initialDate: string; onClose: () => void }) {
+/**
+ * 🔴 **TASK-608 (BE) → TASK-611 — the SECOND CALLER: an admin records a teacher's leave on their behalf.**
+ *
+ * 🔑 **`subject` is the whole widening.** Absent ⇒ **this is the teacher's own door, byte for byte as it was**: same
+ * hook, same body, same screen, no subject anywhere. Present ⇒ the admin door, onto **the same act** — @Jason's service
+ * asks the future-vs-today fork in ONE place for both callers, so there is no second meaning to drift.
+ *
+ * 🔴 **The admin door takes a date AFTER TODAY and nothing else, and that is @Sober's decision, not a gap.** The
+ * today/past branch is the CANCELLING act and it needs a ticked list of **that teacher's** sessions — but the calendar
+ * read this dialog uses is scoped to **whoever asked**, so on an admin's screen it would list the ADMIN's day and
+ * present it as the teacher's. 🚫 *A screen that shows the wrong person's sessions and offers to cancel them is worse
+ * than one that refuses.* ⇒ on the admin door the chooser is never rendered at all and a today/past date is refused
+ * **with the alternative named**.
+ */
+export default function ReportLeaveDialog({
+  opened,
+  initialDate,
+  onClose,
+  subject,
+}: {
+  opened: boolean;
+  initialDate: string;
+  onClose: () => void;
+  /** 🔴 TASK-611 — whose leave this is. **Omitted = the signed-in teacher's own**, which is the pre-existing door. */
+  subject?: { id: string; name: string };
+}) {
   const t = useT();
+  const onBehalf = true;
   const leave = useReportOwnLeave();
+  const adminLeave = useReportTeacherLeave();
   const [date, setDate] = useState(initialDate);
-  const { data: calendar, isLoading } = useCalendar(date, "day");
+  // 🔴 The read is scoped to whoever asked ⇒ on the ADMIN door it would be the admin's own day. It is not asked for at
+  // all there (`enabled: !onBehalf`): 🔑 *not fetched and ignored — a request whose answer must never be shown should
+  // not be made.*
+  const { data: calendar, isLoading } = useCalendar(date, "day", false, !onBehalf);
   const rows = calendar ? calendarDayBookings(calendar, date) : [];
   const allIds = rows.map((r) => r.id);
   // Ticks are seeded per DATE: a new date ⇒ the default set for its rows; a user's un-tick survives a refetch of the same date.
@@ -47,13 +77,20 @@ export default function ReportLeaveDialog({ opened, initialDate, onClose }: { op
   // 🔑 The server's own comparison (`date > today`, Bangkok). The call site owns "today"; see `isAdvanceLeaveDate` for why
   // a copy is acceptable here and why both ways of being wrong are safe.
   const advance = isAdvanceLeaveDate(date, dayjs().format("YYYY-MM-DD"));
+  // 🔴 TASK-611 — the admin door's one reduction, asked from the SAME comparison the act uses. 🚫 Not a second rule.
+  const refusedForAdmin = onBehalf && !advance;
 
   const toggle = (id: string, on: boolean) => setTicks({ date, ids: on ? [...ticked, id] : ticked.filter((x) => x !== id) });
 
   const submit = async () => {
     setError(null);
+    // 🚫 The two guards (TASK-564's lesson): the button is disabled AND nothing is sent on a date this door refuses.
+    if (refusedForAdmin) return;
     try {
-      const res = await leave.mutateAsync(leaveBody(date, allIds, ticked, reason, advance));
+      // 🔑 ONE body builder for both doors — `leaveBody` is unchanged and needed no new shape. On the admin door the act
+      // is always the advance one, so it carries `{ date, reason }` and 🚫 never `sessionIds`.
+      const body = leaveBody(date, allIds, ticked, reason, advance);
+      const res = subject ? await adminLeave.mutateAsync({ teacherId: subject.id, ...body }) : await leave.mutateAsync(body);
       // 🔑 Which act ran is read from the ANSWER, never re-derived from the date we sent.
       if (isAdvanceResult(res)) {
         setDone(res);
@@ -67,7 +104,13 @@ export default function ReportLeaveDialog({ opened, initialDate, onClose }: { op
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} centered size="md" title={t("teacherLeave.title")}>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      centered
+      size="md"
+      title={subject ? t("teacherLeave.adminTitle", { name: subject.name }) : t("teacherLeave.title")}
+    >
       <Stack gap="sm">
         {error && (
           <Alert color="red" icon={<AlertTriangle size={15} />} variant="light">
@@ -101,10 +144,17 @@ export default function ReportLeaveDialog({ opened, initialDate, onClose }: { op
                 {t("teacherLeave.advanceNoClasses")}
               </Text>
             )}
-            {/* 🔑 Never a toast, never abbreviated: a teacher who believes their classes were cancelled will not turn up. */}
+            {/* 🔑 Never a toast, never abbreviated: a teacher who believes their classes were cancelled will not turn up.
+                🔴 TASK-611 — and for the ADMIN it is worse, so the sentence is written for whoever is reading: *an admin who
+                believes the families were told will not phone them, and the admin was the one about to act.* */}
             <Alert color="orange" variant="light" icon={<AlertTriangle size={15} />} data-leave-nothing-cancelled>
-              {t("teacherLeave.advanceNothingCancelled")}
+              {subject ? t("teacherLeave.adminNothingCancelled") : t("teacherLeave.advanceNothingCancelled")}
             </Alert>
+            {subject && (
+              <Text size="xs" c="dimmed" data-leave-teacher-told>
+                {t("teacherLeave.adminDoneTeacherTold", { name: subject.name })}
+              </Text>
+            )}
             <Group justify="flex-end">
               <Button onClick={onClose}>{t("common.close")}</Button>
             </Group>
@@ -118,14 +168,25 @@ export default function ReportLeaveDialog({ opened, initialDate, onClose }: { op
           valueFormat="D MMM YYYY"
           popoverProps={{ withinPortal: true }}
         />
+        {/* 🔴 TASK-611 — the admin door's refusal, and it NAMES WHAT TO DO INSTEAD. 🚫 Never a bare "not allowed":
+            *a reason with no next step is a dead end with a caption.* */}
+        {refusedForAdmin && (
+          <Alert color="yellow" variant="light" icon={<AlertTriangle size={15} />} data-leave-admin-refused>
+            <Text size="sm">{t("teacherLeave.adminPastRefused")}</Text>
+            <Text size="sm" fw={600} mt={4}>
+              {t("teacherLeave.adminPastRefusedAction")}
+            </Text>
+          </Alert>
+        )}
         {/* 🔴 The chooser is ABSENT on an advance date, not disabled — a tick there would mean "cancel this one", and the
-            act cancels nothing. What the day already holds is shown AFTER the act, from the server's own list. */}
+            act cancels nothing. What the day already holds is shown AFTER the act, from the server's own list.
+            🔴 TASK-611 — and on the ADMIN door it is absent on EVERY date, because the rows would be the admin's own. */}
         {advance ? (
           <Alert color="blue" variant="light" data-leave-advance-notice>
-            {t("teacherLeave.advanceHint")}
+            {subject ? t("teacherLeave.adminHint", { name: subject.name }) : t("teacherLeave.advanceHint")}
           </Alert>
-        ) : (
-        <div>
+        ) : onBehalf ? null : (
+        <div data-leave-chooser>
           <Text size="sm" fw={500} mb={4}>
             {t("teacherLeave.sessions")}
           </Text>
@@ -181,12 +242,16 @@ export default function ReportLeaveDialog({ opened, initialDate, onClose }: { op
               promise a number of cancellations. Only the reason gates it — the server's own requirement. */}
           <Button
             color="orange"
-            loading={leave.isPending}
-            disabled={(!advance && ticked.length === 0) || reason.trim().length === 0}
+            loading={leave.isPending || adminLeave.isPending}
+            disabled={refusedForAdmin || (!advance && ticked.length === 0) || reason.trim().length === 0}
             data-leave-submit
             onClick={() => void submit()}
           >
-            {advance ? t("teacherLeave.submitAdvance") : t("teacherLeave.submit", { n: ticked.length })}
+            {subject
+              ? t("teacherLeave.adminSubmit", { name: subject.name })
+              : advance
+                ? t("teacherLeave.submitAdvance")
+                : t("teacherLeave.submit", { n: ticked.length })}
           </Button>
         </Group>
         </>

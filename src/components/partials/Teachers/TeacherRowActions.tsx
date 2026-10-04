@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { ActionIcon, Alert, Button, Group, Menu, Modal, Select, Stack, Text } from "@mantine/core";
-import { Archive, MoreVertical, Pencil, Repeat } from "lucide-react";
+import dayjs from "dayjs";
+import { Archive, CalendarOff, MoreVertical, Pencil, Repeat } from "lucide-react";
+import ReportLeaveDialog from "@/components/partials/Calendar/Modal/ReportLeaveDialog";
 import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
 import { useArchiveTeacher, useUpdateTeacher } from "@/hooks/scheduler";
@@ -24,6 +26,8 @@ export default function TeacherRowActions({
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [newType, setNewType] = useState<TeacherType>(teacher.type);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  /** 🔴 TASK-611 — the admin's leave door, on the row whose identity cannot be mistaken. */
+  const [leaveOpen, setLeaveOpen] = useState(false);
 
   const openChangeType = () => {
     setNewType(teacher.type);
@@ -70,7 +74,19 @@ export default function TeacherRowActions({
   const can = useCan();
   const canEdit = can("action:teachers.edit");
   const canArchive = can("action:teachers.archive");
-  if (!canEdit && !canArchive) return null;
+  /**
+   * 🔴 **TASK-611 — `action:calendar.status`, the SAME key @Jason gates the route with, and no new key.**
+   * 🔑 Why that one is right rather than merely available, in his words and checked against the registry: its own
+   * description is *"บันทึกสถานะคาบ (ยืนยัน/มาเรียน/ลาป่วย/ยกเลิก)"* ⇒ **for today and the past this act is the cancel its
+   * holder can already perform session by session**, and **for a future day it only STOPS new bookings** — strictly less
+   * than the booking its holder may already make. 🚫 Not `calendar.teacher-leave` (that is the LINKED TEACHER's own key,
+   * which admins do not hold ⇒ *a key no role holds is a feature nobody has*), and 🚫 not `calendar.book`/`booking-edit`,
+   * which are wider.
+   * 🔴 **Hidden without it, never disabled:** *a disabled control tells someone they are missing something; a hidden one
+   * tells them nothing, which is correct, because it is not theirs.*
+   */
+  const canRecordLeave = can("action:calendar.status");
+  if (!canEdit && !canArchive && !canRecordLeave) return null;
 
   return (
     <>
@@ -91,7 +107,12 @@ export default function TeacherRowActions({
               {t("teachers.actChangeType")}
             </Menu.Item>
           )}
-          {canEdit && canArchive && <Menu.Divider />}
+          {canRecordLeave && (
+            <Menu.Item leftSection={<CalendarOff size={14} />} onClick={() => setLeaveOpen(true)} data-teacher-leave-open>
+              {t("teachers.actRecordLeave")}
+            </Menu.Item>
+          )}
+          {(canEdit || canRecordLeave) && canArchive && <Menu.Divider />}
           {canArchive && (
             <Menu.Item color="red" leftSection={<Archive size={14} />} onClick={openArchive}>
               {t("teachers.actArchive")}
@@ -99,6 +120,18 @@ export default function TeacherRowActions({
           )}
         </Menu.Dropdown>
       </Menu>
+
+      {/* 🔴 TASK-611 — the SAME dialog the teacher uses, given a subject. 🚫 Not a second screen.
+          🔑 The default date is TOMORROW, because this door only accepts a day after today: *opening on a date the door
+          refuses would teach an admin that the control is broken before they had read the reason.* */}
+      {leaveOpen && (
+        <ReportLeaveDialog
+          opened={leaveOpen}
+          initialDate={dayjs().add(1, "day").format("YYYY-MM-DD")}
+          onClose={() => setLeaveOpen(false)}
+          subject={{ id: teacher.id, name: teacher.nickname || teacher.name }}
+        />
+      )}
 
       {/* Change type */}
       <Modal opened={changeTypeOpen} onClose={() => setChangeTypeOpen(false)} title={t("teachers.changeTypeTitle")} centered radius="lg">

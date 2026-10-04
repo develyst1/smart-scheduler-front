@@ -1,0 +1,192 @@
+[
+  {
+    "id": "A1",
+    "what": "🔴 the admin door sends NO teacher — the act would land on the signed-in admin instead of the teacher",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "const res = subject ? await adminLeave.mutateAsync({ teacherId: subject.id, ...body }) : await leave.mutateAsync(body);",
+            "to": "const res = subject ? await adminLeave.mutateAsync({ teacherId: \"\", ...body }) : await leave.mutateAsync(body);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A2",
+    "what": "🔴 the admin door calls the TEACHER's own route (the caller's identity would decide whose day it is)",
+    "files": [
+      {
+        "file": "src/services/scheduler.service.ts",
+        "edits": [
+          {
+            "from": "  const { data } = await api.post<OwnLeaveResult>(\"/teacher-leave-days\", { teacherId, ...body });",
+            "to": "  const { data } = await api.post<OwnLeaveResult>(\"/teachers/me/leave\", { teacherId, ...body });"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A3",
+    "what": "🔴 the future-only rule is dropped — a today/past date is accepted and the CANCELLING act is offered on behalf",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [{ "from": "  const refusedForAdmin = onBehalf && !advance;", "to": "  const refusedForAdmin = false;" }]
+      }
+    ]
+  },
+  {
+    "id": "A4",
+    "what": "🔴 THE DANGEROUS ONE: the chooser renders on the admin door — the rows are the ADMIN's own day, labelled as the teacher's",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [{ "from": "        ) : onBehalf ? null : (", "to": "        ) : (" }]
+      }
+    ]
+  },
+  {
+    "id": "A5",
+    "what": "⚠️ the calendar read is made on the admin door too (a request whose answer must never be shown)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "useCalendar(date, \"day\", false, !onBehalf)",
+            "to": "useCalendar(date, \"day\", false, true)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A6",
+    "what": "🔴 the refusal stops naming WHAT TO DO INSTEAD (a reason with no next step is a dead end with a caption)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "            <Text size=\"sm\" fw={600} mt={4}>\n              {t(\"teacherLeave.adminPastRefusedAction\")}\n            </Text>\n",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A7",
+    "what": "🔴 the admin reads the TEACHER's wording of \"nothing has been cancelled\" — it never says the classes are theirs to handle",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "{subject ? t(\"teacherLeave.adminNothingCancelled\") : t(\"teacherLeave.advanceNothingCancelled\")}",
+            "to": "{t(\"teacherLeave.advanceNothingCancelled\")}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A8",
+    "what": "🔴 the row action stops asking the key — it would show to an admin the server will refuse",
+    "files": [
+      {
+        "file": "src/components/partials/Teachers/TeacherRowActions.tsx",
+        "edits": [{ "from": "  const canRecordLeave = can(\"action:calendar.status\");", "to": "  const canRecordLeave = true;" }]
+      }
+    ]
+  },
+  {
+    "id": "A9",
+    "what": "⚠️ the row action asks a key that no admin holds (the teacher's own) — the door would exist for nobody",
+    "files": [
+      {
+        "file": "src/components/partials/Teachers/TeacherRowActions.tsx",
+        "edits": [
+          {
+            "from": "  const canRecordLeave = can(\"action:calendar.status\");",
+            "to": "  const canRecordLeave = can(\"action:calendar.teacher-leave\");"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A10",
+    "what": "🔴 the dialog opens on TODAY from the row — an admin meets the refusal before they have read why",
+    "files": [
+      {
+        "file": "src/components/partials/Teachers/TeacherRowActions.tsx",
+        "edits": [
+          {
+            "from": "initialDate={dayjs().add(1, \"day\").format(\"YYYY-MM-DD\")}",
+            "to": "initialDate={dayjs().format(\"YYYY-MM-DD\")}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A11",
+    "what": "⚠️ the subject is taken from somewhere other than the ROW — the identity the placement exists to guarantee",
+    "files": [
+      {
+        "file": "src/components/partials/Teachers/TeacherRowActions.tsx",
+        "edits": [
+          {
+            "from": "subject={{ id: teacher.id, name: teacher.nickname || teacher.name }}",
+            "to": "subject={{ id: \"someone-else\", name: teacher.nickname || teacher.name }}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A12",
+    "what": "🔴 the TEACHER's own door is broken by the widening — it would send a teacher id of its own",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [{ "from": "  const onBehalf = subject != null;", "to": "  const onBehalf = true;" }]
+      }
+    ]
+  },
+  {
+    "id": "A13",
+    "what": "⚠️ the admin's Thai copy falls back to English (a bilingual assertion satisfied by one language)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    adminNothingCancelled:\n      \"ยังไม่มีการยกเลิกคาบใด คาบเหล่านั้นยังอยู่ในตารางและยังไม่ได้แจ้งผู้ปกครอง — ต้องจัดการทีละคาบเอง และจนกว่าจะจัดการ ให้ถือว่าคาบยังสอนตามปกติ\",",
+            "to": "    adminNothingCancelled:\n      \"NOTHING HAS BEEN CANCELLED. Those classes are still on the schedule and no family has been told — they are yours to handle one by one, and until you do, treat them as going ahead.\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A14",
+    "what": "the teacher is no longer told on screen that the day was recorded for them",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "            {subject && (\n              <Text size=\"xs\" c=\"dimmed\" data-leave-teacher-told>\n                {t(\"teacherLeave.adminDoneTeacherTold\", { name: subject.name })}\n              </Text>\n            )}\n",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  }
+]

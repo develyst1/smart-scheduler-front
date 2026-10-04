@@ -535,6 +535,26 @@ const en = {
     advanceNothingCancelled: "NOTHING HAS BEEN CANCELLED. Those classes are still on the schedule and the families have not been told — please treat them as going ahead until an admin tells you otherwise.",
     submit: "Report leave ({n} sessions)",
     done: "{n} sessions cancelled · {families} families told",
+    // 🔴 TASK-608 (BE) → TASK-611 — the ADMIN's door onto the SAME act. 📝 DRAFT (Fern, TASK-611) — @Sober owns this copy
+    // this batch and the owner sees it before it ships.
+    // 🔑 Every sentence here is written for the ADMIN as the reader, not reworded from the teacher's. The teacher's own
+    // strings above are untouched: *the widening must be invisible to the person it was not for.*
+    adminTitle: "Record leave for {name}",
+    adminSubject: "Whose leave this is",
+    // 🔴 FUTURE ONLY, said as a fact about the act rather than as a restriction on the reader.
+    adminHint:
+      "Recording leave for {name} blocks their whole day for new bookings. Classes already booked that day are not cancelled, and nobody is told they are — you will see the list once the day is recorded.",
+    // ⚠️ The refusal NAMES WHAT TO DO INSTEAD. 🚫 Never "that is not allowed": a reason with no next step is a dead end
+    // with a caption.
+    adminPastRefused:
+      "This door records leave for a day that has not happened yet. For today or a past day, the classes have to be handled one at a time on the calendar, because cancelling them tells each family.",
+    adminPastRefusedAction: "Pick a date after today",
+    // 🔴 The sentence an admin must not get wrong. *A teacher who believes their classes were cancelled will not turn up;
+    // an ADMIN who believes it will not phone the families — worse, because the admin was the one about to act.*
+    adminNothingCancelled:
+      "NOTHING HAS BEEN CANCELLED. Those classes are still on the schedule and no family has been told — they are yours to handle one by one, and until you do, treat them as going ahead.",
+    adminDoneTeacherTold: "{name} has been told about this day.",
+    adminSubmit: "Block this day for {name}",
   },
   // REQ-101 (TASK-429) — the ECA/Free/KOL Manage-plan page
   otherSeries: {
@@ -1517,6 +1537,8 @@ const en = {
     setupIncomplete: "Set pay before booking",
     actEdit: "Edit",
     actChangeType: "Change type",
+    /** 🔴 TASK-611 — the admin's entry point, on the row whose identity cannot be mistaken. 📝 DRAFT (Fern, TASK-611). */
+    actRecordLeave: "Record leave in advance",
     actArchive: "Archive / offboard",
     actReactivate: "Reactivate",
     formAddTitle: "Add teacher",
@@ -2555,6 +2577,18 @@ const th: typeof en = {
     advanceNothingCancelled: "ยังไม่มีการยกเลิกคาบใด คาบเหล่านั้นยังอยู่ในตารางและยังไม่ได้แจ้งผู้ปกครอง — กรุณาถือว่าคาบยังสอนตามปกติจนกว่าแอดมินจะแจ้งเปลี่ยนแปลง",
     submit: "แจ้งลา ({n} คาบ)",
     done: "ยกเลิก {n} คาบ · แจ้งผู้ปกครอง {families} ครอบครัว",
+    // 📝 DRAFT (Fern, TASK-611) — ประตูของแอดมิน: การกระทำเดียวกับของครู แต่เขียนให้แอดมินเป็นคนอ่าน
+    adminTitle: "บันทึกวันลาของ {name}",
+    adminSubject: "บันทึกวันลาให้ใคร",
+    adminHint:
+      "การบันทึกวันลาของ {name} จะปิดรับจองคาบใหม่ทั้งวันนั้น — คาบที่จองไว้แล้วจะไม่ถูกยกเลิกและยังไม่มีการแจ้งผู้ปกครอง เมื่อบันทึกแล้วระบบจะแสดงรายการคาบให้ดู",
+    adminPastRefused:
+      "ประตูนี้ใช้บันทึกวันลาล่วงหน้าเท่านั้น ถ้าเป็นวันนี้หรือวันที่ผ่านมาแล้ว ต้องจัดการคาบทีละคาบในหน้าปฏิทิน เพราะการยกเลิกคาบจะมีการแจ้งผู้ปกครองทุกครอบครัว",
+    adminPastRefusedAction: "เลือกวันหลังจากวันนี้",
+    adminNothingCancelled:
+      "ยังไม่มีการยกเลิกคาบใด คาบเหล่านั้นยังอยู่ในตารางและยังไม่ได้แจ้งผู้ปกครอง — ต้องจัดการทีละคาบเอง และจนกว่าจะจัดการ ให้ถือว่าคาบยังสอนตามปกติ",
+    adminDoneTeacherTold: "ระบบแจ้ง {name} เรื่องวันลานี้แล้ว",
+    adminSubmit: "ปิดรับจองวันนั้นของ {name}",
   },
   otherSeries: {
     managePlan: "จัดการตาราง",
@@ -3419,6 +3453,8 @@ const th: typeof en = {
     setupIncomplete: "ตั้งเงินก่อนจึงจะจองได้",
     actEdit: "แก้ไข",
     actChangeType: "เปลี่ยนประเภท",
+    /** 📝 DRAFT (Fern, TASK-611) */
+    actRecordLeave: "บันทึกวันลาล่วงหน้า",
     actArchive: "เก็บ / ออกจากงาน",
     actReactivate: "นำกลับมาทำงาน",
     formAddTitle: "เพิ่มครู",

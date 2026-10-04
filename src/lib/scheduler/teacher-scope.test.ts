@@ -130,12 +130,28 @@ describe("§3 — the calendar page under the flag", () => {
 
 describe("§4 — `Report leave`: one call, the ticks from the scoped day, the bounds the server's", () => {
   it("the dialog and the wire", () => {
-    expect(leaveDialog).toContain('const { data: calendar, isLoading } = useCalendar(date, "day");');
+    // 🔻 TASK-611, declared: the read now carries `enabled`. 🔴 **The calendar read is scoped to WHOEVER ASKED**, so on
+    // the admin's door it would be the ADMIN's own day ⇒ it is **not asked for at all** there (`!onBehalf`), rather than
+    // fetched and ignored. 🔑 *A request whose answer must never be shown should not be made.*
+    // ✅ What this pin protects — ONE read, the day view, from the hook — is unchanged.
+    expect(leaveDialog).toContain('const { data: calendar, isLoading } = useCalendar(date, "day", false, !onBehalf);');
     // 🔻 TASK-588, declared: the body now carries the ADVANCE flag, and the ticks gate the submit only on the CANCEL path
     // (an advance date has no ticks to count, and the label must not promise a number of cancellations).
     // 🔑 What this pin protects — ONE call, built by `leaveBody`, and the bounds left to the server — is unchanged.
-    expect(leaveDialog).toContain("await leave.mutateAsync(leaveBody(date, allIds, ticked, reason, advance));");
-    expect(leaveDialog).toContain("disabled={(!advance && ticked.length === 0) || reason.trim().length === 0}");
+    // 🔻 TASK-611, declared: the ONE call became ONE CALL PER DOOR, built from **the same body** — the teacher's own
+    // route when there is no subject, the admin's when there is. ✅ What this pin protects is intact and now stated
+    // more strongly below: 🔑 **`leaveBody` is called EXACTLY ONCE** in the file, so the two doors cannot hold two
+    // ideas of the body, and 🚫 neither door builds one of its own.
+    expect(leaveDialog).toContain("const res = subject ? await adminLeave.mutateAsync({ teacherId: subject.id, ...body }) : await leave.mutateAsync(body);");
+    // 🔻 TASK-611, declared: + `refusedForAdmin` as the FIRST term. ✅ The two it already protected are unchanged (no
+    // ticks on the cancel path, and a reason always); the new one is the admin door's future-only rule.
+    // 🔑 And it is the first of TWO guards, as TASK-564 taught: `submit` returns before the request on the same
+    // condition, so a pressed-anyway button sends nothing.
+    expect(leaveDialog).toContain("disabled={refusedForAdmin || (!advance && ticked.length === 0) || reason.trim().length === 0}");
+    expect(leaveDialog).toContain("if (refusedForAdmin) return;");
+    // 🔴 the refusal is derived from the SAME comparison the act uses — 🚫 not a second rule about dates
+    expect(leaveDialog).toContain("const refusedForAdmin = onBehalf && !advance;");
+    expect(leaveDialog.match(/isAdvanceLeaveDate\(/g)?.length).toBe(1);
     // 🔴 and the old path's own words are still the ones used when the server says it cancelled
     expect(leaveDialog).toContain("if (isAdvanceResult(res)) {");
     expect(leaveDialog).not.toMatch(/length\s*[<>]=?\s*(3|200)\b/);
@@ -147,7 +163,15 @@ describe("§4 — `Report leave`: one call, the ticks from the scoped day, the b
     expect(leaveDialog).toContain('{t("teacherLeave.warning")}');
     expect(leaveDialog).toContain("{!advance && (");
     expect(leaveDialog).toContain("data-leave-cancel-warning");
-    expect(dataHooks(leaveDialog)).toEqual(["useCalendar", "useReportOwnLeave"]); // nothing outside the set
+    // 🔻 TASK-611, declared: + `useReportTeacherLeave` — the ADMIN's caller of the SAME act (@Jason's one service
+    // function, one fork). 🚫 Still nothing outside the set, which is what this assertion is for.
+    expect(dataHooks(leaveDialog)).toEqual(["useCalendar", "useReportOwnLeave", "useReportTeacherLeave"]);
+    // 🔑 ONE body builder for BOTH doors: `leaveBody` needed no new shape, so there is no second idea of the body.
+    // 🔴 And the admin door never sends a session list — it is future-only, where `leaveBody` omits it by rule.
+    expect(leaveDialog).toContain("const body = leaveBody(date, allIds, ticked, reason, advance);");
+    expect(leaveDialog.match(/leaveBody\(/g)?.length).toBe(1);
+    // 🔑 whose day it is rides in the body; 🚫 the actor never does
+    expect(leaveDialog).toContain("adminLeave.mutateAsync({ teacherId: subject.id, ...body })");
     expect(schedSvc).toContain('api.post<OwnLeaveResult>("/teachers/me/leave", body)');
     expect(codeOf("src/hooks/scheduler/useScheduler.ts")).toContain("mutationFn: (body: { date: string; sessionIds?: string[]; reason: string }) => reportOwnLeave(body),");
   });
@@ -182,7 +206,11 @@ describe("§6 — `TEACHER_LEAVE`: read everywhere, offered nowhere", () => {
   it("copy counted: teacherLeave 10 · users +4 — both languages", () => {
     const en = dictionaries.en.teacherLeave as Record<string, string>;
     const th = dictionaries.th.teacherLeave as Record<string, string>;
-    expect(Object.keys(en).length).toBe(18); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
+    // 🔻 TASK-611, declared: +8 — the ADMIN door's own sentences (title · subject · hint · the refusal and its action ·
+    // "nothing has been cancelled" written for an admin · the teacher-was-told line · the submit). 📝 All DRAFT: @Sober
+    // owns this copy and the owner sees it before it ships. 🔑 They are SEPARATE keys, not reworded teacher strings:
+    // *the widening must be invisible to the person it was not for.*
+    expect(Object.keys(en).length).toBe(26); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     for (const k of ["teacherLink", "teacherLinkHint", "teacherNone", "teacherLine"]) {
       expect((dictionaries.en.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);

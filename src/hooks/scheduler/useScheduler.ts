@@ -36,6 +36,7 @@ import {
   markAttended,
   getLeaveDays,
   reportOwnLeave,
+  reportTeacherLeave,
   updateCourseRate,
   bulkConfirm,
   getEligibleStudents,
@@ -239,10 +240,16 @@ export const useTopUpFreelanceBudget = () => {
 // ───────────────────────────── Calendar ─────────────────────────────
 
 /** TASK-369 — `includeCancelled` is part of the KEY, so ON and OFF are two cached answers, never one stale one. */
-export const useCalendar = (date: string, view: "day" | "week", includeCancelled = false) =>
+/**
+ * 🔴 TASK-611 — `enabled` added (default `true`, so every existing call site is unchanged). The read is scoped to
+ * WHOEVER ASKED, so the admin leave door must not make it at all: 🔑 *a request whose answer must never be shown
+ * should not be made* — not fetched and then ignored.
+ */
+export const useCalendar = (date: string, view: "day" | "week", includeCancelled = false, enabled = true) =>
   useQuery({
     queryKey: [...CALENDAR_KEY, date, view, includeCancelled ? "with-cancelled" : "live"],
     queryFn: () => getCalendar(date, view, includeCancelled),
+    enabled,
   });
 
 // ───────────────────────────── Bookings ─────────────────────────────
@@ -553,6 +560,16 @@ export const useReportOwnLeave = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { date: string; sessionIds?: string[]; reason: string }) => reportOwnLeave(body),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/** 🔴 TASK-611 — the ADMIN's caller of the same act: whose day it is rides with the body; the actor is the session. */
+export const useReportTeacherLeave = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ teacherId, ...body }: { teacherId: string; date: string; sessionIds?: string[]; reason: string }) =>
+      reportTeacherLeave(teacherId, body),
     onSuccess: () => invalidateAll(qc),
   });
 };

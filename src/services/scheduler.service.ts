@@ -492,6 +492,28 @@ export const reportOwnLeave = async (body: { date: string; sessionIds?: string[]
 };
 
 /**
+ * 🔴 **TASK-608 (BE) → TASK-611 — an ADMIN records a teacher's leave ON THEIR BEHALF: the SAME act, a second caller.**
+ * The answer is the same `OwnLeaveResult`, so the screen reads WHICH act ran from the ANSWER exactly as the teacher's
+ * own door does.
+ *
+ * 🔑 **The path is `POST /teacher-leave-days`, and that is not a detail.** @Jason moved it OFF `/teachers/:id/leave`
+ * because that path is a **wildcard sibling of the literal `/teachers/me/leave`**: Hono dispatches to the first match
+ * and the access guard reads its key from the last, so the `:id` route — correctly absent from the teacher's allowed
+ * set — **refused a linked coach on the coach's OWN door.** ⇒ the admin act hangs off the admin's own noun, beside
+ * TASK-587's admin read. 📌 Taken from his route file, not from his report, which still named the old path.
+ */
+export const reportTeacherLeave = async (
+  teacherId: string,
+  body: { date: string; sessionIds?: string[]; reason: string },
+): Promise<OwnLeaveResult> => {
+  if (useMock) return mock.reportOwnLeave(body);
+  // 🔑 `teacherId` rides in the BODY (the server's `adminTeacherLeave` = the teacher's own body + whose day it is).
+  // 🚫 The actor is never a field: it is the signed-in admin.
+  const { data } = await api.post<OwnLeaveResult>("/teacher-leave-days", { teacherId, ...body });
+  return data;
+};
+
+/**
  * 🔴 **TASK-587 (BE) → TASK-589 — the ADMIN's read of recorded leave days**, each with that day's live classes.
  * 🚫 A READ: nothing is cancelled or moved from it. ⚠️ **A linked teacher is refused (403)**, so the caller asks only on an
  * admin session — the hook's `enabled`, not a try/catch.
