@@ -121,16 +121,28 @@ export default function ReportLeaveDialog({
           /* 🔴 TASK-588 — the advance result, in @Jason's §15 order: the day is blocked · these classes are already booked
              and an ADMIN will handle them · 🔑 NOTHING HAS BEEN CANCELLED. The last clause is the one that matters. */
           <Stack gap="sm" data-leave-advance={done.bookings?.length ?? 0}>
-            <Text fw={600}>{t("teacherLeave.advanceTitle", { date: date })}</Text>
+            {/* 🔴 TASK-651 (F4) — chosen by `subject`, exactly as `adminNothingCancelled` already is. 🔑 The admin's
+                result said *you are recorded as away* and *an admin will handle them* to the admin who just acted. */}
+            <Text fw={600}>
+              {subject
+                ? t("teacherLeave.adminAdvanceTitle", { date: date, name: subject.name })
+                : t("teacherLeave.advanceTitle", { date: date })}
+            </Text>
             {done.alreadyRecorded && (
               <Text size="xs" c="dimmed" data-leave-already>
                 {t("teacherLeave.advanceAlready")}
               </Text>
             )}
-            <Text size="sm">{t("teacherLeave.advanceBlocked")}</Text>
+            <Text size="sm">
+              {subject ? t("teacherLeave.adminAdvanceBlocked", { name: subject.name }) : t("teacherLeave.advanceBlocked")}
+            </Text>
             {(done.bookings?.length ?? 0) > 0 ? (
               <>
-                <Text size="sm">{t("teacherLeave.advanceClasses", { n: done.bookings?.length ?? 0 })}</Text>
+                <Text size="sm">
+                  {subject
+                    ? t("teacherLeave.adminAdvanceClasses", { n: done.bookings?.length ?? 0, name: subject.name })
+                    : t("teacherLeave.advanceClasses", { n: done.bookings?.length ?? 0 })}
+                </Text>
                 <Stack gap={2}>
                   {(done.bookings ?? []).map((b) => (
                     <Text key={b.id} size="sm" className="tabular-nums">
@@ -141,7 +153,7 @@ export default function ReportLeaveDialog({
               </>
             ) : (
               <Text size="sm" c="dimmed">
-                {t("teacherLeave.advanceNoClasses")}
+                {subject ? t("teacherLeave.adminAdvanceNoClasses", { name: subject.name }) : t("teacherLeave.advanceNoClasses")}
               </Text>
             )}
             {/* 🔑 Never a toast, never abbreviated: a teacher who believes their classes were cancelled will not turn up.
@@ -245,7 +257,12 @@ export default function ReportLeaveDialog({
             the make-ups added; on an advance date 🚫 nothing is cancelled, nobody is told and no make-up is owed, so on a
             future date it described an act that was not happening — directly contradicting the blue hint above it.
             🔑 TASK-588 removed the chooser and reworded the button; this sentence sat outside both. */}
-        {!advance && (
+        {/* 🔴 TASK-651 item 3 (F5) — `!subject` added. The line promises the TICKED sessions' families are told, and
+            🔑 **the cancel act happens only on the TEACHER's own door**: on the admin door a today date makes `advance`
+            false, so it appeared on a screen with NO ticks — and one where today is refused anyway.
+            📌 My TASK-595 comment already said this line belongs to the cancel act only; **this is the second door
+            that comment did not cover** — *a rule written down for one door does not travel to the next by itself.* */}
+        {!advance && !subject && (
           <Text size="xs" c="orange" data-leave-cancel-warning>
             {t("teacherLeave.warning")}
           </Text>

@@ -560,6 +560,17 @@ const en = {
     adminDoneTeacherTold: "{name} has been told about this day.",
     adminDoneTeacherNotTold: "{name} has not been told — their LINE account is not linked. You will need to tell them yourself.",
     adminSubmit: "Block this day for {name}",
+    // 🔴 TASK-651 item 2 (F4) — the admin's RESULT spoke to the teacher: four strings said *you* and *an admin will
+    // handle them* on the ADMIN's own screen. ✅ APPROVED (owner 2026-10-04) exactly as @Sober drafted them.
+    // 🚫 Not reworded on the way in, not even where I would have phrased it differently: 🔑 *an approved string
+    // "improved" on the way in is an unapproved string.*
+    // 📌 The classes line deliberately does NOT repeat "yours to handle" — `adminNothingCancelled` directly below says
+    // it, and the owner's approval covers that omission: *a promise said twice is one edit from saying two different
+    // things.*
+    adminAdvanceTitle: "{date} — leave recorded for {name}",
+    adminAdvanceBlocked: "No new class can be booked with {name} that day.",
+    adminAdvanceClasses: "{n} class(es) already booked with {name} that day:",
+    adminAdvanceNoClasses: "Nothing is booked with {name} that day.",
   },
   // REQ-101 (TASK-429) — the ECA/Free/KOL Manage-plan page
   otherSeries: {
@@ -2602,6 +2613,11 @@ const th: typeof en = {
     // 📝 DRAFT (Fern, TASK-611 §2) — the Thai for @Sober's new sentence: บอกว่าทำไม และบอกว่าใครต้องทำต่อ
     adminDoneTeacherNotTold: "ระบบยังไม่ได้แจ้ง {name} เพราะบัญชี LINE ยังไม่ได้ผูก — ต้องแจ้งครูเองค่ะ",
     adminSubmit: "ปิดรับจองวันนั้นของ {name}",
+    // ✅ APPROVED (owner 2026-10-04, TASK-651) — ตามที่ @Sober ร่าง ไม่แก้คำ
+    adminAdvanceTitle: "{date} — บันทึกวันลาของ {name} แล้ว",
+    adminAdvanceBlocked: "จะไม่มีการจองคาบใหม่กับ {name} ในวันนั้น",
+    adminAdvanceClasses: "มีคาบที่จองกับ {name} ไว้แล้ว {n} คาบในวันนั้น:",
+    adminAdvanceNoClasses: "วันนั้นยังไม่มีคาบที่จองกับ {name}",
   },
   otherSeries: {
     managePlan: "จัดการตาราง",

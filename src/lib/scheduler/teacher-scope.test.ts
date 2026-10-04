@@ -161,7 +161,11 @@ describe("§4 — `Report leave`: one call, the ticks from the scoped day, the b
     // nothing is cancelled. ✅ What this pin protected (the sentence is still the one shown when a cancel happens) stands:
     // the string is unchanged and it is still here — it is the CONDITION that is new, and the guard is the pin now.
     expect(leaveDialog).toContain('{t("teacherLeave.warning")}');
-    expect(leaveDialog).toContain("{!advance && (");
+    // 🔻 TASK-651 item 3 (F5), declared: `!subject` added. 🔑 **The line promises the TICKED sessions' families are
+    // told, and the cancel act happens only on the TEACHER's own door** — on the admin door a today date makes
+    // `advance` false, so it rendered on a screen with NO ticks. ✅ What this pin protects (the line is GUARDED, not
+    // reworded) is unchanged; the guard is one term wider.
+    expect(leaveDialog).toContain("{!advance && !subject && (");
     expect(leaveDialog).toContain("data-leave-cancel-warning");
     // 🔻 TASK-611, declared: + `useReportTeacherLeave` — the ADMIN's caller of the SAME act (@Jason's one service
     // function, one fork). 🚫 Still nothing outside the set, which is what this assertion is for.
@@ -212,7 +216,11 @@ describe("§6 — `TEACHER_LEAVE`: read everywhere, offered nowhere", () => {
     // *the widening must be invisible to the person it was not for.*
     // 🔻 TASK-611 §2, declared: 26 → 27. @Sober caught that the notice line claimed the coach was told on EVERY admin
     // use, which is false for an unlinked coach ⇒ it is TWO sentences now, chosen by the count in the ANSWER.
-    expect(Object.keys(en).length).toBe(27); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
+    // 🔻 TASK-651 item 2 (F4), declared: 27 → 31. **The admin's RESULT reused four of the teacher's strings** —
+    // *you are recorded as away* · *booked with YOU* · *an admin will handle them* · *with YOU* — on the screen of the
+    // admin who had just acted. ✅ APPROVED (owner 2026-10-04) as @Sober drafted them. 🔑 `advanceAlready` is NEUTRAL
+    // and stays SHARED: it is not a fifth variant and must not become one.
+    expect(Object.keys(en).length).toBe(31); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     for (const k of ["teacherLink", "teacherLinkHint", "teacherNone", "teacherLine"]) {
       expect((dictionaries.en.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);

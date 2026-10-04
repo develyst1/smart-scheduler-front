@@ -284,6 +284,73 @@ describe("🔴 TASK-611 §2 — told, NOT told, and not known", () => {
   });
 });
 
+/**
+ * 🔴 **TASK-651 (F4 + F5) — the admin's result speaks to the ADMIN, and the cancel warning stays on the teacher's door.**
+ *
+ * **F4 was four strings, not one.** The result block printed *you are recorded as away*, *booked with YOU*, and
+ * *an admin will handle them* — **on the screen of the admin who had just acted.** 🔑 *The widening gave the dialog a
+ * second reader, and four sentences were still addressing the first one.*
+ * **F5 is the same shape one more time:** the cancel warning renders on `!advance`, and on the ADMIN door today makes
+ * `advance` false ⇒ it appeared on a door with **no ticks at all**. 📌 **My own TASK-595 comment already said that line
+ * belongs to the cancel act only — and this is the second door that comment did not cover.**
+ */
+describe("🔴 TASK-651 — four admin sentences, and the warning that is not the admin's", () => {
+  const EN_TEACHER = dictionaries.en.teacherLeave as unknown as Record<string, string>;
+
+  const runAdmin = async (date: string) => {
+    const user = userEvent.setup();
+    mount(date, SUBJECT);
+    await waitFor(() => expect(document.querySelectorAll("[data-leave-advance-notice]").length).toBe(1));
+    await typeReason(user);
+    await user.click(submitBtn());
+    await waitFor(() => expect(document.querySelectorAll("[data-leave-nothing-cancelled]").length).toBe(1));
+  };
+
+  it("🔴 the result shows ALL FOUR admin sentences and NONE of the teacher's", async () => {
+    await runAdmin(FUTURE);
+    const screenText = document.body.textContent ?? "";
+
+    // ✅ the four admin ones, each naming the COACH rather than the reader
+    expect(screenText).toMatch(/leave recorded for ครูเอ/i);
+    expect(screenText).toMatch(/no new class can be booked with ครูเอ that day/i);
+    expect(screenText).toMatch(/1 class\(es\) already booked with ครูเอ that day/i);
+
+    // 🚫 and not one of the teacher's four, which all address the reader as the person who is away
+    expect(screenText).not.toContain("you are recorded as away");
+    expect(screenText).not.toContain(EN_TEACHER.advanceBlocked);
+    expect(screenText).not.toMatch(/an admin will handle them by hand/i);
+    expect(screenText).not.toContain(EN_TEACHER.advanceNoClasses);
+    // 🔑 the one that is NEUTRAL stays shared — it is not a fifth variant and must not become one
+    expect(EN_TEACHER.advanceAlready).toMatch(/already on record/i);
+  });
+
+  it("🔑 with NOTHING booked, the empty line also names the coach", async () => {
+    answer = { ...(answer as Record<string, unknown>), bookings: [] };
+    await runAdmin(FUTURE);
+    expect(document.body.textContent).toMatch(/nothing is booked with ครูเอ that day/i);
+    expect(document.body.textContent).not.toContain(EN_TEACHER.advanceNoClasses);
+  });
+
+  it("🔴 F5 — the cancel warning is ABSENT on the admin door with TODAY selected", async () => {
+    mount(TODAY, SUBJECT);
+    await waitFor(() => expect(document.querySelectorAll("[data-leave-admin-refused]").length).toBe(1));
+    // 🔑 today makes `advance` false, which is exactly the condition the line used to render on
+    expect(document.querySelectorAll("[data-leave-cancel-warning]").length).toBe(0);
+    expect(document.body.textContent).not.toMatch(/families of the ticked sessions/i);
+    // 🚫 and there are no ticks on this door for it to have been talking about
+    expect(document.querySelectorAll('input[type="checkbox"]').length).toBe(0);
+  });
+
+  it("✅ F5's other half — the warning is still PRESENT on the teacher's own door with today", async () => {
+    mount(TODAY); // 🚫 no subject
+    await waitFor(() => expect(document.querySelectorAll("[data-leave-rows]").length).toBe(1));
+    const warn = document.querySelector("[data-leave-cancel-warning]") as HTMLElement;
+    expect(warn).toBeTruthy();
+    expect(warn.textContent).toMatch(/families of the ticked sessions/i);
+    // 🔑 *half a rule is not a rule* — the fix must not silence the one place the sentence is true
+  });
+});
+
 describe("✅ TASK-611 — the TEACHER's own door is UNCHANGED", () => {
   it("🔑 with no subject: the old route, the old body, no teacher id anywhere", async () => {
     answer = { cancelled: 2, bookingIds: ["mine-1"], familiesNotified: 2 };
@@ -332,6 +399,11 @@ describe("📋 TASK-611 — the admin door's strings, both languages, counted", 
     // 🔴 TASK-611 §2 — the ninth: the other half of the notice line. @Sober's English, my Thai draft.
     "adminDoneTeacherNotTold",
     "adminSubmit",
+    // 🔴 TASK-651 (F4) — the four the result block needed. ✅ APPROVED (owner 2026-10-04) as @Sober drafted them.
+    "adminAdvanceTitle",
+    "adminAdvanceBlocked",
+    "adminAdvanceClasses",
+    "adminAdvanceNoClasses",
   ] as const;
 
   it("🔑 every string exists in BOTH languages and they are not the same text", () => {
@@ -339,10 +411,10 @@ describe("📋 TASK-611 — the admin door's strings, both languages, counted", 
     const th = dictionaries.th.teacherLeave as unknown as Record<string, string>;
     const pairs = KEYS.map((k) => [k, en[k], th[k]] as const);
     // 🚫 a loop that silently covered one language would pass: the COUNT is asserted, not assumed
-    expect(pairs.length).toBe(9);
-    expect(pairs.filter(([, e]) => typeof e === "string" && e.length > 0).length).toBe(9);
-    expect(pairs.filter(([, , th2]) => typeof th2 === "string" && th2.length > 0).length).toBe(9);
-    expect(pairs.filter(([, e, th2]) => e !== th2).length).toBe(9);
+    expect(pairs.length).toBe(13);
+    expect(pairs.filter(([, e]) => typeof e === "string" && e.length > 0).length).toBe(13);
+    expect(pairs.filter(([, , th2]) => typeof th2 === "string" && th2.length > 0).length).toBe(13);
+    expect(pairs.filter(([, e, th2]) => e !== th2).length).toBe(13);
     // the row action too, in both
     expect((dictionaries.en.teachers as unknown as Record<string, string>).actRecordLeave.length).toBeGreaterThan(0);
     expect((dictionaries.th.teachers as unknown as Record<string, string>).actRecordLeave.length).toBeGreaterThan(0);
@@ -372,6 +444,19 @@ describe("📋 TASK-611 — the admin door's strings, both languages, counted", 
     expect(th.adminDoneTeacherNotTold).not.toBe(th.adminDoneTeacherTold);
     // 🔻 @Sober's reworded hint: "no family has been told anything", so it cannot read as "told they are booked"
     expect(en.adminHint).toMatch(/no family has been told anything/i);
+    // 🔴 TASK-651 (F4) — each of the four names the COACH, in both languages, and 🚫 none addresses the reader as the
+    // person who is away. The `{name}` placeholder is what makes that true rather than the wording.
+    for (const k of ["adminAdvanceTitle", "adminAdvanceBlocked", "adminAdvanceClasses", "adminAdvanceNoClasses"] as const) {
+      expect(en[k]).toContain("{name}");
+      expect(th[k]).toContain("{name}");
+    }
+    // 🚫 and the admin's versions are not the teacher's with a name bolted on: they are different strings
+    expect(en.adminAdvanceTitle).not.toBe(en.advanceTitle);
+    expect(en.adminAdvanceBlocked).not.toBe(en.advanceBlocked);
+    expect(th.adminAdvanceTitle).not.toBe(th.advanceTitle);
+    expect(th.adminAdvanceBlocked).not.toBe(th.advanceBlocked);
+    // 📌 the classes line does NOT repeat the promise below it — the owner's approval covers that omission
+    expect(en.adminAdvanceClasses).not.toMatch(/yours to handle/i);
     // the subject's name is a placeholder, not a fixed word — both languages carry it
     expect(en.adminTitle).toContain("{name}");
     expect(th.adminTitle).toContain("{name}");

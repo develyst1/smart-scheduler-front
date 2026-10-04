@@ -253,5 +253,110 @@
         ]
       }
     ]
+  },
+  {
+    "id": "A18",
+    "what": "🔴 TASK-651 (F4) — one admin key swapped back to the TEACHER's string: the admin is told THEY are recorded as away",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "                ? t(\"teacherLeave.adminAdvanceTitle\", { date: date, name: subject.name })",
+            "to": "                ? t(\"teacherLeave.advanceTitle\", { date: date })"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A19",
+    "what": "🔴 TASK-651 (F4) — the BLOCKED line reverts: \"booked with YOU that day\", said to the admin",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "              {subject ? t(\"teacherLeave.adminAdvanceBlocked\", { name: subject.name }) : t(\"teacherLeave.advanceBlocked\")}",
+            "to": "              {t(\"teacherLeave.advanceBlocked\")}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A20",
+    "what": "🔴 TASK-651 (F4) — the CLASSES line reverts to \"an admin will handle them\", on the admin's own screen",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "                    ? t(\"teacherLeave.adminAdvanceClasses\", { n: done.bookings?.length ?? 0, name: subject.name })",
+            "to": "                    ? t(\"teacherLeave.advanceClasses\", { n: done.bookings?.length ?? 0 })"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A21",
+    "what": "⚠️ TASK-651 (F4) — the EMPTY-day line reverts to \"with YOU\"",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "                {subject ? t(\"teacherLeave.adminAdvanceNoClasses\", { name: subject.name }) : t(\"teacherLeave.advanceNoClasses\")}",
+            "to": "                {t(\"teacherLeave.advanceNoClasses\")}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A22",
+    "what": "🔴 TASK-651 (F5) — the cancel warning comes back to the ADMIN door, where there are no ticks at all",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "        {!advance && !subject && (",
+            "to": "        {!advance && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A23",
+    "what": "⚠️ TASK-651 (F5) — the fix overreaches and silences the warning on the TEACHER's own door too (half a rule)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "        {!advance && !subject && (",
+            "to": "        {false && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A24",
+    "what": "⚠️ TASK-651 — an approved THAI string is quietly replaced by the English one",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    adminAdvanceBlocked: \"จะไม่มีการจองคาบใหม่กับ {name} ในวันนั้น\",",
+            "to": "    adminAdvanceBlocked: \"No new class can be booked with {name} that day.\","
+          }
+        ]
+      }
+    ]
   }
 ]
