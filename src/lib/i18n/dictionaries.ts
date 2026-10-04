@@ -542,8 +542,10 @@ const en = {
     adminTitle: "Record leave for {name}",
     adminSubject: "Whose leave this is",
     // 🔴 FUTURE ONLY, said as a fact about the act rather than as a restriction on the reader.
+    // 🔻 TASK-611 review, @Sober's wording: *"nobody is told they are"* could be read as "nobody is told they are
+    // BOOKED". ✅ APPROVED in his words.
     adminHint:
-      "Recording leave for {name} blocks their whole day for new bookings. Classes already booked that day are not cancelled, and nobody is told they are — you will see the list once the day is recorded.",
+      "Recording leave for {name} blocks their whole day for new bookings. Classes already booked that day are not cancelled and no family has been told anything — you will see the list once the day is recorded.",
     // ⚠️ The refusal NAMES WHAT TO DO INSTEAD. 🚫 Never "that is not allowed": a reason with no next step is a dead end
     // with a caption.
     adminPastRefused:
@@ -553,7 +555,10 @@ const en = {
     // an ADMIN who believes it will not phone the families — worse, because the admin was the one about to act.*
     adminNothingCancelled:
       "NOTHING HAS BEEN CANCELLED. Those classes are still on the schedule and no family has been told — they are yours to handle one by one, and until you do, treat them as going ahead.",
+    // 🔴 TASK-611 §2 — TWO sentences, chosen by the COUNT in the answer, 🚫 never by which door was used.
+    // ✅ Both approved by @Sober (the second is his wording): it names WHY and it names WHO ACTS.
     adminDoneTeacherTold: "{name} has been told about this day.",
+    adminDoneTeacherNotTold: "{name} has not been told — their LINE account is not linked. You will need to tell them yourself.",
     adminSubmit: "Block this day for {name}",
   },
   // REQ-101 (TASK-429) — the ECA/Free/KOL Manage-plan page
@@ -1065,6 +1070,12 @@ const en = {
     groupSwapTitle: "Swap the teacher on {name}",
     groupSwapFromHereOn: "From this date on (every later session of the group)",
     groupSwapNoNotice: "No message is sent to families or the coach — tell them yourself.",
+    // 🔴 TASK-632 (BE) → TASK-634 — the optional rate on a group swap. 📝 DRAFT (Fern, TASK-634); @Sober owns the copy.
+    // 🔑 The label says WHOSE rate and FOR WHAT, because the same coach can cost a different amount on another series.
+    groupSwapRate: "{name}'s rate for this group (per session)",
+    // 🔑 The hint answers the only question an admin has here — *do I have to fill this in?* — and it says WHEN they do,
+    // 🚫 without naming `seriesRateOf` or anything else they cannot see.
+    groupSwapRateHint: "Leave this empty unless the swap is refused for a missing rate — that happens when this group has never paid this coach before.",
     groupSwapOk: "Teacher swapped",
     inGroup: "In group: {name}",
     // REQ-095 Stage 2b (TASK-400) — the walk-in seat
@@ -2581,13 +2592,15 @@ const th: typeof en = {
     adminTitle: "บันทึกวันลาของ {name}",
     adminSubject: "บันทึกวันลาให้ใคร",
     adminHint:
-      "การบันทึกวันลาของ {name} จะปิดรับจองคาบใหม่ทั้งวันนั้น — คาบที่จองไว้แล้วจะไม่ถูกยกเลิกและยังไม่มีการแจ้งผู้ปกครอง เมื่อบันทึกแล้วระบบจะแสดงรายการคาบให้ดู",
+      "การบันทึกวันลาของ {name} จะปิดรับจองคาบใหม่ทั้งวันนั้น — คาบที่จองไว้แล้วจะไม่ถูกยกเลิก และยังไม่มีการแจ้งผู้ปกครองเรื่องใด ๆ เมื่อบันทึกแล้วระบบจะแสดงรายการคาบให้ดู",
     adminPastRefused:
       "ประตูนี้ใช้บันทึกวันลาล่วงหน้าเท่านั้น ถ้าเป็นวันนี้หรือวันที่ผ่านมาแล้ว ต้องจัดการคาบทีละคาบในหน้าปฏิทิน เพราะการยกเลิกคาบจะมีการแจ้งผู้ปกครองทุกครอบครัว",
     adminPastRefusedAction: "เลือกวันหลังจากวันนี้",
     adminNothingCancelled:
       "ยังไม่มีการยกเลิกคาบใด คาบเหล่านั้นยังอยู่ในตารางและยังไม่ได้แจ้งผู้ปกครอง — ต้องจัดการทีละคาบเอง และจนกว่าจะจัดการ ให้ถือว่าคาบยังสอนตามปกติ",
     adminDoneTeacherTold: "ระบบแจ้ง {name} เรื่องวันลานี้แล้ว",
+    // 📝 DRAFT (Fern, TASK-611 §2) — the Thai for @Sober's new sentence: บอกว่าทำไม และบอกว่าใครต้องทำต่อ
+    adminDoneTeacherNotTold: "ระบบยังไม่ได้แจ้ง {name} เพราะบัญชี LINE ยังไม่ได้ผูก — ต้องแจ้งครูเองค่ะ",
     adminSubmit: "ปิดรับจองวันนั้นของ {name}",
   },
   otherSeries: {
@@ -3017,6 +3030,9 @@ const th: typeof en = {
     groupSwapTitle: "เปลี่ยนครูของ {name}",
     groupSwapFromHereOn: "ตั้งแต่วันนี้เป็นต้นไป (ทุกคาบถัดไปของกลุ่ม)",
     groupSwapNoNotice: "ระบบไม่ส่งข้อความถึงผู้ปกครองหรือโค้ช — กรุณาแจ้งเอง",
+    // 📝 DRAFT (Fern, TASK-634)
+    groupSwapRate: "ค่าสอนของ {name} สำหรับกลุ่มนี้ (ต่อคาบ)",
+    groupSwapRateHint: "ไม่ต้องกรอก ยกเว้นระบบปฏิเสธเพราะไม่มีค่าสอน — จะเกิดเมื่อกลุ่มนี้ยังไม่เคยจ่ายค่าสอนให้ครูคนนี้",
     groupSwapOk: "เปลี่ยนครูแล้ว",
     inGroup: "อยู่ในกลุ่ม: {name}",
     walkInSeat: "ที่นั่ง walk-in",

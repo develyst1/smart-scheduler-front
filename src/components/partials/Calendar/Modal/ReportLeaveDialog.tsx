@@ -57,7 +57,7 @@ export default function ReportLeaveDialog({
   subject?: { id: string; name: string };
 }) {
   const t = useT();
-  const onBehalf = true;
+  const onBehalf = subject != null;
   const leave = useReportOwnLeave();
   const adminLeave = useReportTeacherLeave();
   const [date, setDate] = useState(initialDate);
@@ -150,9 +150,25 @@ export default function ReportLeaveDialog({
             <Alert color="orange" variant="light" icon={<AlertTriangle size={15} />} data-leave-nothing-cancelled>
               {subject ? t("teacherLeave.adminNothingCancelled") : t("teacherLeave.advanceNothingCancelled")}
             </Alert>
-            {subject && (
-              <Text size="xs" c="dimmed" data-leave-teacher-told>
-                {t("teacherLeave.adminDoneTeacherTold", { name: subject.name })}
+            {/**
+              * 🔴 **TASK-611 §2 — the defect this replaces was mine, and it was the same error as the line above it.**
+              * This used to render on `subject &&` — i.e. on every admin use — so for an **unlinked** coach the screen
+              * said *"{name} has been told about this day"* and **it was false.** 🔑 *I wrote the admin's "nothing has
+              * been cancelled" because an admin who believes the families were told will not phone them — and then the
+              * next line made the admin believe the COACH was told. Same consequence, same reader.*
+              * ▶️ **It is read from the ANSWER's count now, never re-derived from which door was used.** And the THIRD
+              * state is deliberate: **`undefined` = we were not told whether the notice went, so the screen says
+              * nothing about it** — 🚫 printing either sentence there would be a guess wearing a fact's clothes.
+              */}
+            {subject && typeof done.teacherNotified === "number" && (
+              <Text
+                size="xs"
+                c={done.teacherNotified > 0 ? "dimmed" : "orange"}
+                data-leave-teacher-told={done.teacherNotified > 0 ? "yes" : "no"}
+              >
+                {done.teacherNotified > 0
+                  ? t("teacherLeave.adminDoneTeacherTold", { name: subject.name })
+                  : t("teacherLeave.adminDoneTeacherNotTold", { name: subject.name })}
               </Text>
             )}
             <Group justify="flex-end">

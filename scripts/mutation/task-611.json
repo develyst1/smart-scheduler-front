@@ -35,7 +35,12 @@
     "files": [
       {
         "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
-        "edits": [{ "from": "  const refusedForAdmin = onBehalf && !advance;", "to": "  const refusedForAdmin = false;" }]
+        "edits": [
+          {
+            "from": "  const refusedForAdmin = onBehalf && !advance;",
+            "to": "  const refusedForAdmin = false;"
+          }
+        ]
       }
     ]
   },
@@ -45,7 +50,12 @@
     "files": [
       {
         "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
-        "edits": [{ "from": "        ) : onBehalf ? null : (", "to": "        ) : (" }]
+        "edits": [
+          {
+            "from": "        ) : onBehalf ? null : (",
+            "to": "        ) : ("
+          }
+        ]
       }
     ]
   },
@@ -100,7 +110,12 @@
     "files": [
       {
         "file": "src/components/partials/Teachers/TeacherRowActions.tsx",
-        "edits": [{ "from": "  const canRecordLeave = can(\"action:calendar.status\");", "to": "  const canRecordLeave = true;" }]
+        "edits": [
+          {
+            "from": "  const canRecordLeave = can(\"action:calendar.status\");",
+            "to": "  const canRecordLeave = true;"
+          }
+        ]
       }
     ]
   },
@@ -155,7 +170,12 @@
     "files": [
       {
         "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
-        "edits": [{ "from": "  const onBehalf = subject != null;", "to": "  const onBehalf = true;" }]
+        "edits": [
+          {
+            "from": "  const onBehalf = subject != null;",
+            "to": "  const onBehalf = true;"
+          }
+        ]
       }
     ]
   },
@@ -176,14 +196,59 @@
   },
   {
     "id": "A14",
-    "what": "the teacher is no longer told on screen that the day was recorded for them",
+    "what": "🔴 §2 THE DEFECT RETURNS — the notice line renders on the DOOR again, so an unlinked coach is reported as told",
     "files": [
       {
         "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
         "edits": [
           {
-            "from": "            {subject && (\n              <Text size=\"xs\" c=\"dimmed\" data-leave-teacher-told>\n                {t(\"teacherLeave.adminDoneTeacherTold\", { name: subject.name })}\n              </Text>\n            )}\n",
-            "to": ""
+            "from": "            {subject && typeof done.teacherNotified === \"number\" && (",
+            "to": "            {subject && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A15",
+    "what": "🔴 §2 the two sentences are SWAPPED — a coach who was told is reported as not told, and the reverse",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "                {done.teacherNotified > 0",
+            "to": "                {done.teacherNotified === 0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A16",
+    "what": "⚠️ §2 an ABSENT count is read as a zero — the screen would claim nobody was told when nobody said so",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+        "edits": [
+          {
+            "from": "typeof done.teacherNotified === \"number\" &&",
+            "to": "(done.teacherNotified ?? 0) >= 0 &&"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A17",
+    "what": "⚠️ §2 the not-told sentence stops naming WHO ACTS (it becomes the told one with a negation)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    adminDoneTeacherNotTold: \"{name} has not been told — their LINE account is not linked. You will need to tell them yourself.\",",
+            "to": "    adminDoneTeacherNotTold: \"{name} has not been told.\","
           }
         ]
       }

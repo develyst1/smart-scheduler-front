@@ -966,6 +966,18 @@ export interface OwnLeaveResult {
   alreadyRecorded?: boolean;
   /** The classes already booked on that day. 🚫 Nothing was done to them: an admin handles them by hand. */
   bookings?: LeaveDayClass[];
+  /**
+   * 🔴 **TASK-611 §2 — how many coaches were actually TOLD** (@Jason's door returns it; an UNLINKED coach is a SKIPPED
+   * row and no message). **The name came from @Sober's review, not from reading the back repo.**
+   * ⚠️ **OPTIONAL on purpose, and ABSENT is NOT zero.** 🔑 **@Sober checked the server: it ALWAYS sends this field on
+   * the advance answer — `0` on the teacher's own door rather than omitting it.** ⇒ **"absent" means exactly one thing
+   * in practice: a FRONT END newer than the SERVER it is talking to**, i.e. the window where FE lands before BE. Our
+   * deploy ships them together so that window should not exist — **and the screen still handles it, because a
+   * procedure is not a guarantee.** 🚫 Do not delete this as paranoia: *it protects a named window, not a mood.*
+   * (The screen says nothing at all about the notice then: *"we were not told whether it went" and "it did not go"
+   * are different facts, and only one of them is safe to print.*)
+   */
+  teacherNotified?: number;
 }
 
 /** REQ-092 Stage 4 (TASK-387) — a role: a named bundle of keys (registry order, menus then actions), LIVE for its holders. */

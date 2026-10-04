@@ -711,7 +711,13 @@ export const createGroupSeries = async (input: GroupSeriesInput): Promise<GroupS
 /** TASK-398 — swap the teacher on a GROUP row (`fromHereOn` ⇒ every later row too; the seats follow server-side). 🔴 Sends no notice. */
 export const swapGroupTeacher = async (id: string, input: GroupTeacherSwapInput) => {
   if (useMock) return mock.swapGroupTeacher(id, input);
-  const { data } = await api.patch<MoveBookingResponse>(`/bookings/${id}/group-teacher`, { teacherId: input.teacherId, fromHereOn: input.fromHereOn });
+  // 🔴 TASK-634 — `rateMinor` rides ONLY when the screen has one. 🚫 Never as `undefined`: the key-59 gate reads the
+  // BODY, so a key that is merely PRESENT would cost an ordinary swap a permission it does not need.
+  const { data } = await api.patch<MoveBookingResponse>(`/bookings/${id}/group-teacher`, {
+    teacherId: input.teacherId,
+    fromHereOn: input.fromHereOn,
+    ...(input.rateMinor != null ? { rateMinor: input.rateMinor } : {}),
+  });
   return dtoToBooking(data.booking);
 };
 

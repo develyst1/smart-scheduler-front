@@ -102,6 +102,8 @@ beforeEach(() => {
     cancelled: 0,
     bookingIds: [],
     familiesNotified: 0,
+    // 🔴 TASK-611 §2 — the count the told/not-told line is read FROM. The default is a LINKED coach (1 told).
+    teacherNotified: 1,
     leave: { date: FUTURE, reason: "ไปอบรม" },
     alreadyRecorded: false,
     bookings: [{ id: "bk-9", date: FUTURE, startTime: "09:00:00", endTime: "09:45:00", status: "CONFIRMED", bookingType: "COURSE_PACKAGE" }],
@@ -196,11 +198,89 @@ describe("🔴 TASK-611 — the ADMIN door, clicked", () => {
     // 🔑 written for THIS reader: the admin is told the classes are THEIRS to handle, which the teacher's wording does not say
     expect(box.textContent).toMatch(/yours to handle/i);
     expect(box.textContent).not.toMatch(/please treat them as going ahead until an admin tells you/i);
-    // the teacher is told, and the screen says so by name
+    // the teacher IS told here (the fixture's count is 1), and the screen says so by name
     const told = document.querySelector("[data-leave-teacher-told]") as HTMLElement;
+    expect(told.getAttribute("data-leave-teacher-told")).toBe("yes");
     expect(told.textContent).toContain("ครูเอ");
+    expect(told.textContent).toMatch(/has been told/i);
     // 🚫 and it never claims a cancellation count
     expect((document.querySelector("[data-leave-advance]") as HTMLElement).textContent).not.toMatch(/cancelled \d|\d cancelled/i);
+  });
+});
+
+/**
+ * 🔴 **TASK-611 §2 — the notice line is read from the ANSWER'S COUNT, by value, in all three states.**
+ *
+ * **The defect this pins was mine:** the line rendered on `subject &&` — on **every** admin use — so for an
+ * **unlinked** coach the screen said *"{name} has been told about this day"* and it was **false**. 🔑 *It was the same
+ * error as the line directly above it, which I had got right for the same reason: an admin who believes the message
+ * went does not make the call.*
+ * 📌 **Three states, because there are three facts** — told · not told · **not known**. The third is not cosmetic:
+ * 🔑 *"we were not told whether it went" and "it did not go" are different facts, and only one is safe to print.*
+ */
+describe("🔴 TASK-611 §2 — told, NOT told, and not known", () => {
+  const runAdmin = async () => {
+    const user = userEvent.setup();
+    mount(FUTURE, SUBJECT);
+    await waitFor(() => expect(document.querySelectorAll("[data-leave-advance-notice]").length).toBe(1));
+    await typeReason(user);
+    await user.click(submitBtn());
+    await waitFor(() => expect(document.querySelectorAll("[data-leave-nothing-cancelled]").length).toBe(1));
+  };
+
+  it("🔴 a count of 0 ⇒ the told line is GONE and the screen says WHO must act", async () => {
+    answer = { ...(answer as Record<string, unknown>), teacherNotified: 0 };
+    await runAdmin();
+
+    const line = document.querySelector("[data-leave-teacher-told]") as HTMLElement;
+    expect(line).toBeTruthy();
+    // 🔴 the false sentence must not be on screen in ANY form
+    expect(line.getAttribute("data-leave-teacher-told")).toBe("no");
+    expect(document.body.textContent).not.toMatch(/has been told about this day/i);
+    // ✅ and the true one names why, and who does the telling
+    expect(line.textContent).toMatch(/has not been told/i);
+    expect(line.textContent).toMatch(/line account is not linked/i);
+    expect(line.textContent).toMatch(/tell them yourself/i);
+    expect(line.textContent).toContain("ครูเอ");
+  });
+
+  it("✅ a count of 2 ⇒ the told line, and the not-told sentence is absent", async () => {
+    answer = { ...(answer as Record<string, unknown>), teacherNotified: 2 };
+    await runAdmin();
+
+    const line = document.querySelector("[data-leave-teacher-told]") as HTMLElement;
+    expect(line.getAttribute("data-leave-teacher-told")).toBe("yes");
+    expect(line.textContent).toMatch(/has been told/i);
+    expect(document.body.textContent).not.toMatch(/has not been told/i);
+  });
+
+  it("🔑 the count ABSENT ⇒ NEITHER sentence — a missing count is not a zero", async () => {
+    const { teacherNotified, ...withoutCount } = answer as Record<string, unknown>;
+    void teacherNotified;
+    answer = withoutCount;
+    await runAdmin();
+
+    // 🚫 nothing at all is claimed about the notice
+    expect(document.querySelectorAll("[data-leave-teacher-told]").length).toBe(0);
+    // 🔑 Matched on the SENTENCES, not on the words they share with the paragraph above: the admin notice itself says
+    // *"no family HAS BEEN TOLD"*, so a loose /has been told/ matched the right screen for the wrong reason.
+    expect(document.body.textContent).not.toMatch(/told about this day/i);
+    expect(document.body.textContent).not.toMatch(/has not been told/i);
+    // ✅ and the rest of the answer is still on screen — the day IS recorded
+    expect(document.body.textContent).toMatch(/nothing has been cancelled/i);
+  });
+
+  it("🚫 the TEACHER's own door never shows either sentence, whatever the count says", async () => {
+    answer = { ...(answer as Record<string, unknown>), teacherNotified: 0 };
+    const user = userEvent.setup();
+    mount(FUTURE); // 🚫 no subject
+    await waitFor(() => expect(document.querySelectorAll("[data-leave-advance-notice]").length).toBe(1));
+    await typeReason(user);
+    await user.click(submitBtn());
+    await waitFor(() => expect(document.querySelectorAll("[data-leave-nothing-cancelled]").length).toBe(1));
+
+    expect(document.querySelectorAll("[data-leave-teacher-told]").length).toBe(0);
+    expect(document.body.textContent).not.toMatch(/told about this day|has not been told/i);
   });
 });
 
@@ -241,17 +321,28 @@ describe("✅ TASK-611 — the TEACHER's own door is UNCHANGED", () => {
  * exist, differ, and carry the promises the task names** — not the final wording.
  */
 describe("📋 TASK-611 — the admin door's strings, both languages, counted", () => {
-  const KEYS = ["adminTitle", "adminSubject", "adminHint", "adminPastRefused", "adminPastRefusedAction", "adminNothingCancelled", "adminDoneTeacherTold", "adminSubmit"] as const;
+  const KEYS = [
+    "adminTitle",
+    "adminSubject",
+    "adminHint",
+    "adminPastRefused",
+    "adminPastRefusedAction",
+    "adminNothingCancelled",
+    "adminDoneTeacherTold",
+    // 🔴 TASK-611 §2 — the ninth: the other half of the notice line. @Sober's English, my Thai draft.
+    "adminDoneTeacherNotTold",
+    "adminSubmit",
+  ] as const;
 
   it("🔑 every string exists in BOTH languages and they are not the same text", () => {
     const en = dictionaries.en.teacherLeave as unknown as Record<string, string>;
     const th = dictionaries.th.teacherLeave as unknown as Record<string, string>;
     const pairs = KEYS.map((k) => [k, en[k], th[k]] as const);
     // 🚫 a loop that silently covered one language would pass: the COUNT is asserted, not assumed
-    expect(pairs.length).toBe(8);
-    expect(pairs.filter(([, e]) => typeof e === "string" && e.length > 0).length).toBe(8);
-    expect(pairs.filter(([, , th2]) => typeof th2 === "string" && th2.length > 0).length).toBe(8);
-    expect(pairs.filter(([, e, th2]) => e !== th2).length).toBe(8);
+    expect(pairs.length).toBe(9);
+    expect(pairs.filter(([, e]) => typeof e === "string" && e.length > 0).length).toBe(9);
+    expect(pairs.filter(([, , th2]) => typeof th2 === "string" && th2.length > 0).length).toBe(9);
+    expect(pairs.filter(([, e, th2]) => e !== th2).length).toBe(9);
     // the row action too, in both
     expect((dictionaries.en.teachers as unknown as Record<string, string>).actRecordLeave.length).toBeGreaterThan(0);
     expect((dictionaries.th.teachers as unknown as Record<string, string>).actRecordLeave.length).toBeGreaterThan(0);
@@ -270,6 +361,17 @@ describe("📋 TASK-611 — the admin door's strings, both languages, counted", 
     expect(th.adminPastRefusedAction).toContain("หลังจากวันนี้");
     // 🚫 and neither language tells an admin they lack a permission: the control is HIDDEN when they do
     expect(`${en.adminPastRefused} ${th.adminPastRefused}`).not.toMatch(/permission|สิทธิ์/i);
+    // 🔴 TASK-611 §2 — the not-told sentence names WHY and WHO ACTS, in both languages
+    expect(en.adminDoneTeacherNotTold).toMatch(/not been told/i);
+    expect(en.adminDoneTeacherNotTold).toMatch(/not linked/i);
+    expect(en.adminDoneTeacherNotTold).toMatch(/yourself/i);
+    expect(th.adminDoneTeacherNotTold).toContain("ยังไม่ได้ผูก");
+    expect(th.adminDoneTeacherNotTold).toContain("แจ้งครูเอง");
+    // 🚫 and the two sentences are different strings in BOTH languages — not one reused with a negation
+    expect(en.adminDoneTeacherNotTold).not.toBe(en.adminDoneTeacherTold);
+    expect(th.adminDoneTeacherNotTold).not.toBe(th.adminDoneTeacherTold);
+    // 🔻 @Sober's reworded hint: "no family has been told anything", so it cannot read as "told they are booked"
+    expect(en.adminHint).toMatch(/no family has been told anything/i);
     // the subject's name is a placeholder, not a fixed word — both languages carry it
     expect(en.adminTitle).toContain("{name}");
     expect(th.adminTitle).toContain("{name}");

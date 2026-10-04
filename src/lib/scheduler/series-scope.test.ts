@@ -248,10 +248,19 @@ describe("🔴 TASK-592 — the cover's permission, and what it must NOT narrow"
   });
 
   it("🔑 ONE cover entry point exists, derived — so no other door can show a dead box", () => {
-    // the only FE sender of a one-date teacher swap is this dialog; the GROUP swap has no `onDate` and no rate at all
+    // the only FE sender of a one-date teacher swap is this dialog; the GROUP swap has no `onDate`
     const group = codeOf("src/components/partials/Calendar/Modal/GroupSwapDialog.tsx");
     expect(group).not.toContain("onDate");
-    expect(group).not.toContain("rateMinor");
+    // 🔻 TASK-634, declared: the group swap now DOES carry an optional `rateMinor` — and the claim this assertion was
+    // making is still true, which is why it is reworded rather than deleted. 🔑 **What matters is that there is exactly
+    // ONE door that can show a dead COVER box, and the group swap is still not one of them:** a cover is a ONE-DATE
+    // swap (`onDate`), the group door has no such scope, and its rate box is **optional and never blocks the act**.
+    // ⇒ 🚫 it cannot present the refusal this section is about. The rate is an ANSWER here, not a gate.
+    expect(group).toContain("rateMinor");
+    expect(group).not.toContain("coverRateRequired");
+    expect(group).not.toContain("coverBlocked");
+    // 🔑 and the group box cannot be REQUIRED — an optional field that blocks Save is the dead end, whatever it is called
+    expect(group).not.toMatch(/required[\s\S]{0,120}data-group-swap-rate/);
     expect(dialogs).toContain("swapBody(seriesRef, series.teacherId, to)");
     // and the dialog is opened from exactly one place
     const modal = codeOf("src/components/partials/OtherSeries/OtherSeriesModal.tsx");

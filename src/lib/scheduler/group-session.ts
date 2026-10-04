@@ -79,4 +79,13 @@ export const groupSeriesBody = (input: GroupSeriesInput) => ({
 export interface GroupTeacherSwapInput {
   teacherId: string;
   fromHereOn: boolean;
+  /**
+   * 🔴 **TASK-632 (BE) → TASK-634 — the incoming coach's rate for this series, in satang. OPTIONAL.**
+   * The server resolves `input.rateMinor ?? seriesRateOf(…)` ONCE and refuses the swap when both are null ⇒ 🔑 **this
+   * field is the ANSWER to that refusal, not a second way to price a coach.** A coach the series has already paid
+   * needs nothing typed; **a coach NEW to the series — which is what a cover IS — cannot be priced any other way.**
+   * ⚠️ Carrying it costs `action:bookings.coach-rate` (key 59): the server's gate reads the BODY, so the field is
+   * absent without the key rather than sent and refused.
+   */
+  rateMinor?: number;
 }

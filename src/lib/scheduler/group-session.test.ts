@@ -149,8 +149,21 @@ describe("§3 — the doors and the bodies", () => {
 
   it("swap teacher: its own route, `{ teacherId, fromHereOn }`, behind booking-edit, and the one line that no message is sent", () => {
     expect(modal).toContain("onClick={() => setSwapOpen(true)}");
-    expect(swapDlg).toContain("await swap.mutateAsync({ id: booking.id, input: { teacherId, fromHereOn } });");
-    expect(svc).toContain("api.patch<MoveBookingResponse>(`/bookings/${id}/group-teacher`, { teacherId: input.teacherId, fromHereOn: input.fromHereOn })");
+    // 🔻 TASK-632 (BE) → TASK-634, declared: the body gained ONE OPTIONAL field — the incoming coach's rate — because
+    // the server refuses a swap it cannot price and prices from what THIS series has already paid that coach ⇒ a coach
+    // NEW to the series (which is what a cover IS) could not be swapped at all. 🔑 *The refusal is right; a refusal with
+    // no answer is not.*
+    // ✅ What this pin protects is unchanged and now stronger: **ONE call, and `rateMinor` RIDES ONLY WHEN TYPED** —
+    // 🚫 never as `undefined`, because the server's key-59 gate reads the BODY and a present key would cost an ordinary
+    // swap a permission it does not need.
+    expect(swapDlg).toContain("await swap.mutateAsync({ id: booking.id, input: { teacherId, fromHereOn, ...(rateMinor != null ? { rateMinor } : {}) } });");
+    expect(swapDlg).toContain('const rateMinor = canRate && rateBaht !== "" ? bahtToMinor(rateBaht) : undefined;');
+    expect(svc).toContain("...(input.rateMinor != null ? { rateMinor: input.rateMinor } : {}),");
+    // 🔴 and the field is gated on the key the SERVER reads, by the shared constant — 🚫 not a literal of its own
+    expect(swapDlg).toContain("const canRate = can(COACH_RATE_KEY);");
+    expect(swapDlg).toContain("{canRate && (");
+    // 🚫 nothing seeds the box: `value` is the admin's own input and nothing else
+    expect(swapDlg).toContain("value={rateBaht}");
     expect(swapDlg).toContain('t("booking.groupSwapNoNotice")');
     expect(dictionaries.en.booking.groupSwapNoNotice).toContain("No message is sent");
     expect(dictionaries.th.booking.groupSwapNoNotice).toContain("ไม่ส่งข้อความ");

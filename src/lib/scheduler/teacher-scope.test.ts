@@ -210,7 +210,9 @@ describe("§6 — `TEACHER_LEAVE`: read everywhere, offered nowhere", () => {
     // "nothing has been cancelled" written for an admin · the teacher-was-told line · the submit). 📝 All DRAFT: @Sober
     // owns this copy and the owner sees it before it ships. 🔑 They are SEPARATE keys, not reworded teacher strings:
     // *the widening must be invisible to the person it was not for.*
-    expect(Object.keys(en).length).toBe(26); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
+    // 🔻 TASK-611 §2, declared: 26 → 27. @Sober caught that the notice line claimed the coach was told on EVERY admin
+    // use, which is false for an unlinked coach ⇒ it is TWO sentences now, chosen by the count in the ANSWER.
+    expect(Object.keys(en).length).toBe(27); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     for (const k of ["teacherLink", "teacherLinkHint", "teacherNone", "teacherLine"]) {
       expect((dictionaries.en.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);

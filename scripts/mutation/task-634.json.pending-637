@@ -1,0 +1,6 @@
+{
+  "tests": [
+    "src/components/partials/Calendar/Modal/group-swap-rate.dom.test.tsx",
+    "src/components/partials/Calendar/Modal/group-swap-rate-no-key.dom.test.tsx"
+  ]
+}
