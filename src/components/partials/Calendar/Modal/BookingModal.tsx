@@ -30,7 +30,21 @@ import { inClashPair } from "@/lib/scheduler/group-clash";
 import { leaveClaimKey } from "@/lib/scheduler/leave-claim";
 import { BookingTypeChip, CheckinSourceChip, StatusChip } from "@/components/common/BookingBadges";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
-import StudentSelect, { type StudentSelectValue } from "@/components/common/StudentSelect";
+import StudentSelect, { isParentPhoneShaped, type StudentSelectValue } from "@/components/common/StudentSelect";
+
+/**
+ * 🔴 **TASK-654 §2 — does this อื่นๆ booking need a parent phone before Save opens?**
+ *
+ * **Exported and pure, so the five cases are driven by VALUE** rather than through the whole create form — the same
+ * shape as this file's other exported rules (`canOfferConfirm`). 🔑 The three states it distinguishes are the point:
+ * **no student at all** (allowed — an อื่นๆ block needs nobody), **an EXISTING student** (never asked: their household
+ * already holds a phone, and asking would invent a requirement the server does not have), and **a NEW student**
+ * (asked, by the SERVER's own rule).
+ * ✅ `isParentPhoneShaped` is imported from `StudentSelect`, which mirrors `smart-scheduler-back/src/lib/phone.ts`.
+ * 🚫 Never a hand-rolled `!!phone` or length test: *two rules that drift are worse than one that refuses.*
+ */
+export const otherNewStudentNeedsPhone = (student: StudentSelectValue | null | undefined): boolean =>
+  !!student && !student.id && !isParentPhoneShaped(student.phone);
 import EligibleStudentSelect from "@/components/common/EligibleStudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
@@ -1355,7 +1369,20 @@ function CreateForm({
   } else if (isOther) {
     // SPEC-070 / REQ-078 — every RULE is in `evaluateOtherBooking`; this branch only shapes the payload.
     const [firstTeacher, ...additional] = otherDraft.teacherIds;
-    valid = otherEval.problemKeys.length === 0 && !!firstTeacher && !!startTime;
+    /**
+     * 🔴 **TASK-654 §2 — a NEW student on this tab needs a parent phone before Save opens.**
+     * The อื่นๆ picker is not `required` (a typed name must never be silently dropped — TASK-662 Q3), so Save stayed
+     * enabled while the new student's phone was invalid ⇒ **the field's error and the server's refusal both reached
+     * the admin, saying the same thing twice in two wordings.**
+     * 🔑 **The field is the normal path and the server is the BACKSTOP** — with Save shut, the server's sentence simply
+     * never arrives here, so the two-wordings question disappears instead of being managed.
+     * ✅ **`isParentPhoneShaped` is the SERVER's rule, imported** (`lib/phone.ts` → `isPhoneShaped`, floor 9).
+     * 🚫 Never a hand-rolled `!!phone` or a length check: *two rules that drift are worse than one that refuses.*
+     * 🚫 Unchanged: NO student at all is still allowed, and an EXISTING student (has `id`) is never asked for a phone —
+     * their household already holds one, and asking would invent a requirement the server does not have.
+     */
+    const newStudentPhoneMissing = otherNewStudentNeedsPhone(student);
+    valid = otherEval.problemKeys.length === 0 && !!firstTeacher && !!startTime && !newStudentPhoneMissing;
     if (firstTeacher) {
       const ent = otherDraft.consume ? (otherDraft.entitlementId ?? "") : "";
       input = {
@@ -1840,7 +1867,7 @@ function CreateForm({
       )}
 
       {submitError && (
-        <Alert color="red" icon={<AlertTriangle size={16} />} title={t("booking.dateRejectedTitle")}>
+        <Alert color="red" icon={<AlertTriangle size={16} />} title={t("booking.saveRefusedTitle")}>
           {submitError}
         </Alert>
       )}

@@ -1156,7 +1156,12 @@ const en = {
     voucherContext: "{remaining}h remaining · expires {expiry}",
     voucherNoTeacherPick: "A voucher booking doesn't pick a teacher — this session is with {teacher}.",
     pickTime: "Select a time",
-    dateRejectedTitle: "Can't book this date",
+    // 🔴 TASK-654 §1 — RENAMED from `dateRejectedTitle`. It sits over EVERY refusal from Save (a missing parent
+    // phone, a suspended household, a clash, an ended course), and it said the DATE was the problem ⇒ 🔑 *the screen
+    // sent the admin to fix the wrong thing.* The body beneath already carries the real reason, unchanged.
+    // ✅ APPROVED (owner, verbatim) — 🚫 never "improved": the key is renamed BECAUSE a key still called
+    // `dateRejected` that no longer says "date" is a lie for the next reader.
+    saveRefusedTitle: "Couldn't save",
   },
 
   bookings: {
@@ -3123,7 +3128,8 @@ const th: typeof en = {
     voucherContext: "เหลือ {remaining} ชม. · หมดอายุ {expiry}",
     voucherNoTeacherPick: "การจองด้วยวอยเชอร์ไม่เลือกครู — คาบนี้จะเรียนกับครู {teacher}",
     pickTime: "เลือกเวลา",
-    dateRejectedTitle: "จองวันที่นี้ไม่ได้",
+    // ✅ APPROVED (owner, verbatim) — TASK-654 §1, renamed from `dateRejectedTitle`
+    saveRefusedTitle: "บันทึกไม่สำเร็จ",
   },
 
   bookings: {

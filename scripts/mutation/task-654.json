@@ -1,0 +1,87 @@
+[
+  {
+    "id": "S1",
+    "what": "🔴 the อื่นๆ Save gate is dropped — a new student with an invalid phone can submit again, and BOTH sentences reach the admin",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/BookingModal.tsx",
+        "edits": [{ "from": " && !newStudentPhoneMissing;", "to": ";" }]
+      }
+    ]
+  },
+  {
+    "id": "S2",
+    "what": "🔴 the server's rule is hand-rolled as `!!phone` — \"12\" would open Save, and two rules begin to drift",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/BookingModal.tsx",
+        "edits": [
+          {
+            "from": "  !!student && !student.id && !isParentPhoneShaped(student.phone);",
+            "to": "  !!student && !student.id && !student.phone;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S3",
+    "what": "🔴 an EXISTING student is gated too — a requirement the server does not have, on a household that already holds a phone",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/BookingModal.tsx",
+        "edits": [
+          {
+            "from": "  !!student && !student.id && !isParentPhoneShaped(student.phone);",
+            "to": "  !!student && !isParentPhoneShaped(student.phone);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S4",
+    "what": "⚠️ the NO-student case is gated — an อื่นๆ block that needs nobody could no longer be saved",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/BookingModal.tsx",
+        "edits": [
+          {
+            "from": "  !!student && !student.id && !isParentPhoneShaped(student.phone);",
+            "to": "  !student?.id && !isParentPhoneShaped(student?.phone);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S5",
+    "what": "🔴 the title reverts to the old wording — every refusal reads as if the DATE were the problem",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [{ "from": "    saveRefusedTitle: \"Couldn't save\",", "to": "    saveRefusedTitle: \"Can't book this date\"," }]
+      }
+    ]
+  },
+  {
+    "id": "S6",
+    "what": "⚠️ the THAI title reverts (a bilingual assertion satisfied by one language)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [{ "from": "    saveRefusedTitle: \"บันทึกไม่สำเร็จ\",", "to": "    saveRefusedTitle: \"จองวันที่นี้ไม่ได้\"," }]
+      }
+    ]
+  },
+  {
+    "id": "S7",
+    "what": "⚠️ the neutral title starts naming a cause again (\"Couldn't save this date\") — the body may then contradict it",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [{ "from": "    saveRefusedTitle: \"Couldn't save\",", "to": "    saveRefusedTitle: \"Couldn't save this date\"," }]
+      }
+    ]
+  }
+]
