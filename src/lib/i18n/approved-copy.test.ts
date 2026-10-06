@@ -32,37 +32,42 @@ const at = (d: Record<string, Record<string, string>>, path: string) => {
   return d[group][key];
 };
 
-/** [path, TH, EN] — copied from `COPY-REVIEW-2026-09-28.md`, which is now the reference document. */
+/**
+ * [path, TH, EN] — copied from `COPY-REVIEW-2026-09-28.md`, which is now the reference document.
+ *
+ * 🔻 **TASK-658 (REQ-112), declared — the model under three of these rows changed, so the rows changed WITH it, as ONE set the owner
+ * approved on 2026-10-06 (`COPY-REVIEW §T-658`).** ✅ A string that became FALSE is replaced, never "improved":
+ *  · **DELETED rows:** `confirmAction.leaveMsgCourseLocked` (nothing is ever locked) · `undo.previewLeaveBack` (no quota to return) ·
+ *    `undo.previewExpiry` (the Undo never moves the end date).
+ *  · **RE-APPROVED values:** `leaveMsgNoCourse` (D2 — its quota clause deleted, nothing added) · `leaveMsgCourseDeclared` (D3 — a
+ *    creation-declared leave now moves the end date one week) · `undo.leaveMsg` TH (D14 — โควตา → ยอดคงเหลือ) ·
+ *    `undo.previewNothingElse` (D13).
+ * ✅ What this file protects — the owner's words pinned BY VALUE, and *an approved string cannot drift* — is unchanged. The NEW §T-658
+ * rows are pinned in their own block below (`APPROVED_T658`).
+ */
 const APPROVED: Array<[string, string, string]> = [
   // §A — what an admin reads BEFORE recording a leave
   [
     "confirmAction.leaveMsgNoCourse",
-    "คาบนี้จะถูกบันทึกเป็นการลา คาบนี้ไม่มีคอร์สอยู่เบื้องหลัง จึงไม่ใช้โควตาลาและไม่มีคาบชดเชย ระบบจะแจ้งครูและแอดมิน",
-    "This session is recorded as leave. There is no course behind it, so no leave quota is used and no make-up session is added. The coach and the admins are told.",
-  ],
-  [
-    "confirmAction.leaveMsgCourseLocked",
-    "คาบนี้จะถูกบันทึกเป็นการลา คอร์สนี้ใช้สิทธิ์การลาครบแล้ว จึงไม่ตัดโควตาและไม่มีคาบชดเชย และจะยังล็อกการเลื่อนตารางไว้จนแอดมินปลดล็อก ระบบจะแจ้งครูและแอดมิน",
-    "This session is recorded as leave. The course has no leave left, so no leave quota is used and no make-up session is added — rescheduling stays locked until an admin unlocks it. The coach and the admins are told.",
+    "คาบนี้จะถูกบันทึกเป็นการลา คาบนี้ไม่มีคอร์สอยู่เบื้องหลัง จึงไม่มีคาบชดเชย ระบบจะแจ้งครูและแอดมิน",
+    "This session is recorded as leave. There is no course behind it, so no make-up session is added. The coach and the admins are told.",
   ],
   [
     "confirmAction.leaveMsgCourseDeclared",
-    "คาบนี้จะถูกบันทึกเป็นการลา เป็นการลาที่แจ้งไว้ตั้งแต่สร้างคอร์ส จึงไม่ตัดโควตาลา แต่ยังเพิ่มคาบชดเชยต่อท้ายให้ ระบบจะแจ้งครูและแอดมิน",
-    "This session is recorded as leave. It was declared when the course was created, so no leave quota is used — a make-up session is still added at the end. The coach and the admins are told.",
+    "คาบนี้จะถูกบันทึกเป็นการลา เป็นการลาที่แจ้งไว้ตั้งแต่สร้างคอร์ส จึงเพิ่มคาบชดเชยต่อท้ายให้ และวันสิ้นสุดคอร์สเลื่อนออกไป 1 สัปดาห์ ระบบจะแจ้งครูและแอดมิน",
+    "This session is recorded as leave. It was declared when the course was created, so a make-up session is added and the course's end date moves one week later. The coach and the admins are told.",
   ],
   // §B — the Undo body he approved trimmed, and the toast
   [
     "undo.leaveMsg",
-    "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้าโควตาของลูกค้า ระบบจะแจ้งครูว่าคาบนี้กลับมาเรียนแล้ว",
+    "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้ายอดคงเหลือของลูกค้า ระบบจะแจ้งครูว่าคาบนี้กลับมาเรียนแล้ว",
     "The session goes back to confirmed and the class returns to the family's balance. The coach is told the class is on again.",
   ],
   ["undo.done", "ย้อนรายการแล้ว", "Undone"],
   // §C — the forecast
   ["undo.previewHeading", "ถ้าไม่มีอะไรเปลี่ยนก่อนกดยืนยัน รายการนี้จะ:", "If nothing changes before you confirm, this would:"],
-  ["undo.previewLeaveBack", "คืนโควตาลาให้ลูกค้า", "return the leave to the family's quota"],
   ["undo.previewMakeupOff", "คาบชดเชยวันที่ {date} จะถูกยกเลิก", "cancel the make-up session on {date}"],
-  ["undo.previewExpiry", "เลื่อนวันหมดอายุคอร์สจาก {from} กลับเป็น {to}", "move the course expiry from {from} back to {to}"],
-  ["undo.previewNothingElse", "ไม่มีผลอื่นตามมา — ไม่คืนโควตาลา และไม่มีคาบชดเชยที่ต้องยกเลิก", "Nothing else follows — no leave is returned and no make-up is cancelled."],
+  ["undo.previewNothingElse", "ไม่มีผลอื่นตามมา — ไม่มีคาบชดเชยที่ต้องยกเลิก", "Nothing else follows — no make-up is cancelled."],
   ["undo.previewForecast", "ระบบจะตรวจอีกครั้งเมื่อกดยืนยัน จึงยังมีสิทธิ์ปฏิเสธได้", "The server checks again when you confirm, so it may still refuse."],
   ["undo.previewLoading", "กำลังตรวจว่าจะมีผลอะไรตามมา…", "Checking what this would change…"],
   [
@@ -110,16 +115,17 @@ const APPROVED: Array<[string, string, string]> = [
 const UNREVIEWED: Record<string, string> = {};
 
 describe("TASK-549 — the approved copy, by value", () => {
-  it("🔑 all 31 rows are his sentence exactly, in Thai", () => {
+  it("🔑 all 28 rows are his sentence exactly, in Thai", () => {
     for (const [path, thText] of APPROVED) expect(at(th, path)).toBe(thText);
   });
 
-  it("🔑 all 31 rows are his sentence exactly, in English", () => {
+  it("🔑 all 28 rows are his sentence exactly, in English", () => {
     for (const [path, , enText] of APPROVED) expect(at(en, path)).toBe(enText);
   });
 
-  it("the set is the whole of §A–§D2 — 31 rows, not a subset that grew quietly", () => {
-    expect(APPROVED.length).toBe(31);
+  it("the set is the whole of §A–§D2 — 28 rows, not a subset that grew quietly", () => {
+    // 🔻 TASK-658, declared: 31 → 28 — three rows were DELETED with the model they described (see the note on `APPROVED`).
+    expect(APPROVED.length).toBe(28);
     const groups = new Set(APPROVED.map(([p]) => p.split(".")[0]));
     expect([...groups].sort()).toEqual(["confirmAction", "lineAdmins", "undo"]);
   });
@@ -138,7 +144,11 @@ describe("TASK-549 — the approved copy, by value", () => {
     }
     // and any marker that IS present must name its task, so a nameless draft cannot drift in
     for (const m of raw.match(/📝 \*{0,2}DRAFT \([^)]*\)/g) ?? []) expect(/TASK-\d+/.test(m)).toBe(true);
-    expect((raw.match(/APPROVED by the owner 2026-09-28/g) ?? []).length).toBeGreaterThanOrEqual(3);
+    // 🔻 TASK-658 (REQ-112), declared: ≥3 → ≥2. Three markers sat on the leave-dialog bodies that REQ-112 replaced (their rows are
+    // re-approved 2026-10-06 and carry that marker instead); the two that remain are the Undo's. ✅ What this pin protects —
+    // that the approval RECORD stays on the page, not just the words — is unchanged, and is now ALSO held for the new set:
+    expect((raw.match(/APPROVED by the owner 2026-09-28/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect((raw.match(/APPROVED \(owner 2026-10-06, §T-658/g) ?? []).length).toBeGreaterThanOrEqual(10);
     // 📌 and the reasons that must outlive the approval are still on the page
     expect(raw).toContain("“would”, deliberately:");
     expect(raw).toContain("anything here that LOOKED like a name would be invented");

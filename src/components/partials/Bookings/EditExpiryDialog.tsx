@@ -185,14 +185,17 @@ export default function EditExpiryDialog({
  */
 function ExpiryPreviewBlock({ preview }: { preview: ExpiryPreview }) {
   const t = useT();
-  const { expiryWarning: w, leaveRoom: room } = preview;
+  // 🔴 TASK-658 (REQ-112) — `leaveRoom` ("room for N of your remaining leaves") is GONE: it measured a leave allowance that no
+  // longer exists, and the server stopped sending it. What is left is the half that is still TRUE — the sessions this date
+  // would fall outside of. 🚫 Nothing here reads a leave count.
+  const { expiryWarning: w } = preview;
   const listed = w.outside.slice(0, MAX_LISTED);
   const rest = w.outsideCount - listed.length;
   const date = formatDateDisplay(w.expiryDate);
 
   return (
     <Alert
-      color={w.warn || !room.roomForAll ? "orange" : "blue"}
+      color={w.warn ? "orange" : "blue"}
       variant="light"
       icon={w.warn ? <AlertTriangle size={16} /> : <Info size={16} />}
       title={t("expiry.previewTitle")}
@@ -214,19 +217,6 @@ function ExpiryPreviewBlock({ preview }: { preview: ExpiryPreview }) {
         {rest > 0 && (
           <Text fz="xs" c="dimmed">
             {t("expiry.warnMore", { n: rest })}
-          </Text>
-        )}
-        {/* TASK-298 §5 — the SPENT case: a family with no leave left loses nothing, so no leave line at all. A
-            leave warning stacked on the session warning would be a second alarm about nothing. */}
-        {room.remainingLeave > 0 && (
-          <Text fz="sm">
-            {room.roomForAll
-              ? t("expiry.previewLeaveOk", { remaining: room.remainingLeave })
-              : t("expiry.previewLeaveTight", {
-                  room: room.roomFor,
-                  remaining: room.remainingLeave,
-                  needed: formatDateDisplay(room.neededFor ?? ""),
-                })}
           </Text>
         )}
         {/* Says in words that this is information, not a refusal — a warning that reads like a refusal is one. */}

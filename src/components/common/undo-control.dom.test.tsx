@@ -170,9 +170,14 @@ describe("🔴 TASK-547 — the forecast, clicked", () => {
     await user.click(screen.getByText("Undo leave"));
     await waitFor(() => expect(gets).toEqual(["/bookings/bk-leave/undo-preview"]));
 
-    expect(await screen.findByText("return the leave to the family's quota")).toBeTruthy();
-    expect(screen.getByText("cancel the make-up session on 2026-11-04")).toBeTruthy();
-    expect(screen.getByText("move the course expiry from 2026-11-11 back to 2026-11-04")).toBeTruthy();
+    // 🔻 TASK-658 (REQ-112), declared: the server STILL answers all three facts (`leaveRefunded: true`, a make-up, an `expiry`) — but only the
+    // make-up is a sentence an admin needs. *"return the leave to the family's quota"* is gone (no quota) and *"move the course expiry back"* is
+    // gone (the Undo NEVER moves the end date). ✅ What this clicked test protects — the lines are what the SERVER said, asked only when the
+    // dialog opens — is unchanged, and the two dropped facts are asserted ABSENT by COUNT (a node would print the whole document on failure).
+    expect(await screen.findByText("cancel the make-up session on 2026-11-04")).toBeTruthy();
+    expect(screen.queryAllByText(/return the leave/i).length).toBe(0);
+    expect(screen.queryAllByText(/course expiry/i).length).toBe(0);
+    expect(screen.queryAllByText(/quota/i).length).toBe(0);
     // 🔑 and the sentence that makes a later refusal a normal outcome rather than a contradiction
     expect(screen.getByText(/may still refuse/i)).toBeTruthy();
   });

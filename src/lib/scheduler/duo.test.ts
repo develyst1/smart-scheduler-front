@@ -112,7 +112,7 @@ describe("§2 — both names everywhere, through the ONE mapper", () => {
     expect(mappers).toContain("rate: dto.rate ?? null,");
   });
   it("dtoToCourseView: a DUO course names both children (by name); a Private is the one name; kind and rate carried", () => {
-    const base = { id: "c1", size: 6, usedSessions: 0, leaveUsed: 0, leaveQuota: 2, leaveRemaining: 2, maxWeek: 8, leaveLocked: false, adminUnlocked: false, endedAt: null, endReason: null, status: "ACTIVE", expiryDate: "2026-12-31", student: { id: "s1", name: "Somchai", nickname: "A" } } as unknown as CourseListItem;
+    const base = { id: "c1", size: 6, usedSessions: 0, leaveUsed: 0, leaveQuota: 2, maxWeek: 8, endedAt: null, endReason: null, status: "ACTIVE", expiryDate: "2026-12-31", student: { id: "s1", name: "Somchai", nickname: "A" } } as unknown as CourseListItem;
     expect(dtoToCourseView(base).studentName).toBe("Somchai");
     expect(dtoToCourseView(base).courseKind).toBe("PRIVATE");
     const duo = dtoToCourseView({ ...base, courseKind: "DUO", coStudent: { id: "s2", name: "Somsri", nickname: "B" }, classRateMinor: 50000 });

@@ -1,0 +1,132 @@
+[
+  {
+    "id": "V1",
+    "what": "🔴 THE ONE THAT MATTERS: `SCHOOL_ISSUE` is added to the shared END_COURSE_REASONS — it is offered when ENDING a course, the voucher end and the series cancel too",
+    "files": [
+      {
+        "file": "src/types/app/scheduler/index.ts",
+        "edits": [
+          {
+            "from": "export const END_COURSE_REASONS = [\"PROGRAM_CHANGED\", \"CUSTOMER_CANCELLED\", \"ADMIN_ERROR\"] as const;",
+            "to": "export const END_COURSE_REASONS = [\"PROGRAM_CHANGED\", \"CUSTOMER_CANCELLED\", \"ADMIN_ERROR\", \"SCHOOL_ISSUE\"] as const;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V2",
+    "what": "🔴 the course-END dialog is switched to the session list (the new reason appears on ending a course)",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/EndCourseDialog.tsx",
+        "edits": [{ "from": "{END_COURSE_REASONS.map((r) => (", "to": "{SESSION_CANCEL_REASONS.map((r) => (" }]
+      }
+    ]
+  },
+  {
+    "id": "V3",
+    "what": "🔴 the session list stops carrying the new reason (re-typed as a copy of the three) — the dialog could never offer it",
+    "files": [
+      {
+        "file": "src/types/app/scheduler/index.ts",
+        "edits": [
+          {
+            "from": "export const SESSION_CANCEL_REASONS = [...END_COURSE_REASONS, ...SESSION_ONLY_CANCEL_REASONS] as const;",
+            "to": "export const SESSION_CANCEL_REASONS = [...END_COURSE_REASONS] as const;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V4",
+    "what": "🔴 the option is NOT rendered on the session dialog at all",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/CancelBookingDialog.tsx",
+        "edits": [{ "from": "            {SESSION_ONLY_CANCEL_REASONS.map((r) => (", "to": "            {([] as readonly string[]).map((r) => (" }]
+      }
+    ]
+  },
+  {
+    "id": "V5",
+    "what": "⚠️ the one line under it (what the choice DOES) is removed — an admin would choose it without knowing it hands a family a week",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/CancelBookingDialog.tsx",
+        "edits": [{ "from": " description={t(\"cancelBooking.schoolIssueHint\")}", "to": "" }]
+      }
+    ]
+  },
+  {
+    "id": "V6",
+    "what": "🔴 the new reason is PRE-SELECTED — a week would be given by accident on every cancel",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/CancelBookingDialog.tsx",
+        "edits": [
+          {
+            "from": "useState<SessionCancelReason | null>(null);",
+            "to": "useState<SessionCancelReason | null>(\"SCHOOL_ISSUE\");"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V7",
+    "what": "⚠️ the hint is shown under EVERY option, not only the new one (it would read as a promise about all four)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Modal/CancelBookingDialog.tsx",
+        "edits": [
+          {
+            "from": "              <Radio key={r} value={r} label={t(`endCourse.${r}`)} />\n            ))}\n            {/* 🔴 TASK-691",
+            "to": "              <Radio key={r} value={r} label={t(`endCourse.${r}`)} description={t(\"cancelBooking.schoolIssueHint\")} />\n            ))}\n            {/* 🔴 TASK-691"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V8",
+    "what": "⚠️ the tray stops reading it — a cancelled session shows NO reason (the new code falls through to the note or nothing)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/cancelled-tray.ts",
+        "edits": [
+          {
+            "from": "  if (cancelReason && (SESSION_ONLY_CANCEL_REASONS as readonly string[]).includes(cancelReason)) {",
+            "to": "  if (false && cancelReason && (SESSION_ONLY_CANCEL_REASONS as readonly string[]).includes(cancelReason)) {"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V9",
+    "what": "🔴 the READ set is widened instead (the shortcut): `CANCEL_REASON_CODES` gains the code, which the teacher-scope pin holds at four",
+    "files": [
+      {
+        "file": "src/types/app/scheduler/index.ts",
+        "edits": [
+          {
+            "from": "export const CANCEL_REASON_CODES = [...END_COURSE_REASONS, \"TEACHER_LEAVE\"] as const;",
+            "to": "export const CANCEL_REASON_CODES = [...END_COURSE_REASONS, \"TEACHER_LEAVE\", \"SCHOOL_ISSUE\"] as const;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V10",
+    "what": "⚠️ the Thai label is changed from the CUSTOMER's own words (a bilingual assertion satisfied by one language)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [{ "from": "    SCHOOL_ISSUE: \"ปัญหาจากทางเรา\",", "to": "    SCHOOL_ISSUE: \"A problem on our side\"," }]
+      }
+    ]
+  }
+]

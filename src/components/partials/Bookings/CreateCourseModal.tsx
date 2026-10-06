@@ -27,7 +27,6 @@ import { formatPriceMinor } from "@/types/app/pricing";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import {
-  LEAVE_QUOTA_BY_SIZE,
   MAX_WEEK_BY_SIZE,
   TIME_SLOTS,
   type PackageSize,
@@ -71,7 +70,6 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
     value: String(s),
     label: t("course.sizeOption", {
       size: s,
-      leave: LEAVE_QUOTA_BY_SIZE[s as PackageSize],
       week: MAX_WEEK_BY_SIZE[s as PackageSize],
     }),
   }));
@@ -191,7 +189,6 @@ export default function CreateCourseModal({ opened, onClose }: Props) {
         <Stack gap="md">
           <Alert color="blue" icon={<Info size={16} />} variant="light">
             {t("course.infoAlert", {
-              leave: LEAVE_QUOTA_BY_SIZE[size],
               week: MAX_WEEK_BY_SIZE[size],
             })}
           </Alert>

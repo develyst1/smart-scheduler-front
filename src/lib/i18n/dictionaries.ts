@@ -135,27 +135,16 @@ const en = {
     // defect this key exists to fix.
     confirmMsgMulti: "The schedule will be sent on LINE to {n} teachers: {teachers}",
     leaveTitle: "Record leave for this session?",
-    leaveMsg: "This uses one of the course's leaves and adds a make-up session at the end.",
-    // 🔴 TASK-541 (Tanya, TEST-075 F2) — the body for a row with NO course behind it.
-    // ✅ **APPROVED by the owner 2026-09-28 (“ผ่านหมด”)** — these letters are now the spec, pinned BY VALUE in `i18n/approved-copy.test.ts` (COPY-REVIEW §A1).
-    // 🔑 **The SHAPE pins stayed** (the absence of any quota or make-up claim, in `leave-claim.test.ts`): a value pin says
-    // *these letters*, a shape pin says *this promise* — and the promise is what caught the defect. 📌 Approved does not
-    // mean unexplained, so the reason stays:
-    // 🔑 It claims LEAST on purpose: the sentence above promised a quota spend and a make-up on a 1-HR booking and the
-    // server does neither — and an admin who believes a leave costs the family an entitlement AVOIDS RECORDING IT,
-    // so the wrong sentence corrupts the record rather than just misinforming. The only two things said here are the
-    // two the server always does on a leave: the status, and the notice to the coach and the admins.
-    leaveMsgNoCourse: "This session is recorded as leave. There is no course behind it, so no leave quota is used and no make-up session is added. The coach and the admins are told.",
-    // 🔨 TASK-541 addendum — the OVER-QUOTA course row (`leaveRemaining` gone and not admin-unlocked): the server records
-    // the leave, spends nothing, appends nothing and answers `locked`. ✅ **APPROVED by the owner 2026-09-28 (“ผ่านหมด”)** — these letters are now the spec, pinned BY VALUE in `approved-copy.test.ts` (§A2),
-    // and the absence pins stayed beside the value ones.
-    // 🔑 It borrows the vocabulary of the toast that follows it (`booking.leaveLockedTitle` — *rescheduling locked*), so the
-    // dialog and the outcome an admin then reads are the same two words rather than two descriptions of one event.
-    leaveMsgCourseLocked: "This session is recorded as leave. The course has no leave left, so no leave quota is used and no make-up session is added — rescheduling stays locked until an admin unlocks it. The coach and the admins are told.",
-    // 🔨 TASK-547 §1 — the leave DECLARED when the course was created (`plannedAtCreation`): the make-up is appended and
-    // 🔑 **no quota is spent** — the mirror of the locked case, and the other half of what the one old sentence got wrong.
-    // ✅ **APPROVED by the owner 2026-09-28 (“ผ่านหมด”)** — these letters are now the spec, pinned BY VALUE in `approved-copy.test.ts` (§A3); the absence pin on the quota claim stayed.
-    leaveMsgCourseDeclared: "This session is recorded as leave. It was declared when the course was created, so no leave quota is used — a make-up session is still added at the end. The coach and the admins are told.",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D1) — REQ-112: no quota; the end date does not move.
+    leaveMsg: "This session is recorded as leave and a make-up session is added in the next free week. The course's end date does not change.",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D2) — the 09-28 sentence with its quota clause DELETED, nothing added.
+    // 🔑 It claims LEAST on purpose (TASK-541): the sentence it replaced promised a make-up on a 1-HR booking and the server
+    // does not — and an admin who believes a leave costs the family an entitlement AVOIDS RECORDING IT, so the wrong
+    // sentence corrupts the record rather than just misinforming. The only two things said here are the two the server
+    // always does on a leave: the status, and the notice to the coach and the admins.
+    leaveMsgNoCourse: "This session is recorded as leave. There is no course behind it, so no make-up session is added. The coach and the admins are told.",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D3) — one of the THREE cases that moves the end date (one week later).
+    leaveMsgCourseDeclared: "This session is recorded as leave. It was declared when the course was created, so a make-up session is added and the course's end date moves one week later. The coach and the admins are told.",
     // TASK-497 actually does and is pinned BY SHAPE (the four facts), so his answer is a one-line change here.
     extraTitle: "Add a charged extra session?",
     extraMsg: "This is billed on top of the package — it does not use a course session.",
@@ -168,6 +157,8 @@ const en = {
     line: "Cancel {student}'s session on {date} at {time}.",
     confirm: "Cancel booking",
     done: "Booking cancelled",
+    // ✅ APPROVED (owner 2026-10-06, §T-REQ112-A A6) — the one line under the SESSION-only reason: what the choice DOES, before it is made.
+    schoolIssueHint: "Choose this when we cancelled the class — the course is extended by one week.",
     // SPEC-069 / TASK-222 — cancelling does NOT take the money back out. The band says so, with the number and
     // the date, so staff can find the row instead of hunting the ledger.
     //
@@ -216,6 +207,8 @@ const en = {
     PROGRAM_CHANGED: "Customer changed activity",
     CUSTOMER_CANCELLED: "Customer no longer wants it",
     ADMIN_ERROR: "Admin entered it by mistake",
+    // ✅ APPROVED (owner 2026-10-06, §T-REQ112-A A5) — SESSION cancel only; read by the tray and the notices too.
+    SCHOOL_ISSUE: "A problem on our side",
     TEACHER_LEAVE: "Teacher leave", // REQ-097 — read-only: written by the teacher's own leave, never offered in a dialog
     noteLabel: "Note (optional)",
     alreadyEnded: "This course has already been cancelled.",
@@ -331,8 +324,6 @@ const en = {
     previewChecking: "Checking what this date would change…",
     previewCuts: "{n} scheduled session(s) would fall after {date}:",
     previewClear: "No scheduled session falls after {date}.",
-    previewLeaveOk: "Leave: all {remaining} remaining leave day(s) still fit before this date.",
-    previewLeaveTight: "Leave: only {room} of {remaining} remaining leave day(s) would fit — a make-up for every one needs the expiry to reach {needed}.",
     previewNotSaved: "Nothing is saved yet. You can still save this date — it will not be refused.",
   },
 
@@ -743,10 +734,9 @@ const en = {
     // act's writes, so the act can still refuse a preview that said ok — the words must make that a normal outcome rather
     // than a contradiction. 🚫 A refusal is never re-worded: `previewRefused` is a HEADING above the server's own sentence.
     previewHeading: "If nothing changes before you confirm, this would:",
-    previewLeaveBack: "return the leave to the family's quota",
     previewMakeupOff: "cancel the make-up session on {date}",
-    previewExpiry: "move the course expiry from {from} back to {to}",
-    previewNothingElse: "Nothing else follows — no leave is returned and no make-up is cancelled.",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D13)
+    previewNothingElse: "Nothing else follows — no make-up is cancelled.",
     previewForecast: "The server checks again when you confirm, so it may still refuse.",
     previewLoading: "Checking what this would change…",
     previewFailed: "We could not check what this would change. You can still undo — the server decides, and it will say so if it refuses.",
@@ -1024,11 +1014,9 @@ const en = {
     confirmedLineSent: "LINE notification sent to the teacher",
     confirmedLineSkipped: "Teacher isn't linked to LINE — no notification sent",
     confirmedDefault: "Instant LINE notification sent to the teacher",
-    // sick-leave toasts
-    leaveLockedTitle: "Leave over quota — rescheduling locked",
-    leaveLockedDesc: "The student has used all their leave — an admin must unlock it on the Bookings/Students page",
     leaveSavedTitle: "Leave recorded",
-    leaveExtendedDesc: "Auto-created a make-up session next week ({date})",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D4)
+    leaveExtendedDesc: "A make-up session was added on {date}",
     // advance-notice rule (UC-029)
     leaveNoticeTitle: "Leave notice is too late",
     leaveOverrideBtn: "Override (admin)",
@@ -1178,8 +1166,6 @@ const en = {
     tabCourses: "Courses + leave",
     tabVouchers: "Vouchers",
     tabAll: "All bookings",
-    coursesHint:
-      "Leave quota depends on course size: 4 → 1 · 6 → 2 · 10 → 3 · exceeding it locks rescheduling until an admin unlocks it",
     newCourse: "New course",
     vouchersHint:
       "Vouchers 5/10/15h — no fixed teacher or time · validity counts from the first booking · book via the calendar (Voucher type)",
@@ -1232,25 +1218,10 @@ const en = {
 
   course: {
     empty: "No courses yet",
-    unlockedTitle: "Leave unlocked (special case)",
-    unlockedDesc: "{student} can now reschedule more sessions",
-    unlockFailTitle: "Unlock failed",
-    unlockFailGeneric: "Couldn't unlock. Please try again.",
-    relockedTitle: "Locked again",
-    relockedDesc: "{student}'s rescheduling is locked again",
-    relockFailTitle: "Lock failed",
-    relockFailGeneric: "Couldn't lock. Please try again.",
-    relockBtn: "Lock again",
-    unlockConfirmTitle: "Unlock leave?",
-    unlockConfirmMsg: "Allow {student} to reschedule beyond the leave quota? Use only for special cases.",
-    relockConfirmTitle: "Lock again?",
-    relockConfirmMsg: "Lock {student}'s rescheduling back to the quota limit?",
     // TASK-311 §1 (`REQ-085 §12.1`) — split from one `summary` string so the EXPIRY half can be a control on its
     // own: the owner wants the date itself clickable, and a label cannot be half a button.
     sizeLine: "{size}-session course",
     expiresLabel: "Expires",
-    locked: "Locked",
-    specialUnlock: "Special unlock",
     normal: "Normal",
     ended: "Cancelled",
     // TASK-189 — the four SERVER-computed lifecycle states. The badge and the filter both read these.
@@ -1270,17 +1241,17 @@ const en = {
     endedExpired: "This course has expired, so sessions can no longer be added or changed.",
     droppedNoWrites: "This course is paused — resume it to change the schedule.",
     sessionsUnit: "sessions",
-    leaveQuota: "Leave quota",
-    leftN: "{n} left",
-    usage: "Used {used}/{quota} · extendable to week {week}",
-    unlockBtn: "Unlock (admin)",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D6, owner's choice) — the card's ceiling; REQ-112 has no "x of y".
+    usage: "Valid until week {week}",
     // form
     formTitle: "Register a weekly course",
     createdAlertTitle: "Course created and schedule locked",
     createdSummary: "{name} · {size}-session course · expires {expiry}",
     sessionsCreated: "Sessions created ({count})",
-    infoAlert: "Weekly sessions are generated from the start date/time · {leave} leave · extend to week {week}",
-    sizeOption: "{size} sessions ({leave} leave · extend to week {week})",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D8)
+    infoAlert: "Weekly sessions are generated from the start date/time · extend to week {week}",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D7)
+    sizeOption: "{size} sessions (extend to week {week})",
     teacher: "Teacher",
     pickTeacher: "Select a teacher",
     program: "Program",
@@ -1329,7 +1300,6 @@ const en = {
     course: "Course",
     voucher: "Voucher",
     size: "{size}-session course",
-    leave: "Leave {used}/{quota}",
     owed: "{n} owed",
     owedHint: "{n} session(s) still owed",
     hoursLeft: "{remaining} / {total} h left",
@@ -1398,10 +1368,12 @@ const en = {
     cancelled: "Session cancelled",
     extra: "Add extra (charged)",
     extraSession: "Add extra session (charged)",
-    extraHint: "A charged single-session sale — separate from the course quota. Doesn't change the course size or end date.",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D11)
+    extraHint: "A charged single-session sale. Doesn't change the course size or end date.",
     extraBadge: "extra",
     extraAdded: "Extra session added",
-    insertHint: "Reschedule an owed session into the plan (uses quota — no charge).",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D10)
+    insertHint: "Reschedule an owed session into the plan (no charge).",
     insertDisabled: "No session to reschedule right now.",
     diffTitle: "Your plan will become:",
     // 🔴 TASK-321 — was `… · ends {end}`, in the same modal whose header TASK-319 renamed to `Last session`.
@@ -1424,7 +1396,8 @@ const en = {
     empty: "No activity yet",
     close: "Close",
     sumUsed: "Used",
-    sumLeave: "Leave used",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D12) — EN only; the Thai (ลาไป) was already fine.
+    sumLeave: "Leaves taken",
     sumRemaining: "Remaining",
     sumEnd: "Ends",
     ofSize: "of {size}",
@@ -1900,8 +1873,9 @@ const en = {
     sizeOption: "{n} sessions (price card)",
     sizeOffCard: "Other (off the price card)",
     sizeCustom: "Number of sessions",
-    leaveQuota: "Leave quota",
-    leaveQuotaHint: "How many leaves this package allows — the price card sizes bring their own",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D9) — RELABELLED, the field stays: the number is the BASE of the validity window (`maxWeek = size + n`), not an allowance.
+    extraWeeks: "Extra weeks of validity",
+    extraWeeksHint: "How many weeks beyond the course size this package stays valid — the price-card sizes bring their own",
     used: "Sessions already used",
     usedHint: "How many they have already attended",
     usedTooHigh: "Used cannot be more than bought.",
@@ -2291,13 +2265,12 @@ const th: typeof en = {
     // ใส่จำนวนไว้ด้วยตั้งใจ: ถ้ามีแต่ชื่อ รายชื่อที่ตกไป 1 คนจะอ่านเหมือนรายชื่อที่ถูกต้องทุกประการ
     confirmMsgMulti: "ระบบจะส่งตารางให้ครู {n} คน ทาง LINE: {teachers}",
     leaveTitle: "บันทึกลาคาบนี้?",
-    leaveMsg: "จะใช้โควตาลาของคอร์ส 1 ครั้ง และเพิ่มคาบชดเชยต่อท้ายให้",
-    // ✅ APPROVED 2026-09-28 (§A1) — เหตุผลอยู่ในบล็อก EN: ห้ามกล่าวถึงโควตาหรือคาบชดเชยสำหรับคาบที่ไม่มีคอร์ส
-    leaveMsgNoCourse: "คาบนี้จะถูกบันทึกเป็นการลา คาบนี้ไม่มีคอร์สอยู่เบื้องหลัง จึงไม่ใช้โควตาลาและไม่มีคาบชดเชย ระบบจะแจ้งครูและแอดมิน",
-    // ✅ APPROVED 2026-09-28 (§A2) — ใช้คำเดียวกับ `booking.leaveLockedTitle` ที่แอดมินจะเห็นต่อจากนี้
-    leaveMsgCourseLocked: "คาบนี้จะถูกบันทึกเป็นการลา คอร์สนี้ใช้สิทธิ์การลาครบแล้ว จึงไม่ตัดโควตาและไม่มีคาบชดเชย และจะยังล็อกการเลื่อนตารางไว้จนแอดมินปลดล็อก ระบบจะแจ้งครูและแอดมิน",
-    // ✅ APPROVED 2026-09-28 (§A3) — การลาที่แจ้งไว้ตั้งแต่สร้างคอร์ส: เพิ่มคาบชดเชยแต่ไม่ตัดโควตา
-    leaveMsgCourseDeclared: "คาบนี้จะถูกบันทึกเป็นการลา เป็นการลาที่แจ้งไว้ตั้งแต่สร้างคอร์ส จึงไม่ตัดโควตาลา แต่ยังเพิ่มคาบชดเชยต่อท้ายให้ ระบบจะแจ้งครูและแอดมิน",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D1)
+    leaveMsg: "คาบนี้จะถูกบันทึกเป็นการลา และเพิ่มคาบชดเชยในสัปดาห์ถัดไปที่ว่างให้ วันสิ้นสุดคอร์สไม่เปลี่ยน",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D2)
+    leaveMsgNoCourse: "คาบนี้จะถูกบันทึกเป็นการลา คาบนี้ไม่มีคอร์สอยู่เบื้องหลัง จึงไม่มีคาบชดเชย ระบบจะแจ้งครูและแอดมิน",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D3)
+    leaveMsgCourseDeclared: "คาบนี้จะถูกบันทึกเป็นการลา เป็นการลาที่แจ้งไว้ตั้งแต่สร้างคอร์ส จึงเพิ่มคาบชดเชยต่อท้ายให้ และวันสิ้นสุดคอร์สเลื่อนออกไป 1 สัปดาห์ ระบบจะแจ้งครูและแอดมิน",
     extraTitle: "เพิ่มคาบแบบคิดเงิน?",
     extraMsg: "คาบนี้คิดเงินเพิ่มจากแพ็กเกจ ไม่ได้ตัดคาบของคอร์ส",
     bulkTitle: "ยืนยันการจองที่เลือก?",
@@ -2309,6 +2282,8 @@ const th: typeof en = {
     line: "ยกเลิกคาบของ {student} วันที่ {date} เวลา {time}",
     confirm: "ยกเลิกการจอง",
     done: "ยกเลิกการจองแล้ว",
+    // ✅ APPROVED (owner 2026-10-06, §T-REQ112-A A6)
+    schoolIssueHint: "เลือกข้อนี้เมื่อคาบถูกยกเลิกเพราะทางเรา — ระบบจะขยายอายุคอร์สให้ 1 สัปดาห์",
     // SPEC-069 / TASK-222 — ประโยคของ Porter + วันที่ลงบัญชี + "ตรวจสอบแล้วค่อยกลับรายการ"
     // ⚠️ ไม่ใช้คำว่า "ต้องไปกลับรายการ" ตรงๆ เพราะการกลับรายการไม่มี refId ⇒ เรามองไม่เห็นว่ากลับไปแล้วหรือยัง
     // (SPEC-069 §Limitation) การสั่งให้กลับรายการจึงเสี่ยงทำให้กลับรายการซ้ำสองครั้ง
@@ -2349,6 +2324,8 @@ const th: typeof en = {
     PROGRAM_CHANGED: "ลูกค้าเปลี่ยนกิจกรรม",
     CUSTOMER_CANCELLED: "ลูกค้าไม่เอาแล้ว",
     ADMIN_ERROR: "แอดมินคีย์ผิด",
+    // ✅ APPROVED (owner 2026-10-06, §T-REQ112-A A5) — คำของลูกค้าเอง ตรงตัว
+    SCHOOL_ISSUE: "ปัญหาจากทางเรา",
     TEACHER_LEAVE: "ครูลา",
     noteLabel: "หมายเหตุ (ไม่บังคับ)",
     alreadyEnded: "คอร์สนี้ถูกยกเลิกไปแล้ว",
@@ -2451,8 +2428,6 @@ const th: typeof en = {
     previewChecking: "กำลังตรวจสอบว่าวันที่นี้จะเปลี่ยนอะไรบ้าง…",
     previewCuts: "จะมี {n} คาบที่อยู่หลังวันที่ {date}:",
     previewClear: "ไม่มีคาบใดอยู่หลังวันที่ {date}",
-    previewLeaveOk: "วันลา: วันลาที่เหลือทั้ง {remaining} วันยังชดเชยได้ทันก่อนวันที่นี้",
-    previewLeaveTight: "วันลา: จะชดเชยได้ทันเพียง {room} จาก {remaining} วันที่เหลือ — ถ้าจะให้ชดเชยได้ครบ วันหมดอายุต้องถึง {needed}",
     previewNotSaved: "ยังไม่ได้บันทึก — ยังบันทึกวันที่นี้ได้ ระบบจะไม่ปฏิเสธ",
   },
 
@@ -2782,18 +2757,17 @@ const th: typeof en = {
     checkinTitle: "ย้อนการเช็คอินคาบนี้?",
     leaveTitle: "ย้อนการลาคาบนี้?",
     // 🔴 TASK-547 §2 — ดูบล็อก EN: เนื้อหาเหลือเฉพาะสิ่งที่เป็นจริงทุกครั้ง ส่วนโควตา/คาบชดเชย/วันหมดอายุมาจาก preview
-    attendanceMsg: "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้าโควตาของลูกค้า ไม่มีการแจ้งใคร",
-    checkinMsg: "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้าโควตาของลูกค้า ไม่มีการแจ้งใคร",
-    leaveMsg: "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้าโควตาของลูกค้า ระบบจะแจ้งครูว่าคาบนี้กลับมาเรียนแล้ว",
+    attendanceMsg: "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้ายอดคงเหลือของลูกค้า ไม่มีการแจ้งใคร",
+    checkinMsg: "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้ายอดคงเหลือของลูกค้า ไม่มีการแจ้งใคร",
+    leaveMsg: "คาบจะกลับเป็นยืนยันแล้ว และคืนคาบเข้ายอดคงเหลือของลูกค้า ระบบจะแจ้งครูว่าคาบนี้กลับมาเรียนแล้ว",
     // ✅ APPROVED 2026-09-28 (§C) — คำว่า “จะ” โดยเจตนา: ระบบตรวจอีกครั้งเมื่อกดยืนยัน จึงยังปฏิเสธได้ (เหตุผลต้องอยู่ต่อแม้อนุมัติแล้ว)
     previewHeading: "ถ้าไม่มีอะไรเปลี่ยนก่อนกดยืนยัน รายการนี้จะ:",
-    previewLeaveBack: "คืนโควตาลาให้ลูกค้า",
     // 🔴 PASSIVE and subject-first on purpose: the owner's rule is that **an Undo is never named `ยกเลิก…`** (that verb
     // belongs to `ยกเลิกการจอง`), and `undo-control.test.ts` pins that no value in this family STARTS with it. The make-up
     // genuinely is cancelled — the owner's own approved wording said so — so the fact stays and the word moves off the front.
     previewMakeupOff: "คาบชดเชยวันที่ {date} จะถูกยกเลิก",
-    previewExpiry: "เลื่อนวันหมดอายุคอร์สจาก {from} กลับเป็น {to}",
-    previewNothingElse: "ไม่มีผลอื่นตามมา — ไม่คืนโควตาลา และไม่มีคาบชดเชยที่ต้องยกเลิก",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D13)
+    previewNothingElse: "ไม่มีผลอื่นตามมา — ไม่มีคาบชดเชยที่ต้องยกเลิก",
     previewForecast: "ระบบจะตรวจอีกครั้งเมื่อกดยืนยัน จึงยังมีสิทธิ์ปฏิเสธได้",
     previewLoading: "กำลังตรวจว่าจะมีผลอะไรตามมา…",
     previewFailed: "ตรวจไม่ได้ว่าจะมีผลอะไรตามมา ยังกดย้อนได้ ระบบจะเป็นผู้ตัดสินและจะแจ้งถ้าปฏิเสธ",
@@ -3029,10 +3003,9 @@ const th: typeof en = {
     confirmedLineSent: "ส่งแจ้งเตือน LINE ไปยังครูแล้ว",
     confirmedLineSkipped: "ครูยังไม่ผูก LINE — ไม่ได้ส่งแจ้งเตือน",
     confirmedDefault: "ส่งแจ้งเตือนทันทีผ่าน Line ไปยังครู/ผู้เกี่ยวข้อง",
-    leaveLockedTitle: "ลาเกินโควตา — ล็อกการเลื่อนตาราง",
-    leaveLockedDesc: "นักเรียนใช้สิทธิ์การลาครบแล้ว ต้องให้แอดมินปลดล็อกที่หน้า การจอง/นักเรียน",
     leaveSavedTitle: "บันทึกการลาแล้ว",
-    leaveExtendedDesc: "สร้างคาบเรียนชดเชยอัตโนมัติในสัปดาห์ถัดไป ({date})",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D4)
+    leaveExtendedDesc: "เพิ่มคาบเรียนชดเชยแล้วในวันที่ {date}",
     // กฎแจ้งลาล่วงหน้า (UC-029)
     leaveNoticeTitle: "แจ้งลาไม่ทันกำหนด",
     leaveOverrideBtn: "ยืนยันลา (แอดมิน)",
@@ -3166,8 +3139,6 @@ const th: typeof en = {
     tabCourses: "คอร์ส + สิทธิ์การลา",
     tabVouchers: "วอยเชอร์",
     tabAll: "การจองทั้งหมด",
-    coursesHint:
-      "โควตาการลาผูกกับขนาดคอร์ส: 4 ครั้ง → ลาได้ 1 · 6 ครั้ง → 2 · 10 ครั้ง → 3 · ลาเกินโควตาระบบจะล็อกการเลื่อนตาราง จนกว่าแอดมินจะปลดล็อก",
     newCourse: "สมัครคอร์ส",
     vouchersHint:
       "วอยเชอร์ 5/10/15 ชม. — ไม่ล็อกครูหรือเวลา · อายุนับจากวันจองครั้งแรก · ใช้จองผ่านปฏิทิน (ประเภท Voucher)",
@@ -3218,23 +3189,8 @@ const th: typeof en = {
 
   course: {
     empty: "ยังไม่มีคอร์ส",
-    unlockedTitle: "ปลดล็อกการลาแล้ว (กรณีพิเศษ)",
-    unlockedDesc: "{student} สามารถเลื่อนตารางเพิ่มได้",
-    unlockFailTitle: "ปลดล็อกไม่สำเร็จ",
-    unlockFailGeneric: "ปลดล็อกไม่สำเร็จ กรุณาลองใหม่",
-    relockedTitle: "ล็อกกลับแล้ว",
-    relockedDesc: "ล็อกการเลื่อนตารางของ {student} กลับแล้ว",
-    relockFailTitle: "ล็อกไม่สำเร็จ",
-    relockFailGeneric: "ล็อกไม่สำเร็จ กรุณาลองใหม่",
-    relockBtn: "ล็อกกลับ",
-    unlockConfirmTitle: "ปลดล็อกการลา?",
-    unlockConfirmMsg: "อนุญาตให้ {student} เลื่อนตารางเกินโควตาการลา? ใช้เฉพาะกรณีพิเศษ",
-    relockConfirmTitle: "ล็อกกลับ?",
-    relockConfirmMsg: "ล็อกการเลื่อนตารางของ {student} กลับไปที่โควตาเดิม?",
     sizeLine: "คอร์ส {size} ครั้ง",
     expiresLabel: "หมดอายุ",
-    locked: "ล็อก",
-    specialUnlock: "ปลดล็อกพิเศษ",
     normal: "ปกติ",
     ended: "ยกเลิกแล้ว",
     status: {
@@ -3253,16 +3209,16 @@ const th: typeof en = {
     endedExpired: "คอร์สนี้หมดอายุแล้ว จึงเพิ่มหรือแก้คาบไม่ได้",
     droppedNoWrites: "คอร์สนี้กำลังพักอยู่ — กดกลับมาเรียนก่อนจึงจะแก้ตารางได้",
     sessionsUnit: "ครั้ง",
-    leaveQuota: "สิทธิ์การลา",
-    leftN: "เหลือ {n}",
-    usage: "ใช้ไป {used}/{quota} · ขยายได้ถึงสัปดาห์ที่ {week}",
-    unlockBtn: "ปลดล็อก (แอดมิน)",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D6)
+    usage: "ใช้ได้ถึงสัปดาห์ที่ {week}",
     formTitle: "สมัครคอร์สรายสัปดาห์",
     createdAlertTitle: "สร้างคอร์สและล็อกตารางแล้ว",
     createdSummary: "{name} · คอร์ส {size} ครั้ง · หมดอายุ {expiry}",
     sessionsCreated: "คาบที่สร้าง ({count})",
-    infoAlert: "ระบบจะสร้างคาบรายสัปดาห์ตามวัน-เวลาเริ่มต้น · ลาได้ {leave} ครั้ง · ขยายได้ถึงสัปดาห์ที่ {week}",
-    sizeOption: "{size} ครั้ง (ลาได้ {leave} · ขยายถึงสัปดาห์ที่ {week})",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D8)
+    infoAlert: "ระบบจะสร้างคาบรายสัปดาห์ตามวัน-เวลาเริ่มต้น · ขยายได้ถึงสัปดาห์ที่ {week}",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D7)
+    sizeOption: "{size} ครั้ง (ขยายถึงสัปดาห์ที่ {week})",
     teacher: "ครูผู้สอน",
     pickTeacher: "เลือกครู",
     program: "โปรแกรม",
@@ -3306,7 +3262,6 @@ const th: typeof en = {
     course: "คอร์ส",
     voucher: "วอยเชอร์",
     size: "คอร์ส {size} คาบ",
-    leave: "ลา {used}/{quota}",
     owed: "ค้าง {n}",
     owedHint: "ยังค้างอีก {n} คาบ",
     hoursLeft: "เหลือ {remaining} / {total} ชม.",
@@ -3364,10 +3319,12 @@ const th: typeof en = {
     cancelled: "ยกเลิกคาบแล้ว",
     extra: "เพิ่มคาบ (คิดเงิน)",
     extraSession: "เพิ่มคาบพิเศษ (คิดเงิน)",
-    extraHint: "ขายคาบเดี่ยวแบบคิดเงิน — แยกจากโควตาคอร์ส ไม่กระทบจำนวนคาบหรือวันจบคอร์ส",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D11)
+    extraHint: "ขายคาบเดี่ยวแบบคิดเงิน ไม่กระทบจำนวนคาบหรือวันจบคอร์ส",
     extraBadge: "คาบพิเศษ",
     extraAdded: "เพิ่มคาบพิเศษแล้ว",
-    insertHint: "เลื่อนคาบที่ค้างเข้ามาในแผน (ใช้โควตา — ไม่คิดเงิน)",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D10)
+    insertHint: "เลื่อนคาบที่ค้างเข้ามาในแผน (ไม่คิดเงิน)",
     insertDisabled: "ตอนนี้ไม่มีคาบที่ต้องเลื่อน",
     diffTitle: "แผนจะเปลี่ยนเป็น:",
     // 🔴 TASK-321 — `จบ` moves to the header's `คาบสุดท้าย` for the same reason the header moved.
@@ -3828,8 +3785,9 @@ const th: typeof en = {
     sizeOption: "{n} คาบ (ตามการ์ดราคา)",
     sizeOffCard: "อื่น ๆ (นอกการ์ดราคา)",
     sizeCustom: "จำนวนคาบ",
-    leaveQuota: "โควตาการลา",
-    leaveQuotaHint: "แพ็กเกจนี้ลาได้กี่ครั้ง — ขนาดตามการ์ดราคามีค่าของตัวเองอยู่แล้ว",
+    // ✅ APPROVED (owner 2026-10-06, §T-658 D9)
+    extraWeeks: "สัปดาห์ที่ขยายได้เพิ่ม",
+    extraWeeksHint: "แพ็กเกจนี้ใช้ได้นานกว่าจำนวนคาบกี่สัปดาห์ — ขนาดตามการ์ดราคามีค่าของตัวเองอยู่แล้ว",
     used: "ใช้ไปแล้ว (ครั้ง)",
     usedHint: "จำนวนครั้งที่เรียนไปแล้ว",
     usedTooHigh: "จำนวนที่ใช้ไปต้องไม่เกินจำนวนที่ซื้อ",

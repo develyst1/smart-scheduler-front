@@ -2,7 +2,6 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  setCourseAdminUnlock,
   changeCourseStart,
   previewCourseStart,
   getCourseExpiryHistory,
@@ -96,7 +95,7 @@ import {
   type ExtraSessionInput,
 } from "@/services/scheduler.service";
 import { undoBody } from "@/lib/scheduler/undo";
-import type { EndCourseReason, PlanChange, RecordRentalInput, TeacherType } from "@/types/app/scheduler";
+import type { EndCourseReason, PlanChange, RecordRentalInput, SessionCancelReason, TeacherType } from "@/types/app/scheduler";
 import type { OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
 import type { GroupSeriesInput, GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 
@@ -578,7 +577,7 @@ export const useReportTeacherLeave = () => {
 export const useCancelBooking = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason, reasonCode }: { id: string; reason?: string; reasonCode?: EndCourseReason }) =>
+    mutationFn: ({ id, reason, reasonCode }: { id: string; reason?: string; reasonCode?: SessionCancelReason }) =>
       cancelBooking(id, reason, reasonCode),
     onSuccess: () => invalidateAll(qc),
   });
@@ -797,15 +796,6 @@ export const useCoursePackages = (query: CoursesQuery = {}) =>
     queryFn: () => getCoursePackages(query),
     placeholderData: keepPreviousData,
   });
-
-export const useSetCourseAdminUnlock = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, unlocked }: { id: string; unlocked: boolean }) =>
-      setCourseAdminUnlock(id, unlocked),
-    onSuccess: () => invalidateAll(qc),
-  });
-};
 
 export const useCreateCoursePackage = () => {
   const qc = useQueryClient();

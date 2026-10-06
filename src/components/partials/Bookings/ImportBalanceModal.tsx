@@ -299,8 +299,8 @@ export default function ImportBalanceModal({ opened, onClose }: Props) {
                   error={sizeProblem ?? undefined}
                 />
                 <NumberInput
-                  label={t("importBalance.leaveQuota")}
-                  description={t("importBalance.leaveQuotaHint")}
+                  label={t("importBalance.extraWeeks")}
+                  description={t("importBalance.extraWeeksHint")}
                   value={leaveQuota}
                   onChange={(v) => setLeaveQuota(Number(v) || 0)}
                   min={0}

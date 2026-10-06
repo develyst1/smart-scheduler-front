@@ -125,7 +125,9 @@ describe("§2 — the words: three approved labels, and a body that varies with 
       // ⇒ what is pinned here is that the body **claims neither**, and that the claims exist as preview keys instead.
       expect(u.leaveMsg).not.toMatch(lang === "en" ? /quota/i : /โควตาลา/);
       expect(u.leaveMsg).not.toMatch(lang === "en" ? /make-?up/i : /คาบชดเชย/);
-      expect(u.previewLeaveBack).toMatch(lang === "en" ? /quota/i : /โควตาลา/);
+      // 🔻 TASK-658, declared: this asserted `previewLeaveBack` SAID quota. The line is DELETED — there is no quota to return — so the
+      // forecast family no longer carries it in either language.
+      expect(u.previewLeaveBack).toBeUndefined();
       expect(u.previewMakeupOff).toMatch(lang === "en" ? /make-?up/i : /คาบชดเชย/);
     }
     expect(control).toContain("<Text size=\"sm\">{t(UNDO_BODY_KEYS[kind])}</Text>");
@@ -144,9 +146,11 @@ describe("§2 — the words: three approved labels, and a body that varies with 
     // 🔑 and the reason for the one word he was asked about outlives the approval
     expect(raw).toContain("“would”, deliberately:");
   });
-  it("copy counted: `undo` has 21 keys in both languages", () => {
+  it("copy counted: `undo` has 19 keys in both languages", () => {
     // 12 + TASK-547's 9 forecast keys (heading · three lines · nothing-else · forecast caveat · loading · failed · refused)
-    expect(Object.keys(dictionaries.en.undo).length).toBe(21);
+    // 🔻 TASK-658 (REQ-112), declared: 21 → 19 — two forecast lines were DELETED with the model they described (return-to-quota;
+    // move-the-expiry-back).
+    expect(Object.keys(dictionaries.en.undo).length).toBe(19);
     expect(Object.keys(dictionaries.en.undo).length).toBe(Object.keys(dictionaries.th.undo).length);
     for (const k of Object.keys(dictionaries.en.undo)) expect((dictionaries.th.undo as Record<string, string>)[k]?.length).toBeGreaterThan(0);
   });
@@ -175,9 +179,12 @@ describe("§3 — two surfaces, one control; the refusals; no optimism", () => {
     expect(modal).toContain('{canStatus && booking.status !== "ATTENDED" && (');
     // exactly ONE control undoes an attendance now
     expect((modal.match(/\{undoControl\.menuItem\}/g) ?? []).length).toBe(1);
-    // and TASK-514's leave-side guarantee is kept: the leave copy is byte-identical
-    expect(dictionaries.en.confirmAction.leaveMsg).toBe("This uses one of the course's leaves and adds a make-up session at the end.");
-    expect(dictionaries.th.confirmAction.leaveMsg).toBe("จะใช้โควตาลาของคอร์ส 1 ครั้ง และเพิ่มคาบชดเชยต่อท้ายให้");
+    // and TASK-514's leave-side guarantee is kept: the leave copy does not drift — pinned BY VALUE.
+    // 🔻 TASK-658 (REQ-112), declared: it was byte-identical to the REQ-073 sentence ("uses one of the course's leaves"), which is FALSE now
+    // (there is no allowance). It is the owner's approved D1 (2026-10-06); ✅ what this pin protects — the leave body is held by value, so
+    // an edit is a decision — is unchanged.
+    expect(dictionaries.en.confirmAction.leaveMsg).toBe("This session is recorded as leave and a make-up session is added in the next free week. The course's end date does not change.");
+    expect(dictionaries.th.confirmAction.leaveMsg).toBe("คาบนี้จะถูกบันทึกเป็นการลา และเพิ่มคาบชดเชยในสัปดาห์ถัดไปที่ว่างให้ วันสิ้นสุดคอร์สไม่เปลี่ยน");
     expect(dictionaries.en.booking.sickLeaveBtn).toBe("Record leave/sick");
   });
   it("the refusal is the SERVER's sentence, and a refusal never renders as a success", () => {

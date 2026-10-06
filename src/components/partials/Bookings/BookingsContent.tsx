@@ -38,8 +38,9 @@ export default function BookingsContent() {
         </Tabs.List>
 
         <Tabs.Panel value="courses" pt="md">
-          <Group justify="space-between" align="flex-start" mb="md" wrap="wrap" gap="sm">
-            <p className="max-w-2xl text-sm text-muted-500">{t("bookings.coursesHint")}</p>
+          {/* 🔴 TASK-658 (REQ-112) — the hint that sat here was ENTIRELY about the leave quota and the lock ("4 → 1 · 6 → 2 · 10 → 3 ·
+              exceeding it locks…"). Neither exists, so the sentence is DELETED rather than rewritten; the buttons keep the right. */}
+          <Group justify="flex-end" align="flex-start" mb="md" wrap="wrap" gap="sm">
             <Group gap="sm">
               {can("action:bookings.course-import") && (
                 <Button

@@ -73,8 +73,12 @@ describe("🔴 §1 / §11.3 — an EARLIER date says what it cuts off BEFORE sav
     expect(block).not.toContain("dayjs(");
     expect(block).not.toContain(".filter(");
     expect(block).not.toMatch(/[<>]=?\s*expiryDate/);
-    // The leave verdict is the server's boolean, not a comparison made here.
-    expect(block).toContain("room.roomForAll");
+    // 🔻 TASK-658 (REQ-112), declared: this used to assert the LEAVE verdict was the server's boolean (`room.roomForAll`).
+    // There is no leave allowance any more, so there is no leave verdict — `leaveRoom` is gone from the server's answer and the
+    // block reads `expiryWarning` ONLY. ✅ What this pin protects (the screen computes nothing; every number is the server's) is
+    // unchanged, and it is now ALSO asserted that nothing about a leave count is read here.
+    expect(block.includes("room.")).toBe(false);
+    expect(block.match(/leaveRoom|roomForAll|remainingLeave|previewLeave/)?.[0] ?? null).toBeNull();
   });
 
   it("🔴 still NOT a gate — Save reads neither the preview nor the warning", () => {
@@ -91,9 +95,18 @@ describe("🔴 §1 / §11.3 — an EARLIER date says what it cuts off BEFORE sav
     expect(en.expiry.warnStillSaves).toContain("has been saved");
   });
 
-  it("the SPENT case renders no leave line — TASK-298 §5, kept on this side", () => {
+  it("🔴 TASK-658 — there is NO leave line at all, spent or not: the quota relic is DELETED, both languages", () => {
+    // 🔻 Declared: this was *the SPENT case renders no leave line* (TASK-298 §5). The line itself no longer exists — it measured
+    // "how many of the family's remaining leaves still fit under this date", and no allowance exists to be remaining.
+    // ✅ The OTHER half of the preview — the sessions this date would fall outside of (`expiryWarning`) — is still TRUE and stays.
     const block = dialog.slice(dialog.indexOf("function ExpiryPreviewBlock"));
-    expect(block).toContain("room.remainingLeave > 0 &&");
+    expect(block.match(/previewLeave|remainingLeave/)?.[0] ?? null).toBeNull();
+    for (const k of ["previewLeaveOk", "previewLeaveTight"]) {
+      expect((en.expiry as Record<string, string>)[k]).toBeUndefined();
+      expect((dictionaries.th.expiry as Record<string, string>)[k]).toBeUndefined();
+    }
+    // …and the half that stays is still rendered
+    expect(block).toContain('t("expiry.previewCuts"');
   });
 });
 

@@ -130,12 +130,13 @@ export interface CourseSummary {
   startDate: IsoDate;
   size: PackageSize;
   usedSessions: number;
+  /** 🔴 TASK-658 (REQ-112) — a plain COUNT of the leaves taken (@Jason: ordinary leaves; a free pre-start declaration is not
+   *  counted). **No limit and nothing gates on it.** `leaveRemaining`, `leaveLocked` and `adminUnlocked` are GONE from this type:
+   *  the server may still send some of them (`leaveLocked` is always `false`) — 🚫 no screen reads them. */
   leaveUsed: number;
+  /** The BASE of the validity window (`maxWeek = size + n`) — 🚫 not an allowance. The wire name is unchanged. */
   leaveQuota: number;
-  leaveRemaining: number;
   maxWeek: number;
-  leaveLocked: boolean;
-  adminUnlocked: boolean;
   /** SPEC-064 / TASK-181 (REQ-036) — when the course was ended early, and why. `null` for a live course.
    *  `size` still reads what the family BOUGHT; these say the plan is finished. Required, not optional: an
    *  ended course that silently maps to `undefined` is the `ปกติ` badge bug (TASK-183). */
@@ -619,9 +620,11 @@ export type UndoPreview =
       ok: true;
       /** The act's own name for this undo. 🚫 No screen switches on it — the row's label already comes from the row. */
       kind: string;
-      leaveRefunded: boolean;
+      /** 🔴 TASK-658 — sent, and 🚫 NOT READ: it is the leave COUNT going back, not a sentence an admin needs. */
+      leaveRefunded?: boolean;
       makeupCancelled: { id: string; date: IsoDate } | null;
-      expiry: { from: IsoDate; to: IsoDate } | null;
+      /** 🔴 TASK-658 — the Undo NEVER moves the end date; the server no longer sends this. 🚫 Not read. */
+      expiry?: { from: IsoDate; to: IsoDate } | null;
     }
   | { ok: false; code: string; message: string };
 
@@ -847,7 +850,8 @@ export interface UpdateBookingStatusResponse {
   booking: BookingDTO;
   extended: BookingDTO | null;
   course: CourseSummary | null;
-  locked: boolean;
+  /** 🔴 TASK-658 — kept OPTIONAL and unread: the server still sends `false`; nothing on a screen depends on it. */
+  locked?: boolean;
   notification:
     | { channel: "line"; status: "queued" | "skipped"; reason?: string }
     | null;

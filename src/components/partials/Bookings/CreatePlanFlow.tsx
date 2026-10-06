@@ -25,7 +25,6 @@ import { Checkbox, SegmentedControl } from "@mantine/core";
 import RentalTierPicker, { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
 import { useT } from "@/lib/i18n";
 import {
-  LEAVE_QUOTA_BY_SIZE,
   MAX_WEEK_BY_SIZE,
   TIME_SLOTS,
   type EntitlementPlan,
@@ -111,7 +110,6 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
     value: String(s),
     label: t("course.sizeOption", {
       size: s,
-      leave: LEAVE_QUOTA_BY_SIZE[s as PackageSize],
       week: MAX_WEEK_BY_SIZE[s as PackageSize],
     }),
   }));
@@ -211,10 +209,6 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
         summary: {
           kind: "course",
           size: p.size,
-          // Creation-time absences are FREE (SPEC-049 owner decision B) — showing them as used quota here would
-          // be the opposite of the rule being implemented.
-          leaveUsed: 0,
-          leaveQuota: LEAVE_QUOTA_BY_SIZE[size],
           maxWeek: MAX_WEEK_BY_SIZE[size],
           owedCount: 0,
           expiryDate: p.expiryDate,

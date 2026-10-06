@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import { CANCEL_REASON_CODES, type CancelReasonCode } from "@/types/app/scheduler";
+import { CANCEL_REASON_CODES, SESSION_ONLY_CANCEL_REASONS, type CancelReasonCode, type SessionCancelReason } from "@/types/app/scheduler";
 
 /**
  * TASK-369 (`REQ-089 §5` / `§5.1`) — the CANCELLED tray's two per-user flags, stored the way the paused tray's and
@@ -88,10 +88,16 @@ export function useCancelledTrayCollapsed() {
 export const cancelReasonDisplay = (
   cancelReason: string | null | undefined,
   note: string | null | undefined,
-): { key: `endCourse.${CancelReasonCode}` } | { text: string } | null => {
+): { key: `endCourse.${CancelReasonCode | SessionCancelReason}` } | { text: string } | null => {
   // TASK-407 — the wider READ set: the three admin reasons + `TEACHER_LEAVE` (the teacher's own leave writes it).
   if (cancelReason && (CANCEL_REASON_CODES as readonly string[]).includes(cancelReason)) {
     return { key: `endCourse.${cancelReason as CancelReasonCode}` };
+  }
+  // 🔴 TASK-691 — a SESSION cancel may now carry `SCHOOL_ISSUE`. It is read with the SAME `endCourse.<code>` label, and it is NOT added to
+  // `CANCEL_REASON_CODES` (the READ set the dialogs and the teacher-scope pin hold at four): that set means *codes a dialog or the teacher's own
+  // leave can write*, and this one is written only by the session cancel.
+  if (cancelReason && (SESSION_ONLY_CANCEL_REASONS as readonly string[]).includes(cancelReason)) {
+    return { key: `endCourse.${cancelReason as SessionCancelReason}` };
   }
   const text = note?.trim();
   return text ? { text } : null;

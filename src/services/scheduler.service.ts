@@ -74,6 +74,7 @@ import type {
   CourseStatus,
   EndCoursePreview,
   EndCourseReason,
+  SessionCancelReason,
   ExpiryPreview,
   PackageSize,
 } from "@/types/app/scheduler";
@@ -361,10 +362,11 @@ export const confirmBooking = async (id: string): Promise<ConfirmResult> => {
   return { booking: dtoToBooking(data.booking), notification: data.notification };
 };
 
+/** 🔴 TASK-658 (REQ-112) — `locked` is GONE: nothing is ever locked. The server may still send it (always `false`);
+ *  🚫 no screen reads it. A make-up that cannot fit REFUSES the leave (the owner's ruling) — it is not a field here. */
 export interface SickLeaveResult {
   booking?: Booking;
   extended?: Booking;
-  locked: boolean;
 }
 
 export const markSickLeave = async (
@@ -379,7 +381,6 @@ export const markSickLeave = async (
   return {
     booking: dtoToBooking(data.booking),
     extended: data.extended ? dtoToBooking(data.extended) : undefined,
-    locked: data.locked,
   };
 };
 
@@ -393,7 +394,7 @@ export const markSickLeave = async (
 export const cancelBooking = async (
   id: string,
   reason?: string,
-  reasonCode?: EndCourseReason,
+  reasonCode?: SessionCancelReason,
 ): Promise<Booking> => {
   if (useMock) return mock.cancelBooking(id, reason);
   const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {
@@ -825,14 +826,6 @@ export const getCoursePackages = async (
     // them here would reintroduce exactly the disagreement this task exists to remove.
     counts: data.counts,
   };
-};
-
-export const setCourseAdminUnlock = async (id: string, unlocked: boolean) => {
-  if (useMock) return mock.setCourseAdminUnlock(id, unlocked);
-  const { data } = await api.patch<CourseListItem>(`/courses/${id}`, {
-    adminUnlocked: unlocked,
-  });
-  return dtoToCourseView(data);
 };
 
 export interface CreateCourseInput {

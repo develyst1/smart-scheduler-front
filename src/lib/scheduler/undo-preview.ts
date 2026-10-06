@@ -47,14 +47,19 @@ export interface PreviewLine {
 /**
  * What the act WOULD do, from the preview and nothing else. 🚫 No line is emitted for a fact the preview did not state:
  * **an absent make-up is not "no make-up", it is nothing to say** — and a dialog that lists only what it knows cannot
- * promise a quota it never saw. The order is fixed (quota · make-up · expiry) so the sentence reads the same every time.
+ * promise what it never saw.
+ *
+ * 🔴 **TASK-658 (REQ-112) — ONE possible line now, the make-up.** Two lines are GONE with the model they described:
+ *  · *"return the leave to the family's quota"* — there is no leave quota to return to. (The server still sends
+ *    `leaveRefunded: true` when the leave COUNT went back; it is a number to a ledger, not a sentence to an admin, so 🚫 it is
+ *    not read here.)
+ *  · *"move the course expiry back"* — **the Undo NEVER moves the end date, in any case** (the owner's ruling; the server's
+ *    Undo expiry logic is deleted). A line promising it would be false whatever the server sent.
  */
 export const previewLines = (p: UndoPreview | undefined): PreviewLine[] => {
   if (!p || !p.ok) return [];
   const out: PreviewLine[] = [];
-  if (p.leaveRefunded) out.push({ key: "undo.previewLeaveBack" });
   if (p.makeupCancelled) out.push({ key: "undo.previewMakeupOff", vars: { date: p.makeupCancelled.date } });
-  if (p.expiry) out.push({ key: "undo.previewExpiry", vars: { from: p.expiry.from, to: p.expiry.to } });
   return out;
 };
 

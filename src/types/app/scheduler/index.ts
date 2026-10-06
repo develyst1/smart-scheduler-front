@@ -188,15 +188,7 @@ export interface Booking {
   status: BookingStatus;
   /** อ้างถึงคอร์สแพ็คเกจ (ถ้ามี) สำหรับการนับโควตาการลา */
   courseId?: string;
-  /**
-   * TASK-541 addendum, corrected in TASK-543 — **the server's own `leaveLocked`**, as sent. `null` = no course behind
-   * the row (or a payload without the facts).
-   * 🔑 It replaced a pair of fields the FE was recomputing: `leaveLocked` is `leaveUsed >= quota && !adminUnlocked`,
-   * which is **exactly `!canTakeLeave`** — so the answer was arriving all along and we were deriving it a second time.
-   * 🚫 Nothing on the FE may re-derive this: a second computation of one rule is how a cancelled course kept a green
-   * `ปกติ` badge (TASK-183/188).
-   */
-  courseLeaveLocked?: boolean | null;
+  // 🔴 TASK-658 (REQ-112) — `courseLeaveLocked` is GONE: nothing is ever locked, so there is no fact to carry.
   note?: string;
   /** ปลายทางที่เสนอย้าย (เมื่อ status = PENDING_RESCHEDULE) */
   rescheduleTo?: RescheduleTarget;
@@ -326,12 +318,16 @@ export interface EligibleStudent {
   context: CourseContext | VoucherContext;
 }
 
-// ──────────────────────── Course package + leave quota ────────────────────────
+// ──────────────────────── Course package + validity window ────────────────────────
 
 export type PackageSize = 4 | 6 | 10;
 
-/** โควตาการลา ผูกกับขนาดคอร์ส: 4→1, 6→2, 10→3 */
-export const LEAVE_QUOTA_BY_SIZE: Record<PackageSize, number> = {
+/**
+ * 🔴 TASK-658 (REQ-112) — was `LEAVE_QUOTA_BY_SIZE`, and it **stopped being a quota**: there is no leave allowance. This is the
+ * BASE of the validity window — the weeks a course of this size stays valid beyond its sessions (4→1, 6→2, 10→3), so
+ * `MAX_WEEK_BY_SIZE = size + this`. 🔑 Renamed so a reader is not told something false by a constant name.
+ */
+export const EXTRA_WEEKS_BY_SIZE: Record<PackageSize, number> = {
   4: 1,
   6: 2,
   10: 3,
@@ -349,9 +345,8 @@ export interface CoursePackage {
   studentName: string;
   size: PackageSize;
   usedSessions: number;
+  /** 🔴 TASK-658 — a plain count of leaves taken. No limit; nothing gates on it. (`adminUnlocked` is gone with the lock.) */
   leaveUsed: number;
-  /** ปลดล็อกพิเศษโดยแอดมิน เมื่อใช้โควตาการลาเกิน (เช่น ขาหัก) */
-  adminUnlocked: boolean;
   startDate: string; // YYYY-MM-DD
   weekday: number; // 0-6
   startTime: string; // HH:mm
@@ -388,11 +383,9 @@ export interface CoursePackage {
  * value nobody questions.* ⇒ the omit list shrank by exactly the field that became real, and not by one more.
  */
 export interface CoursePackageView extends Omit<CoursePackage, "weekday" | "startTime"> {
+  /** The BASE of the validity window — 🚫 not an allowance (REQ-112). `leaveRemaining` / `leaveLocked` are gone. */
   leaveQuota: number;
-  leaveRemaining: number;
   maxWeek: number;
-  /** ลาเกินโควตา และยังไม่ถูกปลดล็อก → ห้ามเลื่อนตารางเพิ่ม */
-  leaveLocked: boolean;
   /** REQ-036 — set ⇒ the course was ENDED EARLY. An empty plan then means **forfeited**, not never-started.
    *  **Required on the VIEW** (both builders always set it): making it optional is how it silently became
    *  `undefined` and a cancelled course kept its green `ปกติ` badge. A type beats a reminder — TASK-184's lesson. */
@@ -480,6 +473,18 @@ export interface PlanSession {
 /** REQ-036 — the three reasons a course may be ended early. **The contract; there is no fourth.** */
 export const END_COURSE_REASONS = ["PROGRAM_CHANGED", "CUSTOMER_CANCELLED", "ADMIN_ERROR"] as const;
 export type EndCourseReason = (typeof END_COURSE_REASONS)[number];
+
+/**
+ * 🔴 **TASK-691 (REQ-112) — reasons ONLY a SESSION cancel may carry.** `SCHOOL_ISSUE` (*ปัญหาจากทางเรา*) is what gives the family +1 week
+ * of validity, so an admin must be able to choose it — and **must never be offered it when ENDING A COURSE**, where it means nothing.
+ * 🔑 `END_COURSE_REASONS` is shared by the session cancel, the course end, the voucher end and the series cancel, so the new code is a
+ * **SIBLING list** and not a fourth member of that one: *adding it there would have put it on four dialogs at once.*
+ * The contract for ending a course is unchanged: **three reasons, there is no fourth.**
+ */
+export const SESSION_ONLY_CANCEL_REASONS = ["SCHOOL_ISSUE"] as const;
+/** What a session cancel may SEND — derived by SPREAD, never re-typed (the server derives its twin the same way). */
+export const SESSION_CANCEL_REASONS = [...END_COURSE_REASONS, ...SESSION_ONLY_CANCEL_REASONS] as const;
+export type SessionCancelReason = (typeof SESSION_CANCEL_REASONS)[number];
 /**
  * REQ-097 (TASK-406/407) — what `cancelReason` may CARRY on a cancelled row: the three an admin picks + `TEACHER_LEAVE`,
  * written only by the teacher's own leave (`POST /teachers/me/leave`). 🚫 Never offered in a dialog — the dialogs read
@@ -510,28 +515,19 @@ export interface EndCoursePreview {
  *
  * Lives beside `EndCoursePreview` rather than in `contract.ts`, which TASK-311 leaves untouched by instruction.
  */
-export interface ExpiryLeaveRoom {
-  /** Leave days the family still has. `0` ⇒ the date takes nothing away and no leave line should render. */
-  remainingLeave: number;
-  /** The last still-owed session, or `null` when nothing is owed (then no make-up can be appended). */
-  planEnd: string | null;
-  /** The expiry that would fit EVERY remaining leave's make-up; `null` when nothing is owed. */
-  neededFor: string | null;
-  /** How many of `remainingLeave` still fit under this date. */
-  roomFor: number;
-  roomForAll: boolean;
-}
-
+/**
+ * 🔴 TASK-658 (REQ-112) — there is NO `leaveRoom` any more: it answered "how many of the family's remaining leaves still fit
+ * under this date", and no leave allowance exists. @Jason removed it from the server; the preview answers `{ expiryWarning }` ONLY.
+ */
 export interface ExpiryPreview {
   expiryWarning: ExpiryWarning;
-  leaveRoom: ExpiryLeaveRoom;
 }
 
 export interface CoursePlanSummary {
   kind: "course";
   size: number;
-  leaveUsed: number;
-  leaveQuota: number;
+  // 🔴 TASK-658 (REQ-112) — `leaveUsed` / `leaveQuota` are GONE from the plan summary: the only screen that read them printed
+  // "Leave {used}/{quota}", which is exactly the "x of y" this task removes.
   maxWeek: number;
   owedCount: number;
   expiryDate: string; // the MAX_WEEK ceiling (NOT the live end)

@@ -87,14 +87,17 @@ const dropped = (fields: string[], reads: Set<string>) => fields.filter((f) => !
  */
 const DROPPED_TOP: Record<string, string> = {};
 
-/** `dto.course` → `courseId` + `courseLeaveLocked`. This is where the two lost facts lived. */
+/**
+ * `dto.course` → `courseId` ONLY.
+ * 🔻 TASK-658 (REQ-112), declared: this used to be `courseId` + `courseLeaveLocked` — the place the two lost facts lived. There is
+ * no lock any more, so there is no second fact to carry; ✅ what this pin protects (the reduced `course` is an ALLOW-LIST whose
+ * every omission is declared with a reason) is unchanged.
+ */
 const DROPPED_COURSE: Record<string, string> = {
   size: "the package size is a course/plan-page fact; a calendar row never shows it",
   usedSessions: "a course-page counter — a booking row shows its own status, not the plan's progress",
-  leaveUsed: "a course-page counter; the leave dialog needs only 'is it locked', which `leaveLocked` answers",
+  leaveUsed: "a course-page counter (a plain count of leaves taken, REQ-112); a booking row shows its own status",
   leaveQuota: "same counter pair as `leaveUsed` — shown on the course page, never on a row",
-  leaveRemaining: "🔑 deliberately NOT carried: with `adminUnlocked` it would let the FE recompute `leaveLocked`, and the server already sends that answer (TASK-543's own correction)",
-  adminUnlocked: "🔑 same reason — the two of these ARE the server's `leaveLocked` condition; carrying them invites a second copy of one rule",
   maxWeek: "a scheduling bound the plan editor reads from its own course query",
   endedAt: "course lifecycle; the row's own `status` and the course pages carry what staff need",
   endReason: "course lifecycle, as above",
@@ -142,11 +145,14 @@ describe("TASK-543 — the fields `dtoToBooking` drops, declared", () => {
     );
   });
 
-  it("🔑 `course` — the reduced object where the two lost facts lived", () => {
+  it("🔑 `course` — the reduced object: its id, and nothing else", () => {
     expect(dropped(ifaceKeys("CourseSummary"), readsOf("course"))).toEqual(Object.keys(DROPPED_COURSE).sort());
     // and what IS carried, so the pin is about the split and not only about the losses
     expect(readsOf("course").has("id")).toBe(true);
-    expect(readsOf("course").has("leaveLocked")).toBe(true);
+    // 🔻 TASK-658, declared: it carried `leaveLocked`; there is no lock now, so the row carries NOTHING about one — asserted
+    // as an ABSENCE, because the next accidental re-introduction is exactly what this file exists to catch.
+    expect(readsOf("course").has("leaveLocked")).toBe(false);
+    expect(readsOf("course").size).toBe(1);
   });
 
   it("`student` — reduced to the two names a row shows", () => {
@@ -178,9 +184,12 @@ describe("TASK-543 — the fields `dtoToBooking` drops, declared", () => {
       expect(field.length).toBeGreaterThan(0);
     }
     // the four reduced objects, plus the (currently empty) top level
-    expect(all.length).toBe(28);
+    // 🔻 TASK-658 (REQ-112), declared: 28 → 26 — the two declared drops that existed only to keep the FE from recomputing the
+    // lock (`leaveRemaining`, `adminUnlocked`) left with the lock itself. The rule — every drop has a reason — is unchanged.
+    expect(all.length).toBe(26);
     // 🔻 TASK-574 — course 16 → 17: the real `startDate` arrived and a BOOKING row still does not carry it.
-    expect(sets.map((s) => Object.keys(s).length)).toEqual([0, 17, 6, 3, 2]);
+    // 🔻 TASK-658, declared: course 17 → 15 (the two lock-recomputation drops left with the lock).
+    expect(sets.map((s) => Object.keys(s).length)).toEqual([0, 15, 6, 3, 2]);
   });
 });
 
@@ -234,7 +243,9 @@ describe("TASK-544 — `dtoToTeacher` and `dtoToCourseView` declare their drops"
   it("`dtoToCourseView`: all 19 summary fields carried; the reduced `student` declares its 7", () => {
     const keys = ifaceKeys("CourseSummary");
     // 🔻 TASK-573/574 — 18 + the real `startDate`, which closed TASK-545's contract question.
-    expect(keys.length).toBe(19);
+    // 🔻 TASK-658 (REQ-112), declared: 19 → 16 — `leaveRemaining`, `leaveLocked` and `adminUnlocked` left the type with the quota
+    // and the lock. ✅ The claim (every summary field is carried or declared, with a reason) is unchanged.
+    expect(keys.length).toBe(16);
     expect(dropped(keys, readsIn(courseViewBody, "row"))).toEqual(Object.keys(DROPPED_COURSEVIEW_TOP).sort());
     expect(dropped(ifaceKeys("StudentRef"), readsIn(courseViewBody, "row.student"))).toEqual(
       Object.keys(DROPPED_COURSEVIEW_STUDENT).sort(),

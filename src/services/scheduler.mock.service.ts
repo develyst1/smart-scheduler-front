@@ -9,7 +9,7 @@ import {
   teacherTypeOrder,
   setTeacherTypeOrderStore,
 } from "@/lib/mock/data";
-import { canTakeLeave, toCourseView } from "@/lib/scheduler/leave";
+import { toCourseView } from "@/lib/scheduler/leave";
 import { sortByTypeOrder, toTeacherView } from "@/lib/scheduler/teacher";
 import type {
   Booking,
@@ -286,24 +286,20 @@ export const confirmBooking = (id: string) => {
 export interface SickLeaveResult {
   booking?: Booking;
   extended?: Booking;
-  locked: boolean;
 }
 
 export const markSickLeave = (id: string): Promise<SickLeaveResult> => {
   const b = bookings.find((x) => x.id === id);
-  if (!b) return delay({ booking: undefined, extended: undefined, locked: false });
+  if (!b) return delay({ booking: undefined, extended: undefined });
 
   b.status = "SICK_LEAVE";
 
   const course = b.courseId ? coursePackages.find((c) => c.id === b.courseId) : undefined;
   if (!course) {
-    return delay({ booking: clone(b), extended: undefined, locked: false });
+    return delay({ booking: clone(b), extended: undefined });
   }
 
-  if (!canTakeLeave(course)) {
-    return delay({ booking: clone(b), extended: undefined, locked: true });
-  }
-
+  // 🔴 TASK-658 — no quota to spend and nothing to lock: a leave on a course is a COUNT and a make-up.
   course.leaveUsed += 1;
   const extended: Booking = {
     ...clone(b),
@@ -314,7 +310,7 @@ export const markSickLeave = (id: string): Promise<SickLeaveResult> => {
   };
   bookings.push(extended);
 
-  return delay({ booking: clone(b), extended: clone(extended), locked: false });
+  return delay({ booking: clone(b), extended: clone(extended) });
 };
 
 export const markAttended = (id: string) => {
@@ -471,7 +467,7 @@ export const swapGroupTeacher = async (id: string, _input: unknown): Promise<Boo
 
 /** TASK-421 — the DUO rate on the mock: echo a course-shaped row. */
 export const updateCourseRate = async (courseId: string, classRateMinor: number): Promise<CourseListItem> =>
-  delay({ id: courseId, size: 6, usedSessions: 0, leaveUsed: 0, leaveQuota: 2, leaveRemaining: 2, maxWeek: 8, leaveLocked: false, adminUnlocked: false, endedAt: null, endReason: null, status: "ACTIVE", expiryDate: "2026-12-31", courseKind: "DUO", classRateMinor, student: { id: "s1", name: "A", nickname: "A" }, coStudent: { id: "s2", name: "B", nickname: "B" } } as CourseListItem);
+  delay({ id: courseId, size: 6, usedSessions: 0, leaveUsed: 0, leaveQuota: 2, maxWeek: 8, endedAt: null, endReason: null, status: "ACTIVE", expiryDate: "2026-12-31", courseKind: "DUO", classRateMinor, student: { id: "s1", name: "A", nickname: "A" }, coStudent: { id: "s2", name: "B", nickname: "B" } } as CourseListItem);
 
 export const createOtherSeries = async (input: { dates: string[] }) => delay({ created: input.dates.length, bookingIds: input.dates.map((d) => `mock-${d}`) });
 
@@ -527,12 +523,6 @@ export const getCoursePackages = (query: { q?: string; page?: number; limit?: nu
   });
 };
 
-export const setCourseAdminUnlock = (id: string, unlocked: boolean) => {
-  const c = coursePackages.find((x) => x.id === id);
-  if (c) c.adminUnlocked = unlocked;
-  return delay(c ? toCourseView(clone(c)) : undefined);
-};
-
 export const createCoursePackage = (input: {
   studentName: string;
   teacherId: string;
@@ -558,7 +548,6 @@ export const createCoursePackage = (input: {
     size: input.size,
     usedSessions: 0,
     leaveUsed: 0,
-    adminUnlocked: false,
     startDate: input.startDate,
     weekday: dayjs(input.startDate).day(),
     startTime: input.startTime,
@@ -728,7 +717,6 @@ export const importCoursePackage = (input: {
     startTime: input.startTime,
     expiryDate: input.expiryDate,
     leaveUsed: 0,
-    adminUnlocked: false,
   } as never);
   for (let i = 0; i < remaining; i++) {
     bookings.push({
@@ -790,8 +778,6 @@ export const getEntitlementPlan = (id: string): Promise<EntitlementPlan> => {
     summary: {
       kind: "course",
       size: cv?.size ?? 4,
-      leaveUsed: cv?.leaveUsed ?? 0,
-      leaveQuota: cv?.leaveQuota ?? 1,
       maxWeek: cv?.maxWeek ?? 5,
       owedCount: Math.max(0, (cv?.size ?? 4) - sessions.length),
       expiryDate: cv?.expiryDate ?? "",
@@ -1173,17 +1159,9 @@ export const updateCourseExpiry = (courseId: string, expiryDate: string) => {
  * disagree here either) plus the leave room, and it writes nothing. A date before the fixture's plan end
  * reports a tight room so the "eats the leave" sentence is exercisable without a server.
  */
-export const previewCourseExpiry = (courseId: string, expiryDate: string) => {
-  const c = coursePackages.find((x) => x.id === courseId) as any;
-  const remainingLeave = Math.max(0, (c?.leaveQuota ?? 2) - (c?.leaveUsed ?? 0));
-  const planEnd = "2026-12-13";
-  const tight = expiryDate < "2026-12-27";
-  const roomFor = tight ? 0 : remainingLeave;
-  return delay({
-    expiryWarning: mockWarning(courseId, expiryDate),
-    leaveRoom: { remainingLeave, planEnd, neededFor: "2026-12-27", roomFor, roomForAll: roomFor >= remainingLeave },
-  });
-};
+export const previewCourseExpiry = (courseId: string, expiryDate: string) =>
+  // 🔴 TASK-658 — `leaveRoom` is gone from the server's answer, so it is gone from the mock's too.
+  delay({ expiryWarning: mockWarning(courseId, expiryDate) });
 
 /** TASK-202 — offline stand-in; mirrors the real shape incl. a skip so the skip path is exercisable. */
 export const confirmCourse = (courseId: string) =>

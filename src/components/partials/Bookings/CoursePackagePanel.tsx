@@ -1,17 +1,16 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ActionIcon, Card, Button, Progress, Badge, RingProgress, Text, Group, Stack, Skeleton, Modal, SegmentedControl, TextInput } from "@mantine/core";
+import { ActionIcon, Card, Button, Badge, RingProgress, Text, Group, Stack, Skeleton, Modal, SegmentedControl, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { LockKeyholeOpen, Lock, GraduationCap, Search, History, Ban, CalendarClock, CalendarArrowUp, PackageX } from "lucide-react";
-import { useSetCourseAdminUnlock, useCoursePackages, useRemoveCourseRental, useUpdateCourseRate } from "@/hooks/scheduler";
+import { GraduationCap, Search, History, Ban, CalendarClock, CalendarArrowUp, PackageX } from "lucide-react";
+import { useCoursePackages, useRemoveCourseRental, useUpdateCourseRate } from "@/hooks/scheduler";
 import DuoRateLine from "./DuoRateLine";
 import CourseDetailRow, { CourseDetails } from "./CourseDetailRow";
 import { COURSE_STATUSES, type CourseStatus } from "@/types/app/scheduler";
 import { isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
-import { MANTINE_COLOR } from "@/lib/ui/colors";
 import { isDeadEntitlement, sortEntitlements } from "@/lib/scheduler/entitlement-order";
 import PagerBar from "@/components/common/PagerBar";
 import CourseHistoryModal from "./CourseHistoryModal";
@@ -71,9 +70,8 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   // `data !== undefined` — NOT `courses.length` — is what keeps a first load `quiet` instead of flashing the
   // empty state before the first page arrives.
   const phase = useLoadPhase(busy, data !== undefined);
-  const setUnlock = useSetCourseAdminUnlock();
   const updateRate = useUpdateCourseRate();
-  // REQ-092 Stage 3 — the expiry date is `bookings.course-expiry`; unlock/relock is a course PATCH = `bookings.course-edit`.
+  // REQ-092 Stage 3 — the expiry date is `bookings.course-expiry`; `bookings.course-edit` gates the rest of the card's course PATCHes.
   const can = useCan();
   const canExpiry = can("action:bookings.course-expiry");
   const canEdit = can("action:bookings.course-edit");
@@ -81,8 +79,6 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   const canRate = can("action:bookings.coach-rate");
   const canRemoveRental = can("action:bookings.course-rental");
 
-  // คอร์ส + ทิศทาง (unlock/relock) ที่รอการยืนยันใน modal
-  const [pending, setPending] = useState<{ course: CoursePackageView; unlock: boolean } | null>(null);
   // คอร์สที่กำลังเปิดดูประวัติการตัดคอร์ส (TASK-120)
   const [historyId, setHistoryId] = useState<string | null>(null);
   // REQ-082 AC-1 (TASK-265) — the course whose expiry is being moved; `null` = the dialog is closed.
@@ -94,38 +90,6 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
   const [startTarget, setStartTarget] = useState<CoursePackageView | null>(null);
   // TASK-391 (REQ-091 §14) — the course under the two-tap remove-rental dialog.
   const [rentalTarget, setRentalTarget] = useState<CoursePackageView | null>(null);
-
-  const runUnlock = async () => {
-    if (!pending) return;
-    const { course: c, unlock } = pending;
-    setPending(null);
-    try {
-      await setUnlock.mutateAsync({ id: c.id, unlocked: unlock });
-      notify(
-        unlock
-          ? {
-              title: t("course.unlockedTitle"),
-              description: t("course.unlockedDesc", { student: c.studentName }),
-              color: "warning",
-            }
-          : {
-              title: t("course.relockedTitle"),
-              description: t("course.relockedDesc", { student: c.studentName }),
-              color: "default",
-            },
-      );
-    } catch (e) {
-      const msg =
-        e instanceof ApiClientError
-          ? e.message
-          : t(unlock ? "course.unlockFailGeneric" : "course.relockFailGeneric");
-      notify({
-        title: t(unlock ? "course.unlockFailTitle" : "course.relockFailTitle"),
-        description: msg,
-        color: "danger",
-      });
-    }
-  };
 
   return (
     <Stack gap="md">
@@ -192,11 +156,6 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
           {courses.map((c, i) => {
         // REQ-105 §2 (TASK-455) — the same ONE sorter as the voucher panel; the dead group is faded under a divider.
         const dead = isDeadEntitlement(c.status);
-        const leaveColor = c.leaveLocked
-          ? MANTINE_COLOR.danger
-          : c.leaveRemaining === 0
-            ? MANTINE_COLOR.warning
-            : MANTINE_COLOR.success;
 
         return (
           <React.Fragment key={c.id}>
@@ -246,15 +205,6 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                   >
                     {t(`course.status.${c.status}`)}
                   </Badge>
-                  {c.leaveLocked ? (
-                    <Badge color="red" variant="light" leftSection={<Lock size={13} />}>
-                      {t("course.locked")}
-                    </Badge>
-                  ) : c.adminUnlocked ? (
-                    <Badge color="orange" variant="light">
-                      {t("course.specialUnlock")}
-                    </Badge>
-                  ) : null}
                 </Group>
               </div>
 
@@ -277,18 +227,10 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                 />
 
                 <div className="flex-1">
-                  <div className="mb-1 flex justify-between text-xs text-muted-500">
-                    <span>{t("course.leaveQuota")}</span>
-                    <span>{t("course.leftN", { n: c.leaveRemaining })}</span>
-                  </div>
-                  <Progress
-                    size="md"
-                    radius="xl"
-                    value={(c.leaveUsed / c.leaveQuota) * 100}
-                    color={leaveColor}
-                  />
-                  <p className="mt-1.5 text-[11px] text-muted-400">
-                    {t("course.usage", { used: c.leaveUsed, quota: c.leaveQuota, week: c.maxWeek })}
+                  {/* 🔴 TASK-658 (REQ-112) — the leave counter, its bar and its colour are GONE: there is no leave quota, so there
+                      is nothing to be "left of". What stays is the ceiling a course can reach, which is still true. */}
+                  <p className="text-[11px] text-muted-400" data-course-valid-until>
+                    {t("course.usage", { week: c.maxWeek })}
                   </p>
                 </div>
               </Group>
@@ -389,41 +331,6 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
                   </Button>
                 </Group>
 
-                {/* 🔴 REQ-084 AC-C / TASK-262 — **the second surface the sweep found.** These were gated on
-                    `leaveLocked` / `adminUnlocked` alone — on the LEAVE state, never on the course's lifecycle —
-                    so a `DROPPED` (or ended) course still offered ปลดล็อก. `updateCourse` runs through
-                    `assertCourseWritable` (`scheduler.service.ts:3224`) and refuses it, which makes this the same
-                    defect as AC-A wearing a different button: **a control offered for a call the server rejects.**
-                    Same predicate as the plan modal's, so the two cannot drift apart. */}
-                {isCourseWritable(c.status) &&
-                  canEdit &&
-                  (c.leaveLocked ? (
-                    <Button
-                      size="sm"
-                      color="orange"
-                      variant="light"
-                      fullWidth
-                      leftSection={<LockKeyholeOpen size={16} />}
-                      loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
-                      onClick={() => setPending({ course: c, unlock: true })}
-                    >
-                      {t("course.unlockBtn")}
-                    </Button>
-                  ) : (
-                    c.adminUnlocked && (
-                      <Button
-                        size="sm"
-                        color="gray"
-                        variant="light"
-                        fullWidth
-                        leftSection={<Lock size={16} />}
-                        loading={setUnlock.isPending && setUnlock.variables?.id === c.id}
-                        onClick={() => setPending({ course: c, unlock: false })}
-                      >
-                        {t("course.relockBtn")}
-                      </Button>
-                    )
-                  ))}
               </Stack>
             </Stack>
           </Card>
@@ -436,38 +343,6 @@ export default function CoursePackagePanel({ onManage }: { onManage: (id: string
       {/* Hidden with the list. Paging is one of the switches that triggers the wait, and a pager that keeps
           saying "page 2 of 4" over a skeleton is describing the result that just went away. */}
       {phase === "content" && <PagerBar total={total} page={page} limit={PAGE_SIZE} onPage={setPage} />}
-
-      <Modal
-        opened={pending !== null}
-        onClose={() => setPending(null)}
-        centered
-        title={
-          pending?.unlock ? t("course.unlockConfirmTitle") : t("course.relockConfirmTitle")
-        }
-      >
-        <Stack gap="lg">
-          <Text size="sm">
-            {pending
-              ? t(pending.unlock ? "course.unlockConfirmMsg" : "course.relockConfirmMsg", {
-                  student: pending.course.studentName,
-                })
-              : null}
-          </Text>
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={() => setPending(null)}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              color={pending?.unlock ? "orange" : "gray"}
-              leftSection={pending?.unlock ? <LockKeyholeOpen size={15} /> : <Lock size={15} />}
-              loading={setUnlock.isPending}
-              onClick={runUnlock}
-            >
-              {t("common.confirm")}
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
 
       <CourseHistoryModal courseId={historyId} onClose={() => setHistoryId(null)} />
 

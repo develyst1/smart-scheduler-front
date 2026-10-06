@@ -51,16 +51,25 @@ describe("TASK-547 §2 — the four states of a forecast", () => {
 });
 
 describe("TASK-547 §2 — the lines, and only the lines the server gave", () => {
-  it("each fact appears only when the preview states it, in a fixed order", () => {
-    expect(previewLines(ok({ leaveRefunded: true }))).toEqual([{ key: "undo.previewLeaveBack" }]);
+  it("the make-up line appears only when the preview states it", () => {
     expect(previewLines(ok({ makeupCancelled: { id: "x", date: "2026-11-04" } }))).toEqual([
       { key: "undo.previewMakeupOff", vars: { date: "2026-11-04" } },
     ]);
-    expect(previewLines(ok({ expiry: { from: "2026-11-11", to: "2026-11-04" } }))).toEqual([
-      { key: "undo.previewExpiry", vars: { from: "2026-11-11", to: "2026-11-04" } },
-    ]);
+  });
+
+  /**
+   * 🔻 **TASK-658 (REQ-112), declared — this was "each fact appears only when the preview states it, in a fixed order" (three facts).**
+   * Two of the three LEFT with the model: *"return the leave to the family's quota"* (there is no quota) and *"move the course
+   * expiry back"* (the Undo NEVER moves the end date — the owner's ruling). ✅ What this protects — **a line is emitted only for a fact
+   * the preview stated** — is unchanged and is now asserted harder: the two facts the server may STILL send (`leaveRefunded` is
+   * the leave COUNT going back; `expiry` is a leftover) produce NO line, whatever their value.
+   */
+  it("🔴 `leaveRefunded` and `expiry` produce NO line at all — the server may still send them, and no screen speaks them", () => {
+    expect(previewLines(ok({ leaveRefunded: true }))).toEqual([]);
+    expect(previewLines(ok({ expiry: { from: "2026-11-11", to: "2026-11-04" } }))).toEqual([]);
+    // …and beside a real make-up fact they still add nothing: ONE line, the make-up
     const all = previewLines(ok({ leaveRefunded: true, makeupCancelled: { id: "x", date: "2026-11-04" }, expiry: { from: "a", to: "b" } }));
-    expect(all.map((l) => l.key)).toEqual(["undo.previewLeaveBack", "undo.previewMakeupOff", "undo.previewExpiry"]);
+    expect(all.map((l) => l.key)).toEqual(["undo.previewMakeupOff"]);
   });
 
   it("🚫 nothing is listed for a refusal, a failure, or a fact the preview did not state", () => {
@@ -69,7 +78,10 @@ describe("TASK-547 §2 — the lines, and only the lines the server gave", () =>
     // 🔑 an absent make-up is not "no make-up" — it is nothing to say, which is why the empty case has its own sentence
     expect(previewLines(ok())).toEqual([]);
     expect(previewNothingElse(ok())).toBe(true);
-    expect(previewNothingElse(ok({ leaveRefunded: true }))).toBe(false);
+    // 🔻 TASK-658, declared: this was `toBe(false)` — a refunded leave USED to be a listed line, so it was not "nothing else". There is no
+    // quota to return, so `leaveRefunded` lists nothing and the honest sentence is "nothing else follows". ✅ The claim (an empty list
+    // says so in words) is unchanged.
+    expect(previewNothingElse(ok({ leaveRefunded: true }))).toBe(true);
     expect(previewNothingElse(refused)).toBe(false); // a refusal is not "nothing else follows"
     expect(previewNothingElse(undefined)).toBe(false);
   });
@@ -108,15 +120,17 @@ describe("TASK-547 §2 — the wire and the dialog", () => {
 });
 
 describe("TASK-547 §3 — the words (DRAFT, pinned by the shape of the claim)", () => {
-  const KEYS = ["previewHeading", "previewLeaveBack", "previewMakeupOff", "previewExpiry", "previewNothingElse", "previewForecast", "previewLoading", "previewFailed", "previewRefused"];
+  // 🔻 TASK-658, declared: nine → SEVEN. `previewLeaveBack` and `previewExpiry` were DELETED with the quota and the Undo's end-date move.
+  const KEYS = ["previewHeading", "previewMakeupOff", "previewNothingElse", "previewForecast", "previewLoading", "previewFailed", "previewRefused"];
 
-  it("both languages carry all nine, with the placeholders the code passes", () => {
+  it("both languages carry all seven, with the placeholders the code passes — and the two deleted ones are GONE from both", () => {
     for (const d of [en, th]) {
       for (const k of KEYS) expect(d[k].trim().length).toBeGreaterThan(0);
       expect(d.previewMakeupOff).toContain("{date}");
-      expect(d.previewExpiry).toContain("{from}");
-      expect(d.previewExpiry).toContain("{to}");
+      expect(d.previewLeaveBack).toBeUndefined();
+      expect(d.previewExpiry).toBeUndefined();
     }
+    expect(KEYS.length).toBe(7);
   });
 
   it("🔑 the forecast is worded as a FORECAST — so a refusal after the click is not a contradiction", () => {
@@ -125,7 +139,7 @@ describe("TASK-547 §3 — the words (DRAFT, pinned by the shape of the claim)",
     expect(th.previewForecast).toContain("ปฏิเสธ");
     // 🚫 no promise words anywhere in the forecast family
     for (const d of [en, th]) {
-      for (const k of ["previewHeading", "previewLeaveBack", "previewMakeupOff", "previewExpiry"]) {
+      for (const k of ["previewHeading", "previewMakeupOff"]) {
         expect(d[k].toLowerCase()).not.toContain("guarantee");
         expect(d[k]).not.toContain("แน่นอน");
       }
@@ -154,11 +168,13 @@ describe("TASK-547 §3 — the words (DRAFT, pinned by the shape of the claim)",
   });
 
   it("📌 the vocabulary is shared with the dialog and the toast — not three features", () => {
-    // the pre-leave dialog, the Undo forecast and the outcome toast all speak of the quota and the make-up the same way
+    // the pre-leave dialog, the Undo forecast and the outcome toast all speak of the make-up the same way
+    // 🔻 TASK-658, declared: they used to speak of "the quota and the make-up"; the quota is gone, so the shared word is the make-up —
+    // ✅ the claim (one vocabulary across the dialog, the forecast and the toast; not three features) is unchanged.
     const pre = dictionaries.en.confirmAction as unknown as Record<string, string>;
     expect(pre.leaveMsg).toContain("make-up session");
     expect(en.previewMakeupOff).toContain("make-up session");
-    expect(pre.leaveMsgCourseLocked).toContain("leave quota");
-    expect(en.previewLeaveBack).toContain("quota");
+    expect((dictionaries.en.booking as unknown as Record<string, string>).leaveExtendedDesc).toContain("make-up session");
+    expect(pre.leaveMsgCourseLocked).toBeUndefined();
   });
 });

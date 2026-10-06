@@ -425,13 +425,9 @@ function ViewBooking({
       return;
     try {
       const res = await sickLeave.mutateAsync({ id: booking.id, override });
-      if (res.locked) {
-        notify({
-          title: t("booking.leaveLockedTitle"),
-          description: t("booking.leaveLockedDesc"),
-          color: "danger",
-        });
-      } else if (res.extended) {
+      // 🔴 TASK-658 (REQ-112) — the `locked` toast is GONE: nothing is ever locked, and a leave whose make-up cannot fit is
+      // REFUSED by the server (it arrives as the catch below, in the server's own sentence) — not a second toast here.
+      if (res.extended) {
         notify({
           title: t("booking.leaveSavedTitle"),
           // 🔴 TASK-340 §1 — the make-up's date, straight off the response and into a toast a human reads.

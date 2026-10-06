@@ -40,10 +40,8 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     bookingType: dto.bookingType,
     status: dto.status,
     courseId: dto.course?.id,
-    // TASK-541 addendum, corrected in TASK-543 — the SERVER's `leaveLocked` as sent, so the leave dialog can stop
-    // promising a quota an over-quota course will not spend. 🔑 It was `{ leaveRemaining, adminUnlocked }` and the rule
-    // recomputed `!canTakeLeave` from the pair; the server had already answered it. 🚫 Nothing derived here or there.
-    courseLeaveLocked: dto.course ? dto.course.leaveLocked : null,
+    // 🔴 TASK-658 (REQ-112) — `courseLeaveLocked` is GONE: nothing is ever locked. The server may still send `leaveLocked`
+    // (always `false`); 🚫 nothing here reads it.
     note: dto.note ?? undefined,
     badges: dto.badges ?? [],
     // ⚠️ This object literal is an allow-list, exactly like `createBooking`'s POST body — the omission that WAS
@@ -119,15 +117,12 @@ export function dtoToCourseView(row: CourseSummary & { student: StudentRef }): C
     size: row.size,
     usedSessions: row.usedSessions,
     leaveUsed: row.leaveUsed,
-    adminUnlocked: row.adminUnlocked,
     // 🚫 TASK-545 — `startDate`, `weekday` and `startTime` are NOT here and cannot be: `CourseSummary` does not carry
     // them, and the view no longer requires them. Inventing `"09:00"` / Sunday was worse than dropping — a fabricated
     // value is plausible, so nothing would ever have FAILED; a screen would just have shown Sunday 09:00.
     expiryDate: row.expiryDate,
     leaveQuota: row.leaveQuota,
-    leaveRemaining: row.leaveRemaining,
     maxWeek: row.maxWeek,
-    leaveLocked: row.leaveLocked,
     // ⚠️ REQ-036 / TASK-183 — these two arrived from the BE all along and were dropped HERE; that omission is why
     // a cancelled course still showed the green `ปกติ` badge. Third time this allow-list shape has cost us
     // (see `createBooking` body, `dtoToBooking`) — a field on the DTO reaches the UI only if it is mapped.

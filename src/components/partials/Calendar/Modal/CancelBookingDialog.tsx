@@ -9,7 +9,7 @@ import { useT } from "@/lib/i18n";
 import { formatDateDisplay, formatTimeDisplay } from "@/lib/ui/format";
 import { formatPriceMinor } from "@/types/app/pricing";
 import { useCancelBooking, usePostedSale } from "@/hooks/scheduler";
-import { END_COURSE_REASONS, type Booking, type EndCourseReason } from "@/types/app/scheduler";
+import { END_COURSE_REASONS, SESSION_ONLY_CANCEL_REASONS, type Booking, type SessionCancelReason } from "@/types/app/scheduler";
 import { useCan } from "@/hooks/scheduler/useMe";
 
 interface Props {
@@ -28,6 +28,12 @@ interface Props {
  * answerable across both cancel paths with one vocabulary. The server enforces the same closed set — a free-text
  * reason can't be reported on, which is the whole point of the enum.
  *
+ * 🔴 **TASK-691 (REQ-112) — plus ONE reason that exists only HERE: `ปัญหาจากทางเรา` (*a problem on our side*).** Under REQ-112 it is the reason that
+ * gives the family +1 week of validity, so an admin must be able to choose it — and, because it has an effect, **must read what it does before
+ * choosing it** (the hint under it). 🚫 It is NOT in `END_COURSE_REASONS`: that list is shared with ENDING a course, the voucher end and the series
+ * cancel, where the reason means nothing. It is a SIBLING list (`SESSION_ONLY_CANCEL_REASONS`), rendered after the three — so the three keep
+ * their order and nothing is pre-selected (*a pre-selected "our problem" would hand a family a week by accident*).
+ *
  * The optional note is where the nuance goes. Confirm stays disabled until a reason is picked, and the screen says
  * why rather than leaving a dead button.
  */
@@ -37,7 +43,7 @@ export default function CancelBookingDialog({ opened, booking, onClose, onCancel
   const cancel = useCancelBooking();
   // SPEC-069 / TASK-222 — `enabled` is the dialog's own `opened`, so a dialog nobody opens never queries.
   const postedSale = usePostedSale(booking?.id, opened);
-  const [reasonCode, setReasonCode] = useState<EndCourseReason | null>(null);
+  const [reasonCode, setReasonCode] = useState<SessionCancelReason | null>(null);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -140,12 +146,16 @@ export default function CancelBookingDialog({ opened, booking, onClose, onCancel
         <Radio.Group
           label={t("endCourse.reasonLabel")}
           value={reasonCode ?? ""}
-          onChange={(v) => setReasonCode(v as EndCourseReason)}
+          onChange={(v) => setReasonCode(v as SessionCancelReason)}
           required
         >
           <Stack gap="xs" mt="xs">
             {END_COURSE_REASONS.map((r) => (
               <Radio key={r} value={r} label={t(`endCourse.${r}`)} />
+            ))}
+            {/* 🔴 TASK-691 — the SESSION-only reason, with the one line that says what it does. */}
+            {SESSION_ONLY_CANCEL_REASONS.map((r) => (
+              <Radio key={r} value={r} label={t(`endCourse.${r}`)} description={t("cancelBooking.schoolIssueHint")} data-session-only-reason={r} />
             ))}
           </Stack>
         </Radio.Group>

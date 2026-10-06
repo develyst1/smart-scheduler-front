@@ -682,9 +682,7 @@ function SummaryBar({ plan }: { plan: EntitlementPlan }) {
           {plan.summary.kind === "course" ? (
             <>
               <Text fz="sm">{t("plan.size", { size: plan.summary.size })}</Text>
-              <Text fz="sm" c="dimmed">
-                · {t("plan.leave", { used: plan.summary.leaveUsed, quota: plan.summary.leaveQuota })}
-              </Text>
+              {/* 🔴 TASK-658 (REQ-112) — the "Leave {used}/{quota}" summary is GONE: there is no allowance to be "x of". */}
               {plan.summary.owedCount > 0 && (
                 <Badge color="orange" variant="light">
                   {t("plan.owed", { n: plan.summary.owedCount })}

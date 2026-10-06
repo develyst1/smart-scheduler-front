@@ -76,8 +76,8 @@ describe("§1 — the picker on course creation", () => {
     expect(panel).toContain("{c.rental && (");
     expect(panel).toContain("rentalPrintLine(t, c.rental.code, c.rental.remark, rentalPriceOf(c.rental.code))");
     const row = {
-      id: "c1", size: 8, usedSessions: 0, leaveUsed: 0, leaveQuota: 2, leaveRemaining: 2, maxWeek: 12, leaveLocked: false,
-      adminUnlocked: false, endedAt: null, endReason: null, status: "ACTIVE", expiryDate: "2026-12-01", subject: null,
+      id: "c1", size: 8, usedSessions: 0, leaveUsed: 0, leaveQuota: 2, maxWeek: 12,
+      endedAt: null, endReason: null, status: "ACTIVE", expiryDate: "2026-12-01", subject: null,
       student: { id: "s1", name: "x" },
     } as unknown as CourseListItem;
     expect(dtoToCourseView(row).rental).toBeNull();
