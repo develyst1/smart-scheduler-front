@@ -1,0 +1,12 @@
+[
+  {
+    "id": "X1",
+    "what": "🔴 the reason radios are left ENABLED when the box is ticked (the screen offers a choice that will be ignored)",
+    "files": [{ "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx", "edits": [{ "from": "label={t(`endCourse.${r}`)} disabled={ourSide} />", "to": "label={t(`endCourse.${r}`)} disabled={false} />" }] }]
+  },
+  {
+    "id": "X2",
+    "what": "⚠️ ticking does NOT forget an earlier radio pick — unticking silently revives a choice",
+    "files": [{ "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx", "edits": [{ "from": "if (e.currentTarget.checked) setReason(null);", "to": "" }] }]
+  }
+]

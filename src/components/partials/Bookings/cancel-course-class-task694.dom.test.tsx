@@ -146,3 +146,37 @@ describe("🔴 TASK-694 §2 — the GROUP series cancel-all (its seats are cours
     expect(sent("POST")[0].body).toEqual({ reasonCode: "ADMIN_ERROR" });
   });
 });
+
+describe("🔴 TASK-695 — ticking the box turns the reason radios VISIBLY OFF (a screen that lets you choose what will be ignored tells you something false)", () => {
+  const radios = () => [...document.querySelectorAll('input[type="radio"]')] as HTMLInputElement[];
+  const mount = () => wrap(h(CancelAllDialog, { series: { kind: "group", key: "g-1" }, attended: 1, live: 3, cascade: { seats: 6, students: 4 }, onClose: () => {} }));
+
+  it("🔑 ticked ⇒ ALL three radios are disabled and none is checked — even if one was chosen BEFORE; the request carries ONLY SCHOOL_ISSUE", async () => {
+    const user = userEvent.setup();
+    mount();
+    await waitFor(() => expect(radios().length).toBe(3));
+    expect(radios().filter((r) => r.disabled).length).toBe(0);
+    await user.click(radios().find((r) => r.value === "ADMIN_ERROR") as HTMLElement); // an EARLIER choice
+    expect(radios().filter((r) => r.checked).length).toBe(1);
+    await user.click(box() as HTMLElement);
+    await waitFor(() => expect(radios().filter((r) => r.disabled).length).toBe(3));
+    expect(radios().filter((r) => r.checked).length).toBe(0);
+    await user.click(confirm());
+    await waitFor(() => expect(sent("POST").length).toBe(1));
+    expect(sent("POST")[0].body).toEqual({ reasonCode: "SCHOOL_ISSUE" });
+  });
+
+  it("✅ UNTICK ⇒ radios enabled again, nothing chosen, Confirm shut until one is picked", async () => {
+    const user = userEvent.setup();
+    mount();
+    await waitFor(() => expect(radios().length).toBe(3));
+    await user.click(radios().find((r) => r.value === "ADMIN_ERROR") as HTMLElement);
+    await user.click(box() as HTMLElement);
+    await user.click(box() as HTMLElement);
+    await waitFor(() => expect(radios().filter((r) => r.disabled).length).toBe(0));
+    expect(radios().filter((r) => r.checked).length).toBe(0); // the earlier choice was cleared, not silently revived
+    expect(confirm().disabled).toBe(true);
+    await user.click(radios().find((r) => r.value === "CUSTOMER_CANCELLED") as HTMLElement);
+    await waitFor(() => expect(confirm().disabled).toBe(false));
+  });
+});

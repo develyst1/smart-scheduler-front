@@ -83,7 +83,11 @@ export function CancelAllDialog({ series: ref, attended, live, cascade, onClose 
         {ref.kind === "group" && (
           <Checkbox
             checked={ourSide}
-            onChange={(e) => setOurSide(e.currentTarget.checked)}
+            onChange={(e) => {
+              setOurSide(e.currentTarget.checked);
+              // 🔴 TASK-695 — ticking turns the radios off AND forgets an earlier pick, so unticking never revives a choice the admin cannot see
+              if (e.currentTarget.checked) setReason(null);
+            }}
             label={t("endCourse.SCHOOL_ISSUE")}
             description={t("cancelBooking.schoolIssueHint")}
             data-our-side-cancel
