@@ -87,7 +87,7 @@ export function CancelAllDialog({ series: ref, attended, live, cascade, onClose 
   );
 }
 
-/** Add (a picker + optional rate) · Remove (an extra) · Swap the primary — each with `fromDate` defaulting to today. */
+/** Add (a picker + optional rate) · Remove (an extra) · Swap ANY teacher on the row — each with `fromDate` defaulting to today. */
 export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, onClose }: { seriesRef: SeriesRef; series: OtherSeries; teachers: TeacherView[]; mode: "add" | "remove" | "swap"; teacherId?: string; onClose: () => void }) {
   const t = useT();
   const add = useAddOtherSeriesTeacher();
@@ -95,6 +95,12 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
   const swap = useSwapOtherSeriesTeacher();
   const [to, setTo] = useState<string | null>(null);
   const [rateBaht, setRateBaht] = useState<number | "">("");
+  /**
+   * 🔴 TASK-624 (1b) — the OPTIONAL rate on a "from here on" swap, mirroring the group swap (TASK-634). A SEPARATE box from
+   * the cover's: typing a one-session rate and then choosing "the rest" must not carry that number across — *a rate for
+   * one day is not a rate for the series.* Empty by default and by rule: 🚫 nothing seeds this.
+   */
+  const [restRateBaht, setRestRateBaht] = useState<number | "">("");
   const [fromDate, setFromDate] = useState<string>(fromDateDefault());
   // 🔴 TASK-564 (REQ-110 item 5) — the scope the door must ASK for. 🚫 `null` on purpose: Khwan's complaint is that one
   // teacher change silently rewrote every remaining session, and **a pre-selected “the rest” would reproduce that with
@@ -105,10 +111,18 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
   const can = useCan();
   const canRate = can(COACH_RATE_KEY);
   const onRow = [series.teacherId, ...series.additionalTeacherIds];
+  /**
+   * 🔴 TASK-624 — WHO GOES OUT, said by the door that was pressed. 🔑 **One dialog, one body builder, no branch on whether
+   * this teacher is the primary:** the screen only says who; the server decides what that teacher's position means.
+   * (`teacherId` is also what Remove already carries. The primary is the fallback for a caller that names nobody.)
+   */
+  const from = teacherId ?? series.teacherId;
   // 🔴 TASK-577 (D10) — a COVER is refused without a rate, and the FE has none to carry for anyone it can offer.
   const needRate = coverRateRequired(mode, scope);
   const carried = knownSeriesRate(series.teacherRates, to);
   const coverRateMinor = rateBaht !== "" ? bahtToMinor(rateBaht) : carried;
+  /** 🔴 TASK-624 (1b) — shown for a swap over the REST of the series, and only for an admin who may price a coach. */
+  const restRate = mode === "swap" && scope === "rest" && canRate;
   /**
    * 🔴 **TASK-584 (BE) → TASK-592 — the owner ruled (a): a COVER requires the rate permission (key 59).**
    *
@@ -145,18 +159,24 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
         const r = await remove.mutateAsync({ ref: seriesRef, teacherId, ...(fromDate !== fromDateDefault() ? { fromDate } : {}) });
         notify({ title: t("otherSeries.teacherRemoved", { name: name(teacherId), n: r.removed }), color: "default" });
       } else if (mode === "swap" && to) {
-        // REQ-104 — OTHER sends `{ from, to }` (`from` = the primary); a GROUP sends `{ to }` alone (the server delegates to the group swap, the seats follow).
-        // 🚫 No `rateMinor` on a swap: the server allows a cover's rate only with `onDate`, and this door has no rate box —
-        // a field that could contradict the scope is worse than none.
+        // REQ-104 — OTHER sends `{ from, to }` (🔴 TASK-624: `from` = the teacher whose Swap door was pressed — the primary or an extra);
+        // a GROUP sends `{ to }` alone (the server delegates to the group swap, the seats follow) — which is why a GROUP has no door on an extra.
+        // 📌 The rate rides in exactly two places, each its own box and each only for a scope where it means something:
+        // a COVER (`onDate`, required) and the REST of the series (`fromDate`, optional) — and never without key 59.
         // 🔴 TASK-577 — the rate rides ONLY on a cover (`onDate`), and only with the key: the server refuses a rate
         // without key 59 (403) and refuses a cover WITHOUT one (400) — so an admin holding neither cannot save this,
         // which is a permission question, not a thing to paper over with a number.
         const rateOnCover = needRate && coverRateMinor != null ? { rateMinor: coverRateMinor } : {};
+        // 🔴 TASK-624 (1b) — over the REST of the series the rate is OPTIONAL: since TASK-625 the server prices the incoming
+        // coach from what this series has already paid them and refuses (`RATE_REQUIRED`) only when it cannot — and this is
+        // the answer to that refusal. 🚫 Never `undefined`/empty: the server's key-59 gate reads the BODY, so a present-but-
+        // empty key would cost an ordinary swap a permission.
+        const rateOnRest = restRate && restRateBaht !== "" ? { rateMinor: bahtToMinor(restRateBaht) } : {};
         const r = await swap.mutateAsync({
           ref: seriesRef,
-          body: withoutRates({ ...swapBody(seriesRef, series.teacherId, to), ...scoped, ...rateOnCover }, canRate),
+          body: withoutRates({ ...swapBody(seriesRef, from, to), ...scoped, ...rateOnCover, ...rateOnRest }, canRate),
         });
-        notify({ title: t("otherSeries.teacherSwapped", { from: name(series.teacherId), to: name(to), n: r.moved }), color: "success" });
+        notify({ title: t("otherSeries.teacherSwapped", { from: name(from), to: name(to), n: r.moved }), color: "success" });
       } else return;
       onClose();
     } catch (e) {
@@ -164,7 +184,7 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
     }
   };
   const outcomeKey = to ? scopeOutcomeKey(mode === "swap" ? "swap" : "add", scope) : null;
-  const title = mode === "add" ? t("otherSeries.addTeacher") : mode === "remove" ? t("otherSeries.removeTeacherTitle", { name: name(teacherId ?? "") }) : t("otherSeries.swapPrimaryTitle", { name: name(series.teacherId) });
+  const title = mode === "add" ? t("otherSeries.addTeacher") : mode === "remove" ? t("otherSeries.removeTeacherTitle", { name: name(teacherId ?? "") }) : t("otherSeries.swapTeacherTitle", { name: name(from) });
   return (
     <Modal opened onClose={onClose} centered title={title} data-teacher-dialog={mode}>
       <Stack gap="sm">
@@ -208,6 +228,24 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
             data-cover-rate={coverRateMinor ?? "none"}
           />
         )}
+        {/* 🔴 TASK-624 (1b) — the OPTIONAL rate on "from here on", the group swap's shape (TASK-634): hidden without key 59, never
+            greyed; NOT `required`; `value` is the admin's own input and nothing else — no carried rate, and never the outgoing
+            teacher's number (that is the exact figure that used to be paid to the wrong person). */}
+        {restRate && (
+          <NumberInput
+            label={t("otherSeries.swapRate", { name: name(to ?? "") })}
+            description={t("otherSeries.swapRateHint")}
+            value={restRateBaht}
+            onChange={(v) => setRestRateBaht(typeof v === "number" ? v : "")}
+            min={0}
+            step={50}
+            allowDecimal={false}
+            allowNegative={false}
+            suffix=" ฿"
+            className="max-w-xs"
+            data-swap-rate={restRateBaht === "" ? "none" : bahtToMinor(restRateBaht)}
+          />
+        )}
         {mode === "add" && canRate && <NumberInput label={t("otherSeries.rateOptional")} value={rateBaht} onChange={(v) => setRateBaht(typeof v === "number" ? v : "")} min={0} step={50} allowDecimal={false} allowNegative={false} suffix=" ฿" className="max-w-xs" />}
         {/* 🔴 TASK-564 — the question, asked. No option is pre-selected, and Save stays shut until one is. */}
         {mode !== "remove" && (
@@ -223,7 +261,7 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
         {/* 🔑 A cover and a join are different outcomes with different pay — the screen says which one this is. */}
         {outcomeKey && (
           <Text size="xs" c="dimmed" data-scope-outcome={mode}>
-            {mode === "swap" ? t(outcomeKey, { from: name(series.teacherId), to: name(to ?? "") }) : t(outcomeKey, { name: name(to ?? "") })}
+            {mode === "swap" ? t(outcomeKey, { from: name(from), to: name(to ?? "") }) : t(outcomeKey, { name: name(to ?? "") })}
           </Text>
         )}
         <Group justify="flex-end" gap="sm">

@@ -42,9 +42,12 @@ import { THAI_NATIONALITY, type Parent, type Student } from "@/types/app/people"
 import { useShowArchived } from "@/lib/people/show-archived";
 import { archivedParentsQuery } from "@/lib/people/parent-archive";
 import { EMPTY_BIRTHDAY, birthdayQuery, formatDob, type BirthdayState } from "@/lib/people/birthday-filter";
-import { useBirthdayStudents } from "@/hooks/scheduler/useStudents";
+import { STUDENTS_KEY, useBirthdayStudents } from "@/hooks/scheduler/useStudents";
+import { useQueryClient } from "@tanstack/react-query";
 import BirthdayFilter from "./BirthdayFilter";
 import NoParentList from "./NoParentList";
+import LinkParentDialog from "./LinkParentDialog";
+import type { StudentListItem } from "@/types/api/contract";
 import CampCardModal from "@/components/partials/Camp/CampCardModal";
 import { Tent } from "lucide-react";
 import { useCan } from "@/hooks/scheduler/useMe";
@@ -98,7 +101,8 @@ export default function PeopleContent() {
   // list's `archivedStudents` is the same read split, so showing them costs no second call.
   const archiveStudent = useArchiveStudent();
   const unarchiveStudent = useUnarchiveStudent();
-  const [archiveTarget, setArchiveTarget] = useState<Student | null>(null);
+  // TASK-665 — only who it is: the no-parent list's rows (`StudentListItem`) use the same confirm as the family list's.
+  const [archiveTarget, setArchiveTarget] = useState<Pick<Student, "id" | "name" | "nickname"> | null>(null);
   // REQ-095 Stage 3a (TASK-402) — the student's Camp card (packages, credit in days, sell, a link to redeem).
   const [campTarget, setCampTarget] = useState<Student | null>(null);
   const [archiveError, setArchiveError] = useState<string | null>(null);
@@ -123,8 +127,16 @@ export default function PeopleContent() {
   // a set birthday range COMPOSE with it on the server. Live students only (the server's default), whatever
   // `Show archived` says: the question is "who can a parent not see", and an archived child is not booked.
   const [noParent, setNoParent] = useState(false);
+  // 🔴 TASK-669 — the child whose "Link a parent" door was pressed (its dialog owns the picker, the confirm and the write).
+  const [linkTarget, setLinkTarget] = useState<StudentListItem | null>(null);
   const noParentParams = noParent ? { ...(birthdayParams ?? (debounced.trim() ? { q: debounced.trim() } : {})), noParent: "true", limit: 200 } : null;
   const { data: noParentRows, isLoading: loadingNoParent } = useBirthdayStudents(noParentParams);
+  // 🔴 TASK-665 — the ARCHIVED parentless records, under `Show archived` only: a parentless record has no parent card to
+  // restore it from, so it is restored here or not at all. A SEPARATE read: the count beside the switch stays the LIVE one.
+  const noParentArchivedParams = noParentParams && showArchived ? { ...noParentParams, archived: "true" } : null;
+  const { data: noParentArchivedRows } = useBirthdayStudents(noParentArchivedParams);
+  // The archive doors re-read the families (`PARENTS_KEY`); the student reads (this list, the birthday list) re-read here.
+  const qc = useQueryClient();
   const runParentArchive = async () => {
     if (!parentArchiveTarget) return;
     const { parent, restore } = parentArchiveTarget;
@@ -189,16 +201,18 @@ export default function PeopleContent() {
       await archiveStudent.mutateAsync(archiveTarget.id);
       notify({ title: t("people.archivedOk", { name: archiveTarget.nickname || archiveTarget.name }), color: "success" });
       setArchiveTarget(null);
+      void qc.invalidateQueries({ queryKey: STUDENTS_KEY }); // TASK-665 — the row leaves the no-parent list
     } catch (e) {
       // 🔴 The server's sentence, unchanged — it carries the count of sessions ahead. Nothing invented.
       setArchiveError(e instanceof ApiClientError ? e.message : (e as Error).message);
     }
   };
   /** One tap: restore only gives back (a `409` on the family's cap is the server's sentence as a notice). */
-  const runRestore = async (s: Student) => {
+  const runRestore = async (s: Pick<Student, "id" | "name" | "nickname">) => {
     try {
       await unarchiveStudent.mutateAsync(s.id);
       notify({ title: t("people.restoredOk", { name: s.nickname || s.name }), color: "success" });
+      void qc.invalidateQueries({ queryKey: STUDENTS_KEY }); // TASK-665 — back in the live no-parent list
     } catch (e) {
       notify({ title: e instanceof ApiClientError ? e.message : (e as Error).message, color: "danger" });
     }
@@ -266,7 +280,20 @@ export default function PeopleContent() {
       {/* 🔴 TASK-664 — on, the no-parent list REPLACES the page's lists (families, birthday, archived parents); off, every
           line below is exactly as before. */}
       {noParent ? (
-        <NoParentList rows={noParentRows} loading={loadingNoParent} />
+        <NoParentList
+          rows={noParentRows}
+          loading={loadingNoParent}
+          archivedRows={noParentArchivedParams ? noParentArchivedRows : undefined}
+          canArchive={can("action:people.student-archive")}
+          canLink={can("action:people.parent-students")}
+          onLink={setLinkTarget}
+          onArchive={(s) => {
+            setArchiveError(null);
+            setArchiveTarget(s);
+          }}
+          onRestore={(s) => void runRestore(s)}
+          restoringId={unarchiveStudent.isPending ? unarchiveStudent.variables : undefined}
+        />
       ) : (
       <>
       {birthdayParams !== null ? (
@@ -578,6 +605,8 @@ export default function PeopleContent() {
       )}
       </>
       )}
+
+      {linkTarget && <LinkParentDialog student={linkTarget} onClose={() => setLinkTarget(null)} />}
 
       <ParentFormModal
         opened={parentModal.open}

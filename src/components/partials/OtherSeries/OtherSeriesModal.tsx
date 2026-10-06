@@ -109,7 +109,7 @@ export default function OtherSeriesModal({ series: ref, opened, onClose, onOpenB
               <span className="font-medium">{name(series.teacherId)}</span>
               {rate(series.teacherId)}
               {doors.swapPrimary && (
-                <Button size="compact-xs" variant="subtle" color="gray" ml={4} leftSection={<ArrowLeftRight size={11} />} onClick={() => setTeacherDlg({ mode: "swap" })}>
+                <Button size="compact-xs" variant="subtle" color="gray" ml={4} leftSection={<ArrowLeftRight size={11} />} onClick={() => setTeacherDlg({ mode: "swap", teacherId: series.teacherId })} data-swap-teacher={series.teacherId}>
                   {t("otherSeries.swapPrimary")}
                 </Button>
               )}
@@ -117,6 +117,14 @@ export default function OtherSeriesModal({ series: ref, opened, onClose, onOpenB
                 <span key={id} className="ml-2 text-muted-600">
                   + {name(id)}
                   {rate(id)}
+                  {/* 🔴 TASK-624 — the SAME Swap door beside every extra, carrying THAT teacher as the one going out. 🚫 Not on a
+                      GROUP: its route (`PATCH /group-series/:key/teacher`) has no `from` — it only ever moves the primary, so a
+                      door here would swap the wrong person. */}
+                  {doors.swapPrimary && !isGroup && (
+                    <Button size="compact-xs" variant="subtle" color="gray" ml={2} leftSection={<ArrowLeftRight size={11} />} onClick={() => setTeacherDlg({ mode: "swap", teacherId: id })} data-swap-teacher={id}>
+                      {t("otherSeries.swapPrimary")}
+                    </Button>
+                  )}
                   {doors.removeTeacher && (
                     <Button size="compact-xs" variant="subtle" color="red" ml={2} leftSection={<UserMinus size={11} />} onClick={() => setTeacherDlg({ mode: "remove", teacherId: id })}>
                       {t("otherSeries.removeTeacher")}

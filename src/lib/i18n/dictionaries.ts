@@ -582,8 +582,14 @@ const en = {
     swapPrimary: "Swap",
     removeTeacher: "Remove",
     removeTeacherTitle: "Remove {name} from the series?",
-    swapPrimaryTitle: "Swap the primary teacher ({name})",
-    swapTo: "New primary teacher",
+    // 🔴 TASK-624 — ✅ owner-APPROVED 2026-10-06 (Silver's instruction, EN companion of the approved TH). Replaces
+    // `swapPrimaryTitle` ("Swap the primary teacher"), which stopped being true the day an extra teacher could be swapped.
+    // `{name}` = the teacher going OUT.
+    swapTeacherTitle: "Swap teacher — {name}",
+    // 🔴 TASK-624 — ✅ APPROVED by @Porter 2026-10-06 (no owner round; he lists it to the owner as a line he can veto): the approved group
+    // string minus "of the group". Corrects a label that 624 makes FALSE — swapping an extra shows this above the picker, and the new
+    // coach is not the primary. Was "New primary teacher" / "ครูหลักคนใหม่".
+    swapTo: "New teacher",
     addTeacher: "Add teacher",
     // 🔴 TASK-577 (D10) — the COVER rate. 📝 DRAFT (Fern, TASK-577). The server pays the COVERING coach and refuses
     // the cover when it has no rate for them, so this box is REQUIRED and the label names whose rate it is.
@@ -594,6 +600,10 @@ const en = {
     coverRate: "{name}'s rate for this session",
     coverRateHint: "The covering coach is paid their own rate for this session. This series has none on file for them yet, so enter it here.",
     rateOptional: "Rate per session (optional)",
+    // 🔴 TASK-624 (1b) — 📋 DRAFT wording (Silver, COPY-DRAFT-teamB-week-to-10-11-2026-10-06.md §B; not yet confirmed as covered).
+    // The group swap's approved pair (`booking.groupSwapRate` / `groupSwapRateHint`, TASK-634) with "group" → "series".
+    swapRate: "{name}'s rate for this series (per session)",
+    swapRateHint: "Leave this empty unless the swap is refused for a missing rate — that happens when this series has never paid this coach before.",
     fromDate: "From date",
     fromDateHint: "Today by default — earlier rows are history and stay as they are.",
     // 🔴 TASK-564 (REQ-110 item 5) — the scope the door now ASKS for. 📝 **DRAFT (Fern, TASK-564)**, both languages,
@@ -1255,6 +1265,9 @@ const en = {
     endReasonLine: "Cancel reason: {reason}",
     endedPlanHeader: "Cancelled — {reason}",
     endedNoWrites: "This course was cancelled, so sessions can no longer be added or changed.",
+    // 🔴 TASK-670 (5a) — ✅ owner-APPROVED 2026-10-06, verbatim, no DRAFT marker. `endedNoWrites` above stays for a cancelled course.
+    endedCompleted: "This course is complete, so sessions can no longer be added or changed.",
+    endedExpired: "This course has expired, so sessions can no longer be added or changed.",
     droppedNoWrites: "This course is paused — resume it to change the schedule.",
     sessionsUnit: "sessions",
     leaveQuota: "Leave quota",
@@ -1695,6 +1708,18 @@ const en = {
     archivedBadge: "archived",
     restore: "Restore",
     restoredOk: "{name} restored",
+    // 🔴 TASK-669 — 📋 DRAFT wording (Silver, COPY-DRAFT-teamB-week-to-10-11-2026-10-06.md §C; not yet approved). Reused, not new:
+    // the 5-per-family cap and the archived-family refusals (the server's own sentences, shown as sent).
+    linkParent: "Link a parent",
+    linkParentSearch: "Find the family (name or phone)",
+    linkParentConfirmTitle: "Link {child} to {parent}?",
+    linkParentFamilyHas: "This family already has: {names}",
+    linkParentFamilyEmpty: "This family has no students yet.",
+    linkParentUpcoming: "{child} has {n} upcoming session(s) (next {date}). Once linked, the family starts receiving LINE notices from the next one.",
+    linkParentNoUpcoming: "{child} has no upcoming sessions.",
+    linkParentIrreversible: "This link can't be undone from the screen.",
+    linkParentConfirm: "Link",
+    linkParentDone: "{child} is now linked to {parent}.",
     // REQ-098 (TASK-412) — archive a PARENT (the children go with it)
     archiveParent: "Archive family",
     archiveParentTitle: "Archive {name}?",
@@ -2643,8 +2668,10 @@ const th: typeof en = {
     swapPrimary: "สลับ",
     removeTeacher: "เอาออก",
     removeTeacherTitle: "เอา {name} ออกจากชุดนี้?",
-    swapPrimaryTitle: "สลับครูหลัก ({name})",
-    swapTo: "ครูหลักคนใหม่",
+    // 🔴 TASK-624 — ✅ owner-APPROVED 2026-10-06 (see the EN block).
+    swapTeacherTitle: "สลับครู — {name}",
+    // 🔴 TASK-624 — ✅ APPROVED by @Porter 2026-10-06 (see the EN block). Was "ครูหลักคนใหม่".
+    swapTo: "ครูคนใหม่",
     addTeacher: "เพิ่มครู",
     // 📝 DRAFT (Fern, TASK-577) — ค่าสอนของครูที่มาสอนแทน (บังคับ)
     // 📝 DRAFT (Fern, TASK-592) — บอกว่าขาด "สิทธิ์" ไม่ใช่ว่าครูหรือค่าสอนมีปัญหา และบอกด้วยว่าต้องทำอะไรต่อ
@@ -2652,6 +2679,9 @@ const th: typeof en = {
     coverRate: "ค่าสอนของ {name} สำหรับคาบนี้",
     coverRateHint: "ครูที่มาสอนแทนจะได้ค่าสอนของตัวเอง ตารางนี้ยังไม่มีค่าสอนของครูท่านนี้ จึงต้องระบุที่นี่",
     rateOptional: "ค่าสอนต่อคาบ (ไม่บังคับ)",
+    // 🔴 TASK-624 (1b) — 📋 DRAFT wording (see the EN block).
+    swapRate: "ค่าสอนของ {name} สำหรับตารางนี้ (ต่อคาบ)",
+    swapRateHint: "ไม่ต้องกรอก ยกเว้นระบบปฏิเสธเพราะไม่มีค่าสอน — จะเกิดเมื่อตารางนี้ยังไม่เคยจ่ายค่าสอนให้ครูคนนี้",
     fromDate: "ตั้งแต่วันที่",
     fromDateHint: "ค่าเริ่มต้นคือวันนี้ — คาบก่อนหน้าเป็นประวัติ คงเดิม",
     // 📝 DRAFT (Fern, TASK-564) — เหตุผลอยู่ในบล็อก EN: ต้องเลือกเอง ไม่มีค่าเริ่มต้น และสองตัวเลือกต้องอ่านไม่เหมือนกัน
@@ -3218,6 +3248,9 @@ const th: typeof en = {
     endReasonLine: "เหตุผลที่ยกเลิก: {reason}",
     endedPlanHeader: "ยกเลิกแล้ว — {reason}",
     endedNoWrites: "คอร์สนี้ถูกยกเลิกแล้ว จึงเพิ่มหรือแก้คาบไม่ได้",
+    // 🔴 TASK-670 (5a) — ✅ owner-APPROVED 2026-10-06 (see the EN block).
+    endedCompleted: "คอร์สนี้เรียนครบแล้ว จึงเพิ่มหรือแก้คาบไม่ได้",
+    endedExpired: "คอร์สนี้หมดอายุแล้ว จึงเพิ่มหรือแก้คาบไม่ได้",
     droppedNoWrites: "คอร์สนี้กำลังพักอยู่ — กดกลับมาเรียนก่อนจึงจะแก้ตารางได้",
     sessionsUnit: "ครั้ง",
     leaveQuota: "สิทธิ์การลา",
@@ -3623,6 +3656,17 @@ const th: typeof en = {
     archivedBadge: "เก็บแล้ว",
     restore: "คืนสถานะ",
     restoredOk: "คืนสถานะ {name} แล้ว",
+    // 🔴 TASK-669 — 📋 DRAFT wording (see the EN block).
+    linkParent: "ผูกผู้ปกครอง",
+    linkParentSearch: "ค้นหาผู้ปกครอง (ชื่อหรือเบอร์)",
+    linkParentConfirmTitle: "ผูก {child} กับ {parent}?",
+    linkParentFamilyHas: "ครอบครัวนี้มีนักเรียนอยู่แล้ว: {names}",
+    linkParentFamilyEmpty: "ครอบครัวนี้ยังไม่มีนักเรียน",
+    linkParentUpcoming: "{child} มีคาบที่จะถึง {n} คาบ (คาบถัดไป {date}) — หลังผูกแล้ว ผู้ปกครองจะเริ่มได้รับแจ้งเตือนใน LINE ตั้งแต่ครั้งถัดไป",
+    linkParentNoUpcoming: "{child} ยังไม่มีคาบที่จะถึง",
+    linkParentIrreversible: "การผูกนี้ย้อนกลับจากหน้าจอไม่ได้",
+    linkParentConfirm: "ผูกผู้ปกครอง",
+    linkParentDone: "ผูก {child} กับ {parent} แล้ว",
     archiveParent: "เก็บครอบครัว",
     archiveParentTitle: "เก็บ {name}?",
     archiveParentBody: "ทั้งครอบครัวจะหายจากทุกรายการที่ใช้งาน: นักเรียนทุกคนถูกเก็บไปพร้อมผู้ปกครอง และการเชื่อมไลน์จะถูกล้าง ประวัติและเงินคงอยู่ ครอบครัวที่ยังมีคาบข้างหน้าเก็บไม่ได้ — ระบบจะบอกจำนวน คืนสถานะได้ทุกเมื่อ",

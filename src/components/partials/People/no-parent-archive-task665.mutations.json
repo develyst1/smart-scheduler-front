@@ -1,0 +1,92 @@
+[
+  {
+    "id": "A1",
+    "what": "🔴 archive WITHOUT the confirm — the first tap archives",
+    "files": [
+      {
+        "file": "src/components/partials/People/PeopleContent.tsx",
+        "edits": [
+          {
+            "from": "onArchive={(s) => {\n            setArchiveError(null);\n            setArchiveTarget(s);\n          }}",
+            "to": "onArchive={(s) => {\n            setArchiveError(null);\n            void archiveStudent.mutateAsync(s.id);\n          }}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A2",
+    "what": "🔴 the confirm without the row's name — the admin cannot see WHICH row they are archiving",
+    "files": [
+      {
+        "file": "src/components/partials/People/PeopleContent.tsx",
+        "edits": [
+          {
+            "from": "title={t(\"people.archiveStudentTitle\", { name: archiveTarget?.nickname || archiveTarget?.name || \"\" })}",
+            "to": "title={t(\"people.archiveStudentTitle\", { name: \"\" })}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A3",
+    "what": "🔴 a bulk “archive all” — how a real child gets archived with the titles",
+    "files": [
+      {
+        "file": "src/components/partials/People/NoParentList.tsx",
+        "edits": [
+          {
+            "from": "        <Stack gap={0}>\n",
+            "to": "        <Stack gap={0}>\n          <button type=\"button\" onClick={() => rows!.forEach(onArchive)}>all</button>\n"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A4",
+    "what": "🔴 archived rows hidden under Show archived — nothing can restore a parentless record (\"reversible\" is false)",
+    "files": [
+      {
+        "file": "src/components/partials/People/PeopleContent.tsx",
+        "edits": [
+          {
+            "from": "archivedRows={noParentArchivedParams ? noParentArchivedRows : undefined}",
+            "to": "archivedRows={undefined}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A5",
+    "what": "🔴 the count includes the archived rows — it no longer equals GET /students?noParent=true",
+    "files": [
+      {
+        "file": "src/components/partials/People/PeopleContent.tsx",
+        "edits": [
+          {
+            "from": "` (${noParentRows.length})`",
+            "to": "` (${noParentRows.length + (noParentArchivedRows?.length ?? 0)})`"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "A6",
+    "what": "🔴 the student reads are not refreshed after an archive — the row stays on the list it just left",
+    "files": [
+      {
+        "file": "src/components/partials/People/PeopleContent.tsx",
+        "edits": [
+          {
+            "from": "      void qc.invalidateQueries({ queryKey: STUDENTS_KEY }); // TASK-665 — the row leaves the no-parent list\n",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  }
+]

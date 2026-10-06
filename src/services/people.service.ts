@@ -149,6 +149,40 @@ export const unarchiveStudent = async (id: string): Promise<Student> => {
   return data.student;
 };
 
+/**
+ * 🔴 TASK-669 (server: TASK-668) — link a parent to a child that has none: ONE route, `POST /students/:id/parent`, key
+ * `action:people.parent-students`. The student is the PATH id and the body has no "from": the server writes
+ * `WHERE parent_id IS NULL` in the same statement, so a child that already has a parent is a `409`, never a move.
+ *
+ * - `dryRun: true` is the CONFIRM's read: the family, its children by name and the child's upcoming sessions (the server's
+ *   own "upcoming" set, the same one the archive refusal uses). It writes nothing.
+ * - Without it, the link. It sends no notice. Both modes share the refusals: 404 · 409 `PARENT_ARCHIVED` · the 5-per-family cap ·
+ *   409 `STUDENT_ALREADY_HAS_PARENT` — each an `ApiException`, so `error.message` carries the specific sentence.
+ */
+export interface LinkParentPreview {
+  dryRun: true;
+  parent: { id: string; name: string | null; phone: string };
+  children: { id: string; name: string; nickname: string | null }[];
+  upcoming: { count: number; next: string | null };
+}
+export interface LinkParentResult {
+  dryRun: false;
+  linked: true;
+  studentId: string;
+  parentId: string;
+  familyCount: number;
+}
+export const previewLinkParent = async (studentId: string, parentId: string): Promise<LinkParentPreview> => {
+  if (useMockData) return mock.previewLinkParent(studentId, parentId);
+  const { data } = await api.post<LinkParentPreview>(`/students/${studentId}/parent`, { parentId, dryRun: true });
+  return data;
+};
+export const linkParentToStudent = async (studentId: string, parentId: string): Promise<LinkParentResult> => {
+  if (useMockData) return mock.linkParentToStudent(studentId, parentId);
+  const { data } = await api.post<LinkParentResult>(`/students/${studentId}/parent`, { parentId });
+  return data;
+};
+
 export const setParentSuspended = async (id: string, suspended: boolean): Promise<Parent> => {
   if (useMockData) return mock.setParentSuspended(id, suspended);
   const { data } = await api.post<Parent>(`/parents/${id}/${suspended ? "suspend" : "unsuspend"}`, {});

@@ -1,0 +1,152 @@
+[
+  {
+    "id": "K1",
+    "what": "🔴 the confirm without the family's children — the \"two Aris\" duplicate is invisible",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "{preview.data.children.length > 0 ? t(\"people.linkParentFamilyHas\", { names: preview.data.children.map(personName).join(\", \") }) : t(\"people.linkParentFamilyEmpty\")}",
+            "to": "{t(\"people.linkParentFamilyEmpty\")}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K2",
+    "what": "🔴 the confirm without the upcoming sessions — the admin cannot see that notices start for this child",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "{preview.data.upcoming.count > 0 ? t(\"people.linkParentUpcoming\", { child, n: preview.data.upcoming.count, date: formatDateDisplay(preview.data.upcoming.next) }) : t(\"people.linkParentNoUpcoming\", { child })}",
+            "to": "{t(\"people.linkParentNoUpcoming\", { child })}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K3",
+    "what": "🔴 a link WITHOUT the confirm — picking a family links the child on the spot",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "onClick={() => setParent({ id: p.id, name: p.name, phone: p.phone })}",
+            "to": "onClick={() => { setParent({ id: p.id, name: p.name, phone: p.phone }); void link.mutateAsync({ studentId: student.id, parentId: p.id }); }}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K4",
+    "what": "🔴 the WRONG parentId posted — the child's own id goes in the family's place",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "await link.mutateAsync({ studentId: student.id, parentId: parent.id });",
+            "to": "await link.mutateAsync({ studentId: student.id, parentId: student.id });"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K5",
+    "what": "🔴 \"this link can't be undone\" dropped — the admin presses a one-way door without being told",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "{t(\"people.linkParentIrreversible\")}",
+            "to": "{\"\"}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K6",
+    "what": "🔴 the confirm's read is not a dry run — merely opening the confirm LINKS the child",
+    "files": [
+      {
+        "file": "src/services/people.service.ts",
+        "edits": [
+          {
+            "from": "post<LinkParentPreview>(`/students/${studentId}/parent`, { parentId, dryRun: true })",
+            "to": "post<LinkParentPreview>(`/students/${studentId}/parent`, { parentId })"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K7",
+    "what": "🔴 the link door shown WITHOUT the permission (the page asks no key)",
+    "files": [
+      {
+        "file": "src/components/partials/People/PeopleContent.tsx",
+        "edits": [
+          {
+            "from": "canLink={can(\"action:people.parent-students\")}",
+            "to": "canLink={true}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K8",
+    "what": "🔴 a bulk \"link all\" control on the list — one parent for every row",
+    "files": [
+      {
+        "file": "src/components/partials/People/NoParentList.tsx",
+        "edits": [
+          {
+            "from": "{rows!.map((s) => (",
+            "to": "<button type=\"button\" onClick={() => rows!.forEach(onLink)}>all</button>\n          {rows!.map((s) => ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K9",
+    "what": "🔴 the server's refusal replaced by a generic word — the 409 sentence never reaches the admin",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "setError(errOf(e));",
+            "to": "setError(\"error\");"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "K10",
+    "what": "🔴 Link enabled whatever the dry run said — a refused family (cap, archived) can still be pressed",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "disabled={!preview.data}",
+            "to": "disabled={false}"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -15,13 +15,44 @@ import {
   archiveParent,
   unarchiveParent,
   setParentSuspended,
+  previewLinkParent,
+  linkParentToStudent,
   type ParentsQuery,
   type ParentInput,
   type CreateStudentInput,
   type UpdateStudentInput,
 } from "@/services/people.service";
 
+import { STUDENTS_KEY } from "./useStudents";
+
 export const PARENTS_KEY = ["parents"] as const;
+
+/**
+ * 🔴 TASK-669 — the link-a-parent CONFIRM's read (`POST /students/:id/parent` with `dryRun`). Its own key root, NOT under
+ * `PARENTS_KEY`: the link invalidates the families, and a still-open confirm would then re-ask a question whose answer is now
+ * "this child already has a parent". `gcTime: 0` so a stale preview can never be shown for a family that has since changed.
+ */
+export const LINK_PREVIEW_KEY = ["link-parent-preview"] as const;
+export const useLinkParentPreview = (studentId: string | null, parentId: string | null) =>
+  useQuery({
+    queryKey: [...LINK_PREVIEW_KEY, studentId, parentId],
+    queryFn: () => previewLinkParent(studentId as string, parentId as string),
+    enabled: !!studentId && !!parentId,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+  });
+/** The link itself. Both the families and the student reads re-read (the no-parent list loses the row; the family gains a child). */
+export const useLinkParent = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ studentId, parentId }: { studentId: string; parentId: string }) => linkParentToStudent(studentId, parentId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: PARENTS_KEY });
+      void qc.invalidateQueries({ queryKey: STUDENTS_KEY });
+    },
+  });
+};
 
 export const useParents = (query: ParentsQuery = {}) =>
   useQuery({

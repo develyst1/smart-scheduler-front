@@ -92,7 +92,12 @@ describe("§2 — the page, the wire, the links, the key", () => {
     // rule this pin exists for are unchanged.
     // 🔻 TASK-577 (D10), declared: + the cover's rate on `onDate`, through `withoutRates`. The route and the
     // `from`-is-the-primary rule this pin exists for are unchanged.
-    expect(dialogs).toContain("withoutRates({ ...swapBody(seriesRef, series.teacherId, to), ...scoped, ...rateOnCover }, canRate)");
+    // 🔻 TASK-624 (granted by Porter, 10-06): `from` is no longer always the primary — it is the teacher whose Swap door was
+    // pressed (the primary's own door still sends the primary), and a "from here on" swap may carry the optional series rate
+    // (`rateOnRest`, 1b). 🔑 The CLAIM this pin exists for is unchanged and still asserted: ONE body builder, `from` named by
+    // the door and never worked out by the screen (the next line), the scope key from `scopeBody`, every rate through `withoutRates`.
+    expect(dialogs).toContain("withoutRates({ ...swapBody(seriesRef, from, to), ...scoped, ...rateOnCover, ...rateOnRest }, canRate)");
+    expect(dialogs).toContain("const from = teacherId ?? series.teacherId;");
     expect(dialogs).toContain("const scoped = scopeBody(scope, fromDate);");
     // 🚫 and `withFromDate` is no longer how either teacher door names its scope
     expect(dialogs).not.toContain("withFromDate(swapBody");
@@ -129,7 +134,15 @@ describe("§2 — the page, the wire, the links, the key", () => {
     expect(ACTION_KEYS_SNAPSHOT.length).toBe(60) /* TASK-518: + the 60th, `calendar.undo` (SPEC-094) */; /* + TASK-432 coach-rate */
     const en = dictionaries.en.otherSeries as Record<string, string>;
     const th = dictionaries.th.otherSeries as Record<string, string>;
-    expect(Object.keys(en).length).toBe(46); /* TASK-442: +4 · TASK-564: +7 · TASK-577: +2 (the COVER rate box and its hint — D10) · TASK-592: +1 (the permission sentence — the owner's ruling (a)) */
+    expect(Object.keys(en).length).toBe(48); /* TASK-442: +4 · TASK-564: +7 · TASK-577: +2 (the COVER rate box and its hint — D10) · TASK-592: +1 (the permission sentence — the owner's ruling (a)) · TASK-624: −1 `swapPrimaryTitle` (its text said "primary"), +3 `swapTeacherTitle` · `swapRate` · `swapRateHint` */
+    // 🔴 TASK-624 (Porter's condition): the count alone would pass for ANY two keys, so the three are NAMED, in BOTH languages,
+    // and the one that stopped being true is asserted GONE. A count edited every time it fails has stopped testing anything.
+    for (const k of ["swapTeacherTitle", "swapRate", "swapRateHint"]) {
+      expect(en[k]?.length).toBeGreaterThan(0);
+      expect(th[k]?.length).toBeGreaterThan(0);
+    }
+    expect("swapPrimaryTitle" in en).toBe(false);
+    expect("swapPrimaryTitle" in th).toBe(false);
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
   });
 });

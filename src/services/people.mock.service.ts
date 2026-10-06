@@ -1,7 +1,7 @@
 // In-memory People mock — used when NEXT_PUBLIC_USE_MOCK=true, so the /scheduler/people screen is
 // exercisable offline (list/search/create/edit/suspend) without a backend. Mirrors the real contract.
 import type { Parent, ParentDetail, ParentsResponse, Student } from "@/types/app/people";
-import type { CreateStudentInput, ParentInput, ParentsQuery, UpdateStudentInput } from "./people.service";
+import type { CreateStudentInput, LinkParentPreview, LinkParentResult, ParentInput, ParentsQuery, UpdateStudentInput } from "./people.service";
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 const delay = <T>(v: T, ms = 200) => new Promise<T>((r) => setTimeout(() => r(v), ms));
@@ -126,6 +126,19 @@ export const unarchiveParent = (id: string) => {
   p.archivedStudents = [];
   return delay({ parent: clone(p), restoredStudents: back.length });
 };
+/** TASK-669 — offline dev only: the confirm's read and the link, against the in-memory families. */
+export const previewLinkParent = (_studentId: string, parentId: string): Promise<LinkParentPreview> => {
+  const p = parents.find((x) => x.id === parentId);
+  return delay({
+    dryRun: true as const,
+    parent: { id: parentId, name: p?.name ?? null, phone: p?.phone ?? "" },
+    children: (p?.students ?? []).map((s) => ({ id: s.id, name: s.name, nickname: s.nickname })),
+    upcoming: { count: 0, next: null },
+  });
+};
+export const linkParentToStudent = (studentId: string, parentId: string): Promise<LinkParentResult> =>
+  delay({ dryRun: false as const, linked: true as const, studentId, parentId, familyCount: (parents.find((x) => x.id === parentId)?.students.length ?? 0) + 1 });
+
 export const unarchiveStudent = (id: string): Promise<Student> => delay({ id, parentId: null, name: "student", nickname: null, gender: null, birthDate: null, nationality: null, note: null, archivedAt: null });
 
 export const deleteStudent = (id: string): Promise<{ deleted: true }> => {

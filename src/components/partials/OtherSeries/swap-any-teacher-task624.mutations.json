@@ -1,0 +1,167 @@
+[
+  {
+    "id": "S1",
+    "what": "🔴 the Swap only on the primary — the extras get Remove and nothing else, as before (Khwan's defect)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesModal.tsx",
+        "edits": [
+          {
+            "from": "{doors.swapPrimary && !isGroup && (",
+            "to": "{false && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S2",
+    "what": "🔴 `from` always the primary — pressing an extra's door swaps the PRIMARY out and the dialog says it swapped the extra",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "const from = teacherId ?? series.teacherId;",
+            "to": "const from = series.teacherId;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S3",
+    "what": "🔴 the optional rate box hidden on \"from here on\" — a RATE_REQUIRED refusal has no answer in the dialog (TASK-644's lesson)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "const restRate = mode === \"swap\" && scope === \"rest\" && canRate;",
+            "to": "const restRate = false;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S4",
+    "what": "🔴 the COVER's rate box changed (never required) — a one-session cover is saved with no rate and refused by the server",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "const needRate = coverRateRequired(mode, scope);",
+            "to": "const needRate = false;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S5",
+    "what": "🔴 a GROUP gets a door on its extras too — its route has no `from`, so that door swaps the PRIMARY",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesModal.tsx",
+        "edits": [
+          {
+            "from": "{doors.swapPrimary && !isGroup && (",
+            "to": "{doors.swapPrimary && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S6",
+    "what": "🔴 the person going OUT is offered as a candidate to come IN (the \"to\" list stops excluding the whole row)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "const choices = teachers.filter((x) => x.bookable && !onRow.includes(x.id));",
+            "to": "const choices = teachers.filter((x) => x.bookable && x.id !== series.teacherId);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S7",
+    "what": "🔴 the series rate box shown WITHOUT the coach-rate permission (key 59) — a box the server then refuses with 403",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "const restRate = mode === \"swap\" && scope === \"rest\" && canRate;",
+            "to": "const restRate = mode === \"swap\" && scope === \"rest\";"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S8",
+    "what": "🔴 a rate typed for ONE session is carried into the series box (\"a rate for one day is not a rate for the series\")",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "value={restRateBaht}",
+            "to": "value={restRateBaht !== \"\" ? restRateBaht : rateBaht}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S9",
+    "what": "🔴 the typed series rate never reaches the body — the retry after RATE_REQUIRED is refused again, forever",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "const rateOnRest = restRate && restRateBaht !== \"\" ? { rateMinor: bahtToMinor(restRateBaht) } : {};",
+            "to": "const rateOnRest = {};"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S10",
+    "what": "🔴 the dialog title always names the PRIMARY — the screen says one person is leaving and sends another",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "t(\"otherSeries.swapTeacherTitle\", { name: name(from) })",
+            "to": "t(\"otherSeries.swapTeacherTitle\", { name: name(series.teacherId) })"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "S11",
+    "what": "🔴 the stale label restored — swapping an EXTRA tells the admin the new coach is the \"primary\"",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "    swapTo: \"New teacher\",\n",
+            "to": "    swapTo: \"New primary teacher\",\n"
+          }
+        ]
+      }
+    ]
+  }
+]

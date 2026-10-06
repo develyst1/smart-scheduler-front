@@ -52,7 +52,7 @@ describe("§1 — archive, two taps", () => {
     expect(hooks).toContain("mutationFn: (id: string) => archiveStudent(id), onSuccess: () => qc.invalidateQueries({ queryKey: PARENTS_KEY })");
     expect(hooks).toContain("mutationFn: (id: string) => unarchiveStudent(id), onSuccess: () => qc.invalidateQueries({ queryKey: PARENTS_KEY })");
     expect(ACTION_KEYS_SNAPSHOT).toContain("action:people.student-archive");
-    expect((page.match(/"action:people\.student-archive"/g) ?? []).length).toBe(2); // the icon and the Restore, nothing else
+    expect((page.match(/"action:people\.student-archive"/g) ?? []).length).toBe(3); // the icon and the Restore, nothing else — 🔻 TASK-665: + the no-parent list's per-row door (the archived parentless rows restore through the same `runRestore`, so no third Restore literal)
   });
 });
 

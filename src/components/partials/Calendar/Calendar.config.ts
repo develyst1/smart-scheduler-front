@@ -9,6 +9,10 @@ export const STATUS_LEGEND: BookingStatus[] = [
   "SICK_LEAVE",
   "EXTENDED",
   "PENDING_RESCHEDULE",
+  // 🔴 TASK-670 (5b) — owner ruled both IN (2026-10-06): they draw red on the grid and the legend did not say so. Their labels
+  // (`bookingStatus.*`) and icons already exist and are approved — no new words.
+  "NO_SHOW",
+  "CANCELLED",
 ];
 
 /**

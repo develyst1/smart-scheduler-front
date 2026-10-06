@@ -60,9 +60,13 @@ export const scopeOutcomeKey = (mode: "add" | "swap", scope: SeriesScope): strin
  * ⚖️ **Entered, not carried, and the reason is not a preference:** the only rates the FE can see are
  * `series.teacherRates`, which the server builds from the header row's primary and extras — **exactly the coaches Swap
  * excludes.** *There is never a rate to carry for a coach who is eligible to cover.*
- * ⚠️ **Only for `this` (a cover).** Over the rest of the series the server writes no rate at all, so a box there would
- * offer a number that goes nowhere — the old comment's fear ("a field that could contradict the scope"), answered by
- * showing it **only in the scope where it means something** rather than by having none.
+ * ⚠️ **REQUIRED only for `this` (a cover)** — that is all this function answers, and it is unchanged.
+ * 🔻 **TASK-624 (1b) — the sentence that stood here is no longer true.** It said that over the rest of the series the server
+ * writes no rate at all. **Since TASK-625 it does:** a "from here on" swap prices the incoming coach too (from what the
+ * series has already paid them, else the `rateMinor` in the body) and refuses `RATE_REQUIRED` when it can do neither. So the
+ * rest-of-series swap now offers an OPTIONAL rate box (the group swap's shape, TASK-634) — **optional, because the server
+ * answers from the series' own memory whenever it can**, and so deliberately NOT part of this `required` rule.
+ * 🔑 Each box is shown **only in the scope where it means something**, rather than having none.
  */
 export const coverRateRequired = (mode: "add" | "remove" | "swap", scope: SeriesScope): boolean => mode === "swap" && scope === "this";
 

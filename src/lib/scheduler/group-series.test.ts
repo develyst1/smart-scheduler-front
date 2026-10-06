@@ -85,7 +85,9 @@ describe("§2 — the ONE modal's two faces, the wire, the entry points", () => 
     // 🔻 TASK-577 (D10), declared: the swap body now also carries the COVER's rate (`onDate` only) and goes through
     // `withoutRates`, so a rate never rides without key 59. **The thing this pin protects — the GROUP swap body is built
     // by `swapBody` (`{ to }` alone, no `from`) — is unchanged and still pinned.**
-    expect(dialogs).toContain("withoutRates({ ...swapBody(seriesRef, series.teacherId, to), ...scoped, ...rateOnCover }, canRate)");
+    // 🔻 TASK-624 (granted by Porter, 10-06): the literal now reads `from` (the pressed door's teacher) and carries the optional
+    // series rate; the GROUP swap body is still built by `swapBody` and still `{ to }` alone — pinned by value at :36-37 above.
+    expect(dialogs).toContain("withoutRates({ ...swapBody(seriesRef, from, to), ...scoped, ...rateOnCover, ...rateOnRest }, canRate)");
     expect(svc).toContain("body: { from?: string; to: string; fromDate?: string; onDate?: string; rateMinor?: number },");
     expect(svc).toContain("seatsCancelled?: number;");
   });

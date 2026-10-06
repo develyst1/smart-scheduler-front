@@ -1,0 +1,77 @@
+[
+  {
+    "id": "E1",
+    "what": "🔴 COMPLETED falls back to \"was cancelled\" — a finished course is told it was cancelled",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/PlanModal.tsx",
+        "edits": [
+          {
+            "from": "COMPLETED: \"course.endedCompleted\", EXPIRED: \"course.endedExpired\" }",
+            "to": "EXPIRED: \"course.endedExpired\" }"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "E2",
+    "what": "🔴 EXPIRED falls back to \"was cancelled\" — an expired course is told it was cancelled",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/PlanModal.tsx",
+        "edits": [
+          {
+            "from": "COMPLETED: \"course.endedCompleted\", EXPIRED: \"course.endedExpired\" }",
+            "to": "COMPLETED: \"course.endedCompleted\" }"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "E3",
+    "what": "🔴 the cancelled/ended-early sentence replaced — a cancelled course would no longer say it was cancelled",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/PlanModal.tsx",
+        "edits": [
+          {
+            "from": "t((courseStatus && ENDED_SENTENCE[courseStatus]) || \"course.endedNoWrites\")",
+            "to": "t((courseStatus && ENDED_SENTENCE[courseStatus]) || \"course.endedCompleted\")"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L1",
+    "what": "🔴 NO_SHOW dropped from the legend — a red cell with no key",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Calendar.config.ts",
+        "edits": [
+          {
+            "from": "  \"NO_SHOW\",\n",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "L2",
+    "what": "🔴 CANCELLED dropped from the legend — the other red cell with no key",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/Calendar.config.ts",
+        "edits": [
+          {
+            "from": "  \"CANCELLED\",\n",
+            "to": ""
+          }
+        ]
+      }
+    ]
+  }
+]

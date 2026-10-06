@@ -80,7 +80,11 @@ describe("🔴 TASK-664 — the People filter for children with no parent", () =
     expect(list.textContent).toContain("05-11-2018");
     expect(list.querySelectorAll("[data-no-parent-explainer]").length).toBe(1);
     expect(list.textContent).toContain(st.noParentExplainer);
-    expect(list.querySelectorAll("button, a").length).toBe(0); // 🚫 no action, no bulk action
+    // 🚫 no bulk action. TASK-665 (owner 10-06) added ONE archive door per row, and TASK-669 ONE link door per row, and nothing
+    // else: every control in the list is one of those two, one of each per row.
+    expect(list.querySelectorAll("[data-no-parent-archive]").length).toBe(2);
+    expect(list.querySelectorAll("[data-no-parent-link]").length).toBe(2);
+    expect(list.querySelectorAll("button, a").length).toBe(4);
     expect(document.body.textContent).toContain(`${st.noParentFilter} (2)`);
   });
 

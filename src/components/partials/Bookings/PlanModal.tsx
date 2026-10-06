@@ -78,6 +78,15 @@ import { useCan } from "@/hooks/scheduler/useMe";
  */
 const COURSE_PAUSE_RESUME_ENABLED = true;
 
+/**
+ * 🔴 TASK-670 (5a) — WHY an ended course is closed to writes. `course.endedNoWrites` says "was cancelled", which is true of a
+ * cancelled course and **false of a COMPLETED or an EXPIRED one** (it showed on all three since 3f19d60). ✅ Both sentences are
+ * owner-APPROVED (2026-10-06). 🔑 **Keyed by the course's own status, not a third list of ended statuses:** whatever is not
+ * named here — a cancelled course, an older payload with no status — keeps today's sentence, byte for byte.
+ * 🚫 No "an admin can extend it" line: the owner ruled no.
+ */
+const ENDED_SENTENCE: Partial<Record<CourseStatus, string>> = { COMPLETED: "course.endedCompleted", EXPIRED: "course.endedExpired" };
+
 /** PENDING / CONFIRMED / EXTENDED — a live session that can be plainly cancelled (re-owes, no reason). */
 const isLiveStatus = (s: string) => s === "PENDING" || s === "CONFIRMED" || s === "EXTENDED";
 
@@ -384,7 +393,7 @@ export default function PlanModal({
               protection; this exists so staff aren't handed a button whose only outcome is a 409. */}
           {isCourse && !isCreate && courseEnded && (
             <Text fz="sm" c="dimmed">
-              {t("course.endedNoWrites")}
+              {t((courseStatus && ENDED_SENTENCE[courseStatus]) || "course.endedNoWrites")}
             </Text>
           )}
 

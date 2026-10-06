@@ -18,6 +18,9 @@ import { I18nProvider } from "@/lib/i18n";
  */
 
 const sent: Array<{ method: string; url: string; body: unknown }> = [];
+/** TASK-624 — which keys this admin holds (default: all), and a one-shot refusal the next PATCH throws. */
+let allowed: (key: string) => boolean = () => true;
+let patchError: Error | null = null;
 const SERIES = {
   key: "k-1",
   teacherId: "t1",
@@ -27,6 +30,7 @@ const SERIES = {
 const TEACHERS = [
   { id: "t1", name: "ครูเอ", nickname: "เอ", type: "FULL_TIME", bookable: true },
   { id: "t2", name: "ครูบี", nickname: "บี", type: "FULL_TIME", bookable: true },
+  { id: "t3", name: "ครูซี", nickname: "ซี", type: "FULL_TIME", bookable: true },
 ].map((x) => ({ ...x, subjects: [], subjectOptions: [], active: true, lineLinked: false, workDays: [] }));
 
 const realClient = await import("@/lib/api/client");
@@ -41,16 +45,30 @@ mock.module("@/lib/api/client", () => ({
     },
     patch: async (url: string, body: unknown) => {
       sent.push({ method: "PATCH", url, body });
+      if (patchError) {
+        const e = patchError;
+        patchError = null;
+        throw e;
+      }
       return { data: { moved: 1 } };
     },
   },
 }));
 const realMe = await import("@/hooks/scheduler/useMe");
-mock.module("@/hooks/scheduler/useMe", () => ({ ...realMe, useCan: () => () => true }));
+mock.module("@/hooks/scheduler/useMe", () => ({ ...realMe, useCan: () => (key: string) => allowed(key) }));
 
 const { TeacherDialog } = await import("./OtherSeriesDialogs");
+/**
+ * 📌 The REAL error class, by a specifier of its own (SYSTEM-FACTS 2026-10-05): other files `mock.module("@/lib/api/client")`
+ * and Bun keeps a mock for the whole run, so the class imported above can be another file's stand-in.
+ */
+const REAL = "../../../lib/api/client.ts?task624-real";
+const { ApiClientError: RealApiClientError }: typeof import("@/lib/api/client") = await import(REAL);
 
-const mount = (mode: "add" | "swap") => {
+/** 🔴 TASK-624 — the same series with an EXTRA coach on it (t2), so a Swap on a non-primary can be pressed. */
+const WITH_EXTRA = { ...SERIES, additionalTeacherIds: ["t2"] };
+
+const mount = (mode: "add" | "swap", opts: { series?: typeof SERIES; teacherId?: string } = {}) => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     h(
@@ -64,9 +82,10 @@ const mount = (mode: "add" | "swap") => {
           null,
           h(TeacherDialog, {
             seriesRef: { kind: "other", key: "k-1" },
-            series: SERIES as never,
+            series: (opts.series ?? SERIES) as never,
             teachers: TEACHERS as never,
             mode,
+            teacherId: opts.teacherId,
             onClose: () => {},
           }),
         ),
@@ -83,6 +102,8 @@ const pickTeacher = async (user: ReturnType<typeof userEvent.setup>) => {
 afterEach(cleanup);
 beforeEach(() => {
   sent.length = 0;
+  allowed = () => true;
+  patchError = null;
 });
 
 describe("🔴 TASK-564 — the scope question, clicked", () => {
@@ -138,7 +159,7 @@ describe("🔴 TASK-564 — the scope question, clicked", () => {
     expect(body.rateMinor).toBe(65000);
   });
 
-  it("🚫 …and over the REST of the series there is no rate box and no rate in the body — the server writes none", async () => {
+  it("🔻 TASK-624 (1b) — …and over the REST of the series the COVER's rate box is not shown, and with the optional series rate left EMPTY no rate is in the body", async () => {
     const user = userEvent.setup();
     mount("swap");
     await pickTeacher(user);
@@ -207,5 +228,227 @@ describe("🔴 TASK-564 — the scope question, clicked", () => {
     expect(note.textContent).toContain("บี"); // the covering coach
     expect(note.textContent).toContain("เอ"); // the one being covered
     expect(note.textContent?.toLowerCase()).toContain("not teaching");
+  });
+});
+
+/**
+ * 🔴 **TASK-624 (REQ-111 E) + 1b — Swap ANY teacher on the row, and the optional rate on "from here on".**
+ *
+ * Khwan: *"swap ได้แค่ครูที่เป็น primary … ต้องการให้เลือกคนอื่นได้"* — through the owner. The dialog hard-coded who leaves. 🔑 Every
+ * assertion below is about the BODY that left (TASK-559's rule): *who* is named `from`, and *whether* a rate rode.
+ */
+const optionTexts = () => [...document.querySelectorAll('[role="option"]')].map((o) => o.textContent ?? "");
+const pickCoach = async (user: ReturnType<typeof userEvent.setup>, nick: string) => {
+  await user.click(document.querySelector("input[role='combobox']") as HTMLElement);
+  await user.click(await screen.findByText(new RegExp(nick)));
+};
+const restRateBox = () => document.querySelector("[data-swap-rate]") as HTMLInputElement | null;
+const coverRateBox = () => document.querySelector("[data-cover-rate]") as HTMLInputElement | null;
+
+describe("🔴 TASK-624 — swapping an EXTRA: the dialog says who goes out, and the body names them", () => {
+  it("🔑 the title names the teacher whose door was pressed, and the “to” list excludes EVERYONE on the row — the one going out included", async () => {
+    const user = userEvent.setup();
+    mount("swap", { series: WITH_EXTRA, teacherId: "t2" });
+
+    expect(document.body.textContent).toContain("Swap teacher — บี"); // the extra, not the primary
+    expect(document.body.textContent).not.toContain("Swap teacher — เอ");
+
+    await user.click(document.querySelector("input[role='combobox']") as HTMLElement);
+    await waitFor(() => expect(optionTexts().length).toBeGreaterThan(0));
+    const opts = optionTexts().join(" | ");
+    expect(opts).toContain("ซี"); // not on the row ⇒ offered
+    expect(opts).not.toContain("บี"); // 🔑 the person going OUT is not a candidate to come IN
+    expect(opts).not.toContain("เอ"); // nor is the primary
+  });
+
+  it("🔑 swapping an EXTRA over the rest posts `from` = THAT extra (never the primary), to = the new coach, one scope key", async () => {
+    const user = userEvent.setup();
+    mount("swap", { series: WITH_EXTRA, teacherId: "t2" });
+    await pickCoach(user, "ซี");
+    await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
+    await waitFor(() => expect(saveBtn().disabled).toBe(false));
+    await user.click(saveBtn());
+
+    await waitFor(() => expect(sent.length).toBe(1));
+    expect(sent[0].method).toBe("PATCH");
+    expect(sent[0].url).toBe("/other-series/k-1/teacher");
+    const body = sent[0].body as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["from", "fromDate", "to"]);
+    expect(body.from).toBe("t2");
+    expect(body.to).toBe("t3");
+  });
+
+  it("🚫 no scope chosen ⇒ NOTHING is sent, for an extra as for the primary", async () => {
+    const user = userEvent.setup();
+    mount("swap", { series: WITH_EXTRA, teacherId: "t2" });
+    await pickCoach(user, "ซี");
+    expect(saveBtn().disabled).toBe(true);
+    await user.click(saveBtn());
+    expect(sent).toEqual([]);
+  });
+
+  it("the outcome line on one session names the extra as the one covered", async () => {
+    const user = userEvent.setup();
+    mount("swap", { series: WITH_EXTRA, teacherId: "t2" });
+    await pickCoach(user, "ซี");
+    await user.click(document.querySelector("[data-scope-this]") as HTMLElement);
+    const note = await screen.findByText(/covers for/i);
+    expect(note.textContent).toContain("ซี"); // the covering coach
+    expect(note.textContent).toContain("บี"); // the extra being covered — not the primary
+    expect(note.textContent).not.toContain("เอ");
+  });
+
+  it("✅ a COVER of an extra is still a cover: the door waits for the rate, the body is { from, onDate, rateMinor, to }", async () => {
+    const user = userEvent.setup();
+    mount("swap", { series: WITH_EXTRA, teacherId: "t2" });
+    await pickCoach(user, "ซี");
+    await user.click(document.querySelector("[data-scope-this]") as HTMLElement);
+    const box = await waitFor(() => coverRateBox() as HTMLInputElement);
+    expect(restRateBox() === null).toBe(true); // the cover has ITS box, not the series one
+    expect(saveBtn().disabled).toBe(true);
+    fireEvent.change(box, { target: { value: "650" } });
+    await waitFor(() => expect(saveBtn().disabled).toBe(false));
+    await user.click(saveBtn());
+
+    await waitFor(() => expect(sent.length).toBe(1));
+    const body = sent[0].body as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["from", "onDate", "rateMinor", "to"]);
+    expect(body.from).toBe("t2");
+    expect(body.rateMinor).toBe(65000);
+  });
+});
+
+describe("🔴 TASK-624 — the PRIMARY's swap is unchanged (the widening must be invisible to the use that already worked)", () => {
+  it("🔴 the primary's door on a series WITH extras: same body, same scope rules — `from` = the primary", async () => {
+    const user = userEvent.setup();
+    mount("swap", { series: WITH_EXTRA, teacherId: "t1" });
+    expect(document.body.textContent).toContain("Swap teacher — เอ");
+    await pickCoach(user, "ซี");
+    expect(saveBtn().disabled).toBe(true); // no scope ⇒ shut
+    await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
+    await waitFor(() => expect(saveBtn().disabled).toBe(false));
+    await user.click(saveBtn());
+
+    await waitFor(() => expect(sent.length).toBe(1));
+    const body = sent[0].body as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["from", "fromDate", "to"]);
+    expect(body.from).toBe("t1");
+    expect(body.to).toBe("t3");
+  });
+
+  it("a caller that names nobody still means the primary (what every earlier test relies on)", async () => {
+    const user = userEvent.setup();
+    mount("swap", { series: WITH_EXTRA });
+    await pickCoach(user, "ซี");
+    await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
+    await waitFor(() => expect(saveBtn().disabled).toBe(false));
+    await user.click(saveBtn());
+    await waitFor(() => expect(sent.length).toBe(1));
+    expect((sent[0].body as Record<string, unknown>).from).toBe("t1");
+  });
+});
+
+describe("🔴 TASK-624 (1b) — an OPTIONAL rate on “from here on”, the group swap's shape (TASK-634)", () => {
+  it("🔑 over the REST the optional rate box appears — empty, not required — and a filled one rides as `rateMinor` in satang", async () => {
+    const user = userEvent.setup();
+    mount("swap", { series: WITH_EXTRA, teacherId: "t1" });
+    await pickCoach(user, "ซี");
+    expect(restRateBox() === null).toBe(true); // nothing chosen ⇒ no box
+    await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
+
+    const box = await waitFor(() => restRateBox() as HTMLInputElement);
+    expect(box.getAttribute("data-swap-rate")).toBe("none"); // 🚫 never pre-filled
+    expect(box.required).toBe(false); // 🚫 never a blocker: the server answers from the series' memory when it can
+    expect(coverRateBox() === null).toBe(true);
+    await waitFor(() => expect(saveBtn().disabled).toBe(false)); // an ordinary swap types nothing
+
+    fireEvent.change(box, { target: { value: "650" } });
+    await waitFor(() => expect(restRateBox()!.getAttribute("data-swap-rate")).toBe("65000"));
+    await user.click(saveBtn());
+
+    await waitFor(() => expect(sent.length).toBe(1));
+    const body = sent[0].body as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["from", "fromDate", "rateMinor", "to"]);
+    expect(body.rateMinor).toBe(65000);
+  });
+
+  it("🔴 a RATE_REQUIRED refusal is ANSWERABLE from the same dialog: the server's sentence shows, the box is there, and the retry carries the rate", async () => {
+    const SENTENCE = "ตารางนี้ยังไม่มีค่าสอนของครูคนนี้ — ระบุค่าสอนก่อน";
+    patchError = new RealApiClientError("RATE_REQUIRED", SENTENCE, 400);
+    const user = userEvent.setup();
+    mount("swap", { series: WITH_EXTRA, teacherId: "t2" });
+    await pickCoach(user, "ซี");
+    await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
+    await waitFor(() => expect(saveBtn().disabled).toBe(false));
+    await user.click(saveBtn());
+
+    await waitFor(() => expect(document.body.textContent).toContain(SENTENCE));
+    expect((sent[0].body as Record<string, unknown>).rateMinor).toBeUndefined();
+    // the dialog stayed open with what was chosen, and the answer is right there
+    const box = restRateBox() as HTMLInputElement;
+    expect(box === null).toBe(false);
+    fireEvent.change(box, { target: { value: "700" } });
+    await waitFor(() => expect(restRateBox()!.getAttribute("data-swap-rate")).toBe("70000"));
+    await user.click(saveBtn());
+
+    await waitFor(() => expect(sent.length).toBe(2));
+    const retry = sent[1].body as Record<string, unknown>;
+    expect(retry.from).toBe("t2");
+    expect(retry.rateMinor).toBe(70000);
+  });
+
+  it("🔑 a rate typed for ONE session does not travel to “the rest” — the series box starts empty", async () => {
+    const user = userEvent.setup();
+    mount("swap", { series: WITH_EXTRA, teacherId: "t1" });
+    await pickCoach(user, "ซี");
+    await user.click(document.querySelector("[data-scope-this]") as HTMLElement);
+    fireEvent.change(await waitFor(() => coverRateBox() as HTMLInputElement), { target: { value: "650" } });
+    await waitFor(() => expect(coverRateBox()!.getAttribute("data-cover-rate")).toBe("65000"));
+
+    await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
+    const box = await waitFor(() => restRateBox() as HTMLInputElement);
+    expect(box.getAttribute("data-swap-rate")).toBe("none");
+    // 🔑 and what the box DISPLAYS — a box that shows a carried 650 while sending nothing is the lie this file exists to catch
+    expect(box.value).toBe("");
+    await waitFor(() => expect(saveBtn().disabled).toBe(false));
+    await user.click(saveBtn());
+    await waitFor(() => expect(sent.length).toBe(1));
+    expect((sent[0].body as Record<string, unknown>).rateMinor).toBeUndefined(); // 🔑 not the cover's 65000
+  });
+
+  it("🚫 without the coach-rate permission (key 59) the box is HIDDEN, never greyed, and no `rateMinor` can ride", async () => {
+    allowed = (key) => key !== "action:bookings.coach-rate";
+    const user = userEvent.setup();
+    mount("swap", { series: WITH_EXTRA, teacherId: "t1" });
+    await pickCoach(user, "ซี");
+    await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
+    await waitFor(() => expect(saveBtn().disabled).toBe(false));
+    expect(restRateBox() === null).toBe(true);
+    await user.click(saveBtn());
+    await waitFor(() => expect(sent.length).toBe(1));
+    expect(Object.keys(sent[0].body as object).sort()).toEqual(["from", "fromDate", "to"]);
+  });
+});
+
+describe("🔴 TASK-624 — the “to” picker's label no longer says the new coach is the PRIMARY", () => {
+  /**
+   * Swapping an extra puts `otherSeries.swapTo` above the picker, and it used to read "New primary teacher" — false the moment
+   * an extra can be swapped. ✅ Corrected by @Porter 2026-10-06 (no owner round; he lists it to the owner as a line he can veto):
+   * the approved group string minus "of the group". 🔑 Read on the REAL dialog for an extra, not only in the dictionary.
+   */
+  it("🔑 swapping an EXTRA shows “New teacher” above the picker — and never “primary”", async () => {
+    mount("swap", { series: WITH_EXTRA, teacherId: "t2" });
+    const dlg = document.querySelector("[data-teacher-dialog='swap']") as HTMLElement;
+    const label = [...dlg.querySelectorAll("label")].map((l) => l.textContent ?? "").join(" | ");
+    expect(label).toContain("New teacher");
+    expect(label.toLowerCase()).not.toContain("primary");
+  });
+
+  it("both languages, the approved words — and the old ones are gone", async () => {
+    const { dictionaries } = await import("@/lib/i18n/dictionaries");
+    expect(dictionaries.en.otherSeries.swapTo).toBe("New teacher");
+    expect(dictionaries.th.otherSeries.swapTo).toBe("ครูคนใหม่");
+    expect(dictionaries.en.otherSeries.swapTo).not.toMatch(/primary/i);
+    expect(dictionaries.th.otherSeries.swapTo).not.toContain("หลัก");
   });
 });

@@ -261,7 +261,8 @@ describe("🔴 TASK-592 — the cover's permission, and what it must NOT narrow"
     expect(group).not.toContain("coverBlocked");
     // 🔑 and the group box cannot be REQUIRED — an optional field that blocks Save is the dead end, whatever it is called
     expect(group).not.toMatch(/required[\s\S]{0,120}data-group-swap-rate/);
-    expect(dialogs).toContain("swapBody(seriesRef, series.teacherId, to)");
+    // 🔻 TASK-624 (granted by Porter, 10-06): `from` replaces `series.teacherId` — same builder, the pressed door's teacher.
+    expect(dialogs).toContain("swapBody(seriesRef, from, to)");
     // and the dialog is opened from exactly one place
     const modal = codeOf("src/components/partials/OtherSeries/OtherSeriesModal.tsx");
     expect((modal.match(/<TeacherDialog/g) ?? []).length).toBe(1);
