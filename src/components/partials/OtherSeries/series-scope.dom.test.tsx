@@ -68,7 +68,7 @@ const { ApiClientError: RealApiClientError }: typeof import("@/lib/api/client") 
 /** 🔴 TASK-624 — the same series with an EXTRA coach on it (t2), so a Swap on a non-primary can be pressed. */
 const WITH_EXTRA = { ...SERIES, additionalTeacherIds: ["t2"] };
 
-const mount = (mode: "add" | "swap", opts: { series?: typeof SERIES; teacherId?: string } = {}) => {
+const mount = (mode: "add" | "swap", opts: { series?: typeof SERIES; teacherId?: string; kind?: "other" | "group" } = {}) => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     h(
@@ -81,7 +81,7 @@ const mount = (mode: "add" | "swap", opts: { series?: typeof SERIES; teacherId?:
           I18nProvider,
           null,
           h(TeacherDialog, {
-            seriesRef: { kind: "other", key: "k-1" },
+            seriesRef: { kind: opts.kind ?? "other", key: "k-1" },
             series: (opts.series ?? SERIES) as never,
             teachers: TEACHERS as never,
             mode,
@@ -450,5 +450,74 @@ describe("🔴 TASK-624 — the “to” picker's label no longer says the new c
     expect(dictionaries.th.otherSeries.swapTo).toBe("ครูคนใหม่");
     expect(dictionaries.en.otherSeries.swapTo).not.toMatch(/primary/i);
     expect(dictionaries.th.otherSeries.swapTo).not.toContain("หลัก");
+  });
+});
+
+/**
+ * 🔴 **TASK-673 (server: TASK-672; found in TASK-624 Q3) — a GROUP swap offers ONLY "from here on".**
+ *
+ * The group's route has no `onDate`, so "this session only" was never something it could honour: it silently swapped the whole
+ * group from today and paid the one-session rate from today onward. The server now refuses it; 🔑 the screen must never OFFER it.
+ * Every assertion reads the BODY that left — `onDate` and the cover `rateMinor` must be unable to ride on a group.
+ */
+describe("🔴 TASK-673 — GROUP swap: one scope, never `onDate`", () => {
+  it("🔑 no “this session only” — no scope question at all — and Save posts { to, fromDate }, NEVER `onDate`", async () => {
+    const user = userEvent.setup();
+    mount("swap", { kind: "group" });
+    // the scope question is not asked: no radios, no cover box, no cover-rate prompt
+    expect(document.querySelectorAll('input[type="radio"]').length).toBe(0);
+    expect(document.querySelectorAll("[data-scope-this]").length).toBe(0);
+    expect(coverRateBox() === null).toBe(true);
+    // …and the date says what it means for the ONE scope there is: "From date" (the existing words, nothing new)
+    expect(document.body.textContent).toContain("From date");
+
+    await pickCoach(user, "บี");
+    await waitFor(() => expect(saveBtn().disabled).toBe(false)); // no scope click is needed — and none is possible
+    await user.click(saveBtn());
+
+    await waitFor(() => expect(sent.length).toBe(1));
+    expect(sent[0].method).toBe("PATCH");
+    expect(sent[0].url).toBe("/group-series/k-1/teacher");
+    const body = sent[0].body as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["fromDate", "to"]);
+    expect(body.onDate).toBeUndefined();
+    expect(body.to).toBe("t2");
+    expect(body.rateMinor).toBeUndefined();
+  });
+
+  it("the optional series rate is still there on a group (the group swap's own shape) and rides as `rateMinor` — still no `onDate`", async () => {
+    const user = userEvent.setup();
+    mount("swap", { kind: "group" });
+    await pickCoach(user, "บี");
+    const box = await waitFor(() => restRateBox() as HTMLInputElement);
+    expect(box.getAttribute("data-swap-rate")).toBe("none");
+    fireEvent.change(box, { target: { value: "650" } });
+    await waitFor(() => expect(restRateBox()!.getAttribute("data-swap-rate")).toBe("65000"));
+    await user.click(saveBtn());
+
+    await waitFor(() => expect(sent.length).toBe(1));
+    const body = sent[0].body as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["fromDate", "rateMinor", "to"]);
+    expect(body.rateMinor).toBe(65000);
+    expect(body.onDate).toBeUndefined();
+  });
+
+  it("✅ unchanged: ADD on a GROUP still asks the question (the add route takes `onDate`) — both scopes, none pre-selected", async () => {
+    mount("add", { kind: "group" });
+    const radios = [...document.querySelectorAll('input[type="radio"]')] as HTMLInputElement[];
+    expect(radios.length).toBe(2);
+    expect(radios.some((r) => r.checked)).toBe(false);
+  });
+
+  it("✅ unchanged: an OTHER series' swap still offers BOTH scopes, nothing pre-selected, and its cover still needs a rate", async () => {
+    const user = userEvent.setup();
+    mount("swap", { kind: "other" });
+    const radios = [...document.querySelectorAll('input[type="radio"]')] as HTMLInputElement[];
+    expect(radios.length).toBe(2);
+    expect(radios.some((r) => r.checked)).toBe(false);
+    await pickCoach(user, "บี");
+    await user.click(document.querySelector("[data-scope-this]") as HTMLElement);
+    await waitFor(() => expect(coverRateBox() === null).toBe(false)); // the one-session cover is still an OTHER-series act
+    expect(saveBtn().disabled).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Button, Checkbox, Group, Modal, NumberInput, Radio, Select, Stack, Text, Textarea } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { AlertTriangle } from "lucide-react";
@@ -125,7 +125,23 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
   // 🔴 TASK-564 (REQ-110 item 5) — the scope the door must ASK for. 🚫 `null` on purpose: Khwan's complaint is that one
   // teacher change silently rewrote every remaining session, and **a pre-selected “the rest” would reproduce that with
   // one extra click.** The server refuses a body naming neither scope (400), so this is also the shape it now requires.
+  /**
+   * 🔴 TASK-673 (server: TASK-672; found in TASK-624 Q3) — a GROUP swap has exactly ONE valid scope: "from here on". The group's
+   * route (`PATCH /group-series/:key/teacher`) has no `onDate`, so "this session only" was never something it could honour —
+   * it was silently swapping the whole group from today AND paying the one-session rate from today onward. The server now
+   * refuses it; 🔑 this makes the screen never OFFER it, so an admin is not refused for a choice we put in front of them.
+   * ⇒ The scope is FIXED to `rest` and the question is not asked (there is one answer, so there is nothing to ask — Khwan's
+   * complaint was an unasked question with a hidden effect, and the date label below still says what the date means).
+   * 🚫 OTHER series are untouched (both scopes, nothing pre-selected), and so is ADD on a group (the add route does take `onDate`).
+   * 📌 Set by an effect, NOT by the initial state: `useState<SeriesScope>(null)` below is pinned (TASK-564, series-scope.test.ts) as
+   * the claim that no door that ASKS the question starts with an answer — and that stays true. The group swap is the one door with
+   * nothing to ask, so it is given its only answer on mount (the first paint has `null`, so Save is shut until it lands).
+   */
+  const isGroupSwap = seriesRef.kind === "group" && mode === "swap";
   const [scope, setScope] = useState<SeriesScope>(null);
+  useEffect(() => {
+    if (isGroupSwap) setScope("rest");
+  }, [isGroupSwap]);
   const [error, setError] = useState<string | null>(null);
   // REQ-102 §8 (TASK-432) — the optional rate box only with key 59; never `rateMinor` in the body without it.
   const can = useCan();
@@ -268,7 +284,7 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
         )}
         {mode === "add" && canRate && <NumberInput label={t("otherSeries.rateOptional")} value={rateBaht} onChange={(v) => setRateBaht(typeof v === "number" ? v : "")} min={0} step={50} allowDecimal={false} allowNegative={false} suffix=" ฿" className="max-w-xs" />}
         {/* 🔴 TASK-564 — the question, asked. No option is pre-selected, and Save stays shut until one is. */}
-        {mode !== "remove" && (
+        {mode !== "remove" && !isGroupSwap && (
           <Radio.Group label={t("otherSeries.scopeLabel")} description={t("otherSeries.scopeHint")} value={scope ?? ""} onChange={(v) => setScope(v as SeriesScope)} data-series-scope={scope ?? "none"}>
             <Stack gap={4} mt={4}>
               <Radio value="this" label={t("otherSeries.scopeThis")} data-scope-this />

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "G1",
+    "what": "🔴 \"this session only\" offered on a group again — the scope question is back on the one door that cannot honour it",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "{mode !== \"remove\" && !isGroupSwap && (",
+            "to": "{mode !== \"remove\" && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "G2",
+    "what": "🔴 `onDate` sent for a group — the scope is fixed to \"this\" instead of \"the rest\" (the swap would again be refused/misapplied)",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "if (isGroupSwap) setScope(\"rest\");",
+            "to": "if (isGroupSwap) setScope(\"this\");"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "G3",
+    "what": "🔴 the fix leaks to OTHER series — an ECA swap loses its scope question",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "const isGroupSwap = seriesRef.kind === \"group\" && mode === \"swap\";",
+            "to": "const isGroupSwap = mode === \"swap\";"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "G4",
+    "what": "🔴 the fix leaks to ADD on a group — adding a coach to a group loses its scope question",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "const isGroupSwap = seriesRef.kind === \"group\" && mode === \"swap\";",
+            "to": "const isGroupSwap = seriesRef.kind === \"group\";"
+          }
+        ]
+      }
+    ]
+  }
+]

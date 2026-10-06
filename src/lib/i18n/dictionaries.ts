@@ -591,7 +591,7 @@ const en = {
     coverRate: "{name}'s rate for this session",
     coverRateHint: "The covering coach is paid their own rate for this session. This series has none on file for them yet, so enter it here.",
     rateOptional: "Rate per session (optional)",
-    // 🔴 TASK-624 (1b) — 📋 DRAFT wording (Silver, COPY-DRAFT-teamB-week-to-10-11-2026-10-06.md §B; not yet confirmed as covered).
+    // 🔴 TASK-624 (1b) — ✅ covered by the owner's approval (Silver, 2026-10-06; COPY-DRAFT-teamB-week-to-10-11-2026-10-06.md §B).
     // The group swap's approved pair (`booking.groupSwapRate` / `groupSwapRateHint`, TASK-634) with "group" → "series".
     swapRate: "{name}'s rate for this series (per session)",
     swapRateHint: "Leave this empty unless the swap is refused for a missing rate — that happens when this series has never paid this coach before.",
@@ -1681,7 +1681,7 @@ const en = {
     archivedBadge: "archived",
     restore: "Restore",
     restoredOk: "{name} restored",
-    // 🔴 TASK-669 — 📋 DRAFT wording (Silver, COPY-DRAFT-teamB-week-to-10-11-2026-10-06.md §C; not yet approved). Reused, not new:
+    // 🔴 TASK-669 — ✅ owner-APPROVED 2026-10-06, all 10 as drafted (COPY-DRAFT-teamB-week-to-10-11-2026-10-06.md §C). Reused, not new:
     // the 5-per-family cap and the archived-family refusals (the server's own sentences, shown as sent).
     linkParent: "Link a parent",
     linkParentSearch: "Find the family (name or phone)",
@@ -2654,7 +2654,7 @@ const th: typeof en = {
     coverRate: "ค่าสอนของ {name} สำหรับคาบนี้",
     coverRateHint: "ครูที่มาสอนแทนจะได้ค่าสอนของตัวเอง ตารางนี้ยังไม่มีค่าสอนของครูท่านนี้ จึงต้องระบุที่นี่",
     rateOptional: "ค่าสอนต่อคาบ (ไม่บังคับ)",
-    // 🔴 TASK-624 (1b) — 📋 DRAFT wording (see the EN block).
+    // 🔴 TASK-624 (1b) — ✅ covered by the owner's approval (see the EN block).
     swapRate: "ค่าสอนของ {name} สำหรับตารางนี้ (ต่อคาบ)",
     swapRateHint: "ไม่ต้องกรอก ยกเว้นระบบปฏิเสธเพราะไม่มีค่าสอน — จะเกิดเมื่อตารางนี้ยังไม่เคยจ่ายค่าสอนให้ครูคนนี้",
     fromDate: "ตั้งแต่วันที่",
@@ -3613,7 +3613,7 @@ const th: typeof en = {
     archivedBadge: "เก็บแล้ว",
     restore: "คืนสถานะ",
     restoredOk: "คืนสถานะ {name} แล้ว",
-    // 🔴 TASK-669 — 📋 DRAFT wording (see the EN block).
+    // 🔴 TASK-669 — ✅ owner-APPROVED 2026-10-06 (see the EN block).
     linkParent: "ผูกผู้ปกครอง",
     linkParentSearch: "ค้นหาผู้ปกครอง (ชื่อหรือเบอร์)",
     linkParentConfirmTitle: "ผูก {child} กับ {parent}?",

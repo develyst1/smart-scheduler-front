@@ -15,9 +15,15 @@ interface Props {
   /** null = add mode; a parent = edit mode. */
   parent: Parent | null;
   onClose: () => void;
+  /**
+   * 🔴 TASK-696 — called with the family the server just CREATED (add mode only), after the success notice and before `onClose`.
+   * The link-a-parent dialog uses it to go straight to its confirm for that family. 🔑 **Optional, and the People page does not
+   * pass it — its own "Add parent" flow is exactly as it was** (pinned). Never called on a refusal, and never in edit mode.
+   */
+  onCreated?: (parent: Parent) => void;
 }
 
-export default function ParentFormModal({ opened, parent, onClose }: Props) {
+export default function ParentFormModal({ opened, parent, onClose, onCreated }: Props) {
   const t = useT();
   const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const create = useCreateParent();
@@ -45,6 +51,7 @@ export default function ParentFormModal({ opened, parent, onClose }: Props) {
       return;
     }
     try {
+      let created: Parent | undefined;
       const input = {
         name: name.trim() || null,
         phone: phone.trim(),
@@ -54,9 +61,10 @@ export default function ParentFormModal({ opened, parent, onClose }: Props) {
       if (isEdit && parent) {
         await update.mutateAsync({ id: parent.id, input });
       } else {
-        await create.mutateAsync(input);
+        created = await create.mutateAsync(input);
       }
       notify({ title: t("people.parentSaved"), description: name || phone, color: "success" });
+      if (created) onCreated?.(created);
       onClose();
     } catch (e) {
       notify({

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "Q1",
+    "what": "🔴 the create door REMOVED (its gate literal gone) — the count, the NAME and the file count all move; the sweep must go red",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "const canCreateParent = can(\"action:people.parent-create\");",
+            "to": "const canCreateParent = true;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Q2",
+    "what": "🔴 the door asked under ANOTHER key — the count and the file count stay right; only the NAME on line 69 can catch it (a count alone passes for any door)",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "const canCreateParent = can(\"action:people.parent-create\");",
+            "to": "const canCreateParent = can(\"action:people.parent-edit\");"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Q3",
+    "what": "🔴 a SECOND gate literal in the same file — the count moves (111) while the name still holds; line 69's count must catch it",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "const canCreateParent = can(\"action:people.parent-create\");",
+            "to": "const canCreateParent = can(\"action:people.parent-create\"); const alsoCan = can(\"action:people.parent-create\");"
+          }
+        ]
+      }
+    ]
+  }
+]

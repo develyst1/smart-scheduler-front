@@ -1,0 +1,92 @@
+[
+  {
+    "id": "V1",
+    "what": "🔴 the confirm SKIPPED after create — the new family is linked on the spot, with no dry run and no \"can't be undone\"",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "onCreated={(p) => setParent({ id: p.id, name: p.name, phone: p.phone })}",
+            "to": "onCreated={(p) => { void link.mutateAsync({ studentId: student.id, parentId: p.id }); onClose(); }}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V2",
+    "what": "🔴 the link posts the WRONG / old parentId after a create — the child is linked to a different family than the one just made",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "onCreated={(p) => setParent({ id: p.id, name: p.name, phone: p.phone })}",
+            "to": "onCreated={(p) => setParent({ id: \"p-ari\", name: p.name, phone: p.phone })}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V3",
+    "what": "🔴 the create button shown WITHOUT `people.parent-create` — a door the server then refuses",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "const canCreateParent = can(\"action:people.parent-create\");",
+            "to": "const canCreateParent = true;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V4",
+    "what": "🔴 a link ATTEMPTED after a create REFUSAL — the dialog moves on to a confirm for a family that was never made",
+    "files": [
+      {
+        "file": "src/components/partials/People/ParentFormModal.tsx",
+        "edits": [
+          {
+            "from": "created = await create.mutateAsync(input);",
+            "to": "onCreated?.({ id: \"p-ari\", phone: input.phone, name: input.name } as never);\n        created = await create.mutateAsync(input);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V5",
+    "what": "🔴 after a REFUSED link the dialog returns to the CREATE form — a retry would make a second family",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "setError(errOf(e));",
+            "to": "setError(errOf(e)); setCreating(true);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "V6",
+    "what": "🔴 after a REFUSED link the dialog drops the new family (back to the pick step) — the half that happened is hidden, and a retry starts over",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "setError(errOf(e));",
+            "to": "setError(errOf(e)); setParent(null);"
+          }
+        ]
+      }
+    ]
+  }
+]

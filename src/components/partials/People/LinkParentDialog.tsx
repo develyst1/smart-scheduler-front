@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { Alert, Button, Group, Loader, Modal, Stack, Text, TextInput, UnstyledButton } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { AlertTriangle, Search } from "lucide-react";
+import { AlertTriangle, Search, UserPlus } from "lucide-react";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { notify } from "@/lib/ui/notify";
 import { formatDateDisplay } from "@/lib/ui/format";
 import { useLinkParent, useLinkParentPreview, useParents } from "@/hooks/scheduler";
+import { useCan } from "@/hooks/scheduler/useMe";
+import ParentFormModal from "./ParentFormModal";
 import type { Parent } from "@/types/app/people";
 
 /**
@@ -22,6 +24,16 @@ import type { Parent } from "@/types/app/people";
  *       refusal uses, so the two cannot disagree;
  *     - **that the link can't be undone from the screen** — nothing in the product un-links, so the admin must know first.
  *
+ * 🔴 **TASK-696 — "create a family and link", from the PICK step.** Khwan's real case is a phone for a family that is not in the
+ * system yet. A button reuses the People page's own "Add parent" and its `ParentFormModal` (same fields, same words); when the
+ * family is created the dialog goes STRAIGHT to the confirm for it — the same dry run, the same confirm, the same Link button, and
+ * "can't be undone" still applies (🔑 the confirm is never skipped).
+ * ⚖️ **Two calls, not one atomic act — decided and declared:** the family is created first, the link second. If the admin stops after
+ * the create, or the link is refused, **the family STAYS** (a real family with a real phone, visible and searchable on People);
+ * 🚫 nothing here ever deletes or archives it. After a refused link the dialog stays on the confirm for THAT family, so a retry links
+ * the same family and can never create a second one. The admin is told which half happened with existing words only: the create's
+ * own notice (`people.parentSaved`) and the server's link sentence on the confirm.
+ *
  * Every refusal is the server's sentence, shown as sent (`STUDENT_ALREADY_HAS_PARENT`, `PARENT_ARCHIVED`, the 5-per-family cap).
  * 🚫 One child, one family, one press: there is no bulk link anywhere.
  */
@@ -33,6 +45,11 @@ export default function LinkParentDialog({ student, onClose }: { student: { id: 
   const [search, setSearch] = useState("");
   const [debounced] = useDebouncedValue(search, 300);
   const [parent, setParent] = useState<Picked | null>(null);
+  const can = useCan();
+  // TASK-696 — ONE door, so the key is asked ONCE and as a literal (the sweep counts it).
+  const canCreateParent = can("action:people.parent-create");
+  /** TASK-696 — the People page's add-parent form, opened from the pick step. It never reopens by itself (see the note above). */
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const families = useParents({ q: debounced.trim() || undefined, limit: 10 });
   const preview = useLinkParentPreview(student.id, parent?.id ?? null);
@@ -82,7 +99,12 @@ export default function LinkParentDialog({ student, onClose }: { student: { id: 
               ))}
             </Stack>
           )}
-          <Group justify="flex-end">
+          <Group justify={canCreateParent ? "space-between" : "flex-end"}>
+            {canCreateParent && (
+              <Button variant="light" leftSection={<UserPlus size={15} />} onClick={() => setCreating(true)} data-link-create>
+                {t("people.addParent")}
+              </Button>
+            )}
             <Button variant="default" onClick={onClose}>
               {t("common.cancel")}
             </Button>
@@ -129,6 +151,13 @@ export default function LinkParentDialog({ student, onClose }: { student: { id: 
           </Group>
         </Stack>
       )}
+      {/* TASK-696 — the SAME modal the People page uses, in add mode. `onCreated` hands us the new family: we go to its confirm. */}
+      <ParentFormModal
+        opened={creating}
+        parent={null}
+        onClose={() => setCreating(false)}
+        onCreated={(p) => setParent({ id: p.id, name: p.name, phone: p.phone })}
+      />
     </Modal>
   );
 }
