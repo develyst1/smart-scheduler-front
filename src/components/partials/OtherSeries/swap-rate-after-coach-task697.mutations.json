@@ -1,0 +1,32 @@
+[
+  {
+    "id": "R1",
+    "what": "🔴 the \"from here on\" series-rate box shown BEFORE a coach is picked — its label reads \"ค่าสอนของ  สำหรับตารางนี้\" with a blank name",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "{restRate && to && (",
+            "to": "{restRate && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "R2",
+    "what": "🔴 the one-session COVER rate box shown BEFORE a coach is picked — \"…rate for this session\" with a blank name",
+    "files": [
+      {
+        "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+        "edits": [
+          {
+            "from": "{needRate && canRate && to && (",
+            "to": "{needRate && canRate && ("
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -37,8 +37,8 @@
         "file": "src/components/partials/People/LinkParentDialog.tsx",
         "edits": [
           {
-            "from": "onClick={() => setParent({ id: p.id, name: p.name, phone: p.phone })}",
-            "to": "onClick={() => { setParent({ id: p.id, name: p.name, phone: p.phone }); void link.mutateAsync({ studentId: student.id, parentId: p.id }); }}"
+            "from": "setCreatedHere(false);\n                    setParent({ id: p.id, name: p.name, phone: p.phone });",
+            "to": "setCreatedHere(false);\n                    setParent({ id: p.id, name: p.name, phone: p.phone });\n                    void link.mutateAsync({ studentId: student.id, parentId: p.id });"
           }
         ]
       }

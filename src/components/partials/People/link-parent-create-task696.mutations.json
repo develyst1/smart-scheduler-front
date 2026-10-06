@@ -7,7 +7,7 @@
         "file": "src/components/partials/People/LinkParentDialog.tsx",
         "edits": [
           {
-            "from": "onCreated={(p) => setParent({ id: p.id, name: p.name, phone: p.phone })}",
+            "from": "onCreated={(p) => {\n          setCreatedHere(true);\n          setParent({ id: p.id, name: p.name, phone: p.phone });\n        }}",
             "to": "onCreated={(p) => { void link.mutateAsync({ studentId: student.id, parentId: p.id }); onClose(); }}"
           }
         ]
@@ -22,8 +22,8 @@
         "file": "src/components/partials/People/LinkParentDialog.tsx",
         "edits": [
           {
-            "from": "onCreated={(p) => setParent({ id: p.id, name: p.name, phone: p.phone })}",
-            "to": "onCreated={(p) => setParent({ id: \"p-ari\", name: p.name, phone: p.phone })}"
+            "from": "onCreated={(p) => {\n          setCreatedHere(true);\n          setParent({ id: p.id, name: p.name, phone: p.phone });\n        }}",
+            "to": "onCreated={(p) => {\n          setCreatedHere(true);\n          setParent({ id: \"p-ari\", name: p.name, phone: p.phone });\n        }}"
           }
         ]
       }

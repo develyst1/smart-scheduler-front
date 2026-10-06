@@ -50,6 +50,14 @@ export default function LinkParentDialog({ student, onClose }: { student: { id: 
   const canCreateParent = can("action:people.parent-create");
   /** TASK-696 — the People page's add-parent form, opened from the pick step. It never reopens by itself (see the note above). */
   const [creating, setCreating] = useState(false);
+  /**
+   * 🔴 TASK-698 — was the family chosen above CREATED in this dialog (`onCreated`), or picked from the search? A fading toast was the
+   * only other proof that the family exists, so when it WAS created here every refusal (the dry run's AND the link's) says so FIRST —
+   * with the phone just typed and the child's real name, never "น้อง" — followed by the server's own reason. A searched family gets the
+   * server's sentence alone, exactly as before. Set by `onCreated` and cleared where a family is picked from the list — the only two ways
+   * into the confirm step — so a created family picked again from the list is just a searched family.
+   */
+  const [createdHere, setCreatedHere] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const families = useParents({ q: debounced.trim() || undefined, limit: 10 });
   const preview = useLinkParentPreview(student.id, parent?.id ?? null);
@@ -88,7 +96,10 @@ export default function LinkParentDialog({ student, onClose }: { student: { id: 
           ) : (
             <Stack gap={0} data-link-families={families.data!.parents.length}>
               {families.data!.parents.map((p) => (
-                <UnstyledButton key={p.id} onClick={() => setParent({ id: p.id, name: p.name, phone: p.phone })} className="rounded-md px-2 py-1.5 text-left hover:bg-muted-100" data-link-family={p.id}>
+                <UnstyledButton key={p.id} onClick={() => {
+                    setCreatedHere(false);
+                    setParent({ id: p.id, name: p.name, phone: p.phone });
+                  }} className="rounded-md px-2 py-1.5 text-left hover:bg-muted-100" data-link-family={p.id}>
                   <Text size="sm" fw={500}>
                     {familyName(p)}
                   </Text>
@@ -114,6 +125,12 @@ export default function LinkParentDialog({ student, onClose }: { student: { id: 
         <Stack gap="sm">
           {(error || preview.error) && (
             <Alert color="red" icon={<AlertTriangle size={16} />} variant="light" data-link-error>
+              {/* 🔴 TASK-698 — the created half FIRST (one sentence for both refusals), then the server's reason, unchanged. */}
+              {createdHere && (
+                <Text size="sm" fw={600} data-link-created-line>
+                  {t("people.linkCreatedButNotLinked", { phone: parent.phone, child })}
+                </Text>
+              )}
               {error ?? errOf(preview.error)}
             </Alert>
           )}
@@ -156,7 +173,10 @@ export default function LinkParentDialog({ student, onClose }: { student: { id: 
         opened={creating}
         parent={null}
         onClose={() => setCreating(false)}
-        onCreated={(p) => setParent({ id: p.id, name: p.name, phone: p.phone })}
+        onCreated={(p) => {
+          setCreatedHere(true);
+          setParent({ id: p.id, name: p.name, phone: p.phone });
+        }}
       />
     </Modal>
   );

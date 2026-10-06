@@ -1,0 +1,92 @@
+[
+  {
+    "id": "W1",
+    "what": "🔴 the created-half line DROPPED after a create — back to the faded toast as the only proof the family exists",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "{createdHere && (",
+            "to": "{false && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W2",
+    "what": "🔴 the line shown for a SEARCHED family — a family that was never created here is told it was",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "onClick={() => {\n                    setCreatedHere(false);",
+            "to": "onClick={() => {\n                    setCreatedHere(true);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W3",
+    "what": "🔴 {phone} replaced by the family's NAME — the admin reads \"…ครอบครัวเบอร์ แม่ตินติน…\"",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "t(\"people.linkCreatedButNotLinked\", { phone: parent.phone, child })",
+            "to": "t(\"people.linkCreatedButNotLinked\", { phone: parent.name ?? parent.phone, child })"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W4",
+    "what": "🔴 {child} DROPPED — the sentence says someone is not linked, but not who",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "t(\"people.linkCreatedButNotLinked\", { phone: parent.phone, child })",
+            "to": "t(\"people.linkCreatedButNotLinked\", { phone: parent.phone, child: \"\" })"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W5",
+    "what": "🔴 {child} replaced by the generic \"น้อง\" — never the child's real name (Porter)",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "t(\"people.linkCreatedButNotLinked\", { phone: parent.phone, child })",
+            "to": "t(\"people.linkCreatedButNotLinked\", { phone: parent.phone, child: \"น้อง\" })"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "W6",
+    "what": "🔴 the DRY-RUN refusal path without the line — only the link's refusal names the created half",
+    "files": [
+      {
+        "file": "src/components/partials/People/LinkParentDialog.tsx",
+        "edits": [
+          {
+            "from": "{createdHere && (",
+            "to": "{createdHere && error && ("
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1693,6 +1693,11 @@ const en = {
     linkParentIrreversible: "This link can't be undone from the screen.",
     linkParentConfirm: "Link",
     linkParentDone: "{child} is now linked to {parent}.",
+    // 🔴 TASK-698 — ✅ APPROVED: the TH is the owner's (COPY-REVIEW-2026-09-29.md:504 via @Porter 2026-10-07) and the EN is Porter's carried translation, as drafted
+    // (2026-10-07). 🚫 Not "improved": an approved string improved on the way in is an unapproved string.
+    // Said first, in the same red box, whenever the family was created IN the link dialog and ANY refusal then shows (the dry run or the link):
+    // a fading toast was the only other evidence the family exists, and an admin who missed it retried and made a SECOND family.
+    linkCreatedButNotLinked: "The family with phone {phone} was created, but {child} is not linked yet.",
     // REQ-098 (TASK-412) — archive a PARENT (the children go with it)
     archiveParent: "Archive family",
     archiveParentTitle: "Archive {name}?",
@@ -3624,6 +3629,8 @@ const th: typeof en = {
     linkParentIrreversible: "การผูกนี้ย้อนกลับจากหน้าจอไม่ได้",
     linkParentConfirm: "ผูกผู้ปกครอง",
     linkParentDone: "ผูก {child} กับ {parent} แล้ว",
+    // 🔴 TASK-698 — ✅ owner-APPROVED TH, verbatim (COPY-REVIEW-2026-09-29.md:504 via @Porter 2026-10-07).
+    linkCreatedButNotLinked: "สร้างครอบครัวเบอร์ {phone} แล้ว แต่ยังผูก {child} ไม่สำเร็จ",
     archiveParent: "เก็บครอบครัว",
     archiveParentTitle: "เก็บ {name}?",
     archiveParentBody: "ทั้งครอบครัวจะหายจากทุกรายการที่ใช้งาน: นักเรียนทุกคนถูกเก็บไปพร้อมผู้ปกครอง และการเชื่อมไลน์จะถูกล้าง ประวัติและเงินคงอยู่ ครอบครัวที่ยังมีคาบข้างหน้าเก็บไม่ได้ — ระบบจะบอกจำนวน คืนสถานะได้ทุกเมื่อ",

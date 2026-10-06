@@ -248,7 +248,10 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
             {t("otherSeries.coverNeedsKey")}
           </Alert>
         )}
-        {needRate && canRate && (
+        {/* 🔴 TASK-697 (Tanya TEST-081) — a rate box is "{name}'s rate for…": it waits for the coach (`to`), so its label never reads
+            "ค่าสอนของ  สำหรับ…" with a blank name. Nothing a user can submit changes: Save is already shut without `to`, and once the
+            box shows, the cover's `required` guard is exactly as before. (`coverBlocked` below is about the KEY, not the coach.) */}
+        {needRate && canRate && to && (
           <NumberInput
             label={t("otherSeries.coverRate", { name: name(to ?? "") })}
             description={t("otherSeries.coverRateHint")}
@@ -267,7 +270,7 @@ export function TeacherDialog({ seriesRef, series, teachers, mode, teacherId, on
         {/* 🔴 TASK-624 (1b) — the OPTIONAL rate on "from here on", the group swap's shape (TASK-634): hidden without key 59, never
             greyed; NOT `required`; `value` is the admin's own input and nothing else — no carried rate, and never the outgoing
             teacher's number (that is the exact figure that used to be paid to the wrong person). */}
-        {restRate && (
+        {restRate && to && (
           <NumberInput
             label={t("otherSeries.swapRate", { name: name(to ?? "") })}
             description={t("otherSeries.swapRateHint")}

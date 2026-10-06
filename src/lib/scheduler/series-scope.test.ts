@@ -224,7 +224,10 @@ describe("🔴 TASK-592 — the cover's permission, and what it must NOT narrow"
 
   it("⚠️ an admin WITH the key is UNCHANGED — this adds a state, it does not narrow theirs", () => {
     // the rate box and its own guard still read exactly as TASK-577 built them
-    expect(dialogs).toContain("{needRate && canRate && (");
+    // 🔻 TASK-697 (granted by Porter, 10-07): the box still needs the KEY and the cover, and now ALSO a chosen coach (`to`) — its label is
+    // "{name}'s rate for this session", so it must never be drawn before there is a name. The claim this pin protects (an admin WITH the key
+    // is not narrowed; Save was already shut without a coach) is unchanged, and the next line still pins the guard exactly as TASK-577 built it.
+    expect(dialogs).toContain("{needRate && canRate && to && (");
     expect(dialogs).toContain("if (needRate && canRate && coverRateMinor == null) return;");
     // 🚫 and the permission sentence cannot appear for them, because the block REQUIRES the key to be absent
     expect(dialogs).toContain("needRate && !canRate");

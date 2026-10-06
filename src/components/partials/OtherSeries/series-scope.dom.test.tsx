@@ -521,3 +521,67 @@ describe("🔴 TASK-673 — GROUP swap: one scope, never `onDate`", () => {
     expect(saveBtn().disabled).toBe(true);
   });
 });
+
+/**
+ * 🔴 **TASK-697 (Tanya TEST-081) — a rate box waits for the coach.**
+ *
+ * Since TASK-673 a GROUP swap fixes its scope on mount, so the optional series-rate box showed BEFORE a coach was picked, and its
+ * label — `{name}'s rate for this series` — read with a blank name ("ค่าสอนของ  สำหรับตารางนี้"). The same shape existed on the
+ * one-session cover rate (`{name}'s rate for this session`) when "this session only" was chosen before a coach. 🔑 Read on the REAL
+ * dialog: no box and no rate text before the coach; the box WITH that coach's name after. Nothing a user can submit changes.
+ */
+const bodyText = () => document.body.textContent ?? "";
+/** Every label on screen that reads like a rate label — a blank-name one starts with "'s rate", a named one with the coach's nickname. */
+const rateLabels = () => [...document.querySelectorAll("label")].map((l) => l.textContent ?? "").filter((t) => /'s rate for this (series|session)/.test(t));
+
+describe("🔴 TASK-697 — the rate box waits for the coach", () => {
+  it("🔑 GROUP swap: before a coach is picked there is NO rate box and no rate label; picking one shows it WITH that coach's name", async () => {
+    const user = userEvent.setup();
+    mount("swap", { kind: "group" });
+    expect(restRateBox() === null).toBe(true);
+    expect(rateLabels()).toEqual([]);
+    expect(bodyText()).not.toContain("rate for this series");
+
+    await pickCoach(user, "บี");
+    const box = await waitFor(() => restRateBox() as HTMLInputElement);
+    expect(box.getAttribute("data-swap-rate")).toBe("none");
+    expect(rateLabels().length).toBe(1);
+    expect(rateLabels()[0]).toContain("บี's rate for this series (per session)"); // 🔑 the label always carries a name
+    expect(rateLabels().every((l) => !l.startsWith("'s rate"))).toBe(true); // never the blank-name label
+  });
+
+  it("🔑 ECA swap, “this session only” chosen BEFORE a coach: no cover-rate box until a coach is picked, then it is REQUIRED as before", async () => {
+    const user = userEvent.setup();
+    mount("swap", { kind: "other" });
+    await user.click(document.querySelector("[data-scope-this]") as HTMLElement);
+    // the scope is chosen but there is no coach yet: no box, no rate label, and Save is shut
+    expect(coverRateBox() === null).toBe(true);
+    expect(rateLabels()).toEqual([]);
+    expect(saveBtn().disabled).toBe(true);
+
+    await pickCoach(user, "บี");
+    const box = await waitFor(() => coverRateBox() as HTMLInputElement);
+    expect(rateLabels().length).toBe(1);
+    expect(rateLabels()[0]).toContain("บี's rate for this session");
+    expect(box.required).toBe(true); // unchanged: the cover's rate is still REQUIRED
+    expect(saveBtn().disabled).toBe(true); // …and Save still waits for it
+    fireEvent.change(box, { target: { value: "650" } });
+    await waitFor(() => expect(saveBtn().disabled).toBe(false));
+    await user.click(saveBtn());
+    await waitFor(() => expect(sent.length).toBe(1));
+    const body = sent[0].body as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["from", "onDate", "rateMinor", "to"]); // the body is exactly as before
+    expect(body.rateMinor).toBe(65000);
+  });
+
+  it("ECA swap, “the rest” chosen before a coach: no series-rate box until a coach is picked, then it carries the name", async () => {
+    const user = userEvent.setup();
+    mount("swap", { kind: "other" });
+    await user.click(document.querySelector("[data-scope-rest]") as HTMLElement);
+    expect(restRateBox() === null).toBe(true);
+    expect(rateLabels()).toEqual([]);
+    await pickCoach(user, "บี");
+    await waitFor(() => expect(restRateBox() === null).toBe(false));
+    expect(rateLabels()[0]).toContain("บี's rate for this series (per session)");
+  });
+});
