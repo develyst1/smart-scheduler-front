@@ -13,7 +13,7 @@ import {
   updateOtherSeries,
   type OtherSeriesHeaderPatch,
 } from "@/services/other-series.service";
-import type { EndCourseReason } from "@/types/app/scheduler";
+import type { SessionCancelReason } from "@/types/app/scheduler";
 import type { SeriesRef } from "@/lib/scheduler/other-series";
 import { BOOKINGS_KEY, CALENDAR_KEY } from "./useScheduler";
 
@@ -36,7 +36,7 @@ const door = <TVars, TRes>(fn: (v: TVars) => Promise<TRes>) => {
   return useMutation({ mutationFn: fn, onSuccess: () => invalidate(qc) });
 };
 export const useConfirmAllOtherSeries = () => door((ref: SeriesRef) => confirmAllOtherSeries(ref));
-export const useCancelAllOtherSeries = () => door(({ ref, body }: { ref: SeriesRef; body: { reasonCode: EndCourseReason; note?: string } }) => cancelAllOtherSeries(ref, body));
+export const useCancelAllOtherSeries = () => door(({ ref, body }: { ref: SeriesRef; body: { reasonCode: SessionCancelReason; note?: string } }) => cancelAllOtherSeries(ref, body));
 export const useAddOtherSeriesTeacher = () => door(({ ref, body }: { ref: SeriesRef; body: { teacherId: string; rateMinor?: number; fromDate?: string } }) => addOtherSeriesTeacher(ref, body));
 export const useRemoveOtherSeriesTeacher = () => door(({ ref, teacherId, fromDate }: { ref: SeriesRef; teacherId: string; fromDate?: string }) => removeOtherSeriesTeacher(ref, teacherId, fromDate));
 // 🔴 TASK-577 (D10) — `onDate` and `rateMinor` were missing from this type while the door was already sending the

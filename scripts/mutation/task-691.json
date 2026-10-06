@@ -20,7 +20,12 @@
     "files": [
       {
         "file": "src/components/partials/Bookings/EndCourseDialog.tsx",
-        "edits": [{ "from": "{END_COURSE_REASONS.map((r) => (", "to": "{SESSION_CANCEL_REASONS.map((r) => (" }]
+        "edits": [
+          {
+            "from": "{END_COURSE_REASONS.map((r) => (",
+            "to": "{SESSION_CANCEL_REASONS.map((r) => ("
+          }
+        ]
       }
     ]
   },
@@ -34,56 +39,6 @@
           {
             "from": "export const SESSION_CANCEL_REASONS = [...END_COURSE_REASONS, ...SESSION_ONLY_CANCEL_REASONS] as const;",
             "to": "export const SESSION_CANCEL_REASONS = [...END_COURSE_REASONS] as const;"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "V4",
-    "what": "🔴 the option is NOT rendered on the session dialog at all",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/CancelBookingDialog.tsx",
-        "edits": [{ "from": "            {SESSION_ONLY_CANCEL_REASONS.map((r) => (", "to": "            {([] as readonly string[]).map((r) => (" }]
-      }
-    ]
-  },
-  {
-    "id": "V5",
-    "what": "⚠️ the one line under it (what the choice DOES) is removed — an admin would choose it without knowing it hands a family a week",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/CancelBookingDialog.tsx",
-        "edits": [{ "from": " description={t(\"cancelBooking.schoolIssueHint\")}", "to": "" }]
-      }
-    ]
-  },
-  {
-    "id": "V6",
-    "what": "🔴 the new reason is PRE-SELECTED — a week would be given by accident on every cancel",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/CancelBookingDialog.tsx",
-        "edits": [
-          {
-            "from": "useState<SessionCancelReason | null>(null);",
-            "to": "useState<SessionCancelReason | null>(\"SCHOOL_ISSUE\");"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "V7",
-    "what": "⚠️ the hint is shown under EVERY option, not only the new one (it would read as a promise about all four)",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/CancelBookingDialog.tsx",
-        "edits": [
-          {
-            "from": "              <Radio key={r} value={r} label={t(`endCourse.${r}`)} />\n            ))}\n            {/* 🔴 TASK-691",
-            "to": "              <Radio key={r} value={r} label={t(`endCourse.${r}`)} description={t(\"cancelBooking.schoolIssueHint\")} />\n            ))}\n            {/* 🔴 TASK-691"
           }
         ]
       }
@@ -125,7 +80,12 @@
     "files": [
       {
         "file": "src/lib/i18n/dictionaries.ts",
-        "edits": [{ "from": "    SCHOOL_ISSUE: \"ปัญหาจากทางเรา\",", "to": "    SCHOOL_ISSUE: \"A problem on our side\"," }]
+        "edits": [
+          {
+            "from": "    SCHOOL_ISSUE: \"ปัญหาจากทางเรา\",",
+            "to": "    SCHOOL_ISSUE: \"A problem on our side\","
+          }
+        ]
       }
     ]
   }

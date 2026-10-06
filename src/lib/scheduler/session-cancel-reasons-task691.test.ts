@@ -38,34 +38,42 @@ describe("🔴 TASK-691 — the lists", () => {
   });
 });
 
-describe("🔴 TASK-691 — where it is OFFERED, and where it must NOT be", () => {
-  it("🔑 ONLY the session Cancel dialog renders the session-only reasons", () => {
-    const offered = code("src/components/partials/Calendar/Modal/CancelBookingDialog.tsx");
-    expect(offered.includes("{SESSION_ONLY_CANCEL_REASONS.map((r) => (")).toBe(true);
-    // …after the three, which it still renders from the shared list exactly as before
-    expect(offered.includes("{END_COURSE_REASONS.map((r) => (")).toBe(true);
-    expect(offered.indexOf("END_COURSE_REASONS.map")).toBeLessThan(offered.indexOf("SESSION_ONLY_CANCEL_REASONS.map"));
+/**
+ * 🔻 **TASK-694 (QA F1) — this block was TASK-691's *"ONLY the session Cancel dialog renders the session-only reasons"*, and it was RE-AIMED, not deleted.**
+ * 691 offered the reason as a 4th radio on `CancelBookingDialog` — the dialog for single / voucher / trial / OTHER rows, **which have no course**, so the
+ * reason added no week and its hint would have been FALSE there. The reason is offered where a week is actually earned: **the plan modal's cancel of a
+ * COURSE class, and the GROUP series cancel-all (its seats are course classes)** — each as ONE checkbox, never a list.
+ * ✅ The claim is unchanged: the code is offered ONLY where it has a consequence, and pinned from every side.
+ */
+describe("🔴 TASK-694 — where it is OFFERED, and where it must NOT be", () => {
+  it("🔑 the plan modal's COURSE-class cancel offers it — as a checkbox, never a list, and off by default", () => {
+    const plan = code("src/components/partials/Bookings/PlanModal.tsx");
+    expect(plan.includes("const [ourSide, setOurSide] = useState(false);")).toBe(true);
+    expect(plan.includes("...(ourSide ? { reasonCode: SESSION_ONLY_CANCEL_REASONS[0] } : {}),")).toBe(true);
+    expect(plan.includes('label={t("endCourse.SCHOOL_ISSUE")}')).toBe(true);
+    expect(plan.includes('description={t("cancelBooking.schoolIssueHint")}')).toBe(true);
+    // 🚫 not the full reason list: on a course class the server ignores every other reason
+    expect(plan.match(/END_COURSE_REASONS|SESSION_CANCEL_REASONS/)?.[0] ?? null).toBeNull();
   });
 
-  it("🚫 the OTHER three dialogs that share the list never mention it — not the code, not the sibling list", () => {
-    for (const f of [
-      "src/components/partials/Bookings/EndCourseDialog.tsx",
-      "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
-    ]) {
-      const src = code(f);
-      expect(src.match(/SCHOOL_ISSUE|SESSION_ONLY_CANCEL_REASONS|SESSION_CANCEL_REASONS/)?.[0] ?? null).toBeNull();
-      expect(src.includes("{END_COURSE_REASONS.map((r) => (")).toBe(true);
-    }
-    // the voucher end reads the same list through its own dialog
-    const files = ["src/components/partials/Bookings/EndVoucherDialog.tsx"].filter((f) => {
-      try {
-        readFileSync(f, "utf8");
-        return true;
-      } catch {
-        return false;
-      }
-    });
-    for (const f of files) expect(code(f).match(/SCHOOL_ISSUE|SESSION_ONLY_CANCEL_REASONS/)?.[0] ?? null).toBeNull();
+  it("🔑 the GROUP series cancel-all offers it — and ONLY for a group (an OTHER series has no course behind it)", () => {
+    const dialogs = code("src/components/partials/OtherSeries/OtherSeriesDialogs.tsx");
+    expect(dialogs.includes('{ref.kind === "group" && (')).toBe(true);
+    expect(dialogs.includes("const chosen: SessionCancelReason | null = ourSide ? SESSION_ONLY_CANCEL_REASONS[0] : reason;")).toBe(true);
+    // the three radios stay on that dialog, exactly as before
+    expect(dialogs.includes("{END_COURSE_REASONS.map((r) => (")).toBe(true);
+  });
+
+  it("🚫 the NON-course Cancel dialog does NOT offer it — its approved hint would be FALSE on a booking with no course", () => {
+    const dlg = code("src/components/partials/Calendar/Modal/CancelBookingDialog.tsx");
+    expect(dlg.match(/SCHOOL_ISSUE|SESSION_ONLY_CANCEL_REASONS|SESSION_CANCEL_REASONS|schoolIssueHint/)?.[0] ?? null).toBeNull();
+    expect(dlg.includes("{END_COURSE_REASONS.map((r) => (")).toBe(true);
+  });
+
+  it("🚫 ENDING a course never offers it", () => {
+    const src = code("src/components/partials/Bookings/EndCourseDialog.tsx");
+    expect(src.match(/SCHOOL_ISSUE|SESSION_ONLY_CANCEL_REASONS|SESSION_CANCEL_REASONS|schoolIssueHint/)?.[0] ?? null).toBeNull();
+    expect(src.includes("{END_COURSE_REASONS.map((r) => (")).toBe(true);
   });
 
   it("🔑 the session cancel's WIRE accepts the wider type; the course / voucher end do NOT", () => {

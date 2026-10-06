@@ -49,6 +49,8 @@ describe("§1 — seriesDoors, by value", () => {
   });
   it("the bodies: cancel-all carries the note only when typed; fromDate rides only when it differs from today; the link only with a key", () => {
     expect(cancelAllBody("ADMIN_ERROR", "  ")).toEqual({ reasonCode: "ADMIN_ERROR" });
+    // 🔴 TASK-694 — the builder carries the session-only code too, with the note rule unchanged
+    expect(cancelAllBody("SCHOOL_ISSUE", "")).toEqual({ reasonCode: "SCHOOL_ISSUE" });
     expect(cancelAllBody("PROGRAM_CHANGED", " moved venue ")).toEqual({ reasonCode: "PROGRAM_CHANGED", note: "moved venue" });
     expect(fromDateDefault(new Date(2026, 8, 21))).toBe("2026-09-21");
     expect(fromDateDefault(new Date(2026, 0, 5))).toBe("2026-01-05");
@@ -85,7 +87,10 @@ describe("§2 — the page, the wire, the links, the key", () => {
     expect(svc).toContain('seriesPath(ref, "/dates"), { dates: [...dates].sort() }');
     expect(svc).toContain("api.patch<{ updated: number }>(seriesPath(ref), patch)");
     expect(svc).not.toContain("startTime"); // a time change is per-row moves
-    expect(dialogs).toContain("body: cancelAllBody(reason, note)");
+    // 🔻 TASK-694, declared: `cancelAllBody(reason, note)` → `cancelAllBody(chosen, note)`. The dialog now derives ONE `chosen` code — the
+    // three radios, or `SCHOOL_ISSUE` when the GROUP-only "our side" box is ticked. ✅ What this pin protects (cancel-all goes through the ONE
+    // body builder) is unchanged.
+    expect(dialogs).toContain("body: cancelAllBody(chosen, note)");
     // 🔴 TASK-564 (REQ-110 item 5) — the teacher doors no longer send `withFromDate`: the server refuses a body that
     // names NEITHER scope, and `withFromDate` omitted `fromDate` whenever it equalled today — *exactly that body*.
     // ⇒ each door now carries exactly one of `onDate` / `fromDate`, from `scopeBody`. The route and the `from`-is-the-primary

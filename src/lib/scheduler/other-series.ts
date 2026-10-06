@@ -5,7 +5,7 @@
  * cancel-all body, the `fromDate` default, and the status counts the header prints. 🚫 No slot logic, no date
  * arithmetic beyond "today".
  */
-import type { EndCourseReason } from "@/types/app/scheduler";
+import type { SessionCancelReason } from "@/types/app/scheduler";
 
 export interface OtherSeriesRow {
   bookingId: string;
@@ -63,7 +63,7 @@ export const seriesDoors = (grants: SeriesGrants, series: OtherSeriesLike | null
 };
 
 /** `POST …/:key/cancel-all { reasonCode, note? }` — the note rides only when typed. */
-export const cancelAllBody = (reason: EndCourseReason, note: string): { reasonCode: EndCourseReason; note?: string } => ({
+export const cancelAllBody = (reason: SessionCancelReason, note: string): { reasonCode: SessionCancelReason; note?: string } => ({
   reasonCode: reason,
   ...(note.trim() ? { note: note.trim() } : {}),
 });

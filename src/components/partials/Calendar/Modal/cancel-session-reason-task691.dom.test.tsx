@@ -9,11 +9,12 @@ import { dictionaries } from "@/lib/i18n/dictionaries";
 import type { Booking } from "@/types/app/scheduler";
 
 /**
- * 🔴 **TASK-691 (REQ-112) — the session Cancel dialog offers `ปัญหาจากทางเรา`, and ONLY the session Cancel dialog does.**
- *
- * Under REQ-112 this reason is what gives the family +1 week of validity, so an admin must be able to choose it — and must not choose it by
- * accident. 🔑 **Every assertion is about what the screen OFFERS and what LEAVES**: the radios, the hint under the new one, that nothing is
- * pre-selected, and the PATCH body (`reasonCode: "SCHOOL_ISSUE"`, or the old three byte-for-byte).
+ * 🔻 **TASK-694 (QA F1) — THIS FILE WAS TASK-691's, AND ITS CLAIM WAS RE-AIMED, NOT DELETED.** 691 put `ปัญหาจากทางเรา` on THIS dialog as a 4th
+ * reason and these tests pinned four radios and a hint. **That was the wrong screen:** this dialog cancels a single / voucher / trial / OTHER booking —
+ * **no course behind it, so the reason adds NO week**, and its approved hint (*"the course is extended by one week"*) would be FALSE here. A
+ * COURSE class is cancelled from the plan modal, where the one choice now lives (`cancel-course-class-task694.dom.test.tsx`).
+ * ✅ What these tests protect is unchanged in spirit: **what this dialog OFFERS and what LEAVES** — the radios, nothing pre-selected, the PATCH body.
+ * They now assert the three reasons it always had, **and that the our-side reason and its hint are ABSENT**.
  */
 
 const patches: Array<{ url: string; body: Record<string, unknown> }> = [];
@@ -54,59 +55,45 @@ beforeEach(() => {
   patches.length = 0;
 });
 
-describe("🔴 TASK-691 — the session Cancel dialog", () => {
-  it("🔑 offers FOUR reasons: the three it always had, in order, then `A problem on our side`", async () => {
+describe("🔴 TASK-694 — the NON-course Cancel dialog offers THREE reasons, and not the our-side one", () => {
+  it("🔑 THREE radios, the three it always had, in order — `A problem on our side` is NOT among them", async () => {
     mount();
-    await waitFor(() => expect(radios().length).toBe(4));
-    expect(radios().map((r) => r.value)).toEqual(["PROGRAM_CHANGED", "CUSTOMER_CANCELLED", "ADMIN_ERROR", "SCHOOL_ISSUE"]);
-    expect(screen.queryAllByText("A problem on our side").length).toBe(1);
+    await waitFor(() => expect(radios().length).toBe(3));
+    expect(radios().map((r) => r.value)).toEqual(["PROGRAM_CHANGED", "CUSTOMER_CANCELLED", "ADMIN_ERROR"]);
+    expect(screen.queryAllByText("A problem on our side").length).toBe(0);
   });
 
-  it("⚠️ the one line under it says what the choice DOES — and it is under THAT option only", async () => {
+  it("⚠️ NO hint: *the course is extended by one week* would be FALSE on a booking with no course", async () => {
     mount();
-    await waitFor(() => expect(radios().length).toBe(4));
-    const hints = screen.queryAllByText(/the course is extended by one week/i);
-    expect(hints.length).toBe(1);
-    // 🔑 the hint belongs to the new option: it is inside the same wrapper as the SCHOOL_ISSUE radio, not the others
-    const schoolRadio = radios().find((r) => r.value === "SCHOOL_ISSUE") as HTMLInputElement;
-    expect(schoolRadio.closest("[data-session-only-reason]") !== null || schoolRadio.hasAttribute("data-session-only-reason")).toBe(true);
-    for (const r of radios().filter((x) => x.value !== "SCHOOL_ISSUE")) {
-      expect(r.hasAttribute("data-session-only-reason")).toBe(false);
-    }
+    await waitFor(() => expect(radios().length).toBe(3));
+    expect(screen.queryAllByText(/extended by one week/i).length).toBe(0);
+    expect(document.querySelectorAll("[data-session-only-reason]").length).toBe(0);
   });
 
-  it("🚫 NOTHING is pre-selected, and Confirm stays shut until a reason is picked — a week must never be given by accident", async () => {
+  it("🚫 NOTHING is pre-selected, and Confirm stays shut until a reason is picked — pressed anyway ⇒ nothing is sent", async () => {
     const user = userEvent.setup();
     mount();
-    await waitFor(() => expect(radios().length).toBe(4));
+    await waitFor(() => expect(radios().length).toBe(3));
     expect(radios().filter((r) => r.checked).length).toBe(0);
     expect(confirmBtn().disabled).toBe(true);
     await user.click(confirmBtn());
-    expect(cancels().length).toBe(0); // 🔑 pressed anyway ⇒ nothing is sent
+    expect(cancels().length).toBe(0);
   });
 
-  it("🔴 choosing it SENDS `reasonCode: SCHOOL_ISSUE` — and choosing an old one sends exactly what it always sent", async () => {
+  it("🔴 choosing a reason SENDS exactly what it always sent — and `SCHOOL_ISSUE` is not reachable from here", async () => {
     const user = userEvent.setup();
     mount();
-    await waitFor(() => expect(radios().length).toBe(4));
-    await user.click(radios().find((r) => r.value === "SCHOOL_ISSUE") as HTMLElement);
+    await waitFor(() => expect(radios().length).toBe(3));
+    await user.click(radios().find((r) => r.value === "ADMIN_ERROR") as HTMLElement);
     await waitFor(() => expect(confirmBtn().disabled).toBe(false));
     await user.click(confirmBtn());
     await waitFor(() => expect(cancels().length).toBe(1));
-    expect(cancels()[0].body).toEqual({ action: "cancel", reasonCode: "SCHOOL_ISSUE" });
-
-    cleanup();
-    patches.length = 0;
-    mount();
-    await waitFor(() => expect(radios().length).toBe(4));
-    await user.click(radios().find((r) => r.value === "ADMIN_ERROR") as HTMLElement);
-    await user.click(confirmBtn());
-    await waitFor(() => expect(cancels().length).toBe(1));
     expect(cancels()[0].body).toEqual({ action: "cancel", reasonCode: "ADMIN_ERROR" });
+    expect(JSON.stringify(cancels()[0].body).includes("SCHOOL_ISSUE")).toBe(false);
   });
 });
 
-describe("📋 TASK-691 — the words, BOTH languages counted, and the approved ones verbatim", () => {
+describe("📋 TASK-691/694 — the words, BOTH languages counted, and the approved ones verbatim", () => {
   it("🔑 the label and the hint exist in Thai and English, and are the owner's (A5 / A6)", () => {
     const en = dictionaries.en as unknown as { endCourse: Record<string, string>; cancelBooking: Record<string, string> };
     const th = dictionaries.th as unknown as { endCourse: Record<string, string>; cancelBooking: Record<string, string> };
@@ -120,7 +107,6 @@ describe("📋 TASK-691 — the words, BOTH languages counted, and the approved 
       counted += 2;
     }
     expect(counted).toBe(4);
-    // the Thai label is the CUSTOMER's own words, and the two languages differ
     expect(th.endCourse.SCHOOL_ISSUE).not.toBe(en.endCourse.SCHOOL_ISSUE);
   });
 });

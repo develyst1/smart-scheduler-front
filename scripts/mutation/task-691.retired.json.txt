@@ -1,0 +1,25 @@
+{
+  "_why": "RETIRED by TASK-694 (2026-10-07), not re-anchored: their SUBJECT — the 4th radio and its hint on CancelBookingDialog — was removed on purpose (the dialog cancels non-course bookings; the reason adds no week). Superseded by task-694.json W3. Kept here so the ids are not lost; the runner reads a bare array, so retired entries cannot live inside task-691.json without printing NOT RUN.",
+  "retired": [
+    {
+      "id": "V4",
+      "what": "🔴 the option is NOT rendered on the session dialog at all",
+      "superseded_by": "task-694 W3"
+    },
+    {
+      "id": "V5",
+      "what": "⚠️ the one line under it (what the choice DOES) is removed — an admin would choose it without knowing it hands a family a week",
+      "superseded_by": "task-694 W3"
+    },
+    {
+      "id": "V6",
+      "what": "🔴 the new reason is PRE-SELECTED — a week would be given by accident on every cancel",
+      "superseded_by": "task-694 W3"
+    },
+    {
+      "id": "V7",
+      "what": "⚠️ the hint is shown under EVERY option, not only the new one (it would read as a promise about all four)",
+      "superseded_by": "task-694 W3"
+    }
+  ]
+}

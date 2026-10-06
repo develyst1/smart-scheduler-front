@@ -6,7 +6,7 @@
 // primary swap body (`{ to }`, no `from`) and the group header PATCH (no kind field) — pure `swapBody` + the dialog.
 import { api, useMockData } from "@/lib/api/client";
 import type { OtherSeries, OtherSeriesListItem } from "@/types/api/contract";
-import type { EndCourseReason } from "@/types/app/scheduler";
+import type { SessionCancelReason } from "@/types/app/scheduler";
 import type { OtherKind } from "@/lib/scheduler/other-schedule";
 import { seriesPath, type SeriesRef } from "@/lib/scheduler/other-series";
 import * as mock from "./other-series.mock.service";
@@ -45,7 +45,7 @@ export interface CancelAllResult {
   familyNotices?: number;
   householdsTold?: number;
 }
-export const cancelAllOtherSeries = async (ref: SeriesRef, body: { reasonCode: EndCourseReason; note?: string }): Promise<CancelAllResult> => {
+export const cancelAllOtherSeries = async (ref: SeriesRef, body: { reasonCode: SessionCancelReason; note?: string }): Promise<CancelAllResult> => {
   if (useMockData) return mock.cancelAll(ref, body);
   const { data } = await api.post<CancelAllResult>(seriesPath(ref, "/cancel-all"), body);
   return data;

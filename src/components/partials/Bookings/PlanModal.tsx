@@ -17,7 +17,7 @@ import {
   Table,
   Text,
 } from "@mantine/core";
-import { Textarea, Tooltip } from "@mantine/core";
+import { Checkbox, Textarea, Tooltip } from "@mantine/core";
 import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Ticket, UserMinus, X } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
@@ -41,6 +41,7 @@ import {
 } from "@/hooks/scheduler";
 import {
   TIME_SLOTS,
+  SESSION_ONLY_CANCEL_REASONS,
   isDeliveredStatus,
   type BookingStatus,
   type CourseStatus,
@@ -1206,7 +1207,16 @@ function ConfirmCreateButton({
 /** Cancel a session (TASK-105). Delivered (ATTENDED/NO_SHOW) → a reason is REQUIRED (undo a mis-marked
  *  attendance, audited); a live session → plain cancel (the server re-owes a make-up). On refusal the server's
  *  reason (REASON_REQUIRED / CANCEL_AT_CEILING / …) is shown inline. */
-function CancelSessionDialog({
+/**
+ * 🔴 **TASK-694 (QA F1) — where a COURSE class is cancelled, and the ONE choice that has a consequence.**
+ * A course class is cancelled HERE (not from the booking modal, whose 4-reason dialog is for single / voucher / trial / OTHER rows with
+ * no course behind them). Under REQ-112 *"a problem on our side"* is what gives the family +1 week of validity — so it must be
+ * choosable on THIS screen. 🔑 **A single checkbox, not a list of reasons:** on a course class the server ignores every reason except
+ * this one (a course cancel is a reschedule), so a list would offer choices that do nothing. **Off by default** — an unticked box is
+ * today's cancel, +0 weeks — and, ticked, it sends `reasonCode: "SCHOOL_ISSUE"`.
+ * The words are the owner's A5 + A6, verbatim (no new copy).
+ */
+export function CancelSessionDialog({
   session,
   onClose,
   onError,
@@ -1219,6 +1229,8 @@ function CancelSessionDialog({
   const cancel = useCancelBooking();
   const delivered = isDeliveredStatus(session.status);
   const [reason, setReason] = useState("");
+  /** 🔴 TASK-694 — OFF by default: a week must never be given by accident. */
+  const [ourSide, setOurSide] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const submit = async () => {
@@ -1228,7 +1240,12 @@ function CancelSessionDialog({
       return;
     }
     try {
-      await cancel.mutateAsync({ id: session.id, reason: delivered ? reason.trim() : undefined });
+      // 🔑 Unticked ⇒ EXACTLY today's request (no `reasonCode` key at all); ticked ⇒ the one code that has a consequence.
+      await cancel.mutateAsync({
+        id: session.id,
+        reason: delivered ? reason.trim() : undefined,
+        ...(ourSide ? { reasonCode: SESSION_ONLY_CANCEL_REASONS[0] } : {}),
+      });
       notify({ title: t("plan.cancelled"), color: "success" });
       onError(null);
       onClose();
@@ -1258,6 +1275,15 @@ function CancelSessionDialog({
             required
           />
         )}
+        {/* 🔴 TASK-694 — the single choice, with the approved line under it. Shown for a live class AND a delivered one: the server earns
+            the week for both when the reason is "our side". */}
+        <Checkbox
+          checked={ourSide}
+          onChange={(e) => setOurSide(e.currentTarget.checked)}
+          label={t("endCourse.SCHOOL_ISSUE")}
+          description={t("cancelBooking.schoolIssueHint")}
+          data-our-side-cancel
+        />
         {localError && (
           <Alert color="red" icon={<AlertTriangle size={16} />}>
             {localError}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Group, Modal, NumberInput, Radio, Select, Stack, Text, Textarea } from "@mantine/core";
+import { Alert, Button, Checkbox, Group, Modal, NumberInput, Radio, Select, Stack, Text, Textarea } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { AlertTriangle } from "lucide-react";
 import { ApiClientError } from "@/lib/api/client";
@@ -13,7 +13,7 @@ import { coverRateRequired, knownSeriesRate, scopeBody, scopeDateLabelKey, scope
 import { COACH_RATE_KEY, withoutRates } from "@/lib/scheduler/duo";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { draftFromFacts, teacherRatesMinor, type OtherKind, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
-import { END_COURSE_REASONS, type EndCourseReason, type TeacherView } from "@/types/app/scheduler";
+import { END_COURSE_REASONS, SESSION_ONLY_CANCEL_REASONS, type EndCourseReason, type SessionCancelReason, type TeacherView } from "@/types/app/scheduler";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import MultiDateField from "@/components/partials/Calendar/Modal/MultiDateField";
 import OtherScheduleFields from "@/components/partials/Calendar/Modal/OtherScheduleFields";
@@ -37,12 +37,19 @@ export function CancelAllDialog({ series: ref, attended, live, cascade, onClose 
   const cancel = useCancelAllOtherSeries();
   const [reason, setReason] = useState<EndCourseReason | null>(null);
   const [note, setNote] = useState("");
+  /**
+   * 🔴 **TASK-694 (QA F1) — a GROUP series' seats are COURSE classes, so "a problem on our side" earns each seat +1 week.** The OTHER (non-group)
+   * series has no course behind it, so the choice would add nothing and its hint would be false: **group only.** Off by default; ticked, it IS
+   * the reason (`SCHOOL_ISSUE`) — so the three radios are not asked.
+   */
+  const [ourSide, setOurSide] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const chosen: SessionCancelReason | null = ourSide ? SESSION_ONLY_CANCEL_REASONS[0] : reason;
   const submit = async () => {
-    if (!reason) return;
+    if (!chosen) return;
     setError(null);
     try {
-      const r = await cancel.mutateAsync({ ref, body: cancelAllBody(reason, note) });
+      const r = await cancel.mutateAsync({ ref, body: cancelAllBody(chosen, note) });
       notify({
         title:
           ref.kind === "group"
@@ -66,19 +73,28 @@ export function CancelAllDialog({ series: ref, attended, live, cascade, onClose 
         <Text size="sm" data-cascade={cascade ? `${cascade.seats}/${cascade.students}` : undefined}>
           {ref.kind === "group" && cascade ? t("otherSeries.cancelAllGroupBody", { live, kept: attended, seats: cascade.seats, students: cascade.students }) : t("otherSeries.cancelAllBody", { live, kept: attended })}
         </Text>
-        <Radio.Group label={t("endCourse.reasonLabel")} value={reason} onChange={(v) => setReason(v as EndCourseReason)}>
+        <Radio.Group label={t("endCourse.reasonLabel")} value={ourSide ? null : reason} onChange={(v) => setReason(v as EndCourseReason)}>
           <Stack gap={6} mt={4}>
             {END_COURSE_REASONS.map((r) => (
-              <Radio key={r} value={r} label={t(`endCourse.${r}`)} />
+              <Radio key={r} value={r} label={t(`endCourse.${r}`)} disabled={ourSide} />
             ))}
           </Stack>
         </Radio.Group>
+        {ref.kind === "group" && (
+          <Checkbox
+            checked={ourSide}
+            onChange={(e) => setOurSide(e.currentTarget.checked)}
+            label={t("endCourse.SCHOOL_ISSUE")}
+            description={t("cancelBooking.schoolIssueHint")}
+            data-our-side-cancel
+          />
+        )}
         <Textarea label={t("endCourse.noteLabel")} value={note} onChange={(e) => setNote(e.currentTarget.value)} autosize minRows={2} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button color="red" loading={cancel.isPending} disabled={!reason} onClick={() => void submit()}>
+          <Button color="red" loading={cancel.isPending} disabled={!chosen} onClick={() => void submit()}>
             {t("otherSeries.cancelAllConfirm")}
           </Button>
         </Group>
