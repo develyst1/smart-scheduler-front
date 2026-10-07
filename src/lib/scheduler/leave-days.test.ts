@@ -87,6 +87,7 @@ describe("🔴 TASK-589 — the marker carries WHOSE day and WHETHER THERE IS WO
       expect({ lang, v: d.markerClasses }).toEqual({ lang, v: expect.not.stringMatching(/cancel|ยกเลิก/) });
       expect({ lang, v: d.markerAway }).toEqual({ lang, v: expect.not.stringMatching(/cancel|ยกเลิก/) });
     }
-    expect(readFileSync("src/lib/i18n/dictionaries.ts", "utf8")).toContain("DRAFT (Fern, TASK-589)");
+    // 🔻 TASK-701, declared: this pin asserted the marker said DRAFT; the owner's 2026-10-01 "all other sections approved as drafted" (COPY-REVIEW-2026-09-29.md:373) covers it, so the marker now says APPROVED and the pin follows it. ✅ The rule it protects — a string's approval state is DECLARED, never silent — is unchanged.
+    expect(readFileSync("src/lib/i18n/dictionaries.ts", "utf8")).toContain("APPROVED by the owner 2026-10-01 (Fern's wording, TASK-589) — COPY-REVIEW-2026-09-29.md:223-224");
   });
 });

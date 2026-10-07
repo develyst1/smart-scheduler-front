@@ -737,7 +737,9 @@ describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked accoun
         // clause *"Nothing more to do here"* had become FALSE. 🔑 **The rule this pin protects is unchanged and is now said
         // exactly: an UNAPPROVED string must DECLARE itself** — as `PLACEHOLDER` (nobody has written it yet) or as
         // `DRAFT (Fern, …)` (I wrote it and the owner has not seen it). 🚫 What may not happen is a silent third state.
-        expect(around).toMatch(/PLACEHOLDER|DRAFT \(Fern/);
+        // 🔻 TASK-701, declared: `alreadyLinkedTo` is now APPROVED (COPY-REVIEW-2026-09-29.md:265-266), so a third DECLARED state is allowed.
+        // ✅ The rule is unchanged: every string states where it stands; a silent undeclared one still fails.
+        expect(around).toMatch(/PLACEHOLDER|DRAFT \(Fern|APPROVED by the owner/);
       }
     }
   });

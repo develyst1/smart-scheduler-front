@@ -95,7 +95,8 @@ describe("TASK-557 — the select-all label after the widening (DRAFT)", () => {
     // 🔑 the scope stays — it selects this PAGE, not the whole filtered set, and that was never in doubt
     expect(en.toLowerCase()).toContain("this page");
     expect(th).toContain("หน้านี้");
-    // and it is marked as a draft, so nobody mistakes my words for his
-    expect(readFileSync("src/lib/i18n/dictionaries.ts", "utf8")).toContain("📝 **DRAFT (Fern, TASK-557)**");
+    // and its approval state is declared — now APPROVED (the owner's one-line answer, COPY-REVIEW-2026-09-29.md:13)
+    // 🔻 TASK-701, declared: this pin asserted the marker said DRAFT; the owner's 2026-10-01 "all other sections approved as drafted" (COPY-REVIEW-2026-09-29.md:373) covers it, so the marker now says APPROVED and the pin follows it. ✅ The rule it protects — a string's approval state is DECLARED, never silent — is unchanged.
+    expect(readFileSync("src/lib/i18n/dictionaries.ts", "utf8")).toContain("APPROVED by the owner 2026-10-01 (Fern's wording, TASK-557) — COPY-REVIEW-2026-09-29.md:13");
   });
 });

@@ -289,7 +289,7 @@ const en = {
   },
 
   // ── SPEC-076 / REQ-082 (TASK-265) — the expiry control and THE one warning ──
-  // 🔴 TASK-568 (BE) → TASK-572 (REQ-110 item 3) — extending a VOUCHER's expiry. 📝 DRAFT (Fern, TASK-572).
+  // 🔴 TASK-568 (BE) → TASK-572 (REQ-110 item 3) — extending a VOUCHER's expiry. ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-572) — COPY-REVIEW-2026-09-29.md:119-126.
   // 🔑 The preview sentences are NOT duplicated here: this dialog renders `expiry.previewTitle/Cuts/Clear/NotSaved` —
   // one question, one wording, two entitlements. Only what is genuinely voucher-specific lives below.
   voucherExpiry: {
@@ -411,7 +411,7 @@ const en = {
     status_ABSENT: "Absent",
     status_CANCELLED: "Cancelled",
     weekStatus_OPEN: "Open",
-    // 🔴 TASK-586 — 📝 DRAFT (Fern, TASK-586). "Closed" alone read as *cancelled / hidden / off*, and Close now means ONE
+    // 🔴 TASK-586 — ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-586) — COPY-REVIEW-2026-09-29.md:139-145. "Closed" alone read as *cancelled / hidden / off*, and Close now means ONE
     // thing: no NEW bookings. The week is still running, still staffed, still charging. Every string below says so.
     weekStatus_CLOSED: "Closed to new bookings",
     daysLeft: "{n} days left",
@@ -440,7 +440,7 @@ const en = {
     teachers: "Teachers",
     weekOpenedOk: "Week {name} opened",
     weekSavedOk: "Week {name} saved",
-    // 📝 DRAFT (Fern, TASK-586) — the BUTTON says what it does, not what it sounds like.
+    // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-586) — COPY-REVIEW-2026-09-29.md:139-145 — the BUTTON says what it does, not what it sounds like.
     closeWeek: "Stop new bookings",
     openWeekBack: "Take bookings again",
     weekClosedOk: "Week {name} is closed to NEW bookings. Everything already booked carries on — the children keep their days, the coaches keep their sessions, and the reminders still go out. You can take bookings again at any time.",
@@ -494,7 +494,7 @@ const en = {
   },
   // REQ-097 (TASK-407) — the teacher's own leave (a linked account)
   /**
-   * 🔴 TASK-587 (BE) → TASK-589 — the ADMIN's marker for a coach's blocked day. 📝 DRAFT (Fern, TASK-589).
+   * 🔴 TASK-587 (BE) → TASK-589 — the ADMIN's marker for a coach's blocked day. ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-589) — COPY-REVIEW-2026-09-29.md:223-224.
    * 🔑 Two facts, because either alone is useless: WHOSE day, and WHETHER THERE IS WORK. A marker that only said
    * "blocked" would send an admin hunting for the classes.
    * ⚠️ Deliberately NOT the word "cancelled" anywhere — nothing on that day is cancelled.
@@ -512,7 +512,7 @@ const en = {
     reason: "Reason",
     reasonHint: "Why you cannot teach (3–200 characters)",
     warning: "Families of the ticked sessions will be told; their make-ups are added by the system.",
-    // 🔴 TASK-582 (BE) → TASK-588 — the ADVANCE act (a future date). 📝 DRAFT (Fern, TASK-588), from @Jason's §15 order:
+    // 🔴 TASK-582 (BE) → TASK-588 — the ADVANCE act (a future date). ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-588) — COPY-REVIEW-2026-09-29.md:208-211, from @Jason's §15 order:
     // the day is blocked for new bookings · these classes are already booked and an ADMIN will handle them ·
     // 🔑 NOTHING HAS BEEN CANCELLED. ⚠️ The last clause is the one a teacher must not get wrong: one who believes their
     // classes were cancelled will not turn up.
@@ -584,7 +584,7 @@ const en = {
     addTeacher: "Add teacher",
     // 🔴 TASK-577 (D10) — the COVER rate. 📝 DRAFT (Fern, TASK-577). The server pays the COVERING coach and refuses
     // the cover when it has no rate for them, so this box is REQUIRED and the label names whose rate it is.
-    // 🔴 TASK-584 (BE) → TASK-592 — the owner ruled (a). 📝 DRAFT (Fern, TASK-592), reworded from the held TASK-577 drafts.
+    // 🔴 TASK-584 (BE) → TASK-592 — the owner ruled (a). ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-592) — COPY-REVIEW-2026-09-29.md:254, reworded from the held TASK-577 drafts.
     // 🔑 It names the PERMISSION and nothing else: 🚫 not the coach (they are fine), 🚫 not the rate (it is not wrong).
     // ⚠️ And it says what to DO — ask someone who has it — because a reason with no next step is a dead end with a caption.
     coverNeedsKey: "A cover is paid at the covering coach's rate, so it needs the coach-rate permission. You do not have it — ask an admin who does, or ask for the permission.",
@@ -659,7 +659,7 @@ const en = {
     title: "Move the start date — {student}",
     newStart: "New start date",
     newStartHint: "The first session moves here; the rest follow week by week.",
-    // 🔻 TASK-574 — the current date is REAL now, so the hint says it. 📝 DRAFT (Fern, TASK-574).
+    // 🔻 TASK-574 — the current date is REAL now, so the hint says it. ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-574) — COPY-REVIEW-2026-09-29.md:94.
     newStartHintCurrent: "Currently {current}. The first session moves to the new date; the rest follow week by week.",
     preview: "Check what would change",
     forecastTitle: "{n} sessions would move:",
@@ -1206,7 +1206,7 @@ const en = {
     bulkConfirmSelected: "Confirm selected ({n})",
     bulkSelectRow: "Select this booking",
     // 🔴 TASK-557 — this label SAID “pending” and the control no longer means that: since the row gate widened to
-    // PENDING **and EXTENDED** (the server's own set), the box also picks up make-ups. 📝 **DRAFT (Fern, TASK-557)**,
+    // PENDING **and EXTENDED** (the server's own set), the box also picks up make-ups. ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-557) — COPY-REVIEW-2026-09-29.md:13,
     // pinned BY SHAPE (it may not claim “pending” alone, and it must keep saying “this page”) — the owner's answer is one line.
     bulkSelectAll: "Select all that can be confirmed (this page)",
     bulkResultTitle: "Confirmation results",
@@ -2016,7 +2016,7 @@ const en = {
     // 🔴 TASK-566 — the household already has an address, so the question is ABSENT and this says why in the parent's
     // terms. 📝 DRAFT (Fern, TASK-566), pinned by shape: it must say we HAVE it, and must not ask for anything.
     addressOnFile: "We already have your address on file.",
-    // 🔴 TASK-591 — 📝 DRAFT (Fern, TASK-591). A family we already know, asked for the address again because we now keep
+    // 🔴 TASK-591 — ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-591) — COPY-REVIEW-2026-09-29.md:240-242. A family we already know, asked for the address again because we now keep
     // it in three parts. ⚠️ It must NOT read as "we lost your address" — what they gave us was valid when they gave it.
     addressAskAgain: "We keep addresses in three parts now (province, district, sub-district). Could you pick yours? We only ask once.",
     addrPart_province: "the province",
@@ -2058,7 +2058,7 @@ const en = {
     // TASK-355 §10.3 — the linked-account screen. All PLACEHOLDER (@Porter's to write); the MEANING of the unlink
     // strings is the writer's, not placeholder: it clears the FAMILY's LINE connection, every linked account.
     alreadyLinkedTitle: "This LINE account is already linked",
-    // 🔴 TASK-593 nit 2 — 📝 DRAFT (Fern, TASK-593). **"Nothing more to do here" became FALSE** when TASK-580 gave this
+    // 🔴 TASK-593 nit 2 — ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-593) — COPY-REVIEW-2026-09-29.md:265-266 for `alreadyLinkedTo`; ⚠️ EN `alreadyLinkedToOne` is approved by DESCRIPTION only (:266 quotes no string) — LISTED, not flipped (TASK-701). **"Nothing more to do here" became FALSE** when TASK-580 gave this
     // screen an Add-a-child button: the sentence sat directly above a control that IS something more to do.
     // 🔑 Nobody edited it; a change elsewhere made it wrong — *the same family as the comments that became lies.*
     alreadyLinkedTo: "Linked to {phone} ({n} children).",
@@ -2106,17 +2106,17 @@ const en = {
       NAME_RESERVED: "「{word}」 is a system command. If that really is the child's name, please tell an admin and they will add them.",
       // PLACEHOLDER (EN) — the server's own sentence exists in Thai only (`parent.service.ts`); `{max}` is the server's
       FAMILY_FULL: "You can register up to {max} children per phone number.",
-      // 🔴 TASK-566 / COPY-REVIEW §8 — the owner ruled it must ask for the child's REAL name. 📋 DRAFT (@Jason's wording,
+      // 🔴 TASK-566 / COPY-REVIEW §8 — the owner ruled it must ask for the child's REAL name. ✅ APPROVED by the owner 2026-10-01 — COPY-REVIEW-2026-09-29.md:63 (@Jason's wording,
       // put on the page by me — the server still returns only the code). ⚠️ The LINE chat keeps its own sentence.
       NAME_DUPLICATE_NEEDS_DETAIL: "There is already a child with this name. Please enter the child's real name (first name and surname) so they are not mixed up.",
       // 🔴 TASK-566 — **“or leave it blank” is GONE.** It became FALSE the moment the birthday was required, and
       // 🔑 *a refusal telling a parent to do something the server now rejects is worse than no message.*
       BIRTHDATE_INVALID: "That date format is not valid. Please use DD-MM-YYYY, e.g. 02-12-2024.",
       // 🔴 TASK-566 / COPY-REVIEW §9 — the server's backstop for the two required fields (the `*` should stop a parent
-      // earlier). 📋 DRAFT. 🔑 The address one says **once per family**, so being asked is not read as us losing it.
+      // earlier). ✅ APPROVED by the owner 2026-10-01 (@Jason's wording) — COPY-REVIEW-2026-09-29.md:70 (BIRTHDATE_REQUIRED), 237 (ADDRESS_REQUIRED). 🔑 The address one says **once per family**, so being asked is not read as us losing it.
       BIRTHDATE_REQUIRED: "Please enter the child's birthday (DD-MM-YYYY, e.g. 02-12-2020).",
       ADDRESS_REQUIRED: "Please choose the province, the district and the sub-district (we only ask once per family).",
-      // 🔴 TASK-590 (BE) → TASK-591 — 📝 DRAFT (Fern, TASK-591). 🔑 It NAMES the part that is missing: "you need the
+      // 🔴 TASK-590 (BE) → TASK-591 — ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-591) — COPY-REVIEW-2026-09-29.md:239. 🔑 It NAMES the part that is missing: "you need the
       // sub-district" is a different sentence from "that is wrong", and only one of them tells a parent what to do.
       ADDRESS_INCOMPLETE: "We still need {missing}.",
       // 🔴 Someone registered that number between our check and this save. 🚫 Nothing of ours was written; they are still
@@ -2405,7 +2405,7 @@ const th: typeof en = {
   },
 
   // ── SPEC-076 / REQ-082 (TASK-265) — ปุ่มแก้วันหมดอายุ และคำเตือน "ชุดเดียว" ที่ใช้ร่วมกันสองที่ ──
-  // 📝 DRAFT (Fern, TASK-572) — ประโยค preview ใช้ของ `expiry.*` ร่วมกัน ไม่เขียนซ้ำ
+  // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-572) — COPY-REVIEW-2026-09-29.md:119-126 — ประโยค preview ใช้ของ `expiry.*` ร่วมกัน ไม่เขียนซ้ำ
   voucherExpiry: {
     edit: "ต่ออายุ",
     title: "วันหมดอายุวอยเชอร์ — {student}",
@@ -2517,7 +2517,7 @@ const th: typeof en = {
     status_ABSENT: "ขาด",
     status_CANCELLED: "ยกเลิก",
     weekStatus_OPEN: "เปิด",
-    // 📝 DRAFT (Fern, TASK-586) — "ปิดแล้ว" อ่านเหมือนยกเลิก/ปิดทั้งสัปดาห์ ทั้งที่ยังเรียนอยู่ ยังมีครู และยังคิดเงิน
+    // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-586) — COPY-REVIEW-2026-09-29.md:139-145 — "ปิดแล้ว" อ่านเหมือนยกเลิก/ปิดทั้งสัปดาห์ ทั้งที่ยังเรียนอยู่ ยังมีครู และยังคิดเงิน
     weekStatus_CLOSED: "ปิดรับจองใหม่",
     daysLeft: "เหลือ {n} วัน",
     creditLine: "ซื้อ {total} วัน · ใช้แล้ว {used} · วางแผน {planned}",
@@ -2592,7 +2592,7 @@ const th: typeof en = {
     dayEdited: "(แก้แล้ว)",
     rateCol: "เรทครู (฿)",
   },
-  // 📝 DRAFT (Fern, TASK-589) — ใครลา และมีงานให้จัดการกี่คาบ 🚫 ไม่ใช้คำว่า "ยกเลิก" เพราะไม่มีการยกเลิกคาบใด
+  // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-589) — COPY-REVIEW-2026-09-29.md:223-224 — ใครลา และมีงานให้จัดการกี่คาบ 🚫 ไม่ใช้คำว่า "ยกเลิก" เพราะไม่มีการยกเลิกคาบใด
   leaveDays: {
     markerClasses: "{name} ลา — มี {n} คาบต้องจัดการ",
     markerAway: "{name} ลา — ไม่มีคาบในวันนั้น",
@@ -2608,7 +2608,7 @@ const th: typeof en = {
     reason: "เหตุผล",
     reasonHint: "สอนไม่ได้เพราะอะไร (3–200 ตัวอักษร)",
     warning: "ผู้ปกครองของคาบที่ติ๊กจะได้รับแจ้ง และระบบจะเพิ่มคาบชดเชยให้",
-    // 📝 DRAFT (Fern, TASK-588) — ลาล่วงหน้า: ปิดรับจองใหม่ทั้งวัน · คาบที่มีอยู่แล้วแอดมินจะจัดการ · 🔑 ยังไม่มีการยกเลิกคาบใด
+    // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-588) — COPY-REVIEW-2026-09-29.md:208-211 — ลาล่วงหน้า: ปิดรับจองใหม่ทั้งวัน · คาบที่มีอยู่แล้วแอดมินจะจัดการ · 🔑 ยังไม่มีการยกเลิกคาบใด
     advanceHint: "วันที่เลือกเป็นวันในอนาคต การลาจะปิดรับจองใหม่ทั้งวัน — ไม่ต้องเลือกคาบ เพราะคาบที่จองไว้แล้วจะไม่ถูกยกเลิก",
     submitAdvance: "ปิดรับจองวันนี้",
     advanceTitle: "{date} — บันทึกวันลาของคุณแล้ว",
@@ -2654,7 +2654,7 @@ const th: typeof en = {
     swapTo: "ครูคนใหม่",
     addTeacher: "เพิ่มครู",
     // 📝 DRAFT (Fern, TASK-577) — ค่าสอนของครูที่มาสอนแทน (บังคับ)
-    // 📝 DRAFT (Fern, TASK-592) — บอกว่าขาด "สิทธิ์" ไม่ใช่ว่าครูหรือค่าสอนมีปัญหา และบอกด้วยว่าต้องทำอะไรต่อ
+    // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-592) — COPY-REVIEW-2026-09-29.md:254 — บอกว่าขาด "สิทธิ์" ไม่ใช่ว่าครูหรือค่าสอนมีปัญหา และบอกด้วยว่าต้องทำอะไรต่อ
     coverNeedsKey: "การสอนแทนจะจ่ายตามค่าสอนของครูที่มาแทน จึงต้องมีสิทธิ์แก้ค่าสอนครู — บัญชีนี้ยังไม่มีสิทธิ์นี้ กรุณาให้แอดมินที่มีสิทธิ์ทำให้ หรือขอสิทธิ์เพิ่ม",
     coverRate: "ค่าสอนของ {name} สำหรับคาบนี้",
     coverRateHint: "ครูที่มาสอนแทนจะได้ค่าสอนของตัวเอง ตารางนี้ยังไม่มีค่าสอนของครูท่านนี้ จึงต้องระบุที่นี่",
@@ -2738,7 +2738,7 @@ const th: typeof en = {
     title: "เลื่อนวันเริ่มเรียน — {student}",
     newStart: "วันเริ่มเรียนใหม่",
     newStartHint: "คาบแรกจะย้ายมาวันนี้ คาบถัดไปเลื่อนตามสัปดาห์ละคาบ",
-    // 📝 DRAFT (Fern, TASK-574) — ประโยคสุดท้ายใช้คำเดียวกับ TASK-547 โดยเจตนา
+    // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-574) — COPY-REVIEW-2026-09-29.md:94 — ประโยคสุดท้ายใช้คำเดียวกับ TASK-547 โดยเจตนา
     newStartHintCurrent: "ปัจจุบัน {current} — คาบแรกจะย้ายไปวันใหม่ คาบถัดไปเลื่อนตามสัปดาห์ละคาบ",
     preview: "ดูว่าจะเปลี่ยนอะไร",
     forecastTitle: "จะย้าย {n} คาบ:",
@@ -3183,7 +3183,7 @@ const th: typeof en = {
     // ยืนยันหลายรายการ (SPEC-011)
     bulkConfirmSelected: "ยืนยันที่เลือก ({n})",
     bulkSelectRow: "เลือกคาบนี้",
-    // 📝 DRAFT (Fern, TASK-557) — ป้ายเดิมบอกว่า “ที่รอยืนยัน” แต่ตอนนี้ติ๊กคาบชดเชยได้ด้วย
+    // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-557) — COPY-REVIEW-2026-09-29.md:13 — ป้ายเดิมบอกว่า “ที่รอยืนยัน” แต่ตอนนี้ติ๊กคาบชดเชยได้ด้วย
     bulkSelectAll: "เลือกทั้งหมดที่ยืนยันได้ (หน้านี้)",
     bulkResultTitle: "ผลการยืนยัน",
     bulkResultSummary: "ยืนยัน {confirmed} · ยืนยันอยู่แล้ว {already} · ข้าม {skipped}",
@@ -3897,7 +3897,7 @@ const th: typeof en = {
     provincePlaceholder: "เขต/อำเภอ แขวง/ตำบล จังหวัด", // 🔴 TASK-566 — เดิม “(ไม่บังคับ)”
     // 📝 DRAFT (Fern, TASK-566) — ครอบครัวนี้มีที่อยู่แล้ว จึงไม่ถามซ้ำ
     addressOnFile: "เรามีที่อยู่ของครอบครัวนี้อยู่แล้วค่ะ",
-    // 📝 DRAFT (Fern, TASK-591) — ⚠️ ต้องไม่อ่านเหมือน "เราทำที่อยู่ของคุณหาย" เพราะที่ให้มาตอนนั้นถูกต้องแล้ว
+    // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-591) — COPY-REVIEW-2026-09-29.md:240-242 — ⚠️ ต้องไม่อ่านเหมือน "เราทำที่อยู่ของคุณหาย" เพราะที่ให้มาตอนนั้นถูกต้องแล้ว
     addressAskAgain: "ตอนนี้เราเก็บที่อยู่เป็นสามส่วน (จังหวัด อำเภอ/เขต ตำบล/แขวง) รบกวนเลือกให้ด้วยค่ะ ถามครั้งเดียวเท่านั้น",
     addrPart_province: "จังหวัด",
     addrPart_district: "อำเภอ/เขต",
@@ -3919,7 +3919,7 @@ const th: typeof en = {
     close: "ปิด", // PLACEHOLDER
     closeHint: "ปิดหน้านี้ได้เลยค่ะ", // borrowed from `checkin.closeHint`
     alreadyLinkedTitle: "บัญชี LINE นี้ผูกกับครอบครัวไว้แล้วค่ะ", // PLACEHOLDER — TASK-355 §10.3
-    // 📝 DRAFT (Fern, TASK-593) nit 2 — ตัดคำว่า "ไม่ต้องทำอะไรเพิ่ม" ออก เพราะมีปุ่มเพิ่มนักเรียนอยู่ใต้ประโยคนี้แล้ว
+    // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-593 nit 2) — COPY-REVIEW-2026-09-29.md:265-266 — ตัดคำว่า "ไม่ต้องทำอะไรเพิ่ม" ออก เพราะมีปุ่มเพิ่มนักเรียนอยู่ใต้ประโยคนี้แล้ว
     alreadyLinkedTo: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน)",
     alreadyLinkedToOne: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน)", // Thai has no plural; same sentence (key parity)
     unlinkButton: "ปลด LINE ของครอบครัวนี้", // PLACEHOLDER — TASK-357 §2: short, wraps; the MEANING is still the whole family
@@ -3945,14 +3945,14 @@ const th: typeof en = {
       NAME_REQUIRED: 'กรุณาระบุชื่อนักเรียน เช่น "ส้ม"', // §17c screen 4b — VERBATIM
       NAME_RESERVED: "「{word}」 เป็นคำสั่งของระบบค่ะ ถ้าเป็นชื่อน้องจริง ๆ รบกวนแจ้งแอดมินนะคะ", // `add_name_reserved` — VERBATIM
       FAMILY_FULL: "เพิ่มนักเรียนได้สูงสุด {max} คนต่อเบอร์", // the server's own sentence (`parent.service.ts`) — VERBATIM
-      // 🔴 TASK-566 / COPY-REVIEW §8 — เจ้าของสั่งให้ถามชื่อจริง 📋 DRAFT (คำของ @Jason หน้านี้เป็นของหน้าเว็บ)
+      // 🔴 TASK-566 / COPY-REVIEW §8 — เจ้าของสั่งให้ถามชื่อจริง ✅ APPROVED by the owner 2026-10-01 — COPY-REVIEW-2026-09-29.md:63 (คำของ @Jason หน้านี้เป็นของหน้าเว็บ)
       NAME_DUPLICATE_NEEDS_DETAIL: "มีน้องชื่อนี้ในครอบครัวแล้ว — กรุณาใส่ชื่อจริงของน้อง (ชื่อ-นามสกุล) เพื่อไม่ให้สับสนกันค่ะ",
       // 🔴 TASK-566 — ตัด “หรือเว้นว่างไว้” ออก: เว้นว่างไม่ได้แล้ว คำแนะนำที่ระบบปฏิเสธแย่กว่าไม่บอกอะไรเลย
       BIRTHDATE_INVALID: "รูปแบบวันเกิดไม่ถูกต้องค่ะ กรุณาพิมพ์เป็น วัน-เดือน-ปี เช่น 02-12-2024",
-      // 🔴 TASK-566 / COPY-REVIEW §9 — ด่านสุดท้ายของเซิร์ฟเวอร์ (หน้าเว็บควรกันไว้ก่อนด้วย `*`) 📋 DRAFT
+      // 🔴 TASK-566 / COPY-REVIEW §9 — ด่านสุดท้ายของเซิร์ฟเวอร์ (หน้าเว็บควรกันไว้ก่อนด้วย `*`) ✅ APPROVED by the owner 2026-10-01 (@Jason's wording) — COPY-REVIEW-2026-09-29.md:70 (BIRTHDATE_REQUIRED), 237 (ADDRESS_REQUIRED)
       BIRTHDATE_REQUIRED: "กรุณาใส่วันเกิดของน้อง (วว-ดด-ปปปป เช่น 02-12-2020)",
       ADDRESS_REQUIRED: "กรุณาเลือกจังหวัด อำเภอ/เขต และตำบล/แขวง (ถามครั้งเดียวต่อครอบครัว)",
-      // 📝 DRAFT (Fern, TASK-591) — บอกว่าขาดส่วนไหน ไม่ใช่บอกว่าที่อยู่ผิด
+      // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-591) — COPY-REVIEW-2026-09-29.md:239 — บอกว่าขาดส่วนไหน ไม่ใช่บอกว่าที่อยู่ผิด
       ADDRESS_INCOMPLETE: "ยังขาด{missing}ค่ะ",
       PHONE_NOW_REGISTERED: "เบอร์นี้เพิ่งถูกลงทะเบียนไปแล้ว กรุณาใส่เบอร์อีกครั้งเพื่อเข้าร่วมครอบครัวนั้นค่ะ",
       PROVINCE_UNKNOWN: "ไม่พบจังหวัด \"{province}\" ในระบบค่ะ กรุณาเลือกจังหวัดอีกครั้ง", // PLACEHOLDER — TASK-353

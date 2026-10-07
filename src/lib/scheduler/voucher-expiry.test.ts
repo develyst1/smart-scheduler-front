@@ -156,8 +156,9 @@ describe("TASK-572 — the copy: answers, no invented notice, and one wording sh
   });
 
   it("every new key is a DECLARED draft — the boundary rule, unchanged", () => {
+    // 🔻 TASK-701, declared: this pin asserted the marker said DRAFT; the owner's 2026-10-01 "all other sections approved as drafted" (COPY-REVIEW-2026-09-29.md:373) covers it, so the marker now says APPROVED and the pin follows it. ✅ The rule it protects — a string's approval state is DECLARED, never silent — is unchanged.
     const raw = readFileSync("src/lib/i18n/dictionaries.ts", "utf8");
-    expect(raw).toContain("DRAFT (Fern, TASK-572)");
+    expect(raw).toContain("APPROVED by the owner 2026-10-01 (Fern's wording, TASK-572) — COPY-REVIEW-2026-09-29.md:119-126");
   });
 
   it("🚫 the pre-save block does not borrow the post-save alert, whose text says the date IS saved", () => {
