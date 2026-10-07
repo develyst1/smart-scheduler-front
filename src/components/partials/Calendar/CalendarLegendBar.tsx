@@ -49,6 +49,9 @@ export default function CalendarLegendBar() {
           `StatusChip` everywhere else. Shape now carries the meaning alongside colour again.
           🚫 `StatusChip` itself is untouched — `BookingsTable`, `PlanModal` and `BookingModal` sit on white and
           read fine as they are. */}
+      {/* 🔴 TASK-722 (REQ-115) — no sample for the make-up badge, deliberately. `EXTENDED` below now means only a LEGACY unconfirmed
+          make-up (Calendar.config.ts), and the badge is the same approved label, which says what it is in words; a second chip with
+          the same word would read as a duplicate. Decided with Fern's §4 (no new row). */}
       {STATUS_LEGEND.map((status) => {
         const accent = BOOKING_STATUS_COLOR[status];
         const Icon = BOOKING_STATUS_ICON[status];

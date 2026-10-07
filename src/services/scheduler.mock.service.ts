@@ -306,6 +306,7 @@ export const markSickLeave = (id: string): Promise<SickLeaveResult> => {
     id: nextBookingId(),
     date: dayjs(b.date).add(1, "week").format("YYYY-MM-DD"),
     status: "EXTENDED",
+    isMakeup: true, // TASK-703 — the marker, as the server sends it
     note: "คาบขยายอัตโนมัติจากการลา",
   };
   bookings.push(extended);
@@ -614,6 +615,7 @@ export const createCoursePackage = (input: {
       rescheduleTo: null,
       discount: null, // TASK-171 — mocks post no discount; null (not undefined) matches the DTO contract.
       attendeeNote: null,
+      isMakeup: b.status === "EXTENDED", // TASK-703 — a make-up carries the MARKER, as the server sends it
     })),
   });
 };

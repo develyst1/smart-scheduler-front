@@ -192,8 +192,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
           nickname: student?.name ?? "",
         },
         // A declared absence renders as the status it will actually be saved as (SICK_LEAVE), and its appended
-        // make-up as EXTENDED — so the draft reads like the real plan and every existing chip/label works
-        // unchanged. Order is load-bearing: the first `size` rows are the weekly chain, the rest are make-ups
+        // make-up as the server now CREATES it (TASK-702/703): CONFIRMED + the `isMakeup` marker, so the draft shows the «ขยายคาบ» badge on a
+        // CONFIRMED row — a preview that differs from the result is the thing TASK-547 taught us not to ship. Order is load-bearing: the first `size` rows are the weekly chain, the rest are make-ups
         // (exactly how the BE builds and previews it) — `confirmCreate` relies on that.
         // TASK-362 (REQ-089 item 1) — a ticked MAKE-UP comes back `absent: true, makeup: true`: ABSENT WINS, so it
         // renders SICK_LEAVE, and the server's extra make-up for it is one more EXTENDED row at the end.
@@ -201,7 +201,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
           id: `new-${i}`,
           date: s.date,
           startTime: s.startTime,
-          status: s.absent ? "SICK_LEAVE" : s.makeup ? "EXTENDED" : "PENDING",
+          status: s.absent ? "SICK_LEAVE" : s.makeup ? "CONFIRMED" : "PENDING",
+          isMakeup: !s.absent && s.makeup === true,
           teacher: s.teacher,
           subject: s.subject,
         })),

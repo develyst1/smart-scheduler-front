@@ -114,7 +114,7 @@ const BOOKING_FIXTURES: Array<
   { id: "b5", studentName: "น้องเจมส์", teacherId: "t3", subject: "เคมี", date: today, startTime: "14:00", endTime: "15:00", bookingType: "COURSE_PACKAGE", status: "SICK_LEAVE", courseId: "c2" },
   { id: "b6", studentName: "น้องแพร", teacherId: "t4", subject: "คณิต", date: today, startTime: "10:00", endTime: "11:00", bookingType: "SINGLE_SESSION", status: "CONFIRMED" },
   { id: "b7", studentName: "น้องกัน", teacherId: "t5", subject: "IELTS", date: today, startTime: "16:00", endTime: "17:00", bookingType: "VOUCHER", status: "CONFIRMED" },
-  { id: "b8", studentName: "น้องมายด์", teacherId: "t3", subject: "ชีวะ", date: today, startTime: "16:00", endTime: "17:00", bookingType: "COURSE_PACKAGE", status: "EXTENDED", courseId: "c3", note: "คาบขยายจากการลาสัปดาห์ก่อน" },
+  { id: "b8", studentName: "น้องมายด์", teacherId: "t3", subject: "ชีวะ", date: today, startTime: "16:00", endTime: "17:00", bookingType: "COURSE_PACKAGE", status: "EXTENDED", isMakeup: true, courseId: "c3", note: "คาบขยายจากการลาสัปดาห์ก่อน" },
   { id: "b9", studentName: "น้องนิว", teacherId: "t1", subject: "คณิต", date: dayjs().add(1, "day").format("YYYY-MM-DD"), startTime: "10:00", endTime: "11:00", bookingType: "COURSE_PACKAGE", status: "CONFIRMED", courseId: "c1" },
   // Past + far-future rows so the date sort (TASK-073/074) is observably different. Without them every
   // fixture row is today/tomorrow and "upcoming first" and "oldest first" render identically.

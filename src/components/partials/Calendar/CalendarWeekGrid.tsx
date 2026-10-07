@@ -3,7 +3,7 @@
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import { Plus, UserX } from "lucide-react";
-import { TeacherTypeChip } from "@/components/common/BookingBadges";
+import { MakeupChip, TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
@@ -18,7 +18,7 @@ import { useCellDisplay } from "@/lib/scheduler/cell-display";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { mergeCampCells, type CampBlock } from "@/lib/camp/grid";
 import CampBlockCell from "./CampBlockCell";
-import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE } from "./calendar-status";
+import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE, showsMakeupMark } from "./calendar-status";
 import { leaveDayKey, leaveMarkerKey, type LeaveMarker } from "@/lib/scheduler/teacher-scope";
 
 interface Props {
@@ -200,6 +200,13 @@ export default function CalendarWeekGrid({
                             </span>
                           )}
                         </span>
+                        {/* 🔴 TASK-722 (REQ-115) — the make-up mark, read from the server's `isMakeup`, NEVER from the status. The fill is
+                            the REAL status; the badge is ADDED, on its own line so it never squeezes the name. */}
+                        {showsMakeupMark(b) && (
+                          <span className="flex">
+                            <MakeupChip size="sm" />
+                          </span>
+                        )}
                         <BookingCellBody booking={b} display={display} />
                         {/* REQ-095 Stage 2a — a GROUP row's seats `n/cap` + names. */}
                         <GroupSeatsLine booking={b} size="sm" />

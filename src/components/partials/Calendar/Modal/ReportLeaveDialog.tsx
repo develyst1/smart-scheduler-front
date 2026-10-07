@@ -235,7 +235,7 @@ export default function ReportLeaveDialog({
                     <span className="flex items-center gap-2">
                       <span className="tabular-nums">{formatTimeDisplay(r.startTime)}</span>
                       <span className="truncate">{r.displayName}</span>
-                      <StatusChip status={r.status} />
+                      <StatusChip status={r.status} isMakeup={r.isMakeup} />
                     </span>
                   }
                 />

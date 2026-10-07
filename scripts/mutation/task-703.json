@@ -1,0 +1,39 @@
+{
+  "_why": "TASK-703 (REQ-115). The list is the new clicked/source test file + plan-tick.test.ts (which pins the create-mode preview row). Written with the set, so nothing here is reconstructed.",
+  "tests": [
+    "src/components/partials/Bookings/makeup-badge-task703.dom.test.tsx",
+    "src/lib/scheduler/plan-tick.test.ts"
+  ],
+  "mutations": [
+    {
+      "id": "B1",
+      "what": "🔴 the badge is read from the STATUS instead of the marker — a CONFIRMED make-up loses it, which is the exact defect REQ-115 exists to prevent",
+      "files": [{ "file": "src/components/common/BookingBadges.tsx", "edits": [{ "from": "if (isMakeup !== true || status === \"EXTENDED\") return chip;", "to": "if (status !== \"EXTENDED\") return chip;" }] }]
+    },
+    {
+      "id": "B2",
+      "what": "🔴 the badge REPLACES the status instead of joining it — a make-up stops showing that it is CONFIRMED",
+      "files": [{ "file": "src/components/common/BookingBadges.tsx", "edits": [{ "from": "      {chip}\n", "to": "" }] }]
+    },
+    {
+      "id": "B3",
+      "what": "🔴 the create-mode preview's make-up row is NOT marked — the preview differs from what the server creates",
+      "files": [{ "file": "src/components/partials/Bookings/CreatePlanFlow.tsx", "edits": [{ "from": "isMakeup: !s.absent && s.makeup === true,", "to": "isMakeup: false," }] }]
+    },
+    {
+      "id": "B4",
+      "what": "⚠️ a LEGACY EXTENDED make-up is badged TWICE (its status chip and the added badge)",
+      "files": [{ "file": "src/components/common/BookingBadges.tsx", "edits": [{ "from": "if (isMakeup !== true || status === \"EXTENDED\") return chip;", "to": "if (isMakeup !== true) return chip;" }] }]
+    },
+    {
+      "id": "B5",
+      "what": "🔴 the mapper drops the marker — every make-up read from the server loses its badge before any screen sees it",
+      "files": [{ "file": "src/lib/api/mappers.ts", "edits": [{ "from": "isMakeup: dto.isMakeup === true,", "to": "isMakeup: false," }] }]
+    },
+    {
+      "id": "B6",
+      "what": "⚠️ an ORDINARY class gets the badge too (the marker is ignored, the badge is added to every non-EXTENDED row)",
+      "files": [{ "file": "src/components/common/BookingBadges.tsx", "edits": [{ "from": "if (isMakeup !== true || status === \"EXTENDED\") return chip;", "to": "if (status === \"EXTENDED\") return chip;" }] }]
+    }
+  ]
+}

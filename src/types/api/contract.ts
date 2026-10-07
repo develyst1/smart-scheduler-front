@@ -224,6 +224,8 @@ export interface SetBookingBadgesResponse {
 
 export interface BookingDTO {
   id: string;
+  /** 🔻 TASK-703 (REQ-115) — THE MARKER, as the server sends it (`BookingDTO.isMakeup` / `PlanSessionRow.isMakeup`, TASK-702): this class GREW FROM A LEAVE. A make-up is born CONFIRMED, so the status no longer says it; the «ขยายคาบ» badge reads THIS, never `status === "EXTENDED"`. Always a boolean. */
+  isMakeup: boolean;
   /**
    * REQ-108 (TASK-488) — the check-in's provenance, **split into two facts** because one column holding both nearly put
    * an admin's username in a parent's reply:

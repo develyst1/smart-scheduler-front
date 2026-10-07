@@ -34,7 +34,11 @@ describe("§1 — every previewed row is tickable; the index is its position in 
   });
 
   it("a ticked make-up renders SICK_LEAVE (absent wins over makeup) and the toggle re-previews with the positions as-is", () => {
-    expect(flow).toContain('status: s.absent ? "SICK_LEAVE" : s.makeup ? "EXTENDED" : "PENDING",');
+    // 🔻 TASK-703 (REQ-115), declared: this pin asserted `s.makeup ? "EXTENDED"`. The server now CREATES a make-up CONFIRMED + marked (TASK-702), so the
+    // preview row is `CONFIRMED` + `isMakeup`, and ABSENT STILL WINS (a ticked make-up renders SICK_LEAVE, unmarked). ✅ The claim this protects —
+    // the draft shows what the server will create, absent beating makeup — is unchanged; the clicked tests pin the badge itself.
+    expect(flow).toContain('status: s.absent ? "SICK_LEAVE" : s.makeup ? "CONFIRMED" : "PENDING",');
+    expect(flow).toContain("isMakeup: !s.absent && s.makeup === true,");
     const toggle = flow.slice(flow.indexOf("const toggleAbsent"), flow.indexOf("const confirmCreate"));
     expect(toggle).toContain("[...absentWeeks, weekIndex].sort((a, b) => a - b)");
     expect(toggle).toContain("await runPreview(next);");

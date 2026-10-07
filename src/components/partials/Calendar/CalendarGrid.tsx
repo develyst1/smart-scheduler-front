@@ -1,12 +1,12 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { TeacherTypeChip } from "@/components/common/BookingBadges";
+import { MakeupChip, TeacherTypeChip } from "@/components/common/BookingBadges";
 import type { Booking, TeacherView } from "@/types/app/scheduler";
 import { BOOKING_STATUS_COLOR, OFF_CALENDAR_STATUSES, TIME_SLOTS } from "@/types/app/scheduler";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
 import { useCellDisplay, type CellDisplay } from "@/lib/scheduler/cell-display";
-import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE } from "./calendar-status";
+import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE, showsMakeupMark } from "./calendar-status";
 import { useT } from "@/lib/i18n";
 import FreelanceBudgetStrip from "./FreelanceBudgetStrip";
 import CalendarLegendBar from "./CalendarLegendBar";
@@ -256,6 +256,13 @@ function Row({
                     </span>
                   )}
                 </span>
+                {/* 🔴 TASK-722 (REQ-115) — the make-up mark, read from the server's `isMakeup`, NEVER from the status: the fill above is
+                    the REAL status, the badge is ADDED. On its own line so it never squeezes the name. */}
+                {showsMakeupMark(booking) && (
+                  <span className="flex">
+                    <MakeupChip size="sm" />
+                  </span>
+                )}
                 {/* type · program on one line — AC-4: the day view keeps the FULL program name (it may wrap, never truncates). */}
                 {(display.type || (display.program && booking.subject)) && (
                   <span className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[11px] font-medium text-cal-ink">

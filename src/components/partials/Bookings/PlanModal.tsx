@@ -769,7 +769,7 @@ function SessionTable({
                 <Table.Td>{s.subject?.name ?? "—"}</Table.Td>
                 <Table.Td>
                   <Group gap={4} wrap="nowrap">
-                    <StatusChip status={s.status as BookingStatus} />
+                    <StatusChip status={s.status as BookingStatus} isMakeup={s.isMakeup} />
                     {isExtra && (
                       <Badge size="xs" variant="light" color="grape">
                         {t("plan.extraBadge")}
@@ -1351,7 +1351,7 @@ function PlanDiffConfirm({
                 <Table.Td className="tabular-nums">{formatTimeDisplay(s.startTime)}</Table.Td>
                 <Table.Td>{s.teacher?.nickname ?? "—"}</Table.Td>
                 <Table.Td>
-                  <StatusChip status={s.status as BookingStatus} />
+                  <StatusChip status={s.status as BookingStatus} isMakeup={s.isMakeup} />
                 </Table.Td>
               </Table.Tr>
             ))}

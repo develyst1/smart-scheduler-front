@@ -76,3 +76,17 @@ export const CAL_DOT_STYLE: Record<SemanticColor, string> = {
   danger: "bg-cal-no-dot",
   default: "bg-cal-leave-dot",
 };
+
+/**
+ * 🔴 **TASK-722 (REQ-115) — "is this cell a MAKE-UP?" has ONE reader, and it reads the MARKER.**
+ *
+ * A make-up is born CONFIRMED now (TASK-702), so its STATUS no longer says it grew from a leave; the server's `isMakeup` does.
+ * The cell keeps its REAL status colour (a confirmed make-up is confirmed) and ADDS the purple «ขยายคาบ» badge
+ * (`MakeupChip`, TASK-703: the one way to draw it, the approved `bookingStatus.EXTENDED` label).
+ *
+ * 🚫 **Never `status === "EXTENDED"` here.** That is the old question, and asking it is exactly how a confirmed make-up loses its
+ * mark. A LEGACY `EXTENDED` row keeps its purple fill and, being a make-up, carries the mark ONCE — the cell has no status label
+ * of its own, so nothing says it twice. ⚠️ The opposite question, "is it UNCONFIRMED?" (`BULK_CONFIRMABLE`), asks the STATUS
+ * on purpose and is not this one.
+ */
+export const showsMakeupMark = (b: { isMakeup?: boolean }): boolean => b.isMakeup === true;

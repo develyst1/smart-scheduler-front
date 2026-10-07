@@ -52,6 +52,8 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     courseLast: dto.courseLast === true,
     // TASK-547 — as sent; the server always sends a raw boolean, and the rule reads `=== true` so an older row claims nothing.
     plannedAtCreation: dto.plannedAtCreation,
+    // TASK-703 (REQ-115) — the make-up MARKER, as a strict boolean (the server always sends one); the badge reads it, not the status.
+    isMakeup: dto.isMakeup === true,
     // TASK-369 — the closed cancel code as sent; the tray resolves it to the existing label, or falls back to `note`.
     cancelReason: dto.cancelReason ?? null,
     // TASK-372 — the rental row as sent; a payload without the key ⇒ null (no rental), never undefined.

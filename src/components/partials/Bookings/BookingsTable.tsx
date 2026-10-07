@@ -397,7 +397,7 @@ export default function BookingsTable() {
                 </Table.Td>
                 <Table.Td>
                   <Group gap={6} wrap="nowrap">
-                    <StatusChip status={b.status} />
+                    <StatusChip status={b.status} isMakeup={b.isMakeup} />
                     {/* REQ-108 (TASK-482) — the wall-QR chip beside the state it belongs to: an unlinked family's only
                         safety net, read by an admin scanning the roster for the odd row. Only `shopfront-qr` shows. */}
                     <CheckinSourceChip channel={b.checkinChannel} />

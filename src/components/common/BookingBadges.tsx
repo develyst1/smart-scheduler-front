@@ -42,10 +42,39 @@ export const BOOKING_STATUS_ICON: Record<BookingStatus, LucideIcon> = {
   PAUSED: PauseCircle,
 };
 
-export function StatusChip({ status, size = "sm" }: { status: BookingStatus; size?: Size }) {
+/**
+ * 🔴 **TASK-703 (REQ-115) — the «ขยายคาบ» badge, ONE way to draw it.** A make-up is born CONFIRMED now (TASK-702), so its status no longer
+ * says it grew from a leave; the server's `isMakeup` marker does, and Khwan kept the badge as a requirement. It is the SAME approved
+ * label and icon as the status `EXTENDED` (`bookingStatus.EXTENDED`, `CalendarPlus`) — 🚫 no new words — and it is ADDED beside the real
+ * status, never swapped in for it.
+ */
+export function MakeupChip({ size = "sm" }: { size?: Size }) {
+  const t = useT();
+  const Icon = BOOKING_STATUS_ICON.EXTENDED;
+  return (
+    <Badge
+      size={size}
+      color={MANTINE_COLOR[BOOKING_STATUS_COLOR.EXTENDED]}
+      variant="light"
+      radius="sm"
+      leftSection={<Icon size={size === "md" ? 13 : 11} aria-hidden />}
+      styles={NO_TRUNCATE}
+      data-makeup-badge
+    >
+      {t("bookingStatus.EXTENDED")}
+    </Badge>
+  );
+}
+
+/**
+ * The status chip. **Pass `isMakeup` wherever the row carries it** (the server's marker): a make-up then shows its REAL status AND the
+ * «ขยายคาบ» badge. 📌 A LEGACY `EXTENDED` row already says it in its status chip, so it is NOT badged twice. One prop is all a grid cell /
+ * table needs to adopt it. `isMakeup` is read as `=== true`: an absent value claims nothing.
+ */
+export function StatusChip({ status, isMakeup, size = "sm" }: { status: BookingStatus; isMakeup?: boolean; size?: Size }) {
   const t = useT();
   const Icon = BOOKING_STATUS_ICON[status];
-  return (
+  const chip = (
     <Badge
       size={size}
       color={MANTINE_COLOR[BOOKING_STATUS_COLOR[status]]}
@@ -56,6 +85,13 @@ export function StatusChip({ status, size = "sm" }: { status: BookingStatus; siz
     >
       {t(`bookingStatus.${status}`)}
     </Badge>
+  );
+  if (isMakeup !== true || status === "EXTENDED") return chip;
+  return (
+    <span className="inline-flex items-center gap-1" data-status-with-makeup>
+      {chip}
+      <MakeupChip size={size} />
+    </span>
   );
 }
 

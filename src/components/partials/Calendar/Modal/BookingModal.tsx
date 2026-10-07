@@ -177,7 +177,7 @@ export default function BookingModal({
             {/* AC-10 — the booking's own name, from the BE's one `displayName`. No local fallback. */}
             <span className="font-semibold">{booking.displayName}</span>
             <div className="flex items-center gap-2">
-              <StatusChip status={booking.status} />
+              <StatusChip status={booking.status} isMakeup={booking.isMakeup} />
               <BookingTypeChip type={booking.bookingType} />
               {/* REQ-108 (TASK-482) — the same chip on the detail, from the same ONE mapping. */}
               <CheckinSourceChip channel={booking.checkinChannel} />

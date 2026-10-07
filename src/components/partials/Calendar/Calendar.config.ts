@@ -7,6 +7,9 @@ export const STATUS_LEGEND: BookingStatus[] = [
   "ATTENDED",
   "PENDING",
   "SICK_LEAVE",
+  // 🔻 TASK-703 (REQ-115) — `EXTENDED` now means only a LEGACY unconfirmed make-up (a new make-up is born CONFIRMED and carries the `isMakeup`
+  // marker). The entry STAYS (old rows exist — forward-only) and NO row is added for "a make-up": the «ขยายคาบ» badge on a make-up is the same
+  // approved label as this entry, so this entry already explains it. 🚫 No new words.
   "EXTENDED",
   "PENDING_RESCHEDULE",
   // 🔴 TASK-670 (5b) — owner ruled both IN (2026-10-06): they draw red on the grid and the legend did not say so. Their labels

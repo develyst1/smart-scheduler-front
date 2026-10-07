@@ -1,0 +1,152 @@
+[
+  {
+    "id": "M1",
+    "what": "🔴 the mark is read from the STATUS (EXTENDED) instead of the marker — a CONFIRMED make-up loses it: the exact defect REQ-115 exists to prevent",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/calendar-status.ts",
+        "edits": [
+          {
+            "from": "b.isMakeup === true",
+            "to": "(b as { status?: string }).status === \"EXTENDED\""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M2",
+    "what": "🔴 the mark dropped from the WEEK grid",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarWeekGrid.tsx",
+        "edits": [
+          {
+            "from": "{showsMakeupMark(b) && (",
+            "to": "{false && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M3",
+    "what": "🔴 the mark dropped from the DAY grid",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarGrid.tsx",
+        "edits": [
+          {
+            "from": "{showsMakeupMark(booking) && (",
+            "to": "{false && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M4",
+    "what": "⚠️ the mark shown on an ORDINARY class",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/calendar-status.ts",
+        "edits": [
+          {
+            "from": "b.isMakeup === true",
+            "to": "true"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M5",
+    "what": "⚠️ a LEGACY EXTENDED make-up is marked TWICE in the day cell",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarGrid.tsx",
+        "edits": [
+          {
+            "from": "<MakeupChip size=\"sm\" />",
+            "to": "<MakeupChip size=\"sm\" />{booking.status === \"EXTENDED\" && <MakeupChip size=\"sm\" />}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M6",
+    "what": "⚠️ a LEGACY EXTENDED make-up is marked TWICE in the week cell",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarWeekGrid.tsx",
+        "edits": [
+          {
+            "from": "<MakeupChip size=\"sm\" />",
+            "to": "<MakeupChip size=\"sm\" />{b.status === \"EXTENDED\" && <MakeupChip size=\"sm\" />}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M7",
+    "what": "🔴 the bookings LIST does not pass the marker to the status chip — a confirmed make-up loses the badge there",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/BookingsTable.tsx",
+        "edits": [
+          {
+            "from": "<StatusChip status={b.status} isMakeup={b.isMakeup} />",
+            "to": "<StatusChip status={b.status} />"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M8",
+    "what": "🔴 the cell colour is taken from the MARKER (a make-up painted purple, its real status hidden) — the opposite of N1",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarWeekGrid.tsx",
+        "edits": [
+          {
+            "from": "const accent = BOOKING_STATUS_COLOR[b.status];",
+            "to": "const accent = b.isMakeup === true ? BOOKING_STATUS_COLOR.EXTENDED : BOOKING_STATUS_COLOR[b.status];"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M9",
+    "what": "🔴 the DAY cell colour is taken from the MARKER (a make-up painted purple, its real status hidden)",
+    "files": [
+      {
+        "file": "src/components/partials/Calendar/CalendarGrid.tsx",
+        "edits": [
+          {
+            "from": "const accent = booking ? BOOKING_STATUS_COLOR[booking.status] : \"default\";",
+            "to": "const accent = booking ? (booking.isMakeup === true ? BOOKING_STATUS_COLOR.EXTENDED : BOOKING_STATUS_COLOR[booking.status]) : \"default\";"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "M10",
+    "what": "🔴 bulk confirm starts asking the MARKER: a CONFIRMED make-up becomes tickable (the unconfirmed question must stay on the STATUS)",
+    "files": [
+      {
+        "file": "src/lib/scheduler/bulk-confirm.ts",
+        "edits": [
+          {
+            "from": "export const bulkConfirmable = (b: Pick<Booking, \"status\">): boolean => (BULK_CONFIRMABLE as readonly string[]).includes(b.status);",
+            "to": "export const bulkConfirmable = (b: Pick<Booking, \"status\"> & { isMakeup?: boolean }): boolean => b.isMakeup === true || (BULK_CONFIRMABLE as readonly string[]).includes(b.status);"
+          }
+        ]
+      }
+    ]
+  }
+]

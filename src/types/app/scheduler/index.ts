@@ -155,6 +155,8 @@ export interface BookingTeacherRef {
 
 export interface Booking {
   id: string;
+  /** 🔻 TASK-703 (REQ-115) — THE MARKER, as the server sends it (`BookingDTO.isMakeup` / `PlanSessionRow.isMakeup`, TASK-702): this class GREW FROM A LEAVE. A make-up is born CONFIRMED, so the status no longer says it; the «ขยายคาบ» badge reads THIS, never `status === "EXTENDED"`. Read as `=== true`: an older/mock row without it claims nothing. */
+  isMakeup?: boolean;
   /**
    * 🔴 TASK-227 (REQ-078 AC-10) — **what this booking is CALLED. Render this, everywhere.**
    *
@@ -449,6 +451,8 @@ export interface PlanSession {
   startTime: string;
   /** BookingStatus (may include NO_SHOW, which the FE enum omits) — kept as string. */
   status: string;
+  /** 🔻 TASK-703 (REQ-115) — THE MARKER, as the server sends it (`BookingDTO.isMakeup` / `PlanSessionRow.isMakeup`, TASK-702): this class GREW FROM A LEAVE. A make-up is born CONFIRMED, so the status no longer says it; the «ขยายคาบ» badge reads THIS, never `status === "EXTENDED"`. Read as `=== true`. */
+  isMakeup?: boolean;
   /** SPEC-033 — a soft-linked SINGLE_SESSION "extra" reads distinctly from the COURSE_PACKAGE plan rows. */
   bookingType?: string;
   teacher: PlanSessionRef | null;
