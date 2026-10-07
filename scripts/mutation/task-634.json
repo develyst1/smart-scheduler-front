@@ -1,171 +1,181 @@
-[
-  {
-    "id": "R1",
-    "what": "🔴 the typed rate is DROPPED from the body — the refusal the field exists to answer comes straight back",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
-        "edits": [
-          {
-            "from": "      await swap.mutateAsync({ id: booking.id, input: { teacherId, fromHereOn, ...(rateMinor != null ? { rateMinor } : {}) } });",
-            "to": "      await swap.mutateAsync({ id: booking.id, input: { teacherId, fromHereOn } });"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "R2",
-    "what": "🔴 `rateMinor` rides on EVERY swap (as a null) — the key-59 gate reads the BODY, so an ordinary swap would cost a permission",
-    "files": [
-      {
-        "file": "src/services/scheduler.service.ts",
-        "edits": [
-          {
-            "from": "    ...(input.rateMinor != null ? { rateMinor: input.rateMinor } : {}),",
-            "to": "    rateMinor: input.rateMinor ?? null,"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "R3",
-    "what": "⚠️ the field becomes REQUIRED — an optional field that blocks Save is not optional",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
-        "edits": [
-          {
-            "from": "            className=\"max-w-xs\"\n            data-group-swap-rate",
-            "to": "            required\n            className=\"max-w-xs\"\n            data-group-swap-rate"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "R4",
-    "what": "🔴 THE DEFECT THAT STARTED THIS: the field is PRE-FILLED from a coach already on the row",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
-        "edits": [
-          {
-            "from": "            value={rateBaht}",
-            "to": "            value={rateBaht !== \"\" ? rateBaht : 500}"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "R5",
-    "what": "🔴 the field is shown WITHOUT key 59 (and the body would then carry a rate the server refuses)",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
-        "edits": [
-          {
-            "from": "        {canRate && (",
-            "to": "        {true && ("
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "R6",
-    "what": "⚠️ the field is GREYED instead of hidden — it tells an admin what they are missing, which is not theirs to know",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
-        "edits": [
-          {
-            "from": "        {canRate && (",
-            "to": "        {true && ("
-          },
-          {
-            "from": "            value={rateBaht}",
-            "to": "            disabled={!canRate}\n            value={rateBaht}"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "R7",
-    "what": "⚠️ the rate is sent in BAHT, not satang — the coach would be paid one hundredth of the number typed",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
-        "edits": [
-          {
-            "from": "      const rateMinor = canRate && rateBaht !== \"\" ? bahtToMinor(rateBaht) : undefined;",
-            "to": "      const rateMinor = canRate && rateBaht !== \"\" ? rateBaht : undefined;"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "R8",
-    "what": "⚠️ the key check is dropped from the BODY builder — a hidden field, but a rate could still ride",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
-        "edits": [
-          {
-            "from": "      const rateMinor = canRate && rateBaht !== \"\" ? bahtToMinor(rateBaht) : undefined;",
-            "to": "      const rateMinor = rateBaht !== \"\" ? bahtToMinor(rateBaht) : undefined;"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "R9",
-    "what": "the label stops naming WHOSE rate it is (one coach can cost a different amount on another series)",
-    "files": [
-      {
-        "file": "src/lib/i18n/dictionaries.ts",
-        "edits": [
-          {
-            "from": "    groupSwapRate: \"{name}'s rate for this group (per session)\",",
-            "to": "    groupSwapRate: \"Rate for this group (per session)\","
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "R10",
-    "what": "⚠️ the Thai hint falls back to English (a bilingual assertion satisfied by one language)",
-    "files": [
-      {
-        "file": "src/lib/i18n/dictionaries.ts",
-        "edits": [
-          {
-            "from": "    groupSwapRateHint: \"ไม่ต้องกรอก ยกเว้นระบบปฏิเสธเพราะไม่มีค่าสอน — จะเกิดเมื่อกลุ่มนี้ยังไม่เคยจ่ายค่าสอนให้ครูคนนี้\",",
-            "to": "    groupSwapRateHint: \"Leave this empty unless the swap is refused for a missing rate — that happens when this group has never paid this coach before.\","
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "R11",
-    "what": "the hint stops saying it is optional (an admin would type a number into every swap)",
-    "files": [
-      {
-        "file": "src/lib/i18n/dictionaries.ts",
-        "edits": [
-          {
-            "from": "    groupSwapRateHint: \"Leave this empty unless the swap is refused for a missing rate — that happens when this group has never paid this coach before.\",",
-            "to": "    groupSwapRateHint: \"The coach's rate for this group.\","
-          }
-        ]
-      }
-    ]
-  }
-]
+{
+  "_why": "TASK-637: the list was parked beside the set as task-634.json.pending-637 (TASK-634); folded in here. TASK-634's test list, parked until TASK-637 folds it into task-634.json. 🔴 The THIRD file is not optional: R8 (the key check in the body builder) SURVIVES without it — it is the mutation whose survival made that file exist. @Sober re-ran the two-file version I first filed and got 10/11; with this list it is 11/11. 📌 Written out by hand once already and still wrong: that is the argument for TASK-637.",
+  "tests": [
+    "src/components/partials/Calendar/Modal/group-swap-rate.dom.test.tsx",
+    "src/components/partials/Calendar/Modal/group-swap-rate-no-key.dom.test.tsx",
+    "src/components/partials/Calendar/Modal/group-swap-rate-key-revoked.dom.test.tsx",
+    "src/lib/scheduler/group-session.test.ts",
+    "src/lib/scheduler/series-scope.test.ts"
+  ],
+  "mutations": [
+    {
+      "id": "R1",
+      "what": "🔴 the typed rate is DROPPED from the body — the refusal the field exists to answer comes straight back",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
+          "edits": [
+            {
+              "from": "      await swap.mutateAsync({ id: booking.id, input: { teacherId, fromHereOn, ...(rateMinor != null ? { rateMinor } : {}) } });",
+              "to": "      await swap.mutateAsync({ id: booking.id, input: { teacherId, fromHereOn } });"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "what": "🔴 `rateMinor` rides on EVERY swap (as a null) — the key-59 gate reads the BODY, so an ordinary swap would cost a permission",
+      "files": [
+        {
+          "file": "src/services/scheduler.service.ts",
+          "edits": [
+            {
+              "from": "    ...(input.rateMinor != null ? { rateMinor: input.rateMinor } : {}),",
+              "to": "    rateMinor: input.rateMinor ?? null,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "what": "⚠️ the field becomes REQUIRED — an optional field that blocks Save is not optional",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
+          "edits": [
+            {
+              "from": "            className=\"max-w-xs\"\n            data-group-swap-rate",
+              "to": "            required\n            className=\"max-w-xs\"\n            data-group-swap-rate"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R4",
+      "what": "🔴 THE DEFECT THAT STARTED THIS: the field is PRE-FILLED from a coach already on the row",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
+          "edits": [
+            {
+              "from": "            value={rateBaht}",
+              "to": "            value={rateBaht !== \"\" ? rateBaht : 500}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R5",
+      "what": "🔴 the field is shown WITHOUT key 59 (and the body would then carry a rate the server refuses)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
+          "edits": [
+            {
+              "from": "        {canRate && (",
+              "to": "        {true && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R6",
+      "what": "⚠️ the field is GREYED instead of hidden — it tells an admin what they are missing, which is not theirs to know",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
+          "edits": [
+            {
+              "from": "        {canRate && (",
+              "to": "        {true && ("
+            },
+            {
+              "from": "            value={rateBaht}",
+              "to": "            disabled={!canRate}\n            value={rateBaht}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R7",
+      "what": "⚠️ the rate is sent in BAHT, not satang — the coach would be paid one hundredth of the number typed",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
+          "edits": [
+            {
+              "from": "      const rateMinor = canRate && rateBaht !== \"\" ? bahtToMinor(rateBaht) : undefined;",
+              "to": "      const rateMinor = canRate && rateBaht !== \"\" ? rateBaht : undefined;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R8",
+      "what": "⚠️ the key check is dropped from the BODY builder — a hidden field, but a rate could still ride",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/GroupSwapDialog.tsx",
+          "edits": [
+            {
+              "from": "      const rateMinor = canRate && rateBaht !== \"\" ? bahtToMinor(rateBaht) : undefined;",
+              "to": "      const rateMinor = rateBaht !== \"\" ? bahtToMinor(rateBaht) : undefined;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R9",
+      "what": "the label stops naming WHOSE rate it is (one coach can cost a different amount on another series)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "    groupSwapRate: \"{name}'s rate for this group (per session)\",",
+              "to": "    groupSwapRate: \"Rate for this group (per session)\","
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R10",
+      "what": "⚠️ the Thai hint falls back to English (a bilingual assertion satisfied by one language)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "    groupSwapRateHint: \"ไม่ต้องกรอก ยกเว้นระบบปฏิเสธเพราะไม่มีค่าสอน — จะเกิดเมื่อกลุ่มนี้ยังไม่เคยจ่ายค่าสอนให้ครูคนนี้\",",
+              "to": "    groupSwapRateHint: \"Leave this empty unless the swap is refused for a missing rate — that happens when this group has never paid this coach before.\","
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R11",
+      "what": "the hint stops saying it is optional (an admin would type a number into every swap)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "    groupSwapRateHint: \"Leave this empty unless the swap is refused for a missing rate — that happens when this group has never paid this coach before.\",",
+              "to": "    groupSwapRateHint: \"The coach's rate for this group.\","
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

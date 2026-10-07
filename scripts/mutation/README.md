@@ -76,6 +76,14 @@ bun run mutation:run -- --tests "src/lib/x.test.ts src/components/y.dom.test.tsx
 
 `--baseline N` skips measuring one; `--timeout ms` changes the time limit (default 600000).
 
+**A set carries its own test list (TASK-637, ported from the back repo's TASK-627).** A set is the bare array below **or**
+`{ "tests": [ ...files ], "mutations": [ ... ] }` (`tests` may also be one space-separated string). Then
+`bun run mutation:run -- --mutations scripts/mutation/task-NNN.json` needs no `--tests`, and `--tests` still **wins** when given.
+**A set with no list anywhere is refused** (`NO TEST LIST`), and **a listed file that does not exist is refused**
+(`TEST FILE NOT FOUND`) — a guessed or mistyped list produces a verdict about something nobody chose. The run prints the
+list it used (`TESTS ...`). Write the object form for every new set; an optional `_why` key says where the list came from.
+🔑 *The list is part of the run, and now it is part of the artefact.*
+
 `mutations.json` — a list; each mutation may edit several files, and each edit's `from` must match **exactly once** (otherwise
 the row says `ANCHOR MISSING` / `ANCHOR AMBIGUOUS` and **nothing is run**, which is a NOT RUN row, not a verdict):
 

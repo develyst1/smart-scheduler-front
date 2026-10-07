@@ -1,12 +1,41 @@
-[
-  {
-    "id": "X1",
-    "what": "🔴 the reason radios are left ENABLED when the box is ticked (the screen offers a choice that will be ignored)",
-    "files": [{ "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx", "edits": [{ "from": "label={t(`endCourse.${r}`)} disabled={ourSide} />", "to": "label={t(`endCourse.${r}`)} disabled={false} />" }] }]
-  },
-  {
-    "id": "X2",
-    "what": "⚠️ ticking does NOT forget an earlier radio pick — unticking silently revives a choice",
-    "files": [{ "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx", "edits": [{ "from": "if (e.currentTarget.checked) setReason(null);", "to": "" }] }]
-  }
-]
+{
+  "_why": "TASK-637 follow-up (2026-10-07): the list was RECORDED in the TASK file at the time of the run and is folded in unchanged — not reconstructed. Source: TASK-695 report (same four files as 694: the same dialog).",
+  "tests": [
+    "src/components/partials/Bookings/cancel-course-class-task694.dom.test.tsx",
+    "src/components/partials/Calendar/Modal/cancel-session-reason-task691.dom.test.tsx",
+    "src/lib/scheduler/session-cancel-reasons-task691.test.ts",
+    "src/lib/scheduler/other-series.test.ts"
+  ],
+  "mutations": [
+    {
+      "id": "X1",
+      "what": "🔴 the reason radios are left ENABLED when the box is ticked (the screen offers a choice that will be ignored)",
+      "files": [
+        {
+          "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+          "edits": [
+            {
+              "from": "label={t(`endCourse.${r}`)} disabled={ourSide} />",
+              "to": "label={t(`endCourse.${r}`)} disabled={false} />"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "X2",
+      "what": "⚠️ ticking does NOT forget an earlier radio pick — unticking silently revives a choice",
+      "files": [
+        {
+          "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+          "edits": [
+            {
+              "from": "if (e.currentTarget.checked) setReason(null);",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,37 +1,116 @@
-[
-  {
-    "id": "W1",
-    "what": "🔴 the our-side choice is TICKED BY DEFAULT on the plan modal's course cancel — a week is given by accident on every cancel",
-    "files": [{ "file": "src/components/partials/Bookings/PlanModal.tsx", "edits": [{ "from": "const [ourSide, setOurSide] = useState(false);", "to": "const [ourSide, setOurSide] = useState(true);" }] }]
-  },
-  {
-    "id": "W2",
-    "what": "🔴 the box is ticked but the code is NOT sent — the family is not given the week and nobody is told",
-    "files": [{ "file": "src/components/partials/Bookings/PlanModal.tsx", "edits": [{ "from": "...(ourSide ? { reasonCode: SESSION_ONLY_CANCEL_REASONS[0] } : {}),", "to": "...({}),"}] }]
-  },
-  {
-    "id": "W3",
-    "what": "🔴 the our-side reason is back on the NON-course Cancel dialog (its hint would be false there)",
-    "files": [{ "file": "src/components/partials/Calendar/Modal/CancelBookingDialog.tsx", "edits": [{ "from": "{END_COURSE_REASONS.map((r) => (", "to": "{[...END_COURSE_REASONS, \"SCHOOL_ISSUE\"].map((r) => (" }] }]
-  },
-  {
-    "id": "W4",
-    "what": "🔴 the FULL reason list (three radios) is offered on the plan modal's course cancel instead of the one choice",
-    "files": [{ "file": "src/components/partials/Bookings/PlanModal.tsx", "edits": [{ "from": "<Checkbox", "to": "{[\"PROGRAM_CHANGED\", \"CUSTOMER_CANCELLED\", \"ADMIN_ERROR\"].map((r) => (<input key={r} type=\"radio\" value={r} readOnly />))}<Checkbox" }] }]
-  },
-  {
-    "id": "W5",
-    "what": "🔴 the our-side choice is offered on an OTHER (non-group) series cancel-all — no course behind it",
-    "files": [{ "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx", "edits": [{ "from": "{ref.kind === \"group\" && (", "to": "{true && (" }] }]
-  },
-  {
-    "id": "W6",
-    "what": "🔴 group cancel-all: box ticked but the chosen code ignores it (Confirm stays shut / nothing sent)",
-    "files": [{ "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx", "edits": [{ "from": "ourSide ? SESSION_ONLY_CANCEL_REASONS[0] : reason;", "to": "ourSide ? reason : reason;" }] }]
-  },
-  {
-    "id": "W7",
-    "what": "🔴 group cancel-all: the choice is TICKED BY DEFAULT",
-    "files": [{ "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx", "edits": [{ "from": "const [ourSide, setOurSide] = useState(false);", "to": "const [ourSide, setOurSide] = useState(true);" }] }]
-  }
-]
+{
+  "_why": "TASK-637 follow-up (2026-10-07): the list was RECORDED in the TASK file at the time of the run and is folded in unchanged — not reconstructed. Source: TASK-694 report.",
+  "tests": [
+    "src/components/partials/Bookings/cancel-course-class-task694.dom.test.tsx",
+    "src/components/partials/Calendar/Modal/cancel-session-reason-task691.dom.test.tsx",
+    "src/lib/scheduler/session-cancel-reasons-task691.test.ts",
+    "src/lib/scheduler/other-series.test.ts"
+  ],
+  "mutations": [
+    {
+      "id": "W1",
+      "what": "🔴 the our-side choice is TICKED BY DEFAULT on the plan modal's course cancel — a week is given by accident on every cancel",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/PlanModal.tsx",
+          "edits": [
+            {
+              "from": "const [ourSide, setOurSide] = useState(false);",
+              "to": "const [ourSide, setOurSide] = useState(true);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W2",
+      "what": "🔴 the box is ticked but the code is NOT sent — the family is not given the week and nobody is told",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/PlanModal.tsx",
+          "edits": [
+            {
+              "from": "...(ourSide ? { reasonCode: SESSION_ONLY_CANCEL_REASONS[0] } : {}),",
+              "to": "...({}),"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W3",
+      "what": "🔴 the our-side reason is back on the NON-course Cancel dialog (its hint would be false there)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/CancelBookingDialog.tsx",
+          "edits": [
+            {
+              "from": "{END_COURSE_REASONS.map((r) => (",
+              "to": "{[...END_COURSE_REASONS, \"SCHOOL_ISSUE\"].map((r) => ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W4",
+      "what": "🔴 the FULL reason list (three radios) is offered on the plan modal's course cancel instead of the one choice",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/PlanModal.tsx",
+          "edits": [
+            {
+              "from": "<Checkbox",
+              "to": "{[\"PROGRAM_CHANGED\", \"CUSTOMER_CANCELLED\", \"ADMIN_ERROR\"].map((r) => (<input key={r} type=\"radio\" value={r} readOnly />))}<Checkbox"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W5",
+      "what": "🔴 the our-side choice is offered on an OTHER (non-group) series cancel-all — no course behind it",
+      "files": [
+        {
+          "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+          "edits": [
+            {
+              "from": "{ref.kind === \"group\" && (",
+              "to": "{true && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W6",
+      "what": "🔴 group cancel-all: box ticked but the chosen code ignores it (Confirm stays shut / nothing sent)",
+      "files": [
+        {
+          "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+          "edits": [
+            {
+              "from": "ourSide ? SESSION_ONLY_CANCEL_REASONS[0] : reason;",
+              "to": "ourSide ? reason : reason;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W7",
+      "what": "🔴 group cancel-all: the choice is TICKED BY DEFAULT",
+      "files": [
+        {
+          "file": "src/components/partials/OtherSeries/OtherSeriesDialogs.tsx",
+          "edits": [
+            {
+              "from": "const [ourSide, setOurSide] = useState(false);",
+              "to": "const [ourSide, setOurSide] = useState(true);"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -573,11 +573,11 @@ const en = {
     swapPrimary: "Swap",
     removeTeacher: "Remove",
     removeTeacherTitle: "Remove {name} from the series?",
-    // 🔴 TASK-624 — ✅ owner-APPROVED 2026-10-06 (Silver's instruction, EN companion of the approved TH). Replaces
+    // 🔴 TASK-624 — ✅ APPROVED by @Porter 2026-10-07 under the owner's delegation of the EN (log/2026-10-06.md:227) — COPY-REVIEW-2026-09-29.md:577. Replaces
     // `swapPrimaryTitle` ("Swap the primary teacher"), which stopped being true the day an extra teacher could be swapped.
     // `{name}` = the teacher going OUT.
     swapTeacherTitle: "Swap teacher — {name}",
-    // 🔴 TASK-624 — ✅ APPROVED by @Porter 2026-10-06 (no owner round; he lists it to the owner as a line he can veto): the approved group
+    // 🔴 TASK-624 — ✅ APPROVED by @Porter 2026-10-06 — log/2026-10-06.md:612 (no owner round; he lists it to the owner as a line he can veto): the approved group
     // string minus "of the group". Corrects a label that 624 makes FALSE — swapping an extra shows this above the picker, and the new
     // coach is not the primary. Was "New primary teacher" / "ครูหลักคนใหม่".
     swapTo: "New teacher",
@@ -591,7 +591,7 @@ const en = {
     coverRate: "{name}'s rate for this session",
     coverRateHint: "The covering coach is paid their own rate for this session. This series has none on file for them yet, so enter it here.",
     rateOptional: "Rate per session (optional)",
-    // 🔴 TASK-624 (1b) — ✅ covered by the owner's approval (Silver, 2026-10-06; COPY-DRAFT-teamB-week-to-10-11-2026-10-06.md §B).
+    // 🔴 TASK-624 (1b) — ✅ APPROVED by @Porter 2026-10-07 — COPY-REVIEW-2026-09-29.md:572-573 (the owner approved only the RULE, log/2026-10-06.md:228).
     // The group swap's approved pair (`booking.groupSwapRate` / `groupSwapRateHint`, TASK-634) with "group" → "series".
     swapRate: "{name}'s rate for this series (per session)",
     swapRateHint: "Leave this empty unless the swap is refused for a missing rate — that happens when this series has never paid this coach before.",
@@ -983,11 +983,11 @@ const en = {
     addNew: "Add new student “{name}”",
     searchHint: "Type to search for a student",
     parentPhone: "Parent phone (optional)",
-    // 🔴 TASK-662 — ✅ owner-approved 2026-10-05, verbatim (COPY-DRAFT-parent-phone-required-teamB-2026-10-04.md §1).
+    // 🔴 TASK-662 — ✅ APPROVED by the owner 2026-10-05 — COPY-DRAFT-parent-phone-required-teamB-2026-10-04.md:27-29 (strings :8-9, :11-12), verbatim.
     // The REQUIRED label for a NEW student on booking / course / voucher; the import keeps `parentPhone` above.
     parentPhoneRequired: "Parent phone",
     parentPhoneRequiredError: "A new student needs a parent phone, so the parent can see the classes in LINE.",
-    // 🔴 TASK-664 — ✅ owner-approved 2026-10-05, as drafted (COPY-DRAFT-no-household-visible-teamB-2026-10-05.md §1–2).
+    // 🔴 TASK-664 — ✅ APPROVED by the owner 2026-10-05 — COPY-DRAFT-no-household-visible-teamB-2026-10-05.md:30-35 (strings :9-10, :18-24), as drafted.
     // Quiet and factual by design (Porter): the reason is said once, in the People filter's explainer, never on every row.
     noParentTag: "No parent linked",
     noParentFilter: "Students with no parent linked",
@@ -1236,7 +1236,7 @@ const en = {
     endReasonLine: "Cancel reason: {reason}",
     endedPlanHeader: "Cancelled — {reason}",
     endedNoWrites: "This course was cancelled, so sessions can no longer be added or changed.",
-    // 🔴 TASK-670 (5a) — ✅ owner-APPROVED 2026-10-06, verbatim, no DRAFT marker. `endedNoWrites` above stays for a cancelled course.
+    // 🔴 TASK-670 (5a) — ✅ APPROVED by the owner 2026-10-06 — log/2026-10-06.md:224-225 ("1-4 ตามแนะนำ"), strings in SIZING-teamB-next-round-pile-2026-10-05.md:94-95; verbatim, no DRAFT marker. `endedNoWrites` above stays for a cancelled course.
     endedCompleted: "This course is complete, so sessions can no longer be added or changed.",
     endedExpired: "This course has expired, so sessions can no longer be added or changed.",
     droppedNoWrites: "This course is paused — resume it to change the schedule.",
@@ -1681,7 +1681,7 @@ const en = {
     archivedBadge: "archived",
     restore: "Restore",
     restoredOk: "{name} restored",
-    // 🔴 TASK-669 — ✅ owner-APPROVED 2026-10-06, all 10 as drafted (COPY-DRAFT-teamB-week-to-10-11-2026-10-06.md §C). Reused, not new:
+    // 🔴 TASK-669 — ✅ APPROVED by the owner 2026-10-06 — COPY-REVIEW-2026-09-29.md:496-497, strings in COPY-DRAFT-teamB-week-to-10-11-2026-10-06.md:30-39; all 10 as drafted. Reused, not new:
     // the 5-per-family cap and the archived-family refusals (the server's own sentences, shown as sent).
     linkParent: "Link a parent",
     linkParentSearch: "Find the family (name or phone)",
@@ -1693,8 +1693,8 @@ const en = {
     linkParentIrreversible: "This link can't be undone from the screen.",
     linkParentConfirm: "Link",
     linkParentDone: "{child} is now linked to {parent}.",
-    // 🔴 TASK-698 — ✅ APPROVED: the TH is the owner's (COPY-REVIEW-2026-09-29.md:504 via @Porter 2026-10-07) and the EN is Porter's carried translation, as drafted
-    // (2026-10-07). 🚫 Not "improved": an approved string improved on the way in is an unapproved string.
+    // 🔴 TASK-698 — ✅ APPROVED — TH by the owner 2026-10-07, COPY-REVIEW-2026-09-29.md:504; EN by @Porter 2026-10-07 (a carried translation, not an owner round), COPY-REVIEW-2026-09-29.md:511, as drafted.
+    // 🚫 Not "improved": an approved string improved on the way in is an unapproved string.
     // Said first, in the same red box, whenever the family was created IN the link dialog and ANY refusal then shows (the dry run or the link):
     // a fading toast was the only other evidence the family exists, and an admin who missed it retried and made a SECOND family.
     linkCreatedButNotLinked: "The family with phone {phone} was created, but {child} is not linked yet.",
@@ -2648,9 +2648,9 @@ const th: typeof en = {
     swapPrimary: "สลับ",
     removeTeacher: "เอาออก",
     removeTeacherTitle: "เอา {name} ออกจากชุดนี้?",
-    // 🔴 TASK-624 — ✅ owner-APPROVED 2026-10-06 (see the EN block).
+    // 🔴 TASK-624 — ✅ APPROVED by the owner 2026-10-06 — log/2026-10-06.md:224,227 ("1-4 ตามแนะนำ"; the title is named in prose there as `สลับครู — {ชื่อครูที่เลือก}`).
     swapTeacherTitle: "สลับครู — {name}",
-    // 🔴 TASK-624 — ✅ APPROVED by @Porter 2026-10-06 (see the EN block). Was "ครูหลักคนใหม่".
+    // 🔴 TASK-624 — ✅ APPROVED by @Porter 2026-10-06 — log/2026-10-06.md:612 (see the EN block). Was "ครูหลักคนใหม่".
     swapTo: "ครูคนใหม่",
     addTeacher: "เพิ่มครู",
     // 📝 DRAFT (Fern, TASK-577) — ค่าสอนของครูที่มาสอนแทน (บังคับ)
@@ -2659,7 +2659,7 @@ const th: typeof en = {
     coverRate: "ค่าสอนของ {name} สำหรับคาบนี้",
     coverRateHint: "ครูที่มาสอนแทนจะได้ค่าสอนของตัวเอง ตารางนี้ยังไม่มีค่าสอนของครูท่านนี้ จึงต้องระบุที่นี่",
     rateOptional: "ค่าสอนต่อคาบ (ไม่บังคับ)",
-    // 🔴 TASK-624 (1b) — ✅ covered by the owner's approval (see the EN block).
+    // 🔴 TASK-624 (1b) — ✅ APPROVED by @Porter 2026-10-07 — COPY-REVIEW-2026-09-29.md:572-573 (the owner approved only the RULE, log/2026-10-06.md:228; see the EN block).
     swapRate: "ค่าสอนของ {name} สำหรับตารางนี้ (ต่อคาบ)",
     swapRateHint: "ไม่ต้องกรอก ยกเว้นระบบปฏิเสธเพราะไม่มีค่าสอน — จะเกิดเมื่อตารางนี้ยังไม่เคยจ่ายค่าสอนให้ครูคนนี้",
     fromDate: "ตั้งแต่วันที่",
@@ -2980,10 +2980,10 @@ const th: typeof en = {
     addNew: "เพิ่มนักเรียนใหม่ “{name}”",
     searchHint: "พิมพ์เพื่อค้นหานักเรียน",
     parentPhone: "เบอร์ผู้ปกครอง (ถ้ามี)",
-    // 🔴 TASK-662 — ✅ owner-approved 2026-10-05 (see the EN block).
+    // 🔴 TASK-662 — ✅ APPROVED by the owner 2026-10-05 — COPY-DRAFT-parent-phone-required-teamB-2026-10-04.md:27-29 (see the EN block).
     parentPhoneRequired: "เบอร์ผู้ปกครอง",
     parentPhoneRequiredError: "นักเรียนใหม่ต้องมีเบอร์ผู้ปกครอง เพื่อให้ผู้ปกครองเห็นคลาสของน้องใน LINE ได้",
-    // 🔴 TASK-664 — ✅ owner-approved 2026-10-05 (see the EN block).
+    // 🔴 TASK-664 — ✅ APPROVED by the owner 2026-10-05 — COPY-DRAFT-no-household-visible-teamB-2026-10-05.md:30-35 (see the EN block).
     noParentTag: "ยังไม่มีผู้ปกครอง",
     noParentFilter: "นักเรียนที่ยังไม่มีผู้ปกครอง",
     noParentExplainer: "นักเรียนในรายการนี้ ผู้ปกครองจะไม่เห็นคลาสใน LINE จนกว่าจะผูกกับผู้ปกครอง",
@@ -3209,7 +3209,7 @@ const th: typeof en = {
     endReasonLine: "เหตุผลที่ยกเลิก: {reason}",
     endedPlanHeader: "ยกเลิกแล้ว — {reason}",
     endedNoWrites: "คอร์สนี้ถูกยกเลิกแล้ว จึงเพิ่มหรือแก้คาบไม่ได้",
-    // 🔴 TASK-670 (5a) — ✅ owner-APPROVED 2026-10-06 (see the EN block).
+    // 🔴 TASK-670 (5a) — ✅ APPROVED by the owner 2026-10-06 — log/2026-10-06.md:224-225 ("1-4 ตามแนะนำ"), strings in SIZING-teamB-next-round-pile-2026-10-05.md:94-95 (see the EN block).
     endedCompleted: "คอร์สนี้เรียนครบแล้ว จึงเพิ่มหรือแก้คาบไม่ได้",
     endedExpired: "คอร์สนี้หมดอายุแล้ว จึงเพิ่มหรือแก้คาบไม่ได้",
     droppedNoWrites: "คอร์สนี้กำลังพักอยู่ — กดกลับมาเรียนก่อนจึงจะแก้ตารางได้",
@@ -3618,7 +3618,7 @@ const th: typeof en = {
     archivedBadge: "เก็บแล้ว",
     restore: "คืนสถานะ",
     restoredOk: "คืนสถานะ {name} แล้ว",
-    // 🔴 TASK-669 — ✅ owner-APPROVED 2026-10-06 (see the EN block).
+    // 🔴 TASK-669 — ✅ APPROVED by the owner 2026-10-06 — COPY-REVIEW-2026-09-29.md:496-497, strings in COPY-DRAFT-teamB-week-to-10-11-2026-10-06.md:30-39 (see the EN block).
     linkParent: "ผูกผู้ปกครอง",
     linkParentSearch: "ค้นหาผู้ปกครอง (ชื่อหรือเบอร์)",
     linkParentConfirmTitle: "ผูก {child} กับ {parent}?",
@@ -3629,7 +3629,7 @@ const th: typeof en = {
     linkParentIrreversible: "การผูกนี้ย้อนกลับจากหน้าจอไม่ได้",
     linkParentConfirm: "ผูกผู้ปกครอง",
     linkParentDone: "ผูก {child} กับ {parent} แล้ว",
-    // 🔴 TASK-698 — ✅ owner-APPROVED TH, verbatim (COPY-REVIEW-2026-09-29.md:504 via @Porter 2026-10-07).
+    // 🔴 TASK-698 — ✅ APPROVED by the owner 2026-10-07 — COPY-REVIEW-2026-09-29.md:504, verbatim.
     linkCreatedButNotLinked: "สร้างครอบครัวเบอร์ {phone} แล้ว แต่ยังผูก {child} ไม่สำเร็จ",
     archiveParent: "เก็บครอบครัว",
     archiveParentTitle: "เก็บ {name}?",

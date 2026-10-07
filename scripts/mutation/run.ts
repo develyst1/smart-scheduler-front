@@ -1,13 +1,19 @@
 // The driver: measure a baseline, then for each mutation — apply, run, restore, check. It decides nothing itself; every
 // verdict comes from `verdict.ts`. See README.md -> THE VERDICT RULE.
 //
-//   bun run mutation:run -- --tests "src/lib/a.test.ts src/b.dom.test.tsx" --mutations scripts/mutation/example.json
+//   bun run mutation:run -- --mutations scripts/mutation/task-NNN.json                     (the set carries its own test list)
+//   bun run mutation:run -- --tests "src/lib/a.test.ts src/b.dom.test.tsx" --mutations scripts/mutation/example.json   (--tests WINS)
+//
+// 🔴 TASK-637 (ported from the back repo's TASK-627): a set is a bare array (as before) OR `{ tests, mutations }`. 🔑 The object form is the one
+// to write: a set whose test list lives only in somebody's shell is a number nobody can re-measure. A set with NO list anywhere is REFUSED —
+// a guessed list produces a verdict about something nobody chose. A listed file that does not exist is refused too: it would run as
+// "nothing to test" and read as a clean result. The verdict rule (verdict.ts, README) is untouched: this widens the INPUT only.
 //
 // Each mutation's files are restored from memory and checked byte-for-byte, and the whole tree's checksum is compared before
 // and after the entire pass. A restore that fails exits non-zero and says which file.
 
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, runAndClassify, type Verdict } from "./verdict";
 
@@ -24,6 +30,11 @@ interface Mutation {
   id: string;
   what: string;
   files: FileMutation[];
+}
+/** `tests` may be one space-separated string (as on the command line) or an array of paths. */
+interface MutationSet {
+  tests?: string | string[];
+  mutations: Mutation[];
 }
 
 const ROOT = resolve(import.meta.dirname, "..", "..");
@@ -55,15 +66,27 @@ const toFileEol = (text: string, source: string): string =>
   source.includes("\r\n") ? text.split("\r\n").join("\n").split("\n").join("\r\n") : text;
 
 const main = (): void => {
-  const tests = (arg("tests") ?? "").trim().split(/\s+/).filter(Boolean);
   const mutationsPath = arg("mutations");
   const timeoutMs = Number(arg("timeout") ?? 600_000);
-  if (tests.length === 0 || !mutationsPath) {
-    console.error('usage: --tests "<test files>" --mutations <file.json> [--baseline N] [--timeout ms]');
+  if (!mutationsPath) {
+    console.error('usage: --mutations <file.json> [--tests "<test files>"] [--baseline N] [--timeout ms]');
     process.exit(2);
   }
 
-  const mutations = JSON.parse(readFileSync(resolve(ROOT, mutationsPath), "utf8")) as Mutation[];
+  const parsed = JSON.parse(readFileSync(resolve(ROOT, mutationsPath), "utf8")) as Mutation[] | MutationSet;
+  const mutations: Mutation[] = Array.isArray(parsed) ? parsed : parsed.mutations;
+  const inSet = Array.isArray(parsed) ? undefined : parsed.tests;
+  const listed = arg("tests") ?? (Array.isArray(inSet) ? inSet.join(" ") : inSet) ?? "";
+  const tests = listed.trim().split(/\s+/).filter(Boolean);
+  if (tests.length === 0) {
+    console.error(`NO TEST LIST: pass --tests "<files>", or give the set a "tests" field (${mutationsPath}). A guessed list is a verdict about something nobody chose — nothing was run.`);
+    process.exit(2);
+  }
+  const missing = tests.filter((t) => !existsSync(resolve(ROOT, t)));
+  if (missing.length > 0) {
+    console.error(`TEST FILE NOT FOUND: ${missing.join(", ")} — a list naming a file that is not there would run as "nothing to test". Nothing was run.`);
+    process.exit(2);
+  }
   const treeBefore = treeChecksum();
   console.log(`TREE ${treeBefore}`);
   console.log(`TESTS ${tests.join(" ")}`);

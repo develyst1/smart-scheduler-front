@@ -1,227 +1,270 @@
-[
-  {
-    "id": "Q1",
-    "what": "🔴 the card's \"x of y\" is RESTORED: the validity line goes back to *Used {used}/{quota} · extendable to week {week}*",
-    "files": [
-      {
-        "file": "src/lib/i18n/dictionaries.ts",
-        "edits": [{ "from": "    usage: \"Valid until week {week}\",", "to": "    usage: \"Used {used}/{quota} · extendable to week {week}\"," }]
-      }
-    ]
-  },
-  {
-    "id": "Q2",
-    "what": "🔴 the UNLOCK control is restored on the course card (its icon comes back with it)",
-    "files": [
-      {
-        "file": "src/components/partials/Bookings/CoursePackagePanel.tsx",
-        "edits": [{ "from": "import { GraduationCap, Search,", "to": "import { LockKeyholeOpen, GraduationCap, Search," }]
-      }
-    ]
-  },
-  {
-    "id": "Q3",
-    "what": "🔴 a leave claim says it USES A LEAVE again (the REQ-073 sentence is back)",
-    "files": [
-      {
-        "file": "src/lib/i18n/dictionaries.ts",
-        "edits": [
-          {
-            "from": "    leaveMsg: \"This session is recorded as leave and a make-up session is added in the next free week. The course's end date does not change.\",",
-            "to": "    leaveMsg: \"This uses one of the course's leaves and adds a make-up session at the end.\","
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "Q4",
-    "what": "🔴 the import form's PREVIEW stops sending `leaveQuota` — the field it still needs (it sets the expiry) is removed",
-    "files": [
-      {
-        "file": "src/components/partials/Bookings/ImportBalanceModal.tsx",
-        "edits": [
-          {
-            "from": "    void previewCourseImport({\n      size,\n      leaveQuota: offCard ? leaveQuota : undefined,\n",
-            "to": "    void previewCourseImport({\n      size,\n"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "Q5",
-    "what": "🔴 the import form's COMMIT stops sending `leaveQuota` (the other of the two sites)",
-    "files": [
-      {
-        "file": "src/components/partials/Bookings/ImportBalanceModal.tsx",
-        "edits": [
-          {
-            "from": "          subjectId,\n          size,\n          leaveQuota: offCard ? leaveQuota : undefined,\n",
-            "to": "          subjectId,\n          size,\n"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "Q6",
-    "what": "🔴 the `locked` toast is restored in the leave handler",
-    "files": [
-      {
-        "file": "src/components/partials/Calendar/Modal/BookingModal.tsx",
-        "edits": [
-          {
-            "from": "      if (res.extended) {",
-            "to": "      if (false) {\n        notify({ title: t(\"booking.leaveLockedTitle\"), color: \"danger\" });\n      } else if (res.extended) {"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "Q7",
-    "what": "🔴 the plan editor's \"Leave {used}/{quota}\" summary is restored (a key REQ-112 deleted — it would render the raw key)",
-    "files": [
-      {
-        "file": "src/components/partials/Bookings/PlanModal.tsx",
-        "edits": [
-          {
-            "from": "              {/* 🔴 TASK-658 (REQ-112) — the \"Leave {used}/{quota}\" summary is GONE: there is no allowance to be \"x of\". */}\n",
-            "to": "              <Text fz=\"sm\" c=\"dimmed\">· {t(\"plan.leave\")}</Text>\n"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "Q8",
-    "what": "⚠️ the course-list hint about the quota and the lock is restored",
-    "files": [
-      {
-        "file": "src/components/partials/Bookings/BookingsContent.tsx",
-        "edits": [
-          {
-            "from": "          <Group justify=\"flex-end\" align=\"flex-start\" mb=\"md\" wrap=\"wrap\" gap=\"sm\">\n",
-            "to": "          <Group justify=\"space-between\" align=\"flex-start\" mb=\"md\" wrap=\"wrap\" gap=\"sm\">\n            <p className=\"max-w-2xl text-sm text-muted-500\">{t(\"bookings.coursesHint\")}</p>\n"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "Q9",
-    "what": "🔴 the Undo forecast says it will RETURN THE LEAVE TO THE QUOTA again",
-    "files": [
-      {
-        "file": "src/lib/scheduler/undo-preview.ts",
-        "edits": [
-          {
-            "from": "  if (p.makeupCancelled) out.push(",
-            "to": "  if (p.leaveRefunded) out.push({ key: \"undo.previewLeaveBack\" });\n  if (p.makeupCancelled) out.push("
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "Q10",
-    "what": "🔴 the expiry-edit preview renders the leave-room line again (a quota relic that measures leaves the family no longer has)",
-    "files": [
-      {
-        "file": "src/components/partials/Bookings/EditExpiryDialog.tsx",
-        "edits": [
-          {
-            "from": "        <Text fz=\"xs\" c=\"dimmed\">\n          {t(\"expiry.previewNotSaved\")}",
-            "to": "        {(preview as unknown as { leaveRoom?: { remainingLeave: number } }).leaveRoom?.remainingLeave ? <Text fz=\"sm\">{t(\"expiry.previewLeaveOk\")}</Text> : null}\n        <Text fz=\"xs\" c=\"dimmed\">\n          {t(\"expiry.previewNotSaved\")}"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "Q11",
-    "what": "⚠️ the owner's D6 choice is overwritten with the draft it replaced (*Extendable to week*), not *Valid until week*",
-    "files": [
-      {
-        "file": "src/lib/i18n/dictionaries.ts",
-        "edits": [{ "from": "    usage: \"Valid until week {week}\",", "to": "    usage: \"Extendable to week {week}\"," }]
-      }
-    ]
-  },
-  {
-    "id": "Q12",
-    "what": "🔴 D3 stops saying the end date MOVES — a creation-declared leave would read like an ordinary one",
-    "files": [
-      {
-        "file": "src/lib/i18n/dictionaries.ts",
-        "edits": [
-          {
-            "from": "so a make-up session is added and the course's end date moves one week later. The coach and the admins are told.",
-            "to": "so a make-up session is added. The coach and the admins are told."
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "Q13",
-    "what": "⚠️ a mapper-carried LOCK fact comes back on a booking row",
-    "files": [
-      {
-        "file": "src/lib/api/mappers.ts",
-        "edits": [{ "from": "    courseId: dto.course?.id,\n", "to": "    courseId: dto.course?.id,\n    courseLeaveLocked: false,\n" }]
-      }
-    ]
-  },
-  {
-    "id": "Q14",
-    "what": "🔴 a removed identifier (`canTakeLeave`) is re-exported — the front's own rule mirror grows a lock again",
-    "files": [
-      {
-        "file": "src/lib/scheduler/leave.ts",
-        "edits": [{ "from": "export function toCourseView(", "to": "export const canTakeLeave = () => true;\nexport function toCourseView(" }]
-      }
-    ]
-  },
-  {
-    "id": "Q15",
-    "what": "🔴 the ban goes BLIND in Thai (the regex matches nothing)",
-    "files": [
-      {
-        "file": "src/lib/i18n/leave-copy-no-quota.test.ts",
-        "edits": [
-          {
-            "from": "  th: /โควตา|ปลดล็อก|(?<!บ)(?<!แคตตา)ล็อก|\\{quota\\}|\\{used\\}\\s*\\/\\s*\\{quota\\}/,",
-            "to": "  th: /(?!)/,"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "Q16",
-    "what": "⚠️ the ban CRIES WOLF on *catalogue* (แคตตาล็อก) — it would be switched off within a week",
-    "files": [
-      {
-        "file": "src/lib/i18n/leave-copy-no-quota.test.ts",
-        "edits": [{ "from": "(?<!บ)(?<!แคตตา)ล็อก", "to": "(?<!บ)ล็อก" }]
-      }
-    ]
-  },
-  {
-    "id": "Q17",
-    "what": "⚠️ the allowlist quietly GROWS by one — the way a ban like this dies",
-    "files": [
-      {
-        "file": "src/lib/i18n/leave-copy-no-quota.test.ts",
-        "edits": [
-          {
-            "from": "  \"bookings.vouchersHint\": \"the same sentence as",
-            "to": "  \"course.usage\": \"a sneaky extra entry whose reason is long enough to pass the reason check\",\n  \"bookings.vouchersHint\": \"the same sentence as"
-          }
-        ]
-      }
-    ]
-  }
-]
+{
+  "_why": "TASK-637 follow-up (2026-10-07): the list was RECORDED in the TASK file at the time of the run and is folded in unchanged — not reconstructed. Source: TASK-658 'Mutation test list' (eight files, each mutation assigned to the file holding its pin).",
+  "tests": [
+    "src/lib/i18n/leave-copy-no-quota.test.ts",
+    "src/lib/i18n/approved-copy.test.ts",
+    "src/lib/scheduler/leave-claim.test.ts",
+    "src/lib/scheduler/undo-preview.test.ts",
+    "src/lib/scheduler/undo-control.test.ts",
+    "src/components/common/undo-control.dom.test.tsx",
+    "src/lib/scheduler/expiry-preview.test.ts",
+    "src/lib/api/mapper-drops.test.ts"
+  ],
+  "mutations": [
+    {
+      "id": "Q1",
+      "what": "🔴 the card's \"x of y\" is RESTORED: the validity line goes back to *Used {used}/{quota} · extendable to week {week}*",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "    usage: \"Valid until week {week}\",",
+              "to": "    usage: \"Used {used}/{quota} · extendable to week {week}\","
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q2",
+      "what": "🔴 the UNLOCK control is restored on the course card (its icon comes back with it)",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/CoursePackagePanel.tsx",
+          "edits": [
+            {
+              "from": "import { GraduationCap, Search,",
+              "to": "import { LockKeyholeOpen, GraduationCap, Search,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q3",
+      "what": "🔴 a leave claim says it USES A LEAVE again (the REQ-073 sentence is back)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "    leaveMsg: \"This session is recorded as leave and a make-up session is added in the next free week. The course's end date does not change.\",",
+              "to": "    leaveMsg: \"This uses one of the course's leaves and adds a make-up session at the end.\","
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q4",
+      "what": "🔴 the import form's PREVIEW stops sending `leaveQuota` — the field it still needs (it sets the expiry) is removed",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/ImportBalanceModal.tsx",
+          "edits": [
+            {
+              "from": "    void previewCourseImport({\n      size,\n      leaveQuota: offCard ? leaveQuota : undefined,\n",
+              "to": "    void previewCourseImport({\n      size,\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q5",
+      "what": "🔴 the import form's COMMIT stops sending `leaveQuota` (the other of the two sites)",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/ImportBalanceModal.tsx",
+          "edits": [
+            {
+              "from": "          subjectId,\n          size,\n          leaveQuota: offCard ? leaveQuota : undefined,\n",
+              "to": "          subjectId,\n          size,\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q6",
+      "what": "🔴 the `locked` toast is restored in the leave handler",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/BookingModal.tsx",
+          "edits": [
+            {
+              "from": "      if (res.extended) {",
+              "to": "      if (false) {\n        notify({ title: t(\"booking.leaveLockedTitle\"), color: \"danger\" });\n      } else if (res.extended) {"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q7",
+      "what": "🔴 the plan editor's \"Leave {used}/{quota}\" summary is restored (a key REQ-112 deleted — it would render the raw key)",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/PlanModal.tsx",
+          "edits": [
+            {
+              "from": "              {/* 🔴 TASK-658 (REQ-112) — the \"Leave {used}/{quota}\" summary is GONE: there is no allowance to be \"x of\". */}\n",
+              "to": "              <Text fz=\"sm\" c=\"dimmed\">· {t(\"plan.leave\")}</Text>\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q8",
+      "what": "⚠️ the course-list hint about the quota and the lock is restored",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/BookingsContent.tsx",
+          "edits": [
+            {
+              "from": "          <Group justify=\"flex-end\" align=\"flex-start\" mb=\"md\" wrap=\"wrap\" gap=\"sm\">\n",
+              "to": "          <Group justify=\"space-between\" align=\"flex-start\" mb=\"md\" wrap=\"wrap\" gap=\"sm\">\n            <p className=\"max-w-2xl text-sm text-muted-500\">{t(\"bookings.coursesHint\")}</p>\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q9",
+      "what": "🔴 the Undo forecast says it will RETURN THE LEAVE TO THE QUOTA again",
+      "files": [
+        {
+          "file": "src/lib/scheduler/undo-preview.ts",
+          "edits": [
+            {
+              "from": "  if (p.makeupCancelled) out.push(",
+              "to": "  if (p.leaveRefunded) out.push({ key: \"undo.previewLeaveBack\" });\n  if (p.makeupCancelled) out.push("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q10",
+      "what": "🔴 the expiry-edit preview renders the leave-room line again (a quota relic that measures leaves the family no longer has)",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/EditExpiryDialog.tsx",
+          "edits": [
+            {
+              "from": "        <Text fz=\"xs\" c=\"dimmed\">\n          {t(\"expiry.previewNotSaved\")}",
+              "to": "        {(preview as unknown as { leaveRoom?: { remainingLeave: number } }).leaveRoom?.remainingLeave ? <Text fz=\"sm\">{t(\"expiry.previewLeaveOk\")}</Text> : null}\n        <Text fz=\"xs\" c=\"dimmed\">\n          {t(\"expiry.previewNotSaved\")}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q11",
+      "what": "⚠️ the owner's D6 choice is overwritten with the draft it replaced (*Extendable to week*), not *Valid until week*",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "    usage: \"Valid until week {week}\",",
+              "to": "    usage: \"Extendable to week {week}\","
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q12",
+      "what": "🔴 D3 stops saying the end date MOVES — a creation-declared leave would read like an ordinary one",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "so a make-up session is added and the course's end date moves one week later. The coach and the admins are told.",
+              "to": "so a make-up session is added. The coach and the admins are told."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q13",
+      "what": "⚠️ a mapper-carried LOCK fact comes back on a booking row",
+      "files": [
+        {
+          "file": "src/lib/api/mappers.ts",
+          "edits": [
+            {
+              "from": "    courseId: dto.course?.id,\n",
+              "to": "    courseId: dto.course?.id,\n    courseLeaveLocked: false,\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q14",
+      "what": "🔴 a removed identifier (`canTakeLeave`) is re-exported — the front's own rule mirror grows a lock again",
+      "files": [
+        {
+          "file": "src/lib/scheduler/leave.ts",
+          "edits": [
+            {
+              "from": "export function toCourseView(",
+              "to": "export const canTakeLeave = () => true;\nexport function toCourseView("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q15",
+      "what": "🔴 the ban goes BLIND in Thai (the regex matches nothing)",
+      "files": [
+        {
+          "file": "src/lib/i18n/leave-copy-no-quota.test.ts",
+          "edits": [
+            {
+              "from": "  th: /โควตา|ปลดล็อก|(?<!บ)(?<!แคตตา)ล็อก|\\{quota\\}|\\{used\\}\\s*\\/\\s*\\{quota\\}/,",
+              "to": "  th: /(?!)/,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q16",
+      "what": "⚠️ the ban CRIES WOLF on *catalogue* (แคตตาล็อก) — it would be switched off within a week",
+      "files": [
+        {
+          "file": "src/lib/i18n/leave-copy-no-quota.test.ts",
+          "edits": [
+            {
+              "from": "(?<!บ)(?<!แคตตา)ล็อก",
+              "to": "(?<!บ)ล็อก"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q17",
+      "what": "⚠️ the allowlist quietly GROWS by one — the way a ban like this dies",
+      "files": [
+        {
+          "file": "src/lib/i18n/leave-copy-no-quota.test.ts",
+          "edits": [
+            {
+              "from": "  \"bookings.vouchersHint\": \"the same sentence as",
+              "to": "  \"course.usage\": \"a sneaky extra entry whose reason is long enough to pass the reason check\",\n  \"bookings.vouchersHint\": \"the same sentence as"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
