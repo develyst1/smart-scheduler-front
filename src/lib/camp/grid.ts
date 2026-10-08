@@ -129,24 +129,45 @@ export const dayRates = (day: Pick<CampDayFacts, "teacherIds" | "teacherRates">)
 const teacherViewOf = (day: Pick<CampDayFacts, "teachers">, id: string): CampDayTeacherView | undefined => (day.teachers ?? []).find((x) => x.teacherId === id);
 
 /**
- * REQ-105 (TASK-454/457) — ONE coach's entry in the day PATCH's `teachers[]`.
+ * REQ-105 (TASK-454/457) → 🔴 **REQ-116 (TASK-707)** — ONE coach's entry in the day PATCH's `teachers[]`.
  *
- * 🔴 **A window is sent only when the admin CHANGED it.** The server resolves a coach on the day default to the day's
- * hours, so "his own 10:00" and "the day's 10:00" arrive identical and the FE cannot tell them apart — sending back
- * what was read would silently freeze every coach onto today's window, and a later week-level edit would not reach
- * them. Equal to what the server sent ⇒ omitted, which is exactly what NULL means. (A half-given window is sent as
- * typed: the server's 400 says so, and inventing the other half would be a value nobody chose.)
+ * 🔑 **The server treats a coach row as a WHOLE REPLACEMENT**: times omitted ⇒ NULL ⇒ "the day's window", and ONE time without the
+ * other ⇒ 400. So an entry is decided per COACH against the DAY, and is never half:
+ *  · the coach's window ≠ the (edited) day's window ⇒ send **BOTH** times — his own hours, kept or changed. Omitting an unchanged
+ *    own-hours coach would reset him to the day's window (a false clash naming another coach — or, when nothing clashes, a silent widening);
+ *  · equal to the day's window ⇒ send **NEITHER** (on the day's default: a later day-window change still reaches him);
+ *  · a coach the admin did NOT touch is judged by what the server sent: on the day's ORIGINAL window ⇒ on the default ⇒ neither (never frozen
+ *    onto today's hours); on his own window ⇒ both;
+ *  · a HALF-typed window (one box empty) is the admin's unfinished input: sent as typed, only if it differs — the server's 400 says so, and
+ *    inventing the other half would be a value nobody chose; a CLEARED window (both empty) ⇒ neither (back to the day's).
+ * `day` is the EDITED day's window (the admin may change the day's hours and a coach's in the same save); `server` carries the ORIGINAL day's.
  */
-export const teacherEntry = (server: Pick<CampDayFacts, "teachers" | "teacherRates">, edited: { teacherId: string; startTime?: string; endTime?: string; rateMinor?: number | null }): CampDayTeacher => {
+export const teacherEntry = (
+  server: Pick<CampDayFacts, "teachers" | "teacherRates" | "startTime" | "endTime">,
+  edited: { teacherId: string; startTime?: string; endTime?: string; rateMinor?: number | null },
+  day: { startTime: string; endTime: string },
+): CampDayTeacher => {
   const was = teacherViewOf(server, edited.teacherId);
-  const start = edited.startTime?.trim() ? hhmm(edited.startTime) : "";
-  const end = edited.endTime?.trim() ? hhmm(edited.endTime) : "";
+  const wasStart = was ? hhmm(was.startTime) : "";
+  const wasEnd = was ? hhmm(was.endTime) : "";
+  // `undefined` = the box was never touched ⇒ what the server sent; `""` = the admin cleared it.
+  const start = edited.startTime === undefined ? wasStart : edited.startTime.trim() ? hhmm(edited.startTime) : "";
+  const end = edited.endTime === undefined ? wasEnd : edited.endTime.trim() ? hhmm(edited.endTime) : "";
   const masked = server.teacherRates === null;
   const rateWas = was?.rateMinor ?? null;
+  let times: { startTime?: string; endTime?: string } = {};
+  if (start && end) {
+    const touched = start !== wasStart || end !== wasEnd;
+    const onDefault = !!was && wasStart === hhmm(server.startTime) && wasEnd === hhmm(server.endTime);
+    const equalsDay = touched ? start === hhmm(day.startTime) && end === hhmm(day.endTime) : onDefault;
+    if (!equalsDay) times = { startTime: start, endTime: end };
+  } else if (start || end) {
+    // half-typed: today's behaviour, unchanged
+    times = { ...(start && start !== wasStart ? { startTime: start } : {}), ...(end && end !== wasEnd ? { endTime: end } : {}) };
+  }
   return {
     teacherId: edited.teacherId,
-    ...(start && start !== (was ? hhmm(was.startTime) : "") ? { startTime: start } : {}),
-    ...(end && end !== (was ? hhmm(was.endTime) : "") ? { endTime: end } : {}),
+    ...times,
     ...(!masked && typeof edited.rateMinor === "number" && edited.rateMinor !== (rateWas ?? 0) ? { rateMinor: edited.rateMinor } : {}),
   };
 };
@@ -155,14 +176,17 @@ export const teacherEntry = (server: Pick<CampDayFacts, "teachers" | "teacherRat
  * `PATCH /camp/weeks/:id/days/:date` — only what differs from the server's day; unchanged ⇒ null (no call).
  * The roster now rides as `teachers: [...]` (TASK-454's shape) whenever the coach SET or any coach's window/rate
  * changed; 🚫 the retired `teacherIds`/`teacherRates` pair is never sent by this FE any more.
+ * 🔴 TASK-707 — an entry now carries a coach's own hours even when UNCHANGED (the roster rides as a whole replacement), so "did a coach
+ * change?" is no longer "does his entry have more than an id": each entry is compared with the entry the SAME coach would have produced
+ * untouched, and an untouched day still sends nothing.
  */
 export const dayPatch = (original: CampDayFacts, edited: CampDayFacts): CampDayPatch | null => {
   const rosterChanged = !sameSet(original.teacherIds, edited.teacherIds);
   const entries = edited.teacherIds.map((id) =>
-    teacherEntry(original, { teacherId: id, startTime: teacherViewOf(edited, id)?.startTime, endTime: teacherViewOf(edited, id)?.endTime, rateMinor: edited.teacherRates?.[id] }),
+    teacherEntry(original, { teacherId: id, startTime: teacherViewOf(edited, id)?.startTime, endTime: teacherViewOf(edited, id)?.endTime, rateMinor: edited.teacherRates?.[id] }, edited),
   );
-  // Something to say about a coach = an entry with more than his id, or the roster itself changed.
-  const teachersChanged = rosterChanged || entries.some((e) => Object.keys(e).length > 1);
+  const untouched = (id: string) => JSON.stringify(teacherEntry(original, { teacherId: id }, original));
+  const teachersChanged = rosterChanged || entries.some((e) => JSON.stringify(e) !== untouched(e.teacherId));
   const body: CampDayPatch = {
     ...(teachersChanged ? { teachers: entries } : {}),
     ...(hhmm(original.startTime) === hhmm(edited.startTime) ? {} : { startTime: hhmm(edited.startTime) }),

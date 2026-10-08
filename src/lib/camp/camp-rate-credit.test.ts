@@ -56,9 +56,11 @@ describe("§1 — dayRates / dayPatch, by value", () => {
     const o = day({ teachers: [{ teacherId: "t1", startTime: "10:00", endTime: "15:00" }, { teacherId: "t2", startTime: "10:00", endTime: "15:00" }], teacherRates: { t1: 0, t2: 0 } });
     // the admin re-picks the same hours the day already has ⇒ nothing rides (the coach stays on the day's default)
     expect(dayPatch(o, { ...o, teachers: [{ teacherId: "t1", startTime: "10:00", endTime: "15:00" }, { teacherId: "t2", startTime: "10:00", endTime: "15:00" }] })).toBeNull();
-    // a real change ⇒ only that coach, only the field he changed
+    // a real change ⇒ only that coach carries times — 🔻 TASK-707 (REQ-116), declared: this pin said "only the field he changed" and expected
+    // `{ startTime: "12:00" }`. That WAS the defect: the server replaces a coach row WHOLE, so a start without its end is a 400 ("set both
+    // times"). The coach's hours now ride as a pair. ✅ The claim — only the touched coach has anything to say, the other rides by id — is unchanged.
     expect(dayPatch(o, { ...o, teachers: [{ teacherId: "t1", startTime: "12:00", endTime: "15:00" }, { teacherId: "t2", startTime: "10:00", endTime: "15:00" }] })).toEqual({
-      teachers: [{ teacherId: "t1", startTime: "12:00" }, { teacherId: "t2" }],
+      teachers: [{ teacherId: "t1", startTime: "12:00", endTime: "15:00" }, { teacherId: "t2" }],
     });
     // cleared (blank) ⇒ omitted: back to the day's window, never a value nobody chose
     expect(dayPatch(o, { ...o, teachers: [{ teacherId: "t1", startTime: "", endTime: "" }, { teacherId: "t2", startTime: "10:00", endTime: "15:00" }] })).toBeNull();

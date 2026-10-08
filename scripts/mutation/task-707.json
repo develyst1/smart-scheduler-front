@@ -1,0 +1,35 @@
+{
+  "_why": "TASK-707 (REQ-116). The list is the new by-value file + the two existing camp files that pin dayPatch/teacherEntry. Written with the set, nothing reconstructed.",
+  "tests": [
+    "src/lib/camp/camp-day-whole-windows-task707.test.ts",
+    "src/lib/camp/camp-rate-credit.test.ts",
+    "src/lib/camp/grid.test.ts"
+  ],
+  "mutations": [
+    {
+      "id": "C1",
+      "what": "🔴 an untouched OWN-hours coach is sent WITHOUT times — the server resets him to the day's window (the false clash / the silent widening)",
+      "files": [{ "file": "src/lib/camp/grid.ts", "edits": [{ "from": "const onDefault = !!was && wasStart === hhmm(server.startTime) && wasEnd === hhmm(server.endTime);", "to": "const onDefault = true;" }] }]
+    },
+    {
+      "id": "C2",
+      "what": "🔴 only the CHANGED half is sent — the end equals the server's and is dropped: the 'set both times' 400",
+      "files": [{ "file": "src/lib/camp/grid.ts", "edits": [{ "from": "if (!equalsDay) times = { startTime: start, endTime: end };", "to": "if (!equalsDay) times = { ...(start !== wasStart ? { startTime: start } : {}), ...(end !== wasEnd ? { endTime: end } : {}) };" }] }]
+    },
+    {
+      "id": "C3",
+      "what": "🔴 a touched window is compared with the SERVER's day window instead of the EDITED day's",
+      "files": [{ "file": "src/lib/camp/grid.ts", "edits": [{ "from": "start === hhmm(day.startTime) && end === hhmm(day.endTime)", "to": "start === hhmm(server.startTime) && end === hhmm(server.endTime)" }] }]
+    },
+    {
+      "id": "C4",
+      "what": "🔴 a coach on the DEFAULT is sent with times — frozen onto today's hours, a later day-window change no longer reaches him",
+      "files": [{ "file": "src/lib/camp/grid.ts", "edits": [{ "from": "touched ? start === hhmm(day.startTime) && end === hhmm(day.endTime) : onDefault;", "to": "touched ? start === hhmm(day.startTime) && end === hhmm(day.endTime) : false;" }] }]
+    },
+    {
+      "id": "C5",
+      "what": "⚠️ the untouched-day check is lost: every own-hours coach counts as changed, so an untouched day sends a PATCH",
+      "files": [{ "file": "src/lib/camp/grid.ts", "edits": [{ "from": "entries.some((e) => JSON.stringify(e) !== untouched(e.teacherId))", "to": "entries.some((e) => Object.keys(e).length > 1)" }] }]
+    }
+  ]
+}

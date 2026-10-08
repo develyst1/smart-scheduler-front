@@ -70,7 +70,7 @@ export default function OpenWeekDialog({ opened, week, onClose }: { opened: bool
   const setRate = (date: string, teacherId: string, baht: number | "") =>
     setDays(rows.map((d) => (d.date === date ? { ...d, teacherRates: { ...(d.teacherRates ?? {}), [teacherId]: baht === "" ? 0 : bahtToMinor(baht) } } : d)));
   // REQ-105 (TASK-457) — a coach's OWN window on this day. Blank = "the day's window": the placeholder shows the day's
-  // hours, and `teacherEntry` omits an unchanged value, so a coach on the default is never frozen onto today's hours.
+  // hours. 🔻 TASK-707: `teacherEntry` decides per coach against the DAY's window — a coach on the default sends no times (never frozen onto today's hours), a coach with his own hours sends BOTH, never one.
   const setCoachWindow = (date: string, teacherId: string, patch: { startTime?: string; endTime?: string }) =>
     setDays(
       rows.map((d) =>
