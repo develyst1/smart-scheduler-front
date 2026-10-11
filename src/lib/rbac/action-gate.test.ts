@@ -27,6 +27,268 @@ const SITE_FILES = walk("src/components").concat(walk("src/app"));
 // every `"action:…"` literal at a site — the `can("…")` shape and the `can(isEdit ? "…" : "…")` shape alike
 const sites = SITE_FILES.flatMap((f) => [...codeOf(f).matchAll(/"(action:[a-z.-]+)"/g)].map((m) => ({ file: f.replace(/\\/g, "/"), key: m[1] })));
 const KEYS = [...ACTION_KEYS_SNAPSHOT] as string[];
+/** One entry per `"action:…"` literal at a site: `file → key`, sorted. A file with two literals appears twice. */
+const siteLine = (s: { file: string; key: string }) => `${s.file} → ${s.key}`;
+
+/**
+ * 🔻 **TASK-709 (F-012) — every count in this file is now the LIST it counted, so a change breaks ONE assertion and its diff NAMES what moved.**
+ * It replaced `sites.length === 110` and `new Set(files).size === 40` — one population counted at two levels, neither saying what it held; the
+ * site list below already carries each file, so a separate file list would make a gate in a new file break two assertions again. ✅ Nothing is
+ * loosened: each list must equal today's set EXACTLY (`toEqual`, never `toContain` / `>=`). 🔑 **When you add a gate, add its line here** — that
+ * is the whole job, and the diff of the failing run is the line to add.
+ * (TASK-696's named check — `LinkParentDialog` asking `people.parent-create` — is covered by the list itself.)
+ */
+const SITE_INVENTORY = [
+  "src/components/common/DiscountSection.tsx → action:sales.discount",
+  "src/components/common/UndoControl.tsx → action:calendar.undo",
+  "src/components/partials/Badges/BadgesContent.tsx → action:badges.type-create",
+  "src/components/partials/Badges/BadgesContent.tsx → action:badges.type-edit",
+  "src/components/partials/Badges/BadgesContent.tsx → action:badges.value-create",
+  "src/components/partials/Badges/BadgesContent.tsx → action:badges.value-edit",
+  "src/components/partials/Bookings/BookingsContent.tsx → action:bookings.course-create",
+  "src/components/partials/Bookings/BookingsContent.tsx → action:bookings.course-import",
+  "src/components/partials/Bookings/BookingsContent.tsx → action:bookings.voucher-create",
+  "src/components/partials/Bookings/BookingsContent.tsx → action:bookings.voucher-import",
+  "src/components/partials/Bookings/BookingsContent.tsx → action:calendar.rental-sale",
+  "src/components/partials/Bookings/BookingsTable.tsx → action:bookings.bulk-confirm",
+  "src/components/partials/Bookings/CoursePackagePanel.tsx → action:bookings.coach-rate",
+  "src/components/partials/Bookings/CoursePackagePanel.tsx → action:bookings.course-edit",
+  "src/components/partials/Bookings/CoursePackagePanel.tsx → action:bookings.course-expiry",
+  "src/components/partials/Bookings/CoursePackagePanel.tsx → action:bookings.course-rental",
+  "src/components/partials/Bookings/CreateCourseModal.tsx → action:bookings.course-create",
+  "src/components/partials/Bookings/CreatePlanFlow.tsx → action:bookings.course-create",
+  "src/components/partials/Bookings/CreateVoucherModal.tsx → action:bookings.voucher-create",
+  "src/components/partials/Bookings/DropResumeDialog.tsx → action:bookings.course-drop",
+  "src/components/partials/Bookings/EditExpiryDialog.tsx → action:bookings.course-expiry",
+  "src/components/partials/Bookings/EndCourseDialog.tsx → action:bookings.course-cancel",
+  "src/components/partials/Bookings/ImportBalanceModal.tsx → action:bookings.course-import",
+  "src/components/partials/Bookings/ImportBalanceModal.tsx → action:bookings.voucher-import",
+  "src/components/partials/Bookings/PlanModal.tsx → action:bookings.course-cancel",
+  "src/components/partials/Bookings/PlanModal.tsx → action:bookings.course-confirm",
+  "src/components/partials/Bookings/PlanModal.tsx → action:bookings.course-drop",
+  "src/components/partials/Bookings/PlanModal.tsx → action:bookings.course-extra-session",
+  "src/components/partials/Bookings/PlanModal.tsx → action:bookings.course-plan",
+  "src/components/partials/Bookings/PlanModal.tsx → action:calendar.booking-edit",
+  "src/components/partials/Bookings/PlanModal.tsx → action:calendar.note",
+  "src/components/partials/Bookings/PlanModal.tsx → action:calendar.status",
+  "src/components/partials/Bookings/VoucherPanel.tsx → action:bookings.course-cancel",
+  "src/components/partials/Bookings/VoucherPanel.tsx → action:bookings.course-expiry",
+  "src/components/partials/Calendar/CalendarContent.tsx → action:calendar.teacher-leave",
+  "src/components/partials/Calendar/CalendarGrid.tsx → action:calendar.book",
+  "src/components/partials/Calendar/CalendarWeekGrid.tsx → action:calendar.book",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:bookings.course-create",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.badges",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.book",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.book",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.book",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.booking-edit",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.booking-edit",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.booking-edit",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.booking-edit",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.group-series",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.leave-override",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.other-series",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.pause",
+  "src/components/partials/Calendar/Modal/BookingModal.tsx → action:calendar.status",
+  "src/components/partials/Calendar/Modal/CampBlockPanel.tsx → action:camp.week-open",
+  "src/components/partials/Calendar/Modal/CancelBookingDialog.tsx → action:calendar.status",
+  "src/components/partials/Calendar/Modal/ClashResolveBox.tsx → action:calendar.booking-edit",
+  "src/components/partials/Calendar/Modal/RentalSection.tsx → action:calendar.rental",
+  "src/components/partials/Camp/CampCardModal.tsx → action:camp.redeem",
+  "src/components/partials/Camp/CampCardModal.tsx → action:camp.sell",
+  "src/components/partials/Camp/CampContent.tsx → action:camp.week-open",
+  "src/components/partials/Camp/CampContent.tsx → action:camp.week-open",
+  "src/components/partials/Camp/CampContent.tsx → action:camp.week-open",
+  "src/components/partials/Camp/CampContent.tsx → action:camp.week-open",
+  "src/components/partials/Camp/WeekRoster.tsx → action:camp.day-mark",
+  "src/components/partials/Camp/WeekRoster.tsx → action:camp.redeem",
+  "src/components/partials/Camp/WeekRoster.tsx → action:camp.sell",
+  "src/components/partials/Camp/WeekRoster.tsx → action:camp.week-open",
+  "src/components/partials/LinkRequests/LinkRequestsContent.tsx → action:link-requests.decide",
+  "src/components/partials/LinkRequests/LinkRequestsContent.tsx → action:link-requests.unlink",
+  "src/components/partials/OtherSeries/OtherSeriesModal.tsx → action:bookings.course-confirm",
+  "src/components/partials/OtherSeries/OtherSeriesModal.tsx → action:calendar.booking-edit",
+  "src/components/partials/OtherSeries/OtherSeriesModal.tsx → action:calendar.booking-edit",
+  "src/components/partials/OtherSeries/OtherSeriesModal.tsx → action:calendar.group-series",
+  "src/components/partials/OtherSeries/OtherSeriesModal.tsx → action:calendar.other-cancel-all",
+  "src/components/partials/OtherSeries/OtherSeriesModal.tsx → action:calendar.other-cancel-all",
+  "src/components/partials/OtherSeries/OtherSeriesModal.tsx → action:calendar.other-series",
+  "src/components/partials/OtherSeries/OtherSeriesModal.tsx → action:calendar.status",
+  "src/components/partials/People/LinkParentDialog.tsx → action:people.parent-create",
+  "src/components/partials/People/ParentFormModal.tsx → action:people.parent-create",
+  "src/components/partials/People/ParentFormModal.tsx → action:people.parent-edit",
+  "src/components/partials/People/PeopleContent.tsx → action:people.parent-archive",
+  "src/components/partials/People/PeopleContent.tsx → action:people.parent-archive",
+  "src/components/partials/People/PeopleContent.tsx → action:people.parent-create",
+  "src/components/partials/People/PeopleContent.tsx → action:people.parent-edit",
+  "src/components/partials/People/PeopleContent.tsx → action:people.parent-line-unlink",
+  "src/components/partials/People/PeopleContent.tsx → action:people.parent-students",
+  "src/components/partials/People/PeopleContent.tsx → action:people.parent-students",
+  "src/components/partials/People/PeopleContent.tsx → action:people.parent-suspend",
+  "src/components/partials/People/PeopleContent.tsx → action:people.student-archive",
+  "src/components/partials/People/PeopleContent.tsx → action:people.student-archive",
+  "src/components/partials/People/PeopleContent.tsx → action:people.student-archive",
+  "src/components/partials/People/PeopleContent.tsx → action:people.student-delete",
+  "src/components/partials/People/PeopleContent.tsx → action:people.student-edit",
+  "src/components/partials/People/StudentFormModal.tsx → action:people.parent-students",
+  "src/components/partials/People/StudentFormModal.tsx → action:people.student-edit",
+  "src/components/partials/Rental/RentalModal.tsx → action:calendar.rental-sale",
+  "src/components/partials/Settings/SettingsContent.tsx → action:settings.edit",
+  "src/components/partials/Teachers/ArchivedTeachers.tsx → action:teachers.archive",
+  "src/components/partials/Teachers/FreelanceBudgetControls.tsx → action:teachers.budget",
+  "src/components/partials/Teachers/FreelanceBudgetControls.tsx → action:teachers.budget-view",
+  "src/components/partials/Teachers/TeacherFormModal.tsx → action:teachers.create",
+  "src/components/partials/Teachers/TeacherFormModal.tsx → action:teachers.edit",
+  "src/components/partials/Teachers/TeacherRowActions.tsx → action:calendar.status",
+  "src/components/partials/Teachers/TeacherRowActions.tsx → action:teachers.archive",
+  "src/components/partials/Teachers/TeacherRowActions.tsx → action:teachers.edit",
+  "src/components/partials/Teachers/TeacherWorkDaysSelect.tsx → action:teachers.work-days",
+  "src/components/partials/Teachers/TeachersContent.tsx → action:teachers.availability",
+  "src/components/partials/Teachers/TeachersContent.tsx → action:teachers.availability",
+  "src/components/partials/Teachers/TeachersContent.tsx → action:teachers.availability",
+  "src/components/partials/Teachers/TeachersContent.tsx → action:teachers.create",
+  "src/components/partials/Teachers/TeachersContent.tsx → action:teachers.limit-override",
+  "src/components/partials/Teachers/TeachersContent.tsx → action:teachers.type-order",
+];
+
+/** The registry, in the BE's order (the snapshot mirrors `ACTION_KEYS`). */
+const KEY_INVENTORY = [
+  "action:calendar.book",
+  "action:calendar.booking-edit",
+  "action:calendar.status",
+  "action:calendar.leave-override",
+  "action:calendar.pause",
+  "action:calendar.badges",
+  "action:calendar.note",
+  "action:calendar.rental",
+  "action:calendar.rental-sale",
+  "action:calendar.other-series",
+  "action:calendar.group-series",
+  "action:calendar.other-cancel-all",
+  "action:calendar.teacher-leave",
+  "action:calendar.undo",
+  "action:bookings.bulk-confirm",
+  "action:bookings.course-create",
+  "action:bookings.course-edit",
+  "action:bookings.course-plan",
+  "action:bookings.course-expiry",
+  "action:bookings.course-extra-session",
+  "action:bookings.course-confirm",
+  "action:bookings.course-drop",
+  "action:bookings.course-cancel",
+  "action:bookings.course-import",
+  "action:bookings.voucher-create",
+  "action:bookings.voucher-import",
+  "action:bookings.course-rental",
+  "action:people.student-create",
+  "action:people.student-edit",
+  "action:people.student-delete",
+  "action:people.parent-create",
+  "action:people.parent-edit",
+  "action:people.parent-students",
+  "action:people.parent-suspend",
+  "action:people.parent-line-unlink",
+  "action:people.student-archive",
+  "action:people.parent-archive",
+  "action:teachers.create",
+  "action:teachers.edit",
+  "action:teachers.archive",
+  "action:teachers.budget",
+  "action:teachers.budget-view",
+  "action:bookings.coach-rate",
+  "action:teachers.limit-override",
+  "action:teachers.work-days",
+  "action:teachers.availability",
+  "action:teachers.type-order",
+  "action:teachers.calendar-link",
+  "action:link-requests.decide",
+  "action:link-requests.unlink",
+  "action:badges.type-create",
+  "action:badges.type-edit",
+  "action:badges.value-create",
+  "action:badges.value-edit",
+  "action:camp.week-open",
+  "action:camp.sell",
+  "action:camp.redeem",
+  "action:camp.day-mark",
+  "action:settings.edit",
+  "action:sales.discount",
+];
+
+/** The keys of `dictionaries.en.users` (sorted). */
+const USERS_KEY_INVENTORY = [
+  "actionsAll",
+  "actionsBody",
+  "actionsCount",
+  "actionsSavedOk",
+  "actionsTitle",
+  "admin",
+  "areaMenuNotGranted",
+  "areaSales",
+  "colActions",
+  "colCreated",
+  "colDisplayName",
+  "colMenus",
+  "colRole",
+  "colRoleName",
+  "colStatus",
+  "colUsername",
+  "create",
+  "createTitle",
+  "createdOk",
+  "disable",
+  "disableBody",
+  "disableTitle",
+  "disabledOk",
+  "displayName",
+  "edit",
+  "editTitle",
+  "enable",
+  "enabledOk",
+  "fromRole",
+  "menusAll",
+  "menusBody",
+  "menusCount",
+  "menusSavedOk",
+  "menusSelectAll",
+  "menusSelectNone",
+  "menusTitle",
+  "moreActions",
+  "newPassword",
+  "noAccess",
+  "password",
+  "passwordConfirm",
+  "passwordHint",
+  "passwordMismatch",
+  "resetBody",
+  "resetConfirm",
+  "resetOk",
+  "resetPassword",
+  "resetTitle",
+  "roleNone",
+  "roleSavedOk",
+  "savedOk",
+  "statusDisabled",
+  "statusEnabled",
+  "superAdmin",
+  "superAdminToggle",
+  "teacherLine",
+  "teacherLink",
+  "teacherLinkHint",
+  "teacherNone",
+  "title",
+  "username",
+  "usernameHint",
+  "you",
+];
+
+/** The keys of `dictionaries.en.rbac` (sorted). */
+const RBAC_KEY_INVENTORY = [
+  "goTo",
+  "noMenu",
+  "shellBody",
+  "shellTitle",
+];
 
 describe("§1 — ONE gate, everywhere", () => {
   it("can(): a super admin may do all; anyone else needs the grant; unknown access ⇒ nothing (value-tested)", () => {
@@ -47,8 +309,8 @@ describe("§1 — ONE gate, everywhere", () => {
     expect(codeOf("src/auth.ts")).toContain("actions: Array.isArray(data.user.actions) ? data.user.actions : [],");
   });
 
-  it("the snapshot: 54 keys in 9 areas (50 + TASK-401's four `camp.*`); every key a site uses exists; exactly two keys have no FE site", () => {
-    expect(KEYS.length).toBe(60) /* TASK-518: + the 60th, `calendar.undo` (SPEC-094) */ /* TASK-427 + TASK-429 + TASK-432: budget-view, other-cancel-all, coach-rate */; // + TASK-406/407's `calendar.teacher-leave` + TASK-411/412's `people.parent-archive`
+  it("the snapshot: the registry equals its named list, in 9 areas; every key a site uses exists; exactly two keys have no FE site", () => {
+    expect(KEYS).toEqual(KEY_INVENTORY);
     const areas = [...new Set(KEYS.map((k) => k.slice("action:".length, k.indexOf("."))))];
     expect(areas).toEqual(["calendar", "bookings", "people", "teachers", "link-requests", "badges", "camp", "settings", "sales"]); // camp after badges, as the BE
     for (const k of KEYS) expect(k).toMatch(/^action:[a-z-]+\.[a-z-]+$/);
@@ -58,16 +320,13 @@ describe("§1 — ONE gate, everywhere", () => {
     // the two acts the FE never calls today: `POST /students` (the booking form creates through the parent) and
     // `POST /teachers/:id/calendar-link` (no FE caller, placed by area on the BE side too)
     const used = new Set(sites.map((s) => s.key));
-    expect(KEYS.filter((k) => !used.has(k))).toEqual(["action:people.student-create", "action:teachers.calendar-link"]);
+    // judged against the NAMED registry, not the live one: a new key then breaks the registry list above and ONLY that assertion
+    expect(KEY_INVENTORY.filter((k) => !used.has(k))).toEqual(["action:people.student-create", "action:teachers.calendar-link"]);
   });
 
-  it("the sweep: 86 key literals across 33 files (78 + TASK-402's camp doors: open/edit/close a week, sell ×2, redeem ×2, mark)", () => {
-    // 🔻 TASK-611, declared: **+1 — the admin's "record leave in advance" door on the Teachers row**, asking
-    // `action:calendar.status` AS A LITERAL so this very sweep can see it. 🔑 **No new key**: it is the key already on
-    // `PATCH /bookings/:id/status`, and @Jason gates the route with the same one. ✅ What this pin protects — every gate
-    // asked at its own site, countable from the source — is unchanged.
-    expect(sites.length).toBe(110); expect(sites.some((s) => s.file.endsWith("People/LinkParentDialog.tsx") && s.key === "action:people.parent-create")).toBe(true); /* TASK-696: + the link dialog's "create a family" door, on the EXISTING `people.parent-create` key (the one the page's Add-parent button asks), asked ONCE as a literal and NAMED here — a count alone passes for any door (Porter's condition) */ /* TASK-669: + the no-parent list's per-row LINK door, on the EXISTING `people.parent-students` key (the one the family card's Add-student door asks), asked as a literal */ /* TASK-665: + the no-parent list's per-row archive door, on the EXISTING `people.student-archive` key, asked as a literal */ /* TASK-586: + the camp week Take-bookings-again and Delete doors, both on the EXISTING `camp.week-open` key (the owner one key for a week lifecycle), each asked as a literal */ /* TASK-572: + the voucher row expiry door, on the COURSE key (`course-expiry`), asked as a literal like every other — the BE route table reuses the same key */ /* TASK-518: the ONE Undo door (`calendar.undo`, asked as a literal so this very sweep can see it) · TASK-457: the clash box's resolution doors (booking-edit) · TASK-442: the series modal's GROUP grants (course-confirm · group-series, + the two shared keys asked once per face) · TASK-440: the voucher card's Cancel-voucher door (course-cancel) · TASK-432: the course card's coach-rate gate */ /* TASK-427: the budget doors ask both keys · TASK-429: the Manage-plan page asks its four grants */ // + TASK-407's `Report leave` door (CalendarContent) + TASK-412's parent archive/restore doors (People) + TASK-419's camp `Swap teacher` (CampBlockPanel)
-    expect(new Set(sites.map((s) => s.file)).size).toBe(40); /* + UndoControl (TASK-518) · + OtherSeriesContent · TASK-440: + VoucherPanel · TASK-457: + ClashResolveBox · TASK-696: + LinkParentDialog (named on the line above) */
+  it("the sweep: every `action:…` literal at a site — file and key — equals the named site list (the gate asked at its own site)", () => {
+    // 🔻 TASK-709: this was `sites.length === 110` + `files.size === 40` + a narrated history of which TASK added which gate. The list says it now.
+    expect(sites.map(siteLine).sort()).toEqual(SITE_INVENTORY);
     // hidden, never disabled: no site turns the gate into a `disabled` prop
     for (const f of SITE_FILES) expect({ f, hit: /disabled=\{!can\(/.test(readFileSync(f, "utf8")) }).toEqual({ f, hit: false });
     // the sites the report lists, one per area, are really there
@@ -163,11 +422,11 @@ describe("§3 — the sentences, and the copy", () => {
   it("copy: users +8 (54 × 2); nothing else moved", () => {
     const en = dictionaries.en.users as Record<string, string>;
     const th = dictionaries.th.users as Record<string, string>;
-    expect(Object.keys(en).length).toBe(63); // + Stage 4's role column 4 + TASK-407's teacher link 4 + `moreActions` (897b29a: the users row's ⋯ menu aria-label, rendered at UsersContent.tsx — both languages)
+    expect(Object.keys(en).sort()).toEqual(USERS_KEY_INVENTORY); // TASK-709: the keys, not 63
     for (const k of ["colActions", "actionsAll", "actionsCount", "actionsTitle", "actionsBody", "actionsSavedOk", "areaSales", "areaMenuNotGranted"]) {
       expect(en[k]?.length).toBeGreaterThan(0);
       expect(th[k]?.length).toBeGreaterThan(0);
     }
-    expect(Object.keys(dictionaries.en.rbac).length).toBe(4);
+    expect(Object.keys(dictionaries.en.rbac).sort()).toEqual(RBAC_KEY_INVENTORY); // TASK-709: the keys, not 4
   });
 });

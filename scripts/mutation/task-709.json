@@ -1,0 +1,39 @@
+{
+  "_why": "TASK-709 (F-012). One test file: src/lib/rbac/action-gate.test.ts. Each mutation must break exactly ONE assertion, and its diff must NAME what moved (checked by reading the failure, see the TASK report). Written with the set; nothing reconstructed.",
+  "tests": ["src/lib/rbac/action-gate.test.ts"],
+  "mutations": [
+    {
+      "id": "G1",
+      "what": "add a fake gate site (a second literal of an existing key in an unpinned file)",
+      "files": [{ "file": "src/components/partials/Bookings/DropResumeDialog.tsx", "edits": [{ "from": "{!result && can(\"action:bookings.course-drop\") && (", "to": "{!result && can(\"action:bookings.course-drop\") && can(\"action:bookings.course-drop\") && (" }] }]
+    },
+    {
+      "id": "G2",
+      "what": "remove one gate site (its key is still used elsewhere, so only the site list moves)",
+      "files": [{ "file": "src/components/partials/Bookings/ImportBalanceModal.tsx", "edits": [{ "from": "const canCourse = can(\"action:bookings.course-import\");", "to": "const canCourse = true;" }] }]
+    },
+    {
+      "id": "G3",
+      "what": "move one gate site to another file (same key, same count — only the FILE changes)",
+      "files": [
+        { "file": "src/components/partials/Bookings/ImportBalanceModal.tsx", "edits": [{ "from": "const canCourse = can(\"action:bookings.course-import\");", "to": "const canCourse = true;" }] },
+        { "file": "src/components/partials/Bookings/DropResumeDialog.tsx", "edits": [{ "from": "{!result && can(\"action:bookings.course-drop\") && (", "to": "{!result && can(\"action:bookings.course-drop\") && can(\"action:bookings.course-import\") && (" }] }
+      ]
+    },
+    {
+      "id": "G4",
+      "what": "add a key to the registry snapshot KEYS",
+      "files": [{ "file": "src/lib/rbac/actions.ts", "edits": [{ "from": "  \"action:calendar.book\",\n  \"action:calendar.booking-edit\",", "to": "  \"action:calendar.book\",\n  \"action:calendar.zzz-fake\",\n  \"action:calendar.booking-edit\"," }] }]
+    },
+    {
+      "id": "G5",
+      "what": "add a key to the EN users dictionary",
+      "files": [{ "file": "src/lib/i18n/dictionaries.ts", "edits": [{ "from": "    moreActions: \"More actions for {name}\",", "to": "    moreActions: \"More actions for {name}\",\n    zzzFake: \"x\"," }] }]
+    },
+    {
+      "id": "G6",
+      "what": "add a key to the EN rbac dictionary",
+      "files": [{ "file": "src/lib/i18n/dictionaries.ts", "edits": [{ "from": "    noMenu: \"You do not have access to this menu.\",", "to": "    noMenu: \"You do not have access to this menu.\",\n    zzzFake: \"x\"," }] }]
+    }
+  ]
+}
