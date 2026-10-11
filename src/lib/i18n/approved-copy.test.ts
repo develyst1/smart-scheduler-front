@@ -167,10 +167,11 @@ describe("TASK-549 — the approved copy, by value", () => {
     expect(approvedKeys.length).toBe(17);
   });
 
-  it("📌 the drafts this task deliberately left alone are still marked as drafts", () => {
+  it("📌 the discount errors and the attendee-note hint, once left as drafts, carry their owner approval in the file", () => {
     const raw = readFileSync("src/lib/i18n/dictionaries.ts", "utf8");
+    // 🔻 TASK-718, declared: this pin asserted the label said DRAFT; the owner approved these 47 sentences as they stand on 2026-10-11 (COPY-REVIEW-2026-09-29.md:592, set 1, 4c), so the label now says APPROVED and the pin follows it. ✅ The rule it protects — an approval state is DECLARED in the file, never silent — is unchanged.
     // the discount errors and the attendee-note hint — other people's wording, other REQ lines
-    expect((raw.match(/\/\/ DRAFT — no REQ line/g) ?? []).length).toBeGreaterThanOrEqual(3);
-    expect(raw).toContain("`hint` is a DRAFT: Porter owns the not-for-PII wording");
+    expect((raw.match(/\/\/ ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 \(set 1, 4c\)/g) ?? []).length).toBeGreaterThanOrEqual(3);
+    expect(raw).toContain("`hint` — ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c)");
   });
 });

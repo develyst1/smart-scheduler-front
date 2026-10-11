@@ -124,8 +124,8 @@ const en = {
   },
 
   // REQ-063 / TASK-161 — the discount block shared by all five sale/booking forms. Wording is REQ-063's
-  // verbatim so the screen says what the server says; the three marked DRAFT have no REQ line yet (Q1).
-  // REQ-068 / TASK-179 — the attendee note. ⚠️ `hint` is a DRAFT: Porter owns the not-for-PII wording and it
+  // verbatim so the screen says what the server says; the three below (errPercentRange / errBahtPositive / errValue) had no REQ line (Q1) — now ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c).
+  // REQ-068 / TASK-179 — the attendee note. `hint` — ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c); it was a DRAFT (Porter owns the not-for-PII wording and it
   // wasn't drafted yet when this shipped. Everything else is descriptive, not new product copy.
   // REQ-036 / TASK-182 — ending a course early. The confirm sentence is REQ-036's, and the {n} in it comes
   // from the SERVER preview, never a client re-count (R2).
@@ -242,9 +242,9 @@ const en = {
     errTooLarge: "A discount cannot exceed the full price.",
     errNoReason: "Please give a reason for this discount.",
     errNotAdmin: "Only an admin can apply a discount.",
-    errPercentRange: "A percentage discount must be between 0 and 100.", // DRAFT — no REQ line
-    errBahtPositive: "A baht discount must be a whole number above zero.", // DRAFT — no REQ line
-    errValue: "That discount value isn't valid.", // DRAFT — no REQ line
+    errPercentRange: "A percentage discount must be between 0 and 100.", // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c)
+    errBahtPositive: "A baht discount must be a whole number above zero.", // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c)
+    errValue: "That discount value isn't valid.", // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c)
     // The discount as RECORDED on a booking (TASK-170 Part 2). Rendered as the human number that was typed.
     recordedPercent: "{value}%",
     recordedBaht: "฿{value}",
@@ -542,8 +542,8 @@ const en = {
     advanceNothingCancelled: "NOTHING HAS BEEN CANCELLED. Those classes are still on the schedule and the families have not been told — please treat them as going ahead until an admin tells you otherwise.",
     submit: "Report leave ({n} sessions)",
     done: "{n} sessions cancelled · {families} families told",
-    // 🔴 TASK-608 (BE) → TASK-611 — the ADMIN's door onto the SAME act. 📝 DRAFT (Fern, TASK-611) — @Sober owns this copy
-    // this batch and the owner sees it before it ships.
+    // 🔴 TASK-608 (BE) → TASK-611 — the ADMIN's door onto the SAME act. ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-611; @Sober's copy ruling is now the owner's) — the nine keys through `adminSubmit`. The four `adminAdvance*` keys below keep their own label, unchanged.
+    // (formerly: this batch, and the owner sees it before it ships — he has.)
     // 🔑 Every sentence here is written for the ADMIN as the reader, not reworded from the teacher's. The teacher's own
     // strings above are untouched: *the widening must be invisible to the person it was not for.*
     adminTitle: "Record leave for {name}",
@@ -598,7 +598,7 @@ const en = {
     // coach is not the primary. Was "New primary teacher" / "ครูหลักคนใหม่".
     swapTo: "New teacher",
     addTeacher: "Add teacher",
-    // 🔴 TASK-577 (D10) — the COVER rate. 📝 DRAFT (Fern, TASK-577). The server pays the COVERING coach and refuses
+    // 🔴 TASK-577 (D10) — the COVER rate. ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-577). The server pays the COVERING coach and refuses
     // the cover when it has no rate for them, so this box is REQUIRED and the label names whose rate it is.
     // 🔴 TASK-584 (BE) → TASK-592 — the owner ruled (a). ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-592) — COPY-REVIEW-2026-09-29.md:254, reworded from the held TASK-577 drafts.
     // 🔑 It names the PERMISSION and nothing else: 🚫 not the coach (they are fine), 🚫 not the rate (it is not wrong).
@@ -613,7 +613,7 @@ const en = {
     swapRateHint: "Leave this empty unless the swap is refused for a missing rate — that happens when this series has never paid this coach before.",
     fromDate: "From date",
     fromDateHint: "Today by default — earlier rows are history and stay as they are.",
-    // 🔴 TASK-564 (REQ-110 item 5) — the scope the door now ASKS for. 📝 **DRAFT (Fern, TASK-564)**, both languages,
+    // 🔴 TASK-564 (REQ-110 item 5) — the scope the door now ASKS for. **✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c)** (Fern's wording, TASK-564), both languages,
     // pinned BY SHAPE: the two options must be distinguishable, and the `this session` one must not read as the whole
     // series. 🔑 Khwan's complaint was that one change rewrote every remaining session **and nothing asked** — so there
     // is no default here, and the words have to make the smaller choice the obvious one to read first.
@@ -665,7 +665,7 @@ const en = {
     mark: "CLASH",
     markTitle: "Two classes stand on this coach-hour — resolve it from either one.",
   },
-  // 🔴 REQ-110 item 6 (TASK-571) — moving a not-yet-started course's START date. 📝 **DRAFT (Fern, TASK-571)**, both
+  // 🔴 REQ-110 item 6 (TASK-571) — moving a not-yet-started course's START date. **✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c)** (Fern's wording, TASK-571) for the 14 keys `startLabel` … `reconfirmBody`; the five TASK-574 strings in this block (`newStartHintCurrent`, `preview`, `forecastTitle`, `forecastRow`, `forecastCaveat`) were already approved at COPY-REVIEW-2026-09-29.md:94-98 — both
   // languages, pinned BY SHAPE. 🔑 The first warning is the one this whole task exists for: **the server tells nobody**,
   // so until Confirm-course runs the family and the coach still hold the OLD dates — and the sentence must say what to
   // do about it, not merely that it happened.
@@ -1043,7 +1043,7 @@ const en = {
     moveTitle: "Move session manually",
     moveHint: "Move teacher / date / time for special cases — you can't move into a slot that's already taken",
     noChange: "No changes",
-    // 🔑 TASK-564 — the move is ONE row and always was; this says so where the doubt was met. 📝 **DRAFT (Fern, TASK-564)**,
+    // 🔑 TASK-564 — the move is ONE row and always was; this says so where the doubt was met. **✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c)** (Fern's wording, TASK-564),
     // pinned by shape: it must name this session and deny the rest, and it must NOT offer a choice the server cannot honour.
     moveThisOnly: "This moves this session only — the rest of the course stays as it is.",
     movedTitle: "Session moved",
@@ -1105,7 +1105,7 @@ const en = {
     groupSwapTitle: "Swap the teacher on {name}",
     groupSwapFromHereOn: "From this date on (every later session of the group)",
     groupSwapNoNotice: "No message is sent to families or the coach — tell them yourself.",
-    // 🔴 TASK-632 (BE) → TASK-634 — the optional rate on a group swap. 📝 DRAFT (Fern, TASK-634); @Sober owns the copy.
+    // 🔴 TASK-632 (BE) → TASK-634 — the optional rate on a group swap. ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-634).
     // 🔑 The label says WHOSE rate and FOR WHAT, because the same coach can cost a different amount on another series.
     groupSwapRate: "{name}'s rate for this group (per session)",
     // 🔑 The hint answers the only question an admin has here — *do I have to fill this in?* — and it says WHEN they do,
@@ -1576,7 +1576,7 @@ const en = {
     setupIncomplete: "Set pay before booking",
     actEdit: "Edit",
     actChangeType: "Change type",
-    /** 🔴 TASK-611 — the admin's entry point, on the row whose identity cannot be mistaken. 📝 DRAFT (Fern, TASK-611). */
+    /** 🔴 TASK-611 — the admin's entry point, on the row whose identity cannot be mistaken. ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-611). */
     actRecordLeave: "Record leave in advance",
     actArchive: "Archive / offboard",
     actReactivate: "Reactivate",
@@ -2030,7 +2030,7 @@ const en = {
     // 🔴 TASK-566 — was “(optional)”; see `birthDatePlaceholder`.
     provincePlaceholder: "District, Sub-district, Province",
     // 🔴 TASK-566 — the household already has an address, so the question is ABSENT and this says why in the parent's
-    // terms. 📝 DRAFT (Fern, TASK-566), pinned by shape: it must say we HAVE it, and must not ask for anything.
+    // terms. ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-566), pinned by shape: it must say we HAVE it, and must not ask for anything.
     addressOnFile: "We already have your address on file.",
     // 🔴 TASK-591 — ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-591) — COPY-REVIEW-2026-09-29.md:240-242. A family we already know, asked for the address again because we now keep
     // it in three parts. ⚠️ It must NOT read as "we lost your address" — what they gave us was valid when they gave it.
@@ -2074,7 +2074,7 @@ const en = {
     // TASK-355 §10.3 — the linked-account screen. All PLACEHOLDER (@Porter's to write); the MEANING of the unlink
     // strings is the writer's, not placeholder: it clears the FAMILY's LINE connection, every linked account.
     alreadyLinkedTitle: "This LINE account is already linked",
-    // 🔴 TASK-593 nit 2 — ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-593) — COPY-REVIEW-2026-09-29.md:265-266 for `alreadyLinkedTo`; ⚠️ EN `alreadyLinkedToOne` is approved by DESCRIPTION only (:266 quotes no string) — LISTED, not flipped (TASK-701). **"Nothing more to do here" became FALSE** when TASK-580 gave this
+    // 🔴 TASK-593 nit 2 — ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-593) — COPY-REVIEW-2026-09-29.md:265-266 for `alreadyLinkedTo`; EN `alreadyLinkedToOne` — ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (the string :266 only described). **"Nothing more to do here" became FALSE** when TASK-580 gave this
     // screen an Add-a-child button: the sentence sat directly above a control that IS something more to do.
     // 🔑 Nobody edited it; a change elsewhere made it wrong — *the same family as the comments that became lies.*
     alreadyLinkedTo: "Linked to {phone} ({n} children).",
@@ -2381,7 +2381,7 @@ const th: typeof en = {
     errTooLarge: "ส่วนลดมากกว่าราคาเต็มไม่ได้",
     errNoReason: "กรุณาระบุเหตุผลของส่วนลด",
     errNotAdmin: "เฉพาะแอดมินเท่านั้นที่ให้ส่วนลดได้",
-    // DRAFT — no REQ line; Thai borrowed VERBATIM from the BE's own refusals (discount-plan.ts) so the
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c); Thai borrowed VERBATIM from the BE's own refusals (discount-plan.ts) so the
     // pre-check and the server refusal read identically in Thai.
     errPercentRange: "ส่วนลดเป็นเปอร์เซ็นต์ต้องอยู่ระหว่าง 0–100",
     errBahtPositive: "ส่วนลดเป็นบาทต้องเป็นจำนวนเต็มบวก",
@@ -2652,7 +2652,7 @@ const th: typeof en = {
     advanceNothingCancelled: "ยังไม่มีการยกเลิกคาบใด คาบเหล่านั้นยังอยู่ในตารางและยังไม่ได้แจ้งผู้ปกครอง — กรุณาถือว่าคาบยังสอนตามปกติจนกว่าแอดมินจะแจ้งเปลี่ยนแปลง",
     submit: "แจ้งลา ({n} คาบ)",
     done: "ยกเลิก {n} คาบ · แจ้งผู้ปกครอง {families} ครอบครัว",
-    // 📝 DRAFT (Fern, TASK-611) — ประตูของแอดมิน: การกระทำเดียวกับของครู แต่เขียนให้แอดมินเป็นคนอ่าน
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-611) — ประตูของแอดมิน: การกระทำเดียวกับของครู แต่เขียนให้แอดมินเป็นคนอ่าน
     adminTitle: "บันทึกวันลาของ {name}",
     adminSubject: "บันทึกวันลาให้ใคร",
     adminHint:
@@ -2663,7 +2663,7 @@ const th: typeof en = {
     adminNothingCancelled:
       "ยังไม่มีการยกเลิกคาบใด คาบเหล่านั้นยังอยู่ในตารางและยังไม่ได้แจ้งผู้ปกครอง — ต้องจัดการทีละคาบเอง และจนกว่าจะจัดการ ให้ถือว่าคาบยังสอนตามปกติ",
     adminDoneTeacherTold: "ระบบแจ้ง {name} เรื่องวันลานี้แล้ว",
-    // 📝 DRAFT (Fern, TASK-611 §2) — the Thai for @Sober's new sentence: บอกว่าทำไม และบอกว่าใครต้องทำต่อ
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-611 §2) — the Thai for @Sober's new sentence: บอกว่าทำไม และบอกว่าใครต้องทำต่อ
     adminDoneTeacherNotTold: "ระบบยังไม่ได้แจ้ง {name} เพราะบัญชี LINE ยังไม่ได้ผูก — ต้องแจ้งครูเองค่ะ",
     adminSubmit: "ปิดรับจองวันนั้นของ {name}",
     // ✅ APPROVED (owner 2026-10-04, TASK-651) — ตามที่ @Sober ร่าง ไม่แก้คำ
@@ -2686,7 +2686,7 @@ const th: typeof en = {
     // 🔴 TASK-624 — ✅ APPROVED by @Porter 2026-10-06 — log/2026-10-06.md:612 (see the EN block). Was "ครูหลักคนใหม่".
     swapTo: "ครูคนใหม่",
     addTeacher: "เพิ่มครู",
-    // 📝 DRAFT (Fern, TASK-577) — ค่าสอนของครูที่มาสอนแทน (บังคับ)
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-577) — ค่าสอนของครูที่มาสอนแทน (บังคับ)
     // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-592) — COPY-REVIEW-2026-09-29.md:254 — บอกว่าขาด "สิทธิ์" ไม่ใช่ว่าครูหรือค่าสอนมีปัญหา และบอกด้วยว่าต้องทำอะไรต่อ
     coverNeedsKey: "การสอนแทนจะจ่ายตามค่าสอนของครูที่มาแทน จึงต้องมีสิทธิ์แก้ค่าสอนครู — บัญชีนี้ยังไม่มีสิทธิ์นี้ กรุณาให้แอดมินที่มีสิทธิ์ทำให้ หรือขอสิทธิ์เพิ่ม",
     coverRate: "ค่าสอนของ {name} สำหรับคาบนี้",
@@ -2697,7 +2697,7 @@ const th: typeof en = {
     swapRateHint: "ไม่ต้องกรอก ยกเว้นระบบปฏิเสธเพราะไม่มีค่าสอน — จะเกิดเมื่อตารางนี้ยังไม่เคยจ่ายค่าสอนให้ครูคนนี้",
     fromDate: "ตั้งแต่วันที่",
     fromDateHint: "ค่าเริ่มต้นคือวันนี้ — คาบก่อนหน้าเป็นประวัติ คงเดิม",
-    // 📝 DRAFT (Fern, TASK-564) — เหตุผลอยู่ในบล็อก EN: ต้องเลือกเอง ไม่มีค่าเริ่มต้น และสองตัวเลือกต้องอ่านไม่เหมือนกัน
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-564) — เหตุผลอยู่ในบล็อก EN: ต้องเลือกเอง ไม่มีค่าเริ่มต้น และสองตัวเลือกต้องอ่านไม่เหมือนกัน
     scopeLabel: "ใช้กับคาบไหน?",
     scopeThis: "เฉพาะคาบนี้",
     scopeRest: "คาบนี้และคาบถัดไปทั้งหมด",
@@ -2764,7 +2764,7 @@ const th: typeof en = {
     notKnownTitle: "สิ่งที่หน้านี้แสดงให้ไม่ได้ และเหตุผล",
     empty: "ยังไม่มีบัญชี LINE ที่มีสิทธิ์แอดมิน",
   },
-  // 📝 DRAFT (Fern, TASK-571) — เหตุผลอยู่ในบล็อก EN: ข้อความแรกคือเรื่องที่ระบบไม่แจ้งใคร ต้องบอกว่าให้ทำอะไรต่อ
+  // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-571; 14 keys — the five TASK-574 strings are approved at COPY-REVIEW-2026-09-29.md:94-98) — เหตุผลอยู่ในบล็อก EN: ข้อความแรกคือเรื่องที่ระบบไม่แจ้งใคร ต้องบอกว่าให้ทำอะไรต่อ
   courseStart: {
     startLabel: "เริ่มเรียน",
     edit: "เลื่อนวันเริ่มเรียน",
@@ -3053,7 +3053,7 @@ const th: typeof en = {
     moveTitle: "ย้ายคาบด้วยมือ",
     moveHint: "ย้ายครู / วัน / เวลา สำหรับกรณีพิเศษ — ถ้าช่องปลายทางมีคาบอยู่แล้วจะย้ายไม่ได้",
     noChange: "ไม่มีการเปลี่ยนแปลง",
-    // 📝 DRAFT (Fern, TASK-564) — ดูบล็อก EN
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-564) — ดูบล็อก EN
     moveThisOnly: "ย้ายเฉพาะคาบนี้ คาบอื่นของคอร์สยังคงเดิม",
     movedTitle: "ย้ายคาบแล้ว",
     moveFailTitle: "ย้ายคาบไม่สำเร็จ",
@@ -3110,7 +3110,7 @@ const th: typeof en = {
     groupSwapTitle: "เปลี่ยนครูของ {name}",
     groupSwapFromHereOn: "ตั้งแต่วันนี้เป็นต้นไป (ทุกคาบถัดไปของกลุ่ม)",
     groupSwapNoNotice: "ระบบไม่ส่งข้อความถึงผู้ปกครองหรือโค้ช — กรุณาแจ้งเอง",
-    // 📝 DRAFT (Fern, TASK-634)
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-634)
     groupSwapRate: "ค่าสอนของ {name} สำหรับกลุ่มนี้ (ต่อคาบ)",
     groupSwapRateHint: "ไม่ต้องกรอก ยกเว้นระบบปฏิเสธเพราะไม่มีค่าสอน — จะเกิดเมื่อกลุ่มนี้ยังไม่เคยจ่ายค่าสอนให้ครูคนนี้",
     groupSwapOk: "เปลี่ยนครูแล้ว",
@@ -3537,7 +3537,7 @@ const th: typeof en = {
     setupIncomplete: "ตั้งเงินก่อนจึงจะจองได้",
     actEdit: "แก้ไข",
     actChangeType: "เปลี่ยนประเภท",
-    /** 📝 DRAFT (Fern, TASK-611) */
+    /** ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-611) */
     actRecordLeave: "บันทึกวันลาล่วงหน้า",
     actArchive: "เก็บ / ออกจากงาน",
     actReactivate: "นำกลับมาทำงาน",
@@ -3928,7 +3928,7 @@ const th: typeof en = {
     addrLoading: "กำลังโหลดรายชื่อพื้นที่…", // PLACEHOLDER
     provinceLabel: "กรุณาระบุ เขต แขวง จังหวัด เช่น พระโขนงเหนือ วัฒนา กทม", // §17c screen 6 — VERBATIM
     provincePlaceholder: "เขต/อำเภอ แขวง/ตำบล จังหวัด", // 🔴 TASK-566 — เดิม “(ไม่บังคับ)”
-    // 📝 DRAFT (Fern, TASK-566) — ครอบครัวนี้มีที่อยู่แล้ว จึงไม่ถามซ้ำ
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) (Fern's wording, TASK-566) — ครอบครัวนี้มีที่อยู่แล้ว จึงไม่ถามซ้ำ
     addressOnFile: "เรามีที่อยู่ของครอบครัวนี้อยู่แล้วค่ะ",
     // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-591) — COPY-REVIEW-2026-09-29.md:240-242 — ⚠️ ต้องไม่อ่านเหมือน "เราทำที่อยู่ของคุณหาย" เพราะที่ให้มาตอนนั้นถูกต้องแล้ว
     addressAskAgain: "ตอนนี้เราเก็บที่อยู่เป็นสามส่วน (จังหวัด อำเภอ/เขต ตำบล/แขวง) รบกวนเลือกให้ด้วยค่ะ ถามครั้งเดียวเท่านั้น",
@@ -3954,7 +3954,7 @@ const th: typeof en = {
     alreadyLinkedTitle: "บัญชี LINE นี้ผูกกับครอบครัวไว้แล้วค่ะ", // PLACEHOLDER — TASK-355 §10.3
     // ✅ APPROVED by the owner 2026-10-01 (Fern's wording, TASK-593 nit 2) — COPY-REVIEW-2026-09-29.md:265-266 — ตัดคำว่า "ไม่ต้องทำอะไรเพิ่ม" ออก เพราะมีปุ่มเพิ่มนักเรียนอยู่ใต้ประโยคนี้แล้ว
     alreadyLinkedTo: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน)",
-    alreadyLinkedToOne: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน)", // Thai has no plural; same sentence (key parity)
+    alreadyLinkedToOne: "ผูกกับเบอร์ {phone} (นักเรียน {n} คน)", // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c) — Thai has no plural; same sentence (key parity)
     unlinkButton: "ปลด LINE ของครอบครัวนี้", // PLACEHOLDER — TASK-357 §2: short, wraps; the MEANING is still the whole family
     unlinkWarning:
       "จะยกเลิกการเชื่อมต่อ LINE ของทั้งครอบครัว — ถ้าผู้ปกครองอีกท่านผูก LINE ไว้ด้วย จะถูกปลดไปพร้อมกันค่ะ สามารถผูกใหม่ได้ภายหลัง", // PLACEHOLDER

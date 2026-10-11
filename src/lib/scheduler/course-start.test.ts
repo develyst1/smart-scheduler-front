@@ -156,7 +156,8 @@ describe("TASK-571 — the words (DRAFT, pinned by shape)", () => {
     for (const lang of ["en", "th"] as const) {
       expect(cs(lang).doneTitle).not.toMatch(/notified|แจ้งแล้ว/);
     }
-    expect(readFileSync("src/lib/i18n/dictionaries.ts", "utf8")).toContain("📝 **DRAFT (Fern, TASK-571)**");
+    // 🔻 TASK-718, declared: this pin asserted the label said DRAFT; the owner approved these 47 sentences as they stand on 2026-10-11 (COPY-REVIEW-2026-09-29.md:592, set 1, 4c), so the label now says APPROVED and the pin follows it. ✅ The rule it protects — an approval state is DECLARED in the file, never silent — is unchanged.
+    expect(readFileSync("src/lib/i18n/dictionaries.ts", "utf8")).toContain("**✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:592 (set 1, 4c)** (Fern's wording, TASK-571)");
   });
 });
 
