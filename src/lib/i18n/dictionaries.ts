@@ -2106,8 +2106,9 @@ const en = {
       PHONE_INVALID: "Invalid phone. Please type the registered number (e.g. 0812345678)",
       // `verify_parent_other` — VERBATIM
       PHONE_BOUND_TO_OTHER_LINE: "This number is already linked to another LINE — contact admin",
-      // `verify_parent_other_family` — VERBATIM
-      LINE_BOUND_TO_OTHER_FAMILY: "This LINE account is already linked to another family. Please contact an admin if that is wrong.",
+      // `verify_parent_other_family` — VERBATIM. ✅ TASK-728: Khwan changed R62 and the owner approved her words as they are (COPY-SET-khwan-workbook-2026-10-11.md row R62; owner approval COPY-REVIEW-2026-09-29.md:592-608 item 4(a)); the page keeps its
+      // deliberate verbatim copy of the LINE sentence, so it follows the SAME words (her leading/trailing spaces dropped, as in the back's TASK-727).
+      LINE_BOUND_TO_OTHER_FAMILY: "Someone has linked this LINE account in the system already. Please contact our Admin.",
       // PLACEHOLDER — the chat throws here; a page must say something
       TWOFA_NOT_CONFIGURED: "Verification is switched on but not set up yet. Please contact the school.",
       // `twofa_prompt` — VERBATIM
@@ -3969,7 +3970,7 @@ const th: typeof en = {
       TOKEN_EXPIRED: "เซสชัน LINE หมดอายุ กรุณาลองใหม่อีกครั้งค่ะ", // PLACEHOLDER
       PHONE_INVALID: "เบอร์โทรไม่ถูกต้อง กรุณาพิมพ์เบอร์ที่ลงทะเบียน (เช่น 0812345678)", // `verify_parent_badphone` — VERBATIM
       PHONE_BOUND_TO_OTHER_LINE: "เบอร์นี้ผูกกับ LINE อื่นแล้ว ติดต่อแอดมิน", // `verify_parent_other` — VERBATIM
-      LINE_BOUND_TO_OTHER_FAMILY: "บัญชี LINE นี้ผูกกับอีกครอบครัวไว้แล้วค่ะ หากไม่ถูกต้องกรุณาติดต่อแอดมิน", // `verify_parent_other_family` — VERBATIM
+      LINE_BOUND_TO_OTHER_FAMILY: "บัญชี LINE นี้ได้มีการผูกในระบบไว้แล้วค่ะ กรุณาติดต่อแอดมินค่ะ", // `verify_parent_other_family` — VERBATIM · ✅ TASK-728: her R62 words (see the EN block)
       TWOFA_NOT_CONFIGURED: "เปิดใช้การยืนยันตัวตนไว้แต่ยังตั้งค่าไม่เสร็จ กรุณาติดต่อโรงเรียนค่ะ", // PLACEHOLDER
       TWOFA_CODE_REQUIRED: "กรุณาพิมพ์รหัส 6 หลักเพื่อยืนยันตัวตนค่ะ", // `twofa_prompt` — VERBATIM
       TWOFA_CODE_BAD: "รหัสไม่ถูกต้องค่ะ กรุณาลองใหม่อีกครั้ง", // `twofa_bad` — VERBATIM

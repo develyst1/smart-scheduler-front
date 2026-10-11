@@ -1,0 +1,62 @@
+[
+  {
+    "id": "R1",
+    "what": "🔴 the EN words are the OLD sentence again (the page disagrees with the chat)",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "\"Someone has linked this LINE account in the system already. Please contact our Admin.\"",
+            "to": "\"This LINE account is already linked to another family. Please contact an admin if that is wrong.\""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "R2",
+    "what": "🔴 the TH words are the OLD sentence again",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "\"บัญชี LINE นี้ได้มีการผูกในระบบไว้แล้วค่ะ กรุณาติดต่อแอดมินค่ะ\"",
+            "to": "\"บัญชี LINE นี้ผูกกับอีกครอบครัวไว้แล้วค่ะ หากไม่ถูกต้องกรุณาติดต่อแอดมิน\""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "R3",
+    "what": "⚠️ her trailing space kept in the TH words",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "\"บัญชี LINE นี้ได้มีการผูกในระบบไว้แล้วค่ะ กรุณาติดต่อแอดมินค่ะ\"",
+            "to": "\"บัญชี LINE นี้ได้มีการผูกในระบบไว้แล้วค่ะ กรุณาติดต่อแอดมินค่ะ \""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "R4",
+    "what": "⚠️ her trailing space kept in the EN words",
+    "files": [
+      {
+        "file": "src/lib/i18n/dictionaries.ts",
+        "edits": [
+          {
+            "from": "\"Someone has linked this LINE account in the system already. Please contact our Admin.\"",
+            "to": "\"Someone has linked this LINE account in the system already. Please contact our Admin. \""
+          }
+        ]
+      }
+    ]
+  }
+]
