@@ -8,7 +8,7 @@ import { I18nProvider } from "@/lib/i18n";
 
 /**
  * 🔴 **TASK-726 (FE) — the old "LINE accounts with admin rights" panel after TASK-725: a linked account is named by its WEB user, a legacy one
- * is marked, and Remove still works for both.** 📋 The mark's words are DRAFT (`COPY-DRAFT-admin-line-link-teamB-2026-10-11.md`), written out by hand.
+ * is marked, and Remove still works for both.** The mark's words are ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:599 (source: `COPY-DRAFT-admin-line-link-teamB-2026-10-11.md`), written out by hand.
  *
  * 🔑 Each case is read off the rows on screen. 🚫 The payload carries a raw LINE id on purpose; no page may show it.
  */

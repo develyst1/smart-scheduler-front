@@ -182,7 +182,7 @@ function UserRow({
 
   /**
    * 🔴 TASK-726 — Unlink goes through the confirm FIRST (it stops this account's admin notices), then `DELETE /users/:id/line-link`. The row
-   * says "Not linked" when the SERVER's re-read says so (no optimistic flip); a refusal is the server's sentence. 📋 DRAFT words.
+   * says "Not linked" when the SERVER's re-read says so (no optimistic flip); a refusal is the server's sentence. Words: ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:599.
    */
   const unlinkLine = async () => {
     const ok = await askConfirm({

@@ -69,8 +69,8 @@ const en = {
     teacherLinkHint: "Linked, this account sees only its own calendar: check in and report leave, nothing else.",
     teacherNone: "None (staff account)",
     teacherLine: "Teacher: {name}",
-    // 📋 DRAFT wording (TASK-726 / TASK-725, Silver, COPY-DRAFT-admin-line-link-teamB-2026-10-11.md § "The web") — NOT approved. Ships only when the owner approves the set;
-    // until then it is the drafted words verbatim, and 🚫 not "improved" (an approved string improved on the way in is an unapproved string).
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:599 (TASK-726, verbatim from COPY-DRAFT-admin-line-link-teamB-2026-10-11.md § "The web").
+    // 🚫 Not "improved": an approved string improved on the way in is an unapproved string.
     colLine: "LINE",
     lineLinked: "Linked",
     lineNotLinked: "Not linked",
@@ -391,8 +391,8 @@ const en = {
     currentPassword: "Current password",
     newPassword: "New password",
     passwordChangedOk: "Password changed",
-    // 📋 DRAFT wording (TASK-726 / TASK-725, Silver, COPY-DRAFT-admin-line-link-teamB-2026-10-11.md § "The web") — NOT approved. Ships only when the owner approves the set;
-    // until then it is the drafted words verbatim, and 🚫 not "improved" (an approved string improved on the way in is an unapproved string).
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:599 (TASK-726, verbatim from COPY-DRAFT-admin-line-link-teamB-2026-10-11.md § "The web").
+    // 🚫 Not "improved": an approved string improved on the way in is an unapproved string.
     linkLine: "Link LINE",
     linkLineTitle: "Link LINE to this account",
     linkLineInstruction: 'Open the shop\'s LINE chat, type "สมัคร" → "แอดมิน", then type this code',
@@ -2235,8 +2235,8 @@ const th: typeof en = {
     teacherLinkHint: "ผูกแล้ว บัญชีนี้จะเห็นเฉพาะตารางของตัวเอง เช็คอินและแจ้งลาได้เท่านั้น",
     teacherNone: "ไม่ผูก (บัญชีแอดมิน)",
     teacherLine: "ครู: {name}",
-    // 📋 DRAFT wording (TASK-726 / TASK-725, Silver, COPY-DRAFT-admin-line-link-teamB-2026-10-11.md § "The web") — NOT approved. Ships only when the owner approves the set;
-    // until then it is the drafted words verbatim, and 🚫 not "improved" (an approved string improved on the way in is an unapproved string).
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:599 (TASK-726, verbatim from COPY-DRAFT-admin-line-link-teamB-2026-10-11.md § "The web").
+    // 🚫 Not "improved": an approved string improved on the way in is an unapproved string.
     colLine: "LINE",
     lineLinked: "ผูกแล้ว",
     lineNotLinked: "ยังไม่ผูก",
@@ -2515,8 +2515,8 @@ const th: typeof en = {
     currentPassword: "รหัสผ่านปัจจุบัน",
     newPassword: "รหัสผ่านใหม่",
     passwordChangedOk: "เปลี่ยนรหัสผ่านแล้ว",
-    // 📋 DRAFT wording (TASK-726 / TASK-725, Silver, COPY-DRAFT-admin-line-link-teamB-2026-10-11.md § "The web") — NOT approved. Ships only when the owner approves the set;
-    // until then it is the drafted words verbatim, and 🚫 not "improved" (an approved string improved on the way in is an unapproved string).
+    // ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:599 (TASK-726, verbatim from COPY-DRAFT-admin-line-link-teamB-2026-10-11.md § "The web").
+    // 🚫 Not "improved": an approved string improved on the way in is an unapproved string.
     linkLine: "ผูก LINE",
     linkLineTitle: "ผูก LINE กับบัญชีนี้",
     linkLineInstruction: 'เปิดแชท LINE ของร้าน พิมพ์ "สมัคร" → "แอดมิน" แล้วพิมพ์รหัสนี้',

@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { I18nProvider } from "@/lib/i18n";
 
 /**
- * 🔴 **TASK-726 (FE) — "Link LINE" from the header, actually clicked.** 📋 The words are DRAFT (`COPY-DRAFT-admin-line-link-teamB-2026-10-11.md`)
+ * 🔴 **TASK-726 (FE) — "Link LINE" from the header, actually clicked.** The words are ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:599 (their source is `COPY-DRAFT-admin-line-link-teamB-2026-10-11.md`)
  * and are written out BY HAND below from that file, not built from the dictionary, so a drifted string fails here.
  *
  * 🔑 What this file proves, all by what is on the wire and on the screen:

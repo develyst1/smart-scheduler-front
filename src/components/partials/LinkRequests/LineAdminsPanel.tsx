@@ -102,7 +102,7 @@ export default function LineAdminsPanel() {
                   <Text size="xs" c="dimmed">
                     {t("lineAdmins.tail", { tail: row.idTail })}
                   </Text>
-                  {/* 🔴 TASK-726 — a row linked with the OLD shared code has no web user to name. 📋 DRAFT wording. */}
+                  {/* 🔴 TASK-726 — a row linked with the OLD shared code has no web user to name. ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:599. */}
                   {isLegacyEntry(row) ? (
                     <Text size="xs" c="dimmed" data-line-admin-legacy>
                       {t("users.lineLegacyMark")}

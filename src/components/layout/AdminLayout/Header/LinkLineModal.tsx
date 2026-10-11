@@ -13,7 +13,7 @@ export const LINK_POLL_MS = 3000;
 
 /**
  * TASK-726 (FE) ← TASK-725 (BE) — **"Link LINE" from the header**: the signed-in web user asks for a one-time code and types it in
- * the shop's LINE chat. 📋 Every word here is DRAFT (`COPY-DRAFT-admin-line-link-teamB-2026-10-11.md`) until the owner approves the set.
+ * the shop's LINE chat. Every word here is ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:599.
  *
  * 🔴 **The code is asked for when the dialog OPENS, never on render** — this component is mounted (closed) in every page's header, so a
  * request on mount would mint (and replace) a live code for everyone who merely loaded a page. The earlier code stops working the

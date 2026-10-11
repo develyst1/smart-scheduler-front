@@ -7,8 +7,8 @@ import userEvent from "@testing-library/user-event";
 import { I18nProvider } from "@/lib/i18n";
 
 /**
- * 🔴 **TASK-726 (FE) — the Users page's LINE column and «Unlink LINE», actually clicked.** 📋 The words are DRAFT
- * (`COPY-DRAFT-admin-line-link-teamB-2026-10-11.md`), written out BY HAND from that file.
+ * 🔴 **TASK-726 (FE) — the Users page's LINE column and «Unlink LINE», actually clicked.** The words are ✅ APPROVED by the owner 2026-10-11 — COPY-REVIEW-2026-09-29.md:599
+ * (source: `COPY-DRAFT-admin-line-link-teamB-2026-10-11.md`), written out BY HAND from that file.
  *
  * 🔑 Proved on the wire and on the row: the column says Linked / Not linked from the server's `lineLinked`; Unlink is OFFERED only on a linked row;
  * it goes through the confirm FIRST (nothing is sent until the person confirms) and then sends `DELETE /users/:id/line-link` ONCE; the row
