@@ -26,6 +26,15 @@ export interface LineAdminRow {
   alsoParent?: string | null;
   /** Where the account's LINE menu lands after the role is taken away. */
   afterRemoval?: "teacher-menu" | "parent-menu" | "visitor-menu" | null;
+  /**
+   * TASK-725/726 — whose link this is. `linked` = tied to a WEB user (then `userId` / `displayName` / `username` name them); `legacy` = linked with the old
+   * shared code, before accounts were tied to web users (no web user to name). Absent on an older server ⇒ treated as legacy-shaped: the old label.
+   */
+  kind?: "linked" | "legacy";
+  userId?: string | null;
+  displayName?: string | null;
+  username?: string | null;
+  disabled?: boolean;
 }
 export interface LineAdminsResponse {
   admins?: LineAdminRow[] | null;

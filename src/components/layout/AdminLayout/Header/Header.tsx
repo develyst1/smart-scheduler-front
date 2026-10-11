@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { ActionIcon, Menu as MantineMenu, UnstyledButton } from "@mantine/core";
-import { KeyRound, LogOut, Menu, PanelLeft, PanelLeftClose } from "lucide-react";
+import { KeyRound, Link2, LogOut, Menu, PanelLeft, PanelLeftClose } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useT, LanguageToggle } from "@/lib/i18n";
 import { navItemForPath } from "../AdminLayout.config";
 import ChangePasswordModal from "./ChangePasswordModal";
+import LinkLineModal from "./LinkLineModal";
 import { useMe } from "@/hooks/scheduler/useMe";
 
 interface Props {
@@ -29,8 +30,13 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
   // REQ-092 Stage 2 (TASK-382 §3) — the avatar is the user menu: who they are · change my password · sign out. The
   // sign-out moved in here from a bare button; nothing else about it changed.
   const [pwOpen, setPwOpen] = useState(false);
+  const [lineOpen, setLineOpen] = useState(false);
   // REQ-092 Stage 4 (TASK-388) — the role's name under the display name, from `/me` (null for none ⇒ nothing).
   const roleName = useMe().me?.roleName ?? null;
+  const me = useMe().me;
+  // 🔴 TASK-726 — "Link LINE" is for a WEB staff account. A coach account (`/me` → `teacherId` set) does not get the item AT ALL: the server
+  // refuses it (`403 LINE_LINK_NOT_FOR_COACH`) and hiding it keeps that refusal unreachable from the screen. Until `/me` is known, no item.
+  const canLinkLine = !!me && !me.teacherId;
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-muted-200 bg-content1/80 px-4 backdrop-blur sm:px-6">
@@ -86,12 +92,18 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
             <MantineMenu.Item leftSection={<KeyRound size={15} />} onClick={() => setPwOpen(true)}>
               {t("header.changePassword")}
             </MantineMenu.Item>
+            {canLinkLine && (
+              <MantineMenu.Item leftSection={<Link2 size={15} />} onClick={() => setLineOpen(true)} data-link-line-item>
+                {t("header.linkLine")}
+              </MantineMenu.Item>
+            )}
             <MantineMenu.Item leftSection={<LogOut size={15} />} onClick={() => signOut({ callbackUrl: "/login" })}>
               {t("header.logout")}
             </MantineMenu.Item>
           </MantineMenu.Dropdown>
         </MantineMenu>
         <ChangePasswordModal opened={pwOpen} onClose={() => setPwOpen(false)} />
+        {canLinkLine && <LinkLineModal opened={lineOpen} onClose={() => setLineOpen(false)} />}
       </div>
     </header>
   );

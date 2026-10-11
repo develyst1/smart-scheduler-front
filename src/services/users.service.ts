@@ -51,6 +51,16 @@ export const removeLineAdmin = async (ref: string): Promise<RemoveLineAdminResul
   return data;
 };
 
+/**
+ * TASK-726 (FE) ← TASK-725 (BE) — take the LINE link off a WEB user (super admin; the `/users` router's own guard). The user's own admin
+ * notices stop; the LINE account's menu is settled the way a removal settles it. 🚫 The LINE id is not in the answer and never on a screen.
+ */
+export const unlinkUserLine = async (id: string): Promise<{ user: UserDTO; afterRemoval: string; menuSettled: boolean }> => {
+  if (useMockData) return mock.unlinkUserLine(id);
+  const { data } = await api.delete<{ user: UserDTO; afterRemoval: string; menuSettled: boolean }>(`/users/${id}/line-link`);
+  return data;
+};
+
 export const listUsers = async (): Promise<UserDTO[]> => {
   if (useMockData) return mock.listUsers();
   const { data } = await api.get<{ users: UserDTO[] }>("/users");

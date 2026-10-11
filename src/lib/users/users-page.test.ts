@@ -97,7 +97,7 @@ describe("§2 — the Users page", () => {
     // now literal — no DELETE of a user, and the only DELETE this file may hold, named.
     expect(svc).not.toMatch(/api\.delete<[^>]*>\(`\/users\/\$\{id\}`/);
     expect(svc).not.toMatch(/\/users\/\$\{id\}`\s*\)/);
-    expect([...svc.matchAll(/api\.delete<[^>]*>\(([^)]*)\)/g)].map((m) => m[1])).toEqual(["`/users/line-admins/${ref}`"]);
+    expect([...svc.matchAll(/api\.delete<[^>]*>\(([^)]*)\)/g)].map((m) => m[1])).toEqual(["`/users/line-admins/${ref}`", "`/users/${id}/line-link`"]); // TASK-726: Unlink a web user's LINE — the second and last DELETE this service may hold
     // the edit dialog sends only what changed
     expect(page).toContain("...(displayName.trim() !== user.displayName ? { displayName } : {}),");
     expect(page).toContain("...(isSuperAdmin !== user.isSuperAdmin ? { isSuperAdmin } : {}),");
@@ -134,7 +134,7 @@ describe("§2 — the Users page", () => {
 
   it("copy: the page's keys exist in both languages (38 + 8 Stage 2 + 8 Stage 3 = 54 × 2), plus nav.users", () => {
     const keys = Object.keys(dictionaries.en.users);
-    expect(keys.length).toBe(63); // + Stage 4's role column 4 + TASK-407's teacher link 4 + `moreActions` (897b29a: the row's ⋯ menu aria-label — the key IS rendered, see below)
+    expect(keys.length).toBe(69); // + TASK-726's six (colLine · lineLegacyMark · lineLinked · lineNotLinked · unlinkLine · unlinkLineConfirm — see `USERS_KEY_INVENTORY` in action-gate.test.ts). 63 = + Stage 4's role column 4 + TASK-407's teacher link 4 + `moreActions` (897b29a: the row's ⋯ menu aria-label — the key IS rendered, see below)
     expect(page).toContain('aria-label={t("users.moreActions", { name: user.displayName })}'); // the 63rd key earns its place
     for (const k of keys) expect((dictionaries.th.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);
     expect(dictionaries.en.nav.users).toBe("Users");

@@ -20,3 +20,6 @@ export const getPermissions = () =>
   });
 
 export const changeMyPassword = (_currentPassword: string, _newPassword: string) => delay({ ok: true as const });
+
+export const getMyLineLink = () => delay({ lineLinked: false });
+export const requestLineLinkCode = () => delay({ code: "K7M2QX9P", expiresAt: new Date(Date.now() + 600_000).toISOString(), expiresInSeconds: 600 });

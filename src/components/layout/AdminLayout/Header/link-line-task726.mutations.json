@@ -1,0 +1,227 @@
+[
+  {
+    "id": "U1",
+    "what": "🔴 Unlink WITHOUT the confirm — one click on the menu item sends the DELETE",
+    "files": [
+      {
+        "file": "src/components/partials/Users/UsersContent.tsx",
+        "edits": [
+          {
+            "from": "const unlinkLine = async () => {",
+            "to": "const unlinkLine = async () => {\n    await unlink.mutateAsync({ id: user.id });\n    return;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "U2",
+    "what": "🚫 a raw LINE id shown on the Users page",
+    "files": [
+      {
+        "file": "src/components/partials/Users/UsersContent.tsx",
+        "edits": [
+          {
+            "from": "{lineLinked ? t(\"users.lineLinked\") : t(\"users.lineNotLinked\")}",
+            "to": "{lineLinked ? t(\"users.lineLinked\") : t(\"users.lineNotLinked\")}{(user as unknown as { lineUserId?: string }).lineUserId}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "U3",
+    "what": "⚠️ Unlink offered on a row that is NOT linked",
+    "files": [
+      {
+        "file": "src/components/partials/Users/UsersContent.tsx",
+        "edits": [
+          {
+            "from": "{lineLinked && (",
+            "to": "{true && ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "U4",
+    "what": "⚠️ the column reads the wrong way round",
+    "files": [
+      {
+        "file": "src/components/partials/Users/UsersContent.tsx",
+        "edits": [
+          {
+            "from": "const lineLinked = user.lineLinked === true;",
+            "to": "const lineLinked = user.lineLinked !== true;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "P1",
+    "what": "🚫 a raw LINE id shown on the old panel",
+    "files": [
+      {
+        "file": "src/components/partials/LinkRequests/LineAdminsPanel.tsx",
+        "edits": [
+          {
+            "from": "<Text fw={500}>{label(row)}</Text>",
+            "to": "<Text fw={500}>{label(row)} {(row as unknown as { lineUserId?: string }).lineUserId}</Text>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "P2",
+    "what": "🔴 a legacy mark on EVERY row, a linked one included",
+    "files": [
+      {
+        "file": "src/lib/users/line-link.ts",
+        "edits": [
+          {
+            "from": "row.kind === \"legacy\"",
+            "to": "true"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "P3",
+    "what": "🔴 a linked account is not named by its web user (falls back to \"Unknown account\")",
+    "files": [
+      {
+        "file": "src/lib/users/line-link.ts",
+        "edits": [
+          {
+            "from": "row.kind === \"linked\" ? (",
+            "to": "false ? ("
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "H1",
+    "what": "🔴 the code is requested on RENDER, not on open — every page load mints (and replaces) a live code",
+    "files": [
+      {
+        "file": "src/components/layout/AdminLayout/Header/LinkLineModal.tsx",
+        "edits": [
+          {
+            "from": "    if (!opened) {",
+            "to": "    if (false) {"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "H2",
+    "what": "🔴 a COACH account is offered «Link LINE» (the server then refuses it)",
+    "files": [
+      {
+        "file": "src/components/layout/AdminLayout/Header/Header.tsx",
+        "edits": [
+          {
+            "from": "const canLinkLine = !!me && !me.teacherId;",
+            "to": "const canLinkLine = !!me;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "H3",
+    "what": "⚠️ the dialog never notices the link happened (no re-read, no linked state)",
+    "files": [
+      {
+        "file": "src/components/layout/AdminLayout/Header/LinkLineModal.tsx",
+        "edits": [
+          {
+            "from": "const poll = setInterval(() => void readLink().then(setLinked, () => {}), LINK_POLL_MS);",
+            "to": "const poll = setInterval(() => {}, LINK_POLL_MS);"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "H4",
+    "what": "⚠️ the linked state never replaces the code",
+    "files": [
+      {
+        "file": "src/components/layout/AdminLayout/Header/LinkLineModal.tsx",
+        "edits": [
+          {
+            "from": "const justLinked = !!issued && !issued.wasLinked && linked === true;",
+            "to": "const justLinked = false;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "H5",
+    "what": "🔴 the code is LOGGED",
+    "files": [
+      {
+        "file": "src/components/layout/AdminLayout/Header/LinkLineModal.tsx",
+        "edits": [
+          {
+            "from": "setIssued({ ...r, wasLinked });",
+            "to": "console.log(r.code);\n      setIssued({ ...r, wasLinked });"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "H6",
+    "what": "🔴 the code is STORED beyond the dialog",
+    "files": [
+      {
+        "file": "src/components/layout/AdminLayout/Header/LinkLineModal.tsx",
+        "edits": [
+          {
+            "from": "setIssued({ ...r, wasLinked });",
+            "to": "window.localStorage.setItem(\"ss.line-code\", r.code);\n      setIssued({ ...r, wasLinked });"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "H7",
+    "what": "🔴 the code is kept after the dialog closes",
+    "files": [
+      {
+        "file": "src/components/layout/AdminLayout/Header/LinkLineModal.tsx",
+        "edits": [
+          {
+            "from": "      setIssued(null);",
+            "to": "      void 0;"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "H8",
+    "what": "🔴 the dialog mints a code WITHOUT first asking the server whether the account is already linked (an already-linked account gets a code it did not need, replacing nothing yet but inviting a re-link)",
+    "files": [
+      {
+        "file": "src/components/layout/AdminLayout/Header/LinkLineModal.tsx",
+        "edits": [
+          {
+            "from": "if (!l) await getCode(false);",
+            "to": "await getCode(false);"
+          }
+        ]
+      }
+    ]
+  }
+]

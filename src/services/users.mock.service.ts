@@ -8,7 +8,7 @@ const delay = <T>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(v)
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 const users: UserDTO[] = [
-  { id: "u-admin", username: "admin", displayName: "Admin", isSuperAdmin: true, disabledAt: null, createdAt: "2026-09-17T00:00:00.000Z", menus: [...MENU_KEYS], actions: [...ACTION_KEYS_SNAPSHOT], roleId: null, roleName: null, grants: { fromRole: [], own: [] }, teacherId: null, teacherName: null },
+  { id: "u-admin", username: "admin", displayName: "Admin", isSuperAdmin: true, lineLinked: false, disabledAt: null, createdAt: "2026-09-17T00:00:00.000Z", menus: [...MENU_KEYS], actions: [...ACTION_KEYS_SNAPSHOT], roleId: null, roleName: null, grants: { fromRole: [], own: [] }, teacherId: null, teacherName: null },
 ];
 let seq = 1;
 
@@ -17,8 +17,8 @@ let seq = 1;
  * we cannot name at all — the honest case the page has to handle, so it is the default thing a dev sees, not an edge.
  */
 const lineAdmins = [
-  { ref: "a1b2c3d4e5f60718", idTail: "…8f21", alsoTeacher: "บีม", alsoParent: null, afterRemoval: "teacher-menu" as const },
-  { ref: "0f1e2d3c4b5a6978", idTail: "…4c7d", alsoTeacher: null, alsoParent: null, afterRemoval: "visitor-menu" as const },
+  { ref: "a1b2c3d4e5f60718", idTail: "…8f21", alsoTeacher: "บีม", alsoParent: null, afterRemoval: "teacher-menu" as const, kind: "legacy" as const, userId: null, displayName: null, username: null, disabled: false },
+  { ref: "0f1e2d3c4b5a6978", idTail: "…4c7d", alsoTeacher: null, alsoParent: null, afterRemoval: "visitor-menu" as const, kind: "legacy" as const, userId: null, displayName: null, username: null, disabled: false },
 ];
 const notKnown = [
   "ชื่อที่แสดงใน LINE — ระบบไม่เคยเก็บไว้",
@@ -34,6 +34,12 @@ export const removeLineAdmin = (ref: string) => {
 };
 
 export const listUsers = () => delay(clone(users));
+export const unlinkUserLine = (id: string) => {
+  const u = users.find((x) => x.id === id);
+  if (!u) return delay(Promise.reject(new Error("NOT_FOUND")) as never);
+  u.lineLinked = false;
+  return delay({ user: clone(u), afterRemoval: "visitor-menu", menuSettled: true });
+};
 
 export const createUser = (input: CreateUserInput) => {
   const u: UserDTO = {
@@ -41,6 +47,7 @@ export const createUser = (input: CreateUserInput) => {
     username: input.username.trim().toLowerCase(),
     displayName: input.displayName.trim(),
     isSuperAdmin: !!input.isSuperAdmin,
+    lineLinked: false,
     disabledAt: null,
     createdAt: new Date().toISOString(),
     menus: input.isSuperAdmin ? [...MENU_KEYS] : [],

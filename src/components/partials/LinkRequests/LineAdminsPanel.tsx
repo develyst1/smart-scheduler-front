@@ -21,6 +21,7 @@ import { Card, Stack, Group, Text, Button, Modal, Alert, List } from "@mantine/c
 import { ShieldOff, ShieldAlert, Info } from "lucide-react";
 import { useLineAdmins, useRemoveLineAdmin } from "@/hooks/scheduler/useUsers";
 import { adminRowLabel, adminRows, afterRemovalKey, notKnownLines, type LineAdminRow } from "@/lib/scheduler/line-admins";
+import { isLegacyEntry, linkedName } from "@/lib/users/line-link";
 import { useI18n } from "@/lib/i18n";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
@@ -40,7 +41,10 @@ export default function LineAdminsPanel() {
   const rows = adminRows(data);
   const notKnown = notKnownLines(data);
 
+  // 🔴 TASK-726 — an account linked from the WEB is named by its web user; a legacy one (the shared code) keeps the honest old label.
   const label = (row: LineAdminRow) => {
+    const web = linkedName(row);
+    if (web) return web;
     const l = adminRowLabel(row);
     return "name" in l ? l.name : t(l.key);
   };
@@ -89,9 +93,21 @@ export default function LineAdminsPanel() {
               >
                 <div className="min-w-0">
                   <Text fw={500}>{label(row)}</Text>
+                  {/* TASK-726 — which web account it is, for a linked row. 📋 No new word. */}
+                  {row.kind === "linked" && row.username ? (
+                    <Text size="xs" c="dimmed" ff="monospace" data-line-admin-username>
+                      {row.username}
+                    </Text>
+                  ) : null}
                   <Text size="xs" c="dimmed">
                     {t("lineAdmins.tail", { tail: row.idTail })}
                   </Text>
+                  {/* 🔴 TASK-726 — a row linked with the OLD shared code has no web user to name. 📋 DRAFT wording. */}
+                  {isLegacyEntry(row) ? (
+                    <Text size="xs" c="dimmed" data-line-admin-legacy>
+                      {t("users.lineLegacyMark")}
+                    </Text>
+                  ) : null}
                   {row.alsoTeacher ? (
                     <Text size="xs" c="dimmed">
                       {t("lineAdmins.alsoTeacher", { name: row.alsoTeacher })}

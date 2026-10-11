@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Group, Loader, Menu, Modal, PasswordInput, Select, Stack, Table, Text, TextInput } from "@mantine/core";
-import { AlertTriangle, GraduationCap, KeyRound, LayoutList, ListChecks, MoreHorizontal, Pencil, ShieldCheck, UserPlus, UserX, UserCheck } from "lucide-react";
+import { AlertTriangle, GraduationCap, KeyRound, LayoutList, ListChecks, MoreHorizontal, Pencil, ShieldCheck, Unlink, UserPlus, UserX, UserCheck } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { useConfirm } from "@/components/common/useConfirm";
 import { formatDateDisplay } from "@/lib/ui/format";
-import { useCreateUser, useResetUserPassword, useSetUserActions, useSetUserDisabled, useSetUserMenus, useSetUserRole, useUpdateUser, useUsers } from "@/hooks/scheduler/useUsers";
+import { useCreateUser, useResetUserPassword, useSetUserActions, useSetUserDisabled, useSetUserMenus, useSetUserRole, useUnlinkUserLine, useUpdateUser, useUsers } from "@/hooks/scheduler/useUsers";
 import { useRoles } from "@/hooks/scheduler/useRoles";
 import { useTeachers } from "@/hooks/scheduler";
 import { teacherSelectData } from "@/components/common/TeacherOption";
@@ -99,6 +99,7 @@ export default function UsersContent() {
                 <Table.Th>{t("users.colMenus")}</Table.Th>
                 <Table.Th>{t("users.colActions")}</Table.Th>
                 <Table.Th>{t("users.colStatus")}</Table.Th>
+                <Table.Th>{t("users.colLine")}</Table.Th>
                 <Table.Th>{t("users.colCreated")}</Table.Th>
                 <Table.Th data-pin="action" />
               </Table.Tr>
@@ -173,8 +174,30 @@ function UserRow({
   const t = useT();
   const setDisabled = useSetUserDisabled();
   const setRole = useSetUserRole();
+  const unlink = useUnlinkUserLine();
   const { confirm: askConfirm, confirmDialog } = useConfirm();
   const disabled = !!user.disabledAt;
+  // TASK-726 — the server's `lineLinked` (a yes/no; the LINE id never reaches this page).
+  const lineLinked = user.lineLinked === true;
+
+  /**
+   * 🔴 TASK-726 — Unlink goes through the confirm FIRST (it stops this account's admin notices), then `DELETE /users/:id/line-link`. The row
+   * says "Not linked" when the SERVER's re-read says so (no optimistic flip); a refusal is the server's sentence. 📋 DRAFT words.
+   */
+  const unlinkLine = async () => {
+    const ok = await askConfirm({
+      title: t("users.unlinkLine"),
+      message: t("users.unlinkLineConfirm", { name: user.displayName }),
+      confirmLabel: t("users.unlinkLine"),
+      color: "red",
+    });
+    if (!ok) return;
+    try {
+      await unlink.mutateAsync({ id: user.id });
+    } catch (e) {
+      notify({ title: errMsg(e), color: "danger" });
+    }
+  };
 
   /** Stage 4 — assign / clear the LIVE role: `null` on *none*; the row's counts become the effective ones on re-read. */
   const assignRole = async (roleId: string | null) => {
@@ -279,6 +302,11 @@ function UserRow({
           {disabled ? t("users.statusDisabled") : t("users.statusEnabled")}
         </Badge>
       </Table.Td>
+      <Table.Td>
+        <Badge size="sm" variant="light" color={lineLinked ? "green" : "gray"} data-line-linked={lineLinked ? "yes" : "no"}>
+          {lineLinked ? t("users.lineLinked") : t("users.lineNotLinked")}
+        </Badge>
+      </Table.Td>
       <Table.Td className="tabular-nums text-sm">{formatDateDisplay(user.createdAt)}</Table.Td>
       <Table.Td data-pin="action">
         {/* The frequent act stays one tap; reset + disable/enable sit behind ⋯ (disable still confirms). */}
@@ -291,7 +319,7 @@ function UserRow({
               <ActionIcon
                 variant="subtle"
                 color="gray"
-                loading={setDisabled.isPending}
+                loading={setDisabled.isPending || unlink.isPending}
                 aria-label={t("users.moreActions", { name: user.displayName })}
               >
                 <MoreHorizontal size={16} />
@@ -301,6 +329,11 @@ function UserRow({
               <Menu.Item leftSection={<KeyRound size={14} />} onClick={onReset}>
                 {t("users.resetPassword")}
               </Menu.Item>
+              {lineLinked && (
+                <Menu.Item color="red" leftSection={<Unlink size={14} />} onClick={unlinkLine} data-unlink-line>
+                  {t("users.unlinkLine")}
+                </Menu.Item>
+              )}
               <Menu.Divider />
               <Menu.Item
                 color={disabled ? "green" : "red"}

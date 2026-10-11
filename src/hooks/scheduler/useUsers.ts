@@ -11,6 +11,7 @@ import {
   setUserActions,
   setUserMenus,
   setUserRole,
+  unlinkUserLine,
   updateUser,
   type CreateUserInput,
   type UpdateUserInput,
@@ -37,6 +38,21 @@ export const useRemoveLineAdmin = () => {
 };
 
 const invalidate = (qc: ReturnType<typeof useQueryClient>) => qc.invalidateQueries({ queryKey: USERS_KEY });
+
+/**
+ * TASK-726 — take a web user's LINE link off. 🚫 **No optimistic update**, the same rule as the removal above: the row says "Not linked"
+ * when the SERVER says it is, so a refusal never looks like a success. Both lists read the same fact, so both re-read.
+ */
+export const useUnlinkUserLine = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) => unlinkUserLine(id),
+    onSuccess: () => {
+      void invalidate(qc);
+      void qc.invalidateQueries({ queryKey: LINE_ADMINS_KEY });
+    },
+  });
+};
 
 export const useCreateUser = () => {
   const qc = useQueryClient();

@@ -910,6 +910,8 @@ export interface UserDTO {
   username: string;
   displayName: string;
   isSuperAdmin: boolean;
+  /** TASK-725/726 — this user has a LINE account linked, `disabled` or not (a yes/no; the LINE id never reaches the front). */
+  lineLinked: boolean;
   disabledAt: string | null;
   createdAt: string;
   /** REQ-092 Stage 2 — the `menu:*` keys granted to this user (a super admin: all of them). */

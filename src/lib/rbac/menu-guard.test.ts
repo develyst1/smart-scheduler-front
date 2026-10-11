@@ -194,9 +194,9 @@ describe("copy", () => {
       for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     };
     both("rbac", 4);
-    both("header", 11);
+    both("header", 17); // 11 + TASK-726's six: linkLine · linkLineTitle · linkLineInstruction · linkLineExpires · linkLineNewCode · linkLineLinked
     both("login", 7);
-    both("users", 63); // 46 + the Stage-3 `Actions` checklist's 8 + Stage 4's role column 4 + TASK-407's teacher link 4 + `moreActions` (897b29a)
+    both("users", 69); // + TASK-726's six (colLine · lineLegacyMark · lineLinked · lineNotLinked · unlinkLine · unlinkLineConfirm — see `USERS_KEY_INVENTORY` in action-gate.test.ts). 63 = 46 + the Stage-3 `Actions` checklist's 8 + Stage 4's role column 4 + TASK-407's teacher link 4 + `moreActions` (897b29a)
     for (const i of [...NAV_ITEMS, ...HIDDEN_NAV_ITEMS]) {
       const k = i.labelKey.replace("nav.", "");
       expect(dictionaries.en.nav[k as keyof typeof dictionaries.en.nav]?.length).toBeGreaterThan(0);

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { changeMyPassword, getMe, getPermissions, type Me } from "@/services/me.service";
+import { changeMyPassword, getMe, getMyLineLink, getPermissions, requestLineLinkCode, type Me } from "@/services/me.service";
 import type { MenuAccess } from "@/lib/rbac/menus";
 import { can, type ActionKey } from "@/lib/rbac/actions";
 
@@ -79,4 +79,22 @@ export const useChangeMyPassword = () => {
       changeMyPassword(currentPassword, newPassword),
     onSuccess: () => qc.invalidateQueries({ queryKey: ME_KEY }),
   });
+};
+
+/**
+ * TASK-726 — ask for a one-time LINE link code. 🔴 **Nothing is invalidated and nothing is cached on purpose:** the code is returned once
+ * and the caller keeps it in its own state. The caller `reset()`s the mutation after reading it, so the code does not also sit in the
+ * query client's mutation cache.
+ */
+export const useRequestLineLinkCode = () => useMutation({ mutationFn: () => requestLineLinkCode() });
+
+/**
+ * TASK-726 🔻 (TASK-725 contract change #1) — "is MY account linked to a LINE account?" is NOT on `GET /me` (which the shell reads on every page
+ * load); it is its own route, `GET /me/line-link`, read only where the link dialog needs it. `read()` always asks the server (`staleTime: 0`): the
+ * answer decides whether the dialog mints a code at all, so a cached "not linked" must never stand in for it.
+ */
+export const LINE_LINK_KEY = ["me", "line-link"] as const;
+export const useReadMyLineLink = () => {
+  const qc = useQueryClient();
+  return () => qc.fetchQuery({ queryKey: LINE_LINK_KEY, queryFn: getMyLineLink, staleTime: 0 }).then((r) => r.lineLinked === true);
 };
