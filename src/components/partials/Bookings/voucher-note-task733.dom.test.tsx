@@ -80,7 +80,11 @@ beforeEach(() => {
   posts.length = 0;
   window.localStorage.removeItem("ss.lang");
 });
-afterEach(cleanup);
+// 📌 the TH test leaves `ss.lang` set; the NEXT file would then render Thai (it cost 4 reds in other files the first time)
+afterEach(() => {
+  cleanup();
+  window.localStorage.removeItem("ss.lang");
+});
 
 describe("🔴 TASK-733 — the voucher sale note", () => {
   it("🔑 a typed note travels on `POST /vouchers` (trimmed), next to the rest of the sale", async () => {
