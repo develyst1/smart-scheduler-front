@@ -48,6 +48,13 @@ export interface ParentInput {
   phone: string;
   name?: string | null;
   province?: string | null;
+  /**
+   * 🔴 TASK-801 (REQ-118) — the address as AREA CODES: **all three or none** (a half triple is refused by the server); `null` ×3 CLEARS the
+   * address (the codes AND `province`). The admin form sends these ONLY when the admin changed the address, and no longer sends `province`.
+   */
+  provinceCode?: string | null;
+  districtCode?: string | null;
+  subdistrictCode?: string | null;
   /** TASK-050 made `parents.note` reachable; TASK-069 surfaces it. Max 500 server-side. */
   note?: string | null;
 }

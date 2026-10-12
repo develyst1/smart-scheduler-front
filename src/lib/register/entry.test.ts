@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
-import { describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
+  AREA_ROUTES,
   BANGKOK_GEOCODE,
   everydayProvinceName,
   joinAddress,
@@ -69,67 +70,104 @@ describe("§7b — tier words, the everyday province name, and the join", () => 
   });
 });
 
-describe("§7b — the dataset: `thai-address-universal@2.2.0`, ISC, loaded by geocode", () => {
-  it("is pinned in package.json at an exact version, with its licence on disk", () => {
-    const pkg = JSON.parse(readFileSync("package.json", "utf8")) as { dependencies: Record<string, string> };
-    expect(pkg.dependencies["thai-address-universal"]).toBe("2.2.0");
-    const licence = readFileSync("node_modules/thai-address-universal/LICENSE.md", "utf8");
-    expect(licence).toContain("Permission to use, copy, modify, and/or distribute this software for any purpose");
+/**
+ * 🔴 **TASK-801 (REQ-118, ruling B) — the address book is SERVED by the back end.** `thai-address-universal` is gone: its geocodes were wrong for ~21 %
+ * of its rows (บึงกาฬ `97` vs the official `38`, 485 blank codes, Bangkok's เขต mis-numbered — `GATE-REQ-118-cross-check-2026-10-12.txt`). The pickers now read
+ * `GET /areas/provinces` · `/areas/districts?province=` · `/areas/subdistricts?district=`. ✅ Kept from the old block: lookups by CODE, the English name never on a row.
+ * 🔑 The fetch is faked at its own boundary: the point is WHAT the book asks for and what it hands back, not the dataset.
+ */
+describe("§7b — the address book: three lazy routes, by CODE (TASK-801)", () => {
+  const ROWS: Record<string, Array<{ code: string; nameTh: string; nameEn: string }>> = {
+    "/areas/provinces": [
+      { code: "10", nameTh: "กรุงเทพมหานคร", nameEn: "Bangkok" },
+      { code: "50", nameTh: "เชียงใหม่", nameEn: "Chiang Mai" },
+      { code: "38", nameTh: "บึงกาฬ", nameEn: "Bueng Kan" },
+    ],
+    "/areas/districts?province=10": [{ code: "1035", nameTh: "จอมทอง", nameEn: "Chom Thong" }],
+    "/areas/districts?province=50": [{ code: "5002", nameTh: "จอมทอง", nameEn: "Chom Thong" }],
+    "/areas/subdistricts?district=1035": [{ code: "103501", nameTh: "บางขุนเทียน", nameEn: "Bang Khun Thian" }],
+    "/areas/subdistricts?district=5002": [{ code: "500201", nameTh: "บ้านหลวง", nameEn: "Ban Luang" }],
+  };
+  const asked: string[] = [];
+  let failNext: string | null = null;
+  const realFetch = globalThis.fetch;
+  beforeEach(() => {
+    asked.length = 0;
+    failNext = null;
+    globalThis.fetch = (async (url: string) => {
+      const path = String(url).replace(/^.*\/api(?=\/areas)/, "");
+      asked.push(path);
+      if (failNext === path) return { ok: false, status: 503, json: async () => [] } as unknown as Response;
+      return { ok: true, status: 200, json: async () => ROWS[path] ?? [] } as unknown as Response;
+    }) as typeof fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = realFetch;
   });
 
-  it("🔑 the package is named in exactly ONE source file, as a dynamic import — the admin bundle never carries it", () => {
-    // `src/**` minus tests, walked on disk (not `git grep` — a new file is untracked until the human commits).
+  it("🔑 NO source file imports the old package (it is left in package.json for now — removing it also means two lockfiles; a separate, human-run step)", () => {
     const { readdirSync, statSync } = require("fs") as typeof import("fs");
     const walk = (dir: string): string[] =>
       readdirSync(dir).flatMap((n) => {
         const p = `${dir}/${n}`;
         return statSync(p).isDirectory() ? walk(p) : [p];
       });
-    const files = walk("src").filter((f) => /\.(ts|tsx)$/.test(f) && !f.endsWith(".test.ts"));
+    const files = walk("src").filter((f) => /\.(ts|tsx)$/.test(f) && !/\.test\.tsx?$/.test(f));
     expect(files.length).toBeGreaterThan(100);
-    const hits = files.filter((f) => readFileSync(f, "utf8").includes("thai-address-universal"));
-    expect(hits).toEqual(["src/lib/register/entry.ts"]);
-    expect(entry).toContain('await import("thai-address-universal")');
-    expect(entry).not.toMatch(/^import .*thai-address-universal/m);
+    const importers = files.filter((f) => /(from\s+|import\s*\(\s*)["']thai-address-universal["']/.test(readFileSync(f, "utf8")));
+    expect(importers).toEqual([]);
   });
 
-  it("77 provinces; Bangkok's 50 เขต; วัฒนา's แขวง collapsed to one row each (the customer's own district)", async () => {
+  it("🔑 LAZY per level: loading the book asks for the provinces ONLY; districts and sub-districts are asked for when picked", async () => {
     const book = await loadAddressBook();
-    expect(book.provinces.length).toBe(77);
-    const bkk = book.provinces.find((p) => p.code === BANGKOK_GEOCODE);
-    expect(bkk?.nameTh).toBe("กรุงเทพมหานคร");
-    const districts = await book.districtsOf(BANGKOK_GEOCODE);
-    expect(districts.length).toBe(50);
-    const wattana = districts.find((d) => d.nameTh === "วัฒนา");
-    expect(wattana).toBeDefined();
-    const subs = await book.subDistrictsOf(wattana!.code);
-    // the raw rows are per postal code — พระโขนงเหนือ has two — and the picker must list it ONCE
-    expect(subs.map((s) => s.nameTh).sort()).toEqual(["คลองตันเหนือ", "คลองเตยเหนือ", "พระโขนงเหนือ"]);
+    expect(asked).toEqual(["/areas/provinces"]);
+    await book.districtsOf("10");
+    expect(asked).toEqual(["/areas/provinces", "/areas/districts?province=10"]);
+    await book.subDistrictsOf("1035");
+    expect(asked).toEqual(["/areas/provinces", "/areas/districts?province=10", "/areas/subdistricts?district=1035"]);
   });
 
-  it("the dataset's 77 province names are EXACTLY the repo's `TH_PROVINCES` — this repo's CLAIM of the BE's 77", async () => {
-    // TASK-353 RE-POINT: the SOURCE of the 77 is now the BE's `src/lib/thai-provinces.ts` (TASK-352), which REFUSES
-    // any `province` outside it (`PROVINCE_UNKNOWN`). A test here cannot read another repo's file (paths are
-    // per-machine, `machine.local.md`), so the pin is: dataset == `TH_PROVINCES`, and `TH_PROVINCES` is this repo's
-    // claim of the BE list — checked equal by hand, 77 = 77, no diff, 2026-09-13. `contract.ts`'s rule applies:
-    // keeping the claim in step with the BE is a human job; this pin catches the dataset drifting from the claim.
-    const { TH_PROVINCES } = await import("@/lib/people/th-provinces");
-    expect(TH_PROVINCES.length).toBe(77);
-    expect(new Set(TH_PROVINCES).size).toBe(77);
+  it("✅ each list is fetched ONCE and kept: asking again sends no request", async () => {
     const book = await loadAddressBook();
-    expect([...book.provinces.map((p) => p.nameTh)].sort()).toEqual([...TH_PROVINCES].sort());
+    await book.districtsOf("10");
+    await book.districtsOf("10");
+    await book.subDistrictsOf("1035");
+    await book.subDistrictsOf("1035");
+    expect(asked.length).toBe(3);
   });
 
-  it("🔑 lookups are by CODE because district NAMES repeat — จอมทอง is in both Bangkok and Chiang Mai", async () => {
+  it("🔑 rows are { code, nameTh } in the server's order — the English name never rides the row (TASK-580)", async () => {
+    const book = await loadAddressBook();
+    expect(book.provinces).toEqual([
+      { code: "10", nameTh: "กรุงเทพมหานคร" },
+      { code: "50", nameTh: "เชียงใหม่" },
+      { code: "38", nameTh: "บึงกาฬ" },
+    ]);
+    expect(JSON.stringify(book.provinces)).not.toContain("nameEn");
+  });
+
+  it("🔑 lookups are by CODE because district NAMES repeat — จอมทอง is in both Bangkok and Chiang Mai, kept apart", async () => {
     const book = await loadAddressBook();
     const bkk = (await book.districtsOf("10")).find((d) => d.nameTh === "จอมทอง");
     const cnx = (await book.districtsOf("50")).find((d) => d.nameTh === "จอมทอง");
     expect(bkk?.code).toBe("1035");
     expect(cnx?.code).toBe("5002");
-    const subsBkk = (await book.subDistrictsOf(bkk!.code)).map((s) => s.nameTh);
-    const subsCnx = (await book.subDistrictsOf(cnx!.code)).map((s) => s.nameTh);
-    expect(subsBkk.length).toBeGreaterThan(0);
-    expect(subsCnx.length).toBeGreaterThan(0);
-    expect(subsBkk.some((s) => subsCnx.includes(s))).toBe(false); // two different places, kept apart
+    expect((await book.subDistrictsOf(bkk!.code)).map((s) => s.nameTh)).toEqual(["บางขุนเทียน"]);
+    expect((await book.subDistrictsOf(cnx!.code)).map((s) => s.nameTh)).toEqual(["บ้านหลวง"]);
+  });
+
+  it("⚠️ a code is URL-encoded into the query (a code is data, never concatenated raw)", () => {
+    expect(AREA_ROUTES.districts("1&x=1")).toBe("/areas/districts?province=1%26x%3D1");
+    expect(AREA_ROUTES.subdistricts("a b")).toBe("/areas/subdistricts?district=a%20b");
+  });
+
+  it("🚫 a list that will not load REJECTS (the pickers stay disabled — no half-built address), and a failure is NOT kept: the next pick retries", async () => {
+    const book = await loadAddressBook();
+    failNext = "/areas/districts?province=10";
+    await expect(book.districtsOf("10")).rejects.toThrow();
+    failNext = null;
+    expect((await book.districtsOf("10")).map((d) => d.code)).toEqual(["1035"]);
+    failNext = "/areas/provinces";
+    await expect(loadAddressBook()).rejects.toThrow();
   });
 });

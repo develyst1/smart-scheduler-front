@@ -1,0 +1,195 @@
+{
+  "_why": "TASK-801 (REQ-118, ruling B included). The list: the register page's clicked test, its source-pin file, the address-book (entry) test, and the new People test (admin form + card). Written with the set; nothing reconstructed.",
+  "tests": [
+    "src/components/partials/Register/register-required.dom.test.tsx",
+    "src/lib/register/register-page.test.ts",
+    "src/lib/register/entry.test.ts",
+    "src/components/partials/People/parent-address-area-codes-task801.dom.test.tsx"
+  ],
+  "mutations": [
+    {
+      "id": "H1",
+      "what": "🔴 the register page sends the NAMES and drops the province CODE — the server keeps a Thai name and no code",
+      "files": [
+        {
+          "file": "src/components/partials/Register/RegisterContent.tsx",
+          "edits": [
+            {
+              "from": "provinceCode: addressOnFile ? undefined : provPick?.code || undefined,",
+              "to": "provinceCode: undefined,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H2",
+      "what": "🔴 the register page drops the SUB-DISTRICT code — a half triple leaves the page",
+      "files": [
+        {
+          "file": "src/components/partials/Register/RegisterContent.tsx",
+          "edits": [
+            {
+              "from": "subdistrictCode: addressOnFile ? undefined : subPick?.code || undefined,",
+              "to": "subdistrictCode: undefined,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H3",
+      "what": "🔴 the admin form sends a HALF triple (the guard is off and any picked level rides)",
+      "files": [
+        {
+          "file": "src/components/partials/People/ParentFormModal.tsx",
+          "edits": [
+            {
+              "from": "const halfAddress = areaTouched && areaKind === \"half\";",
+              "to": "const halfAddress = false;"
+            },
+            {
+              "from": "? areaKind === \"full\"",
+              "to": "? areaKind !== \"none\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H4",
+      "what": "🔴 an UNTOUCHED save sends null ×3 — it silently CLEARS a parent's address (a text-only parent especially)",
+      "files": [
+        {
+          "file": "src/components/partials/People/ParentFormModal.tsx",
+          "edits": [
+            {
+              "from": "...(areaTouched",
+              "to": "...(true"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H5",
+      "what": "🔴 clearing the address sends nothing — the address can never be cleared",
+      "files": [
+        {
+          "file": "src/components/partials/People/ParentFormModal.tsx",
+          "edits": [
+            {
+              "from": ": { provinceCode: null, districtCode: null, subdistrictCode: null }",
+              "to": ": {}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H6",
+      "what": "⚠️ the picker is NOT prefilled from the parent's codes",
+      "files": [
+        {
+          "file": "src/components/partials/People/ParentFormModal.tsx",
+          "edits": [
+            {
+              "from": "setArea({ province: parent?.provinceCode ?? null,",
+              "to": "setArea({ province: null,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H7",
+      "what": "🔴 the card shows the raw province text, never the rendered address",
+      "files": [
+        {
+          "file": "src/lib/people/parent-address.ts",
+          "edits": [
+            {
+              "from": "const rendered = lang === \"th\" ? p.addressTh : p.addressEn;",
+              "to": "const rendered: string | null = null;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H8",
+      "what": "🔴 the card shows THAI under an English screen (the two languages swapped)",
+      "files": [
+        {
+          "file": "src/lib/people/parent-address.ts",
+          "edits": [
+            {
+              "from": "lang === \"th\" ? p.addressTh : p.addressEn",
+              "to": "lang === \"th\" ? p.addressEn : p.addressTh"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H9",
+      "what": "🔴 the book asks for a WRONG route path — every picker would load an empty list from a 404",
+      "files": [
+        {
+          "file": "src/lib/register/entry.ts",
+          "edits": [
+            {
+              "from": "provinces: \"/areas/provinces\",",
+              "to": "provinces: \"/area/provinces\","
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H10",
+      "what": "🔴 a code is concatenated into the query RAW (not URL-encoded)",
+      "files": [
+        {
+          "file": "src/lib/register/entry.ts",
+          "edits": [
+            {
+              "from": "districts: (provinceCode: string) => `/areas/districts?province=${encodeURIComponent(provinceCode)}`,",
+              "to": "districts: (provinceCode: string) => `/areas/districts?province=${provinceCode}`,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H11",
+      "what": "⚠️ a FAILED list is kept — one bad moment on the network and that level never loads again",
+      "files": [
+        {
+          "file": "src/lib/register/entry.ts",
+          "edits": [
+            {
+              "from": "    p.catch(() => kept.delete(path));\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H12",
+      "what": "🔴 the book is not lazy: it never keeps a fetched list, so every pick re-asks the server",
+      "files": [
+        {
+          "file": "src/lib/register/entry.ts",
+          "edits": [
+            {
+              "from": "    kept.set(path, p);\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
