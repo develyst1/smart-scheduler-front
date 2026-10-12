@@ -10,7 +10,6 @@ import {
   Text,
   Select,
   RingProgress,
-  Progress,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import {
@@ -56,7 +55,6 @@ export default function ReportsContent() {
 
   const teacherName = (id: string) => teachers.find((tc) => tc.id === id)?.nickname ?? id;
   const teacherType = (id: string) => teachers.find((tc) => tc.id === id)?.type;
-  const maxTeacherCount = report?.byTeacher.reduce((m, tc) => Math.max(m, tc.count), 0) ?? 0;
 
   const rateColor =
     !report || report.attendanceRate >= 80
@@ -162,28 +160,47 @@ export default function ReportsContent() {
               {report.byTeacher.length === 0 ? (
                 <p className="text-sm text-muted-400">{t("reports.noSessions")}</p>
               ) : (
-                <div className="space-y-3">
+                // One tile per teacher, numbers only (no bar). Every tile has the SAME fixed skeleton so the eye
+                // finds each value in the same spot on every card: name (top) → type chip (own line) → a divider
+                // pinned to the bottom → two labelled cells, `attended/count` (lessons) left and `total`
+                // (+ ECA/Camp/Group) right. Grid rows stretch, and `flex-1` on the head pushes the numbers down,
+                // so a long, wrapping name never knocks a neighbour's numbers out of line. Each cell label reserves
+                // two lines (`min-h-[2lh]`) so a label that wraps (e.g. in Thai) doesn't drop its number lower.
+                // Field semantics — and the open denominator question — live on `DailyReport["byTeacher"]`.
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
                   {report.byTeacher.map((tc) => {
                     const type = teacherType(tc.teacherId);
                     return (
-                      <div key={tc.teacherId} className="flex items-center gap-3">
-                        <div className="flex w-40 shrink-0 items-center gap-2">
-                          <span className="truncate text-sm font-medium">
+                      <Paper
+                        key={tc.teacherId}
+                        withBorder
+                        p="md"
+                        className="flex h-full flex-col bg-muted-100/50"
+                      >
+                        <div className="flex flex-1 flex-col items-start gap-1">
+                          <span className="break-words text-sm font-medium leading-snug">
                             {teacherName(tc.teacherId)}
                           </span>
                           {type && <TeacherTypeChip type={type} />}
                         </div>
-                        <Progress
-                          className="flex-1"
-                          size="lg"
-                          radius="xl"
-                          value={maxTeacherCount > 0 ? (tc.count / maxTeacherCount) * 100 : 0}
-                          color="blue"
-                        />
-                        <span className="w-24 shrink-0 text-right text-xs text-muted-500">
-                          {t("reports.sessionsAttended", { count: tc.count, attended: tc.attended })}
-                        </span>
-                      </div>
+                        <div className="mt-3 grid grid-cols-2 gap-3 border-t border-muted-200 pt-3 tabular-nums">
+                          <div>
+                            <p className="min-h-[2lh] text-[11px] leading-tight text-muted-500">
+                              {t("reports.workloadRatioHint")}
+                            </p>
+                            <p className="mt-1 text-2xl font-bold leading-none">
+                              {tc.attended}
+                              <span className="text-muted-400">/{tc.count}</span>
+                            </p>
+                          </div>
+                          <div className="border-l border-muted-200 pl-3">
+                            <p className="min-h-[2lh] text-[11px] leading-tight text-muted-500">
+                              {t("reports.workloadTotal")}
+                            </p>
+                            <p className="mt-1 text-2xl font-bold leading-none">{tc.total}</p>
+                          </div>
+                        </div>
+                      </Paper>
                     );
                   })}
                 </div>

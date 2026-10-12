@@ -28,6 +28,7 @@ import type {
 } from "@/types/app/scheduler";
 import type { BulkConfirmResult, CatalogItem, CourseListItem, PostedSale, VoucherSummary } from "@/types/api/contract";
 import { ApiClientError } from "@/lib/api/client";
+import { workloadByTeacher } from "@/lib/scheduler/workload";
 
 const delay = <T>(value: T, ms = 200) =>
   new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
@@ -667,14 +668,6 @@ export const getDailyReport = (date: string, teacherId?: string): Promise<DailyR
   const totalBooked = active.length;
   const attended = active.filter((b) => b.status === "ATTENDED").length;
 
-  const byTeacherMap = new Map<string, { count: number; attended: number }>();
-  for (const b of active) {
-    const cur = byTeacherMap.get(b.teacherId) ?? { count: 0, attended: 0 };
-    cur.count += 1;
-    if (b.status === "ATTENDED") cur.attended += 1;
-    byTeacherMap.set(b.teacherId, cur);
-  }
-
   return delay({
     date,
     totalBooked,
@@ -693,9 +686,7 @@ export const getDailyReport = (date: string, teacherId?: string): Promise<DailyR
       type,
       count: active.filter((b) => b.bookingType === type && b.status === "CONFIRMED").length,
     })),
-    byTeacher: [...byTeacherMap.entries()]
-      .map(([tid, v]) => ({ teacherId: tid, count: v.count, attended: v.attended }))
-      .sort((a, b) => b.count - a.count),
+    byTeacher: workloadByTeacher(active),
   });
 };
 

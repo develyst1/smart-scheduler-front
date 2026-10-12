@@ -742,8 +742,19 @@ export interface DailyReport {
    * "By booking type (Confirmed)" row. Same shape/order rules as `byBookingTypeAttended`.
    */
   byBookingTypeConfirmed: { type: BookingType; count: number }[];
-  /** จำนวนคาบต่อครู (workload) — เรียงมากไปน้อย */
-  byTeacher: { teacherId: string; count: number; attended: number }[];
+  /**
+   * จำนวนคาบต่อครู (workload) — เรียงตาม `total` มากไปน้อย. Rendered as `attended/count` + "Total (+Group): total".
+   *
+   * - `attended` — lesson rows (FIRST_TRIAL / SINGLE_SESSION / COURSE_PACKAGE / VOUCHER) with status `ATTENDED`.
+   * - `count` — the ratio's denominator, labelled "Confirmed" in the UI. ⚠️ OPEN QUESTION for the backend/client:
+   *   today it is ALL non-cancelled lesson rows (PENDING, SICK_LEAVE, … included — the pre-existing number). The
+   *   label suggests either `CONFIRMED + ATTENDED` (everything confirmed; climbs 0/6 → 6/6 over the day) or
+   *   `CONFIRMED` only (shrinks as sessions are marked, can go below `attended`). Decide, then change it here and
+   *   in `DailyReportResponse.byTeacher`.
+   * - `total` — every non-cancelled row of the teacher that day, lessons PLUS group programs: OTHER (ECA / Free /
+   *   KOL / CAMP hours) and GROUP rows. Counts rows (= hours), so a 5-hour camp day adds 5.
+   */
+  byTeacher: { teacherId: string; count: number; attended: number; total: number }[];
 }
 
 // ───────────────────────────── Misc ─────────────────────────────

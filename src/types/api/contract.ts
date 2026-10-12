@@ -741,6 +741,17 @@ export interface DailyReportResponse {
    * `CONFIRMED` only (confirmed, not yet marked attended). Same fallback/teacher-filter notes apply.
    */
   byBookingTypeConfirmed?: Array<{ type: BookingType; count: number }>;
+  /**
+   * TODO(backend): add to `GET /reports/daily` — per-teacher workload for `date`, one entry per teacher with any
+   * non-cancelled row, sorted by `total` desc. Field meanings are on `DailyReport["byTeacher"]`
+   * (`src/types/app/scheduler/index.ts`), including the open question on `count`'s denominator.
+   * Two things only the server can get right:
+   *   1. Multi-teacher rows (ECA / OTHER can staff several teachers) must count for EVERY assigned teacher — the
+   *      FE fallback only sees the row's primary `teacherId`.
+   *   2. GROUP rows: count the group row once per teacher, never its hidden seat bookings.
+   * Until it ships, the FE derives this from the day's calendar rows (`enrichDailyReport`).
+   */
+  byTeacher?: Array<{ teacherId: string; count: number; attended: number; total: number }>;
 }
 
 export type StudentInput =

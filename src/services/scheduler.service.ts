@@ -83,6 +83,7 @@ import type { OtherKind, OtherScheduleFacts } from "@/lib/scheduler/other-schedu
 import type { GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
 import { groupSeriesBody, type GroupSeriesInput, type GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 import { startChangeBody, type StartChangeForecast, type StartChangeResult } from "@/lib/scheduler/course-start";
+import { workloadByTeacher } from "@/lib/scheduler/workload";
 import * as mock from "./scheduler.mock.service";
 
 const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -1053,14 +1054,6 @@ function enrichDailyReport(
   const attended = active.filter((b) => b.status === "ATTENDED").length;
   const totalBooked = active.length;
 
-  const byTeacherMap = new Map<string, { count: number; attended: number }>();
-  for (const b of active) {
-    const cur = byTeacherMap.get(b.teacherId) ?? { count: 0, attended: 0 };
-    cur.count += 1;
-    if (b.status === "ATTENDED") cur.attended += 1;
-    byTeacherMap.set(b.teacherId, cur);
-  }
-
   return {
     date: base.date,
     totalBooked,
@@ -1078,9 +1071,8 @@ function enrichDailyReport(
       (!teacherId && base.byBookingTypeAttended) || countByBookingType(active, "ATTENDED"),
     byBookingTypeConfirmed:
       (!teacherId && base.byBookingTypeConfirmed) || countByBookingType(active, "CONFIRMED"),
-    byTeacher: [...byTeacherMap.entries()]
-      .map(([tid, v]) => ({ teacherId: tid, count: v.count, attended: v.attended }))
-      .sort((a, b) => b.count - a.count),
+    // Same rule: server numbers when it sends them (see `DailyReportResponse.byTeacher` TODO), else local count.
+    byTeacher: (!teacherId && base.byTeacher) || workloadByTeacher(active),
   };
 }
 
