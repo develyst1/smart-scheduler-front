@@ -25,6 +25,20 @@ export interface Parent {
   lineUserId: string | null;
   /** Household address province (≠ the per-booking `จังหวัด` badge). */
   province: string | null;
+  /**
+   * 🔴 TASK-801 (REQ-118) — the address as AREA CODES (the DOPA codes: `"10"` · `"1001"` · `"100101"`), nullable, so the admin form can
+   * prefill its 3-level picker. Optional here only because an older payload / the FE mock predates them; every reader treats absent as null.
+   */
+  provinceCode?: string | null;
+  districtCode?: string | null;
+  subdistrictCode?: string | null;
+  /**
+   * 🔑 TASK-801 — the address RENDERED by the server in each language (`"{sub-district} {district} {province}"`), nullable when the parent
+   * has no codes. **No language negotiation: the front picks the one matching its own UI language** (`lib/people/parent-address.ts`) and
+   * falls back to the raw `province` text only when it is null.
+   */
+  addressTh?: string | null;
+  addressEn?: string | null;
   /** Free-text staff note about the household (max 500). Reachable since TASK-050. */
   note: string | null;
   /** ISO timestamp when suspended; null = active. */

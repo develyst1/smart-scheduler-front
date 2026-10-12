@@ -14,7 +14,7 @@
  * 🚫 No `GET`. 🚫 No `lineUserId`, `parentId` or `familyId` in any body — the `idToken` IS the identity.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/api";
 
 /** Every named code the three routes can return (§C0–§C3), so a rendering can be asserted for each. */
 export const REGISTER_CODES = [
@@ -200,6 +200,15 @@ export interface CreateInput {
   district?: string;
   subDistrict?: string;
   /**
+   * 🔴 **TASK-801 (REQ-118) — the AREA CODES of the three picks** (the official DOPA geocodes the picker already holds: `"10"` · `"1001"` ·
+   * `"100101"`), so the server can store the address as codes and render it in Thai OR English. 🔑 **The page sends what it holds and decides
+   * nothing**: whether the triple is consistent is the SERVER's rule (Rule 1). All three or none — the page only fills them from the three picks.
+   * ⚠️ Key names per @Jason's TASK-800 contract (provisional until confirmed in writing — one line here and one in `create` below).
+   */
+  provinceCode?: string;
+  districtCode?: string;
+  subdistrictCode?: string;
+  /**
    * 🔴 **TASK-591 — a NEW family's first child is ONE call.** When `/lookup` said `"new"`, the page carries the phone here
    * and the server creates **the family WITH this child, in one transaction** ⇒ 🚫 **nothing is half-linked, because
    * nothing is written until the child is accepted.** An already-linked account's `phone` is IGNORED by the server
@@ -218,6 +227,10 @@ export const create = (idToken: string, input: CreateInput) => {
   if (input.province) body.province = input.province;
   if (input.district) body.district = input.district;
   if (input.subDistrict) body.subDistrict = input.subDistrict;
+  // TASK-801 — the codes, omitted when absent exactly like the names (an absent key is how the server is told nothing was given)
+  if (input.provinceCode) body.provinceCode = input.provinceCode;
+  if (input.districtCode) body.districtCode = input.districtCode;
+  if (input.subdistrictCode) body.subdistrictCode = input.subdistrictCode;
   if (input.phone) body.phone = input.phone;
   if (input.detailProvided) body.detailProvided = true;
   return post<CreateResult>("create", body);

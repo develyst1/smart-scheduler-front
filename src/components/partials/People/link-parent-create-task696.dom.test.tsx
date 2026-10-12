@@ -159,7 +159,8 @@ describe("🔴 TASK-696 — create, then straight to the confirm, then link", ()
 
     await waitFor(() => expect(dlg()?.getAttribute("data-link-parent-dialog")).toBe("confirm"));
     expect(createPosts().length).toBe(1);
-    expect(createPosts()[0].body).toEqual({ name: "แม่ตินติน", phone: "0899999999", province: null, note: null });
+    // 🔻 TASK-801 (REQ-118), declared: the form no longer sends the old `province: null` — the address is the three area codes, sent ONLY when the admin changed it; with no address picked the key is simply absent. ✅ What this pins — the create posts the form body ONCE and nothing else — is unchanged.
+    expect(createPosts()[0].body).toEqual({ name: "แม่ตินติน", phone: "0899999999", note: null });
     // the confirm's read is for the NEW family, and nothing was linked yet
     await waitFor(() => expect(dryRuns().length).toBeGreaterThan(0));
     expect(dryRuns()[0].url).toBe("/students/s-child/parent");
@@ -255,7 +256,8 @@ describe("🔴 TASK-696 — the People page's own “Add parent” is unchanged 
     await user.click(saveFamilyBtn());
 
     await waitFor(() => expect(createPosts().length).toBe(1));
-    expect(createPosts()[0].body).toEqual({ name: null, phone: "0877777777", province: null, note: null });
+    // 🔻 TASK-801 (REQ-118), declared: the form no longer sends the old `province: null` — the address is the three area codes, sent ONLY when the admin changed it; with no address picked the key is simply absent. ✅ What this pins — the create posts the form body ONCE and nothing else — is unchanged.
+    expect(createPosts()[0].body).toEqual({ name: null, phone: "0877777777", note: null });
     await waitFor(() => expect(notices.some((n) => n.title === en.people.parentSaved && n.description === "0877777777")).toBe(true));
     expect(!dlg()).toBe(true);
     expect(dryRuns().length).toBe(0);

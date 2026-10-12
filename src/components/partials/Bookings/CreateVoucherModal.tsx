@@ -10,6 +10,7 @@ import {
   Alert,
   Paper,
   Text,
+  Textarea,
 } from "@mantine/core";
 import { Ticket, Info, AlertTriangle } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
@@ -38,6 +39,9 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
   // จำนวนเดือนหมดอายุ — ตอนนี้เป็น display ฝั่ง FE เท่านั้น (ยังไม่ส่ง backend;
   // BE ยังคำนวณวันหมดอายุจากจำนวนชั่วโมงเอง ตาม contract เดิม)
   const [expiryMonths, setExpiryMonths] = useState<number>(6);
+  // TASK-733 — the sale's optional Remark (the server's rule: max 200). Reuses the approved "Note (optional)" label (`endCourse.noteLabel`, the same words
+  // CancelBookingDialog and OtherSeriesDialogs already read), so there is no new word.
+  const [note, setNote] = useState("");
   const [result, setResult] = useState<CreateVoucherResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   // REQ-063 — the voucher's list price now comes from the server (TASK-164), never a second FE copy.
@@ -52,6 +56,7 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
       setStudent(null);
       setTotalHours(10);
       setExpiryMonths(6);
+      setNote("");
       setResult(null);
       setError(null);
       setDiscount(emptyDiscount());
@@ -77,6 +82,7 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
         studentPhone: student?.phone,
         totalHours: totalHours as 5 | 10 | 15,
         discount: discountPayload(discount, fullMinor),
+        note: note.trim() || undefined,
       });
       setResult(res);
       notify({
@@ -166,6 +172,17 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
               required
             />
           </Group>
+
+          {/* TASK-733 — ONE optional note box. Empty ⇒ no `note` key goes out. */}
+          <Textarea
+            label={t("endCourse.noteLabel")}
+            value={note}
+            onChange={(e) => setNote(e.currentTarget.value)}
+            maxLength={200}
+            autosize
+            minRows={2}
+            data-voucher-note
+          />
 
           {/* REQ-063 — the full price follows the hour bucket, so it re-reads whenever the hours change. */}
           {fullMinor > 0 && (

@@ -228,13 +228,14 @@ export default function RegisterContent() {
     setDistPick(null);
     setSubPick(null);
     setSubDistricts([]);
-    setDistricts(p && book ? await book.districtsOf(p.code) : []);
+    // 🔴 TASK-801 — the lists come over the network now: a failed fetch leaves the level EMPTY (nothing to pick ⇒ the submit stays shut), never an unhandled rejection
+    setDistricts(p && book ? await book.districtsOf(p.code).catch(() => []) : []);
   };
   const pickDistrict = async (code: string | null) => {
     const d = districts.find((x) => x.code === code) ?? null;
     setDistPick(d);
     setSubPick(null);
-    setSubDistricts(d && book ? await book.subDistrictsOf(d.code) : []);
+    setSubDistricts(d && book ? await book.subDistrictsOf(d.code).catch(() => []) : []);
   };
   const pickSubDistrict = (code: string | null) => setSubPick(subDistricts.find((x) => x.code === code) ?? null);
   // TASK-351 (§8b) — LABELS follow the language; VALUES stay Thai. Thai labels are `tierWordsFor`'s four words with
@@ -357,6 +358,10 @@ export default function RegisterContent() {
         province: addressOnFile ? undefined : pickedProvince || undefined,
         district: addressOnFile ? undefined : distPick?.nameTh || undefined,
         subDistrict: addressOnFile ? undefined : subPick?.nameTh || undefined,
+        // 🔴 TASK-801 (REQ-118) — and the three CODES the picker already holds (they were thrown away). Same guard: an address on file sends none.
+        provinceCode: addressOnFile ? undefined : provPick?.code || undefined,
+        districtCode: addressOnFile ? undefined : distPick?.code || undefined,
+        subdistrictCode: addressOnFile ? undefined : subPick?.code || undefined,
         // 🔑 The phone of an UNLINKED account: the family and this child are created in ONE transaction.
         phone: newPhone ?? undefined,
         detailProvided: detailProvided || undefined,

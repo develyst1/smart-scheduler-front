@@ -23,7 +23,8 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { Search, UserPlus, Pencil, Ban, CircleCheck, Baby, Phone, MapPin, Link2Off, Trash2, AlertTriangle, Archive, ArchiveRestore } from "lucide-react";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
-import { useT } from "@/lib/i18n";
+import { useI18n, useT } from "@/lib/i18n";
+import { parentAddress } from "@/lib/people/parent-address";
 import { useLoadPhase } from "@/lib/ui/load-phase";
 import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 import {
@@ -57,7 +58,7 @@ import StudentFormModal from "./StudentFormModal";
 const PAGE_SIZE = 20;
 
 export default function PeopleContent() {
-  const t = useT();
+  const { t, lang } = useI18n();
   const [search, setSearch] = useState("");
   const [debounced] = useDebouncedValue(search, 350);
   const [page, setPage] = useState(1);
@@ -359,9 +360,10 @@ export default function PeopleContent() {
                         <span className="inline-flex items-center gap-1">
                           <Phone size={12} /> {p.phone}
                         </span>
-                        {p.province && (
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin size={12} /> {p.province}
+                        {/* 🔴 TASK-801 (REQ-118) — the server's rendered address in THIS screen's language; the raw province text only when there is none */}
+                        {parentAddress(p, lang) && (
+                          <span className="inline-flex items-center gap-1" data-parent-address>
+                            <MapPin size={12} /> {parentAddress(p, lang)}
                           </span>
                         )}
                       </div>

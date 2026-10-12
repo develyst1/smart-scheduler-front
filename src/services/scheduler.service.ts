@@ -937,6 +937,8 @@ export interface CreateVoucherInput {
   totalHours: 5 | 10 | 15;
   /** REQ-063 — optional admin discount; the BE re-validates against the voucher's list price. */
   discount?: { kind: "PERCENT" | "BAHT"; value: number; reason: string };
+  /** TASK-733 (FE) ← TASK-732 (BE) — the sale's optional Remark (`vouchers.note`), max 200. Sent only when non-empty. */
+  note?: string;
 }
 
 export const createVoucher = async (
@@ -947,6 +949,7 @@ export const createVoucher = async (
     student: studentPayload(input),
     totalHours: input.totalHours,
     discount: input.discount,
+    note: input.note || undefined, // same idiom as `discount`: `undefined` is dropped by JSON, so an empty note puts NO `note` key on the wire
   });
   return data;
 };

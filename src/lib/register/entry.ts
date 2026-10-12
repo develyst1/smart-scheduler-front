@@ -8,11 +8,14 @@
  * produces what the parent would have typed. Everything here is a pure reorder / join of what a widget
  * emitted; **nothing validates**. The server's parser and guards stay the only rules (Rule 1).
  *
- * The address book is `thai-address-universal@2.2.0` (ISC; a TypeScript rewrite of `thai-address-database`,
- * whose rows trace to the Thai postal-code tables) — 77 provinces / 928 districts / 7,211 sub-districts (7,893 rows — one per postal code),
- * with the official geocodes. It is `import()`ed here and nowhere else, so **only `/register` ever loads it**,
- * the same way `@line/liff` is kept off the admin bundle.
+ * 🔻 **TASK-801 (REQ-118, ruling B) — the address book is SERVED by the back end, no longer bundled.** It was `thai-address-universal@2.2.0`;
+ * the cross-check gate found its geocodes wrong for ~21 % of its rows (บึงกาฬ `97` vs the official `38`, 485 blank codes, Bangkok's เขต
+ * mis-numbered), so a parent could pick a place whose code the server must refuse. Now the pickers read the back end's three read-only
+ * area routes — the ONE dataset the server validates against — so every code a picker can send exists by construction. The package is no
+ * longer imported anywhere, and the lists load LAZILY per level (provinces once, districts on a pick, sub-districts on a pick).
  */
+
+import { API_BASE } from "./api";
 
 /**
  * `§7a` — Mantine's `DatePickerInput` (v9) emits `YYYY-MM-DD` as a STRING. The customer's format is the same
@@ -84,15 +87,41 @@ const uniqueByCode = (rows: { code: string; nameTh: string }[]): AreaPick[] => {
 };
 
 /**
- * Loads the dataset — DYNAMICALLY, on first use, on `/register` only. Lookups are by GEOCODE, never by name
- * (`getDistricts("เมือง…")` by name would merge same-named districts from different provinces).
+ * The back end's three read-only area routes (TASK-800): `GET /areas/provinces` · `GET /areas/districts?province=<code>` ·
+ * `GET /areas/subdistricts?district=<code>`, each answering `[{ code, ... }]` in the dataset's order. 🔑 **The paths live HERE and nowhere
+ * else** — if the back end names them differently, this is the one place that changes.
+ */
+export const AREA_ROUTES = {
+  provinces: "/areas/provinces",
+  districts: (provinceCode: string) => `/areas/districts?province=${encodeURIComponent(provinceCode)}`,
+  subdistricts: (districtCode: string) => `/areas/subdistricts?district=${encodeURIComponent(districtCode)}`,
+} as const;
+
+/**
+ * Loads the address book from the back end. Lookups are by GEOCODE, never by name (district NAMES repeat across provinces). Public, no
+ * auth, direct `fetch` — as the rest of `/register` — so the admin form uses the very same call. Each list is fetched ONCE and kept
+ * (the routes are cacheable and the data never changes at runtime); a failed fetch is NOT kept, so the next pick retries.
+ * 🚫 A list that will not load REJECTS — the callers leave their pickers disabled (an address we cannot list is one we cannot collect).
  */
 export const loadAddressBook = async (): Promise<AddressBook> => {
-  const book = await import("thai-address-universal");
-  const provinces = uniqueByCode(await book.getProvinces());
+  const kept = new Map<string, Promise<AreaPick[]>>();
+  const get = (path: string): Promise<AreaPick[]> => {
+    const hit = kept.get(path);
+    if (hit) return hit;
+    const p = fetch(`${API_BASE}${path}`)
+      .then((res) => {
+        // (a rejection, not a `throw`: §7a pins that this file holds no `throw` — the date reorder above is the Rule-1 subject)
+        if (!res.ok) return Promise.reject(new Error(`area list ${path}: ${res.status}`));
+        return res.json() as Promise<{ code: string; nameTh: string }[]>;
+      })
+      .then((rows) => uniqueByCode(rows));
+    kept.set(path, p);
+    p.catch(() => kept.delete(path));
+    return p;
+  };
   return {
-    provinces,
-    districtsOf: async (provinceCode) => uniqueByCode(await book.getDistricts(provinceCode)),
-    subDistrictsOf: async (districtCode) => uniqueByCode(await book.getSubDistricts(districtCode)),
+    provinces: await get(AREA_ROUTES.provinces),
+    districtsOf: (provinceCode) => get(AREA_ROUTES.districts(provinceCode)),
+    subDistrictsOf: (districtCode) => get(AREA_ROUTES.subdistricts(districtCode)),
   };
 };

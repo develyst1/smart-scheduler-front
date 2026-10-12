@@ -2,7 +2,9 @@ import { readFileSync } from "fs";
 import { describe, expect, it } from "bun:test";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { MantineProvider, Select } from "@mantine/core";
+import { MantineProvider } from "@mantine/core";
+import { I18nProvider } from "@/lib/i18n";
+import AreaPicker, { NO_AREA } from "@/components/partials/People/AreaPicker";
 import { TH_PROVINCES, provinceOptions } from "./th-provinces";
 
 /**
@@ -36,38 +38,42 @@ const render = (value: string | null) =>
   );
 const visibleInput = (html: string) => html.match(/<input(?![^>]*type="hidden")[^>]*>/)?.[0] ?? "";
 
+/**
+ * 🔻 **TASK-801 (REQ-118), declared — the control changed, the claim did not.** The admin form's province box is now the first level of the
+ * 3-level `AreaPicker` (codes), so (a)/(b) render THAT, and (c) pins that the modal hands it the old text and sends no `province` any more.
+ * ✅ What this protects is exactly TASK-353's: *the visible value is the warning* — a dirty province is shown IN the box, as a disabled option
+ * that can be replaced but never re-picked, not as a blank box with a placeholder. (`provinceOptions` itself keeps its own pins below.)
+ */
+const renderPicker = (legacy: string | null) =>
+  renderToString(
+    createElement(MantineProvider, null, createElement(I18nProvider, null, createElement(AreaPicker, { value: NO_AREA, onChange: () => {}, legacyProvince: legacy }))),
+  );
+
 describe("§9.1 — a dirty province renders AS ITSELF in the admin form, unselectable, and a real one can replace it", () => {
-  it("(a) the control renders a dirty value without throwing", () => {
-    expect(() => render(DIRTY)).not.toThrow();
+  it("(a) the picker renders a dirty value without throwing", () => {
+    expect(() => renderPicker(DIRTY)).not.toThrow();
   });
 
-  it("(b) what it shows: the dirty string IN the visible input — not a blank box with a placeholder", () => {
-    // Before TASK-353, Mantine's Select showed a value it could not find in `data` as an EMPTY input (the value
-    // sat only in the hidden field) — an admin would read "nothing set". With `provinceOptions` the value is an
-    // option, so it is displayed; `disabled` means it cannot be re-picked, only replaced.
-    const html = render(DIRTY);
+  it("(b) what it shows: the dirty string IN the visible province input — not a blank box with a placeholder", () => {
+    const html = renderPicker(DIRTY);
     expect(visibleInput(html)).toContain(`value="${DIRTY}"`);
-    const opts = provinceOptions(DIRTY);
-    expect(opts[0]).toEqual({ value: DIRTY, label: DIRTY, disabled: true });
-    expect(opts.slice(1)).toEqual(TH_PROVINCES);
+    expect(visibleInput(renderPicker(null))).toContain('value=""');
   });
 
   it("(b′) a clean value or no value leaves the 77 exactly as they were — the list itself is untouched", () => {
     expect(provinceOptions("กรุงเทพมหานคร")).toBe(TH_PROVINCES);
     expect(provinceOptions(null)).toBe(TH_PROVINCES);
     expect(provinceOptions("")).toBe(TH_PROVINCES);
-    expect(visibleInput(render("เชียงใหม่"))).toContain('value="เชียงใหม่"');
-    expect(visibleInput(render(null))).toContain('value=""');
+    expect(provinceOptions(DIRTY)[0]).toEqual({ value: DIRTY, label: DIRTY, disabled: true });
     expect(TH_PROVINCES.length).toBe(77);
   });
 
-  it("(c) picking a real province and saving sends THAT province — the modal's onChange and submit are unchanged", () => {
+  it("(c) the modal hands the picker the OLD text only when there are no codes, and the picker's legacy option is disabled", () => {
     const modal = readFileSync("src/components/partials/People/ParentFormModal.tsx", "utf8");
-    expect(modal).toContain("data={provinceOptions(province)}");
-    expect(modal).toContain("onChange={setProvince}");
-    expect(modal).toContain("province: province ?? null,");
+    expect(modal).toContain("legacyProvince={parent && !parent.provinceCode ? parent.province : null}");
+    const picker = readFileSync("src/components/partials/People/AreaPicker.tsx", "utf8");
+    expect(picker).toContain("{ value: legacyValue, label: legacyProvince as string, disabled: true }");
     // 🚫 no repair button, no cleanup, no banner — the visible value is the warning, by the owner's decision
-    // (`color: "warning"` on the phone-required toast predates this task and is not a banner — hence the narrow shape)
     expect(modal).not.toMatch(/<Alert|<Notification|repair|cleanup|dirty|isThaiProvince|TH_PROVINCES.includes/);
   });
 });

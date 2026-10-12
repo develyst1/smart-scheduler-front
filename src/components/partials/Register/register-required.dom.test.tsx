@@ -179,6 +179,11 @@ describe("🔴 TASK-566 — every field required, clicked", () => {
     expect(body.district).toBe("วัฒนา");
     expect(body.subDistrict).toBe("พระโขนงเหนือ");
     expect(body.address).toBeUndefined();
+    // 🔴 TASK-801 (REQ-118) — REPRODUCTION: the picker KNOWS each pick's official code ("10" · "1001" · "100101") and the page threw it
+    // away, sending only the Thai names. The three codes must ride. (Names provisional until @Jason's contract is in writing.)
+    expect(body.provinceCode).toBe("10");
+    expect(body.districtCode).toBe("1001");
+    expect(body.subdistrictCode).toBe("100101");
     // 🔑 and the phone rides too, because this account was NOT linked: the family and this child are ONE transaction
     expect(body.phone).toBe("0812345678");
   });
@@ -528,5 +533,9 @@ describe("🔑 TASK-591 — the phone is a ONE-SHOT: it rides for the first chil
     expect(second.province).toBeUndefined();
     expect(second.district).toBeUndefined();
     expect(second.subDistrict).toBeUndefined();
+    // 🔴 TASK-801 — and no area CODES either: the address is on file, the page sends nothing it cannot use
+    expect(second.provinceCode).toBeUndefined();
+    expect(second.districtCode).toBeUndefined();
+    expect(second.subdistrictCode).toBeUndefined();
   });
 });

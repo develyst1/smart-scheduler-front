@@ -73,6 +73,9 @@ export const createParent = (input: ParentInput): Promise<Parent> => {
     name: input.name ?? null,
     lineUserId: null,
     province: input.province ?? null,
+    provinceCode: input.provinceCode ?? null,
+    districtCode: input.districtCode ?? null,
+    subdistrictCode: input.subdistrictCode ?? null,
     note: input.note ?? null,
     suspendedAt: null,
     students: [],
@@ -86,6 +89,10 @@ export const updateParent = (id: string, input: Partial<ParentInput>): Promise<P
   if (input.name !== undefined) p.name = input.name ?? null;
   if (input.phone !== undefined) p.phone = input.phone;
   if (input.province !== undefined) p.province = input.province ?? null;
+  // TASK-801 — the mock keeps the codes as sent (it has no dataset to render the address from, so `addressTh/En` stay null ⇒ the card falls back to `province`)
+  if (input.provinceCode !== undefined) p.provinceCode = input.provinceCode ?? null;
+  if (input.districtCode !== undefined) p.districtCode = input.districtCode ?? null;
+  if (input.subdistrictCode !== undefined) p.subdistrictCode = input.subdistrictCode ?? null;
   if (input.note !== undefined) p.note = input.note ?? null;
   return delay(clone(p));
 };

@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Group, Modal, Select, Stack, Textarea, TextInput } from "@mantine/core";
+import { Button, Group, Modal, Stack, Textarea, TextInput } from "@mantine/core";
 import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
 import { useCreateParent, useUpdateParent } from "@/hooks/scheduler";
 import { ApiClientError } from "@/lib/api/client";
-import { provinceOptions } from "@/lib/people/th-provinces";
+import AreaPicker, { areaState, NO_AREA, type AreaCodes } from "./AreaPicker";
 import type { Parent } from "@/types/app/people";
 import { useCan } from "@/hooks/scheduler/useMe";
 
@@ -32,30 +32,45 @@ export default function ParentFormModal({ opened, parent, onClose, onCreated }: 
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [province, setProvince] = useState<string | null>(null);
+  // 🔴 TASK-801 (REQ-118) — the address is the 3-level picker, held as CODES. `areaTouched` is what keeps an untouched form from rewriting an
+  // address: a parent with only the old province TEXT has no codes, and saving without touching the picker must send NO address (sending
+  // null ×3 would CLEAR it).
+  const [area, setArea] = useState<AreaCodes>(NO_AREA);
+  const [areaTouched, setAreaTouched] = useState(false);
   const [note, setNote] = useState("");
 
   useEffect(() => {
     if (!opened) return;
     setName(parent?.name ?? "");
     setPhone(parent?.phone ?? "");
-    setProvince(parent?.province ?? null);
+    setArea({ province: parent?.provinceCode ?? null, district: parent?.districtCode ?? null, subdistrict: parent?.subdistrictCode ?? null });
+    setAreaTouched(false);
     setNote(parent?.note ?? "");
   }, [opened, parent]);
 
   const busy = create.isPending || update.isPending;
+  const areaKind = areaState(area);
+  // all three, or none: a half triple cannot be saved (the server refuses it too — this stops it before the request)
+  const halfAddress = areaTouched && areaKind === "half";
 
   const submit = async () => {
     if (!phone.trim()) {
       notify({ title: t("people.phoneRequired"), color: "warning" });
       return;
     }
+    if (halfAddress) return;
     try {
       let created: Parent | undefined;
       const input = {
         name: name.trim() || null,
         phone: phone.trim(),
-        province: province ?? null,
+        // 🔴 TASK-801 — only when the admin CHANGED the address: the three codes (all three), or null ×3 to clear. `province` (the old text) is no
+        // longer sent — the server derives it from the code.
+        ...(areaTouched
+          ? areaKind === "full"
+            ? { provinceCode: area.province, districtCode: area.district, subdistrictCode: area.subdistrict }
+            : { provinceCode: null, districtCode: null, subdistrictCode: null }
+          : {}),
         note: note.trim() || null,
       };
       if (isEdit && parent) {
@@ -105,16 +120,16 @@ export default function ParentFormModal({ opened, parent, onClose, onCreated }: 
           />
         </Group>
 
-        <Select
-          label={t("people.province")}
-          placeholder={t("people.provincePlaceholder")}
-          /* §9.1 (TASK-353) — a value not in the 77 is shown AS ITSELF, unselectable, so the admin sees what to fix. */
-          data={provinceOptions(province)}
-          value={province}
-          onChange={setProvince}
-          searchable
-          clearable
-          maxDropdownHeight={280}
+        {/* 🔴 TASK-801 (REQ-118) — province → district → sub-district, as CODES. A legacy text-only province is shown as the placeholder (the
+            owner's TASK-353 "the visible value is the warning" rule, kept) and is never a pick. */}
+        <AreaPicker
+          value={area}
+          onChange={(next) => {
+            setArea(next);
+            setAreaTouched(true);
+          }}
+          legacyProvince={parent && !parent.provinceCode ? parent.province : null}
+          half={halfAddress}
         />
 
         {/* TASK-069 — `parents.note` existed in the schema but had no way in until TASK-050 opened it. */}
@@ -134,7 +149,7 @@ export default function ParentFormModal({ opened, parent, onClose, onCreated }: 
             {t("common.cancel")}
           </Button>
           {can(isEdit ? "action:people.parent-edit" : "action:people.parent-create") && (
-            <Button color="green" onClick={submit} loading={busy}>
+            <Button color="green" onClick={submit} loading={busy} disabled={halfAddress}>
               {t("common.save")}
             </Button>
           )}

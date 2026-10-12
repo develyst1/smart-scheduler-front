@@ -308,10 +308,11 @@ describe("§7b — the address is three cascading picks that JOIN into the chat'
     // screen, only once — is unchanged.
     expect(page).toContain('if (phase.kind !== "form" || book) return;');
     expect(page).not.toContain("thai-address-universal");
-    // the ONLY place in the app that names the package is the dynamic import in entry.ts
+    // 🔻 TASK-801 (REQ-118, ruling B), declared: the address book is no longer the bundled package — it is served by the back end's three area routes (the gate found the package's geocodes wrong for ~21 % of rows). ✅ What these pins protect — lookups by CODE, the page loading the book only while the form is on screen, no English name on the row — is unchanged.
+    // the book comes from `entry.ts` only, through the back end's routes; nothing imports the old package
     const entry = codeOf("src/lib/register/entry.ts");
-    expect(entry).toContain('await import("thai-address-universal")');
-    expect(entry).not.toMatch(/^import .*thai-address-universal/m);
+    expect(entry).toContain("fetch(`${API_BASE}${path}`)");
+    expect(entry).not.toMatch(/thai-address-universal/);
   });
 });
 
@@ -662,7 +663,8 @@ describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked accoun
     // than left unused: **an unused garbled field is a reader waiting to happen.**
     expect(entry).not.toContain("nameEn");
     expect(entry).toContain("const uniqueByCode = (rows: { code: string; nameTh: string }[]): AreaPick[] =>");
-    expect(entry).not.toMatch(/import\("thai-address-universal"\)[\s\S]*nameEn[\s\S]*join\(/);
+    // 🔻 TASK-801 (REQ-118, ruling B), declared: the address book is no longer the bundled package — it is served by the back end's three area routes (the gate found the package's geocodes wrong for ~21 % of rows). ✅ What these pins protect — lookups by CODE, the page loading the book only while the form is on screen, no English name on the row — is unchanged.
+    expect(entry).not.toMatch(/thai-address-universal/);
   });
 
   it("§10.3 — on open, after the token: `status`; linked ⇒ the warning with the SERVER's masked phone; else the phone field", () => {
