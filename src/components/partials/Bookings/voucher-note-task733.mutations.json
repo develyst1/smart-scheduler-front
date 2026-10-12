@@ -1,0 +1,92 @@
+[
+  {
+    "id": "N1",
+    "what": "🔴 the note is DROPPED from the request body (the box looks saved, the value never leaves the screen)",
+    "files": [
+      {
+        "file": "src/services/scheduler.service.ts",
+        "edits": [
+          {
+            "from": "note: input.note || undefined,",
+            "to": "note: undefined,"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "N2",
+    "what": "🔴 the modal does not hand its note to the sale call",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/CreateVoucherModal.tsx",
+        "edits": [
+          {
+            "from": "note: note.trim() || undefined,",
+            "to": "note: undefined,"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "N3",
+    "what": "⚠️ a blank (spaces-only) note is sent as a note",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/CreateVoucherModal.tsx",
+        "edits": [
+          {
+            "from": "note: note.trim() || undefined,",
+            "to": "note: note || undefined,"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "N4",
+    "what": "⚠️ an EMPTY note goes out as an empty `note` key",
+    "files": [
+      {
+        "file": "src/services/scheduler.service.ts",
+        "edits": [
+          {
+            "from": "note: input.note || undefined,",
+            "to": "note: input.note ?? \"\","
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "N5",
+    "what": "🔴 the box carries a different label than the approved \"Note (optional)\"",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/CreateVoucherModal.tsx",
+        "edits": [
+          {
+            "from": "label={t(\"endCourse.noteLabel\")}",
+            "to": "label={t(\"endCourse.confirm\")}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "N6",
+    "what": "⚠️ the server's limit of 200 is not on the box",
+    "files": [
+      {
+        "file": "src/components/partials/Bookings/CreateVoucherModal.tsx",
+        "edits": [
+          {
+            "from": "maxLength={200}",
+            "to": "maxLength={500}"
+          }
+        ]
+      }
+    ]
+  }
+]
