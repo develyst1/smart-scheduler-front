@@ -721,38 +721,48 @@ export interface CoursePreview {
 
 // ───────────────────────────── Daily report ─────────────────────────────
 
+/**
+ * The Daily report. Every stat counts **lesson rows only** (FIRST_TRIAL / SINGLE_SESSION / COURSE_PACKAGE /
+ * VOUCHER) — group programs (OTHER: ECA/Free/KOL/CAMP, GROUP) appear only in `byTeacher[].total`.
+ * Status buckets are defined once in `src/lib/scheduler/daily-report.ts`; backend handoff:
+ * `docs/backend-daily-report.md`.
+ */
 export interface DailyReport {
   date: string;
-  totalBooked: number; // ไม่นับที่ยกเลิก/รอช่อง
+  /** จองมาเรียนทั้งหมด — every lesson row on the day except CANCELLED and PAUSED. */
+  totalBooked: number;
+  /** มาเรียนจริง — status ATTENDED. Stays inside `confirmed` (not subtracted from it). */
   attended: number;
+  /** คอนเฟิร์มมาเรียน — CONFIRMED + ATTENDED + NO_SHOW. A leave (SICK_LEAVE) is NOT counted. */
   confirmed: number;
+  /** ยังไม่โอน / ยังไม่คอนเฟิร์ม — PENDING + EXTENDED (make-up awaiting confirm). */
   pending: number;
-  reschedulePending: number; // รอผู้ปกครองตอบรับการย้าย (จองทับ)
+  /** Awaiting — FIRST_TRIAL / SINGLE_SESSION rows PAUSED off this day, waiting for a new slot. */
+  awaiting: number;
+  /** ลา — SICK_LEAVE (and therefore not in `confirmed`). */
   onLeave: number;
+  /** ยกเลิก — CANCELLED. Not in `totalBooked`. */
   cancelled: number;
   /** อัตรามาเรียน % = attended / totalBooked */
   attendanceRate: number;
   /**
-   * Per booking type, counting only `ATTENDED` sessions — the "By booking type (Attended)" row.
-   * Always all four `BookingType`s in a fixed order, zeros included; the UI renders them as given.
+   * Per booking type, `attended` split by type — the "By booking type (Attended)" row.
+   * Always all four lesson types in a fixed order, zeros included; the UI renders them as given.
    */
   byBookingTypeAttended: { type: BookingType; count: number }[];
   /**
-   * Per booking type, counting only `CONFIRMED` sessions (confirmed, not yet marked attended) — the
+   * Per booking type, `confirmed` split by type (same definition — ATTENDED included, leave excluded) — the
    * "By booking type (Confirmed)" row. Same shape/order rules as `byBookingTypeAttended`.
    */
   byBookingTypeConfirmed: { type: BookingType; count: number }[];
   /**
-   * จำนวนคาบต่อครู (workload) — เรียงตาม `total` มากไปน้อย. Rendered as `attended/count` + "Total (+Group): total".
+   * จำนวนคาบต่อครู (workload) — เรียงตาม `total` มากไปน้อย. Rendered as `attended/count` + "Total (+Group)".
    *
-   * - `attended` — lesson rows (FIRST_TRIAL / SINGLE_SESSION / COURSE_PACKAGE / VOUCHER) with status `ATTENDED`.
-   * - `count` — the ratio's denominator, labelled "Confirmed" in the UI. ⚠️ OPEN QUESTION for the backend/client:
-   *   today it is ALL non-cancelled lesson rows (PENDING, SICK_LEAVE, … included — the pre-existing number). The
-   *   label suggests either `CONFIRMED + ATTENDED` (everything confirmed; climbs 0/6 → 6/6 over the day) or
-   *   `CONFIRMED` only (shrinks as sessions are marked, can go below `attended`). Decide, then change it here and
-   *   in `DailyReportResponse.byTeacher`.
-   * - `total` — every non-cancelled row of the teacher that day, lessons PLUS group programs: OTHER (ECA / Free /
-   *   KOL / CAMP hours) and GROUP rows. Counts rows (= hours), so a 5-hour camp day adds 5.
+   * - `attended` — the teacher's lesson rows with status ATTENDED.
+   * - `count` — the teacher's `confirmed` (same definition as the stat), so the ratio climbs 0/6 → 6/6 as the
+   *   day is marked and can never show attended > confirmed.
+   * - `total` — every row of the teacher that day except CANCELLED/PAUSED, lessons PLUS group programs:
+   *   OTHER (ECA / Free / KOL / CAMP hours) and GROUP rows. Counts rows (= hours), so a 5-hour camp day adds 5.
    */
   byTeacher: { teacherId: string; count: number; attended: number; total: number }[];
 }

@@ -719,6 +719,21 @@ export interface BookingsResponse {
   total: number;
 }
 
+/**
+ * `GET /reports/daily?date=YYYY-MM-DD[&teacherId=]`.
+ *
+ * TODO(backend): the full spec — every stat's definition, the new fields, the teacher filter and the open
+ * questions — is `docs/backend-daily-report.md`. Summary of what changes:
+ *   - All counters count LESSON rows only (FIRST_TRIAL / SINGLE_SESSION / COURSE_PACKAGE / VOUCHER).
+ *   - `confirmed` = CONFIRMED + ATTENDED + NO_SHOW (leave excluded); `pending` = PENDING + EXTENDED;
+ *     `totalBooked` excludes CANCELLED and PAUSED.
+ *   - NEW: `confirmed`, `awaiting`, `byBookingTypeAttended`, `byBookingTypeConfirmed`, `byTeacher`.
+ *   - Accept `teacherId` and apply it to every counter.
+ *
+ * FE switch-over: the moment a response carries `awaiting`, the FE treats the whole payload as the new
+ * contract and renders it as-is. Until then it recomputes everything from raw rows
+ * (`summarizeDailyReport` in `src/lib/scheduler/daily-report.ts`) — so ship all the new fields together.
+ */
 export interface DailyReportResponse {
   date: IsoDate;
   totalBooked: number;
@@ -726,30 +741,22 @@ export interface DailyReportResponse {
   onLeave: number;
   pending: number;
   cancelled: number;
-  /** All non-cancelled bookings of the day per type. No longer rendered by the FE — see the two fields below. */
+  /** Legacy: all non-cancelled bookings per type. Not rendered any more — replaced by the two fields below. */
   byBookingType: Array<{ type: BookingType; count: number }>;
-  /**
-   * TODO(backend): add to `GET /reports/daily`. Per booking type, the number of bookings on `date` with
-   * status `ATTENDED` (exclude `pendingSlot` rows, same scope as the other counters). Return all four
-   * `BookingType`s, zeros included. Until the server sends it, the FE derives it from the day's calendar
-   * bookings (`enrichDailyReport` in `src/services/scheduler.service.ts`); once it ships, drop that fallback.
-   * Also accept `?teacherId=` so the report's teacher filter applies to these counts.
-   */
+  /** Optional — FE derives attended / totalBooked when absent. */
+  attendanceRate?: number;
+  /** NEW — CONFIRMED + ATTENDED + NO_SHOW lesson rows. */
+  confirmed?: number;
+  /** NEW — PAUSED FIRST_TRIAL / SINGLE_SESSION rows whose original date is `date`. Its presence = new contract. */
+  awaiting?: number;
+  /** NEW — `attended` per lesson type; all four types, fixed order, zeros kept. */
   byBookingTypeAttended?: Array<{ type: BookingType; count: number }>;
-  /**
-   * TODO(backend): add to `GET /reports/daily`. Same as `byBookingTypeAttended` but counting status
-   * `CONFIRMED` only (confirmed, not yet marked attended). Same fallback/teacher-filter notes apply.
-   */
+  /** NEW — `confirmed` per lesson type; same rules. */
   byBookingTypeConfirmed?: Array<{ type: BookingType; count: number }>;
   /**
-   * TODO(backend): add to `GET /reports/daily` — per-teacher workload for `date`, one entry per teacher with any
-   * non-cancelled row, sorted by `total` desc. Field meanings are on `DailyReport["byTeacher"]`
-   * (`src/types/app/scheduler/index.ts`), including the open question on `count`'s denominator.
-   * Two things only the server can get right:
-   *   1. Multi-teacher rows (ECA / OTHER can staff several teachers) must count for EVERY assigned teacher — the
-   *      FE fallback only sees the row's primary `teacherId`.
-   *   2. GROUP rows: count the group row once per teacher, never its hidden seat bookings.
-   * Until it ships, the FE derives this from the day's calendar rows (`enrichDailyReport`).
+   * NEW — per-teacher workload, sorted by `total` desc. Field meanings: `DailyReport["byTeacher"]`.
+   * Only the server can (1) credit a multi-teacher ECA/OTHER row to EVERY assigned teacher and (2) count a
+   * GROUP row once, never its hidden seat bookings — the FE fallback sees only the primary `teacherId`.
    */
   byTeacher?: Array<{ teacherId: string; count: number; attended: number; total: number }>;
 }

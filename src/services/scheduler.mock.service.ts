@@ -28,7 +28,7 @@ import type {
 } from "@/types/app/scheduler";
 import type { BulkConfirmResult, CatalogItem, CourseListItem, PostedSale, VoucherSummary } from "@/types/api/contract";
 import { ApiClientError } from "@/lib/api/client";
-import { workloadByTeacher } from "@/lib/scheduler/workload";
+import { summarizeDailyReport } from "@/lib/scheduler/daily-report";
 
 const delay = <T>(value: T, ms = 200) =>
   new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
@@ -652,42 +652,10 @@ export const createVoucher = (input: { studentName: string; totalHours: 5 | 10 |
     },
   });
 
-const BOOKING_TYPES: BookingType[] = [
-  "FIRST_TRIAL",
-  "SINGLE_SESSION",
-  "COURSE_PACKAGE",
-  "VOUCHER",
-];
-
 export const getDailyReport = (date: string, teacherId?: string): Promise<DailyReport> => {
-  const dayBookings = bookings.filter(
-    (b) => b.date === date && !b.pendingSlot && (!teacherId || b.teacherId === teacherId),
-  );
-  const cancelled = dayBookings.filter((b) => b.status === "CANCELLED").length;
-  const active = dayBookings.filter((b) => b.status !== "CANCELLED");
-  const totalBooked = active.length;
-  const attended = active.filter((b) => b.status === "ATTENDED").length;
-
-  return delay({
-    date,
-    totalBooked,
-    attended,
-    confirmed: active.filter((b) => b.status === "CONFIRMED").length,
-    pending: active.filter((b) => b.status === "PENDING").length,
-    reschedulePending: active.filter((b) => b.status === "PENDING_RESCHEDULE").length,
-    onLeave: active.filter((b) => b.status === "SICK_LEAVE").length,
-    cancelled,
-    attendanceRate: totalBooked > 0 ? Math.round((attended / totalBooked) * 100) : 0,
-    byBookingTypeAttended: BOOKING_TYPES.map((type) => ({
-      type,
-      count: active.filter((b) => b.bookingType === type && b.status === "ATTENDED").length,
-    })),
-    byBookingTypeConfirmed: BOOKING_TYPES.map((type) => ({
-      type,
-      count: active.filter((b) => b.bookingType === type && b.status === "CONFIRMED").length,
-    })),
-    byTeacher: workloadByTeacher(active),
-  });
+  const rows = bookings.filter((b) => b.date === date && (!teacherId || b.teacherId === teacherId));
+  // Same pure summary as the API fallback; the mock keeps PAUSED rows in the same list, so split them out.
+  return delay(summarizeDailyReport(date, rows.filter((b) => b.status !== "PAUSED"), rows.filter((b) => b.status === "PAUSED")));
 };
 
 // ── Migrating existing course/voucher balances (SPEC-025 / TASK-080) ──

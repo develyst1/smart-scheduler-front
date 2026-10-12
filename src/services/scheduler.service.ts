@@ -83,7 +83,7 @@ import type { OtherKind, OtherScheduleFacts } from "@/lib/scheduler/other-schedu
 import type { GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
 import { groupSeriesBody, type GroupSeriesInput, type GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 import { startChangeBody, type StartChangeForecast, type StartChangeResult } from "@/lib/scheduler/course-start";
-import { workloadByTeacher } from "@/lib/scheduler/workload";
+import { summarizeDailyReport } from "@/lib/scheduler/daily-report";
 import * as mock from "./scheduler.mock.service";
 
 const useMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -1031,61 +1031,38 @@ export const getVouchers = async (query: VouchersQuery = {}): Promise<Paged<Vouc
 
 // ───────────────────────────── Reports ─────────────────────────────
 
-const BOOKING_TYPES: BookingType[] = [
-  "FIRST_TRIAL",
-  "SINGLE_SESSION",
-  "COURSE_PACKAGE",
-  "VOUCHER",
-];
-
-/** Bookings with `status`, counted per booking type — all four types in fixed order, zeros kept. */
-function countByBookingType(list: Booking[], status: Booking["status"]) {
-  return BOOKING_TYPES.map((type) => ({
-    type,
-    count: list.filter((b) => b.bookingType === type && b.status === status).length,
-  }));
-}
-
-function enrichDailyReport(
-  base: DailyReportResponse,
-  dayBookings: Booking[],
-  teacherId?: string,
-): DailyReport {
-  const active = dayBookings.filter(
-    (b) => !b.pendingSlot && b.status !== "CANCELLED" && (!teacherId || b.teacherId === teacherId),
-  );
-  const attended = active.filter((b) => b.status === "ATTENDED").length;
-  const totalBooked = active.length;
-
-  return {
-    date: base.date,
-    totalBooked,
-    attended,
-    confirmed: active.filter((b) => b.status === "CONFIRMED").length,
-    pending: active.filter((b) => b.status === "PENDING").length,
-    reschedulePending: active.filter((b) => b.status === "PENDING_RESCHEDULE").length,
-    onLeave: base.onLeave,
-    cancelled: base.cancelled,
-    attendanceRate: totalBooked > 0 ? Math.round((attended / totalBooked) * 100) : 0,
-    // Prefer the server's breakdown, else count the calendar day here (see the `DailyReportResponse` TODOs).
-    // ⚠️ `/reports/daily` only takes `date` today, so its numbers are all-teacher — with a teacher selected
-    // we must count locally, or these rows would ignore the filter.
-    byBookingTypeAttended:
-      (!teacherId && base.byBookingTypeAttended) || countByBookingType(active, "ATTENDED"),
-    byBookingTypeConfirmed:
-      (!teacherId && base.byBookingTypeConfirmed) || countByBookingType(active, "CONFIRMED"),
-    // Same rule: server numbers when it sends them (see `DailyReportResponse.byTeacher` TODO), else local count.
-    byTeacher: (!teacherId && base.byTeacher) || workloadByTeacher(active),
-  };
+/** True once `/reports/daily` speaks the new contract (see `DailyReportResponse`) — `awaiting` is its marker. */
+function isFullDailyReport(
+  r: DailyReportResponse,
+): r is DailyReportResponse & Omit<DailyReport, "date" | "attendanceRate"> & { attendanceRate?: number } {
+  return r.awaiting !== undefined;
 }
 
 export const getDailyReport = async (date: string, teacherId?: string): Promise<DailyReport> => {
   if (useMock) return mock.getDailyReport(date, teacherId);
-  const [{ data: base }, dayBookings] = await Promise.all([
-    api.get<DailyReportResponse>("/reports/daily", { params: { date } }),
-    getBookingsByDate(date),
+  const { data: base } = await api.get<DailyReportResponse>("/reports/daily", {
+    params: teacherId ? { date, teacherId } : { date },
+  });
+  if (isFullDailyReport(base)) {
+    // `attendanceRate` is optional on the wire — derive it with the same formula when the server omits it.
+    const rate = base.totalBooked > 0 ? Math.round((base.attended / base.totalBooked) * 100) : 0;
+    return { ...base, attendanceRate: base.attendanceRate ?? rate };
+  }
+
+  // FE fallback until the backend ships the new contract (docs/backend-daily-report.md): recompute every stat
+  // from raw rows so the definitions are right, the teacher filter applies to ALL counters, and no number is
+  // a mix of old server semantics and new FE ones. Cancelled rows ride the calendar via `includeCancelled`;
+  // PAUSED rows are off the calendar, so they come from the bookings list by their original date.
+  const forTeacher = (b: Booking) => !teacherId || b.teacherId === teacherId;
+  const [cal, paused] = await Promise.all([
+    getCalendar(date, "day", true),
+    getAllBookings({ status: "PAUSED", from: date, to: date, teacherId, limit: 200 }),
   ]);
-  return enrichDailyReport(base, dayBookings, teacherId);
+  return summarizeDailyReport(
+    date,
+    calendarDayBookings(cal, date).filter(forTeacher),
+    paused.items.filter((b) => b.date === date && forTeacher(b)),
+  );
 };
 
 // ─────────────── Per-entitlement plan (SPEC-028 / REQ-030 — TASK-099) ───────────────

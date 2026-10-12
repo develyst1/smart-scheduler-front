@@ -20,7 +20,7 @@ import {
   CalendarDays,
   User,
   Bell,
-  ArrowLeftRight,
+  PauseCircle,
   Ban,
 } from "lucide-react";
 import { BookingTypeChip, TeacherTypeChip } from "@/components/common/BookingBadges";
@@ -36,7 +36,7 @@ const STAT_CARDS = [
   { key: "attended", labelKey: "reports.statAttended", icon: CheckCircle2, color: "green" },
   { key: "confirmed", labelKey: "reports.statConfirmed", icon: Bell, color: "cyan" },
   { key: "pending", labelKey: "reports.statPending", icon: Clock, color: "orange" },
-  { key: "reschedulePending", labelKey: "reports.statReschedulePending", icon: ArrowLeftRight, color: "red" },
+  { key: "awaiting", labelKey: "reports.statAwaiting", icon: PauseCircle, color: "gray" },
   { key: "onLeave", labelKey: "reports.statOnLeave", icon: CalendarOff, color: "gray" },
   { key: "cancelled", labelKey: "reports.statCancelled", icon: Ban, color: "gray" },
 ] as const;
