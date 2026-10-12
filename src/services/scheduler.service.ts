@@ -1034,6 +1034,14 @@ const BOOKING_TYPES: BookingType[] = [
   "VOUCHER",
 ];
 
+/** Bookings with `status`, counted per booking type — all four types in fixed order, zeros kept. */
+function countByBookingType(list: Booking[], status: Booking["status"]) {
+  return BOOKING_TYPES.map((type) => ({
+    type,
+    count: list.filter((b) => b.bookingType === type && b.status === status).length,
+  }));
+}
+
 function enrichDailyReport(
   base: DailyReportResponse,
   dayBookings: Booking[],
@@ -1063,10 +1071,13 @@ function enrichDailyReport(
     onLeave: base.onLeave,
     cancelled: base.cancelled,
     attendanceRate: totalBooked > 0 ? Math.round((attended / totalBooked) * 100) : 0,
-    byBookingType: BOOKING_TYPES.map((type) => ({
-      type,
-      count: active.filter((b) => b.bookingType === type).length,
-    })),
+    // Prefer the server's breakdown, else count the calendar day here (see the `DailyReportResponse` TODOs).
+    // ⚠️ `/reports/daily` only takes `date` today, so its numbers are all-teacher — with a teacher selected
+    // we must count locally, or these rows would ignore the filter.
+    byBookingTypeAttended:
+      (!teacherId && base.byBookingTypeAttended) || countByBookingType(active, "ATTENDED"),
+    byBookingTypeConfirmed:
+      (!teacherId && base.byBookingTypeConfirmed) || countByBookingType(active, "CONFIRMED"),
     byTeacher: [...byTeacherMap.entries()]
       .map(([tid, v]) => ({ teacherId: tid, count: v.count, attended: v.attended }))
       .sort((a, b) => b.count - a.count),

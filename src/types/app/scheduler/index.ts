@@ -732,7 +732,16 @@ export interface DailyReport {
   cancelled: number;
   /** อัตรามาเรียน % = attended / totalBooked */
   attendanceRate: number;
-  byBookingType: { type: BookingType; count: number }[];
+  /**
+   * Per booking type, counting only `ATTENDED` sessions — the "By booking type (Attended)" row.
+   * Always all four `BookingType`s in a fixed order, zeros included; the UI renders them as given.
+   */
+  byBookingTypeAttended: { type: BookingType; count: number }[];
+  /**
+   * Per booking type, counting only `CONFIRMED` sessions (confirmed, not yet marked attended) — the
+   * "By booking type (Confirmed)" row. Same shape/order rules as `byBookingTypeAttended`.
+   */
+  byBookingTypeConfirmed: { type: BookingType; count: number }[];
   /** จำนวนคาบต่อครู (workload) — เรียงมากไปน้อย */
   byTeacher: { teacherId: string; count: number; attended: number }[];
 }

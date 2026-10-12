@@ -28,6 +28,7 @@ import { BookingTypeChip, TeacherTypeChip } from "@/components/common/BookingBad
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { useDailyReport, useTeachers } from "@/hooks/scheduler";
 import { useT } from "@/lib/i18n";
+import type { DailyReport } from "@/types/app/scheduler";
 import { useLoadPhase } from "@/lib/ui/load-phase";
 import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 
@@ -148,25 +149,9 @@ export default function ReportsContent() {
             </div>
           </div>
 
-          {/* แยกตามรูปแบบ */}
-          <Card padding="lg">
-            <Text size="sm" fw={600} mb="md">
-              {t("reports.byType")}
-            </Text>
-            <div className="flex flex-wrap gap-3">
-              {report.byBookingType.map((item) => (
-                <Paper
-                  key={item.type}
-                  withBorder
-                  p="md"
-                  className="flex items-center gap-3 bg-muted-100/50"
-                >
-                  <BookingTypeChip type={item.type} size="md" />
-                  <span className="text-xl font-bold">{item.count}</span>
-                </Paper>
-              ))}
-            </div>
-          </Card>
+          {/* แยกตามรูปแบบ — ATTENDED-only row, then CONFIRMED-only row (field semantics: `DailyReport`) */}
+          <BookingTypeRow title={t("reports.byTypeAttended")} items={report.byBookingTypeAttended} />
+          <BookingTypeRow title={t("reports.byTypeConfirmed")} items={report.byBookingTypeConfirmed} />
 
           {/* workload ต่อครู (เฉพาะตอนดูครูทุกคน) */}
           {teacherId === "ALL" && (
@@ -208,6 +193,31 @@ export default function ReportsContent() {
         </>
       )}
     </div>
+  );
+}
+
+/** One "By booking type (…)" card: a chip + count per booking type, in the order the report gives. */
+function BookingTypeRow({
+  title,
+  items,
+}: {
+  title: string;
+  items: DailyReport["byBookingTypeAttended"];
+}) {
+  return (
+    <Card padding="lg">
+      <Text size="sm" fw={600} mb="md">
+        {title}
+      </Text>
+      <div className="flex flex-wrap gap-3">
+        {items.map((item) => (
+          <Paper key={item.type} withBorder p="md" className="flex items-center gap-3 bg-muted-100/50">
+            <BookingTypeChip type={item.type} size="md" />
+            <span className="text-xl font-bold">{item.count}</span>
+          </Paper>
+        ))}
+      </div>
+    </Card>
   );
 }
 

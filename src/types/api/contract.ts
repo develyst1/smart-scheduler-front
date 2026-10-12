@@ -726,7 +726,21 @@ export interface DailyReportResponse {
   onLeave: number;
   pending: number;
   cancelled: number;
+  /** All non-cancelled bookings of the day per type. No longer rendered by the FE — see the two fields below. */
   byBookingType: Array<{ type: BookingType; count: number }>;
+  /**
+   * TODO(backend): add to `GET /reports/daily`. Per booking type, the number of bookings on `date` with
+   * status `ATTENDED` (exclude `pendingSlot` rows, same scope as the other counters). Return all four
+   * `BookingType`s, zeros included. Until the server sends it, the FE derives it from the day's calendar
+   * bookings (`enrichDailyReport` in `src/services/scheduler.service.ts`); once it ships, drop that fallback.
+   * Also accept `?teacherId=` so the report's teacher filter applies to these counts.
+   */
+  byBookingTypeAttended?: Array<{ type: BookingType; count: number }>;
+  /**
+   * TODO(backend): add to `GET /reports/daily`. Same as `byBookingTypeAttended` but counting status
+   * `CONFIRMED` only (confirmed, not yet marked attended). Same fallback/teacher-filter notes apply.
+   */
+  byBookingTypeConfirmed?: Array<{ type: BookingType; count: number }>;
 }
 
 export type StudentInput =

@@ -685,9 +685,13 @@ export const getDailyReport = (date: string, teacherId?: string): Promise<DailyR
     onLeave: active.filter((b) => b.status === "SICK_LEAVE").length,
     cancelled,
     attendanceRate: totalBooked > 0 ? Math.round((attended / totalBooked) * 100) : 0,
-    byBookingType: BOOKING_TYPES.map((type) => ({
+    byBookingTypeAttended: BOOKING_TYPES.map((type) => ({
       type,
-      count: active.filter((b) => b.bookingType === type).length,
+      count: active.filter((b) => b.bookingType === type && b.status === "ATTENDED").length,
+    })),
+    byBookingTypeConfirmed: BOOKING_TYPES.map((type) => ({
+      type,
+      count: active.filter((b) => b.bookingType === type && b.status === "CONFIRMED").length,
     })),
     byTeacher: [...byTeacherMap.entries()]
       .map(([tid, v]) => ({ teacherId: tid, count: v.count, attended: v.attended }))
