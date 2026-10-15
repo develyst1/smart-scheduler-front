@@ -29,6 +29,15 @@ const BALANCE = [
 ];
 const UNPRICED = [{ id: "s6", name: "Surfskate" }];
 
+/**
+ * TASK-806 (REQ-121) — the mock's `GET /subjects`: every active program, INCLUDING one no mock teacher has (the DUO one), which is the case the
+ * teacher form's picker could not offer before.
+ */
+export const MOCK_SUBJECTS: Array<{ id: string; name: string; kind: "PRIVATE" | "DUO" }> = [
+  ...[...BIKE_SKATE, ...ONEWHEEL, ...BALANCE, ...UNPRICED].map((s) => ({ ...s, kind: "PRIVATE" as const })),
+  { id: "s7", name: "Duo Surfskate", kind: "DUO" },
+];
+
 export const teachers: Teacher[] = [
   { id: "t1", name: "ครูแอน สมใจ", nickname: "แอน", type: "FULL_TIME", subjects: ["คณิต", "ฟิสิกส์"], subjectOptions: [...BIKE_SKATE, ...ONEWHEEL], active: true, lineLinked: true, workDays: [0, 1, 2, 3, 4, 5, 6] },
   { id: "t2", name: "ครูบีม รุ่งโรจน์", nickname: "บีม", type: "FULL_TIME", subjects: ["อังกฤษ"], subjectOptions: UNPRICED, active: true, lineLinked: true, workDays: [0, 1, 2, 3, 4, 5, 6] },

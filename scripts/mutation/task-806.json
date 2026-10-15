@@ -1,0 +1,26 @@
+{
+  "_why": "TASK-806 (REQ-121). One test file: the clicked teacher-form picker test. Written with the set; nothing reconstructed.",
+  "tests": ["src/components/partials/Teachers/teacher-form-subjects-task806.dom.test.tsx"],
+  "mutations": [
+    {
+      "id": "J1",
+      "what": "🔴 REVERT to the roster union: the catalog is the programs some teacher already has again — a DUO program on no teacher can never be ticked",
+      "files": [{ "file": "src/components/partials/Teachers/TeachersContent.tsx", "edits": [{ "from": "const subjectCatalog = useMemo(() => (subjects.data?.subjects ?? []).map((s) => ({ value: s.id, label: s.name })), [subjects.data]);", "to": "const subjectCatalog = useMemo(() => { const m = new Map<string, string>(); for (const tc of teachers) for (const s of tc.subjectOptions ?? []) m.set(s.id, s.name); return [...m.entries()].map(([value, label]) => ({ value, label })); }, [teachers]);" }] }]
+    },
+    {
+      "id": "J2",
+      "what": "🔴 the loading guard is dropped: the teacher's OWN programs are no longer kept in `data`, so while the list loads an Edit shows no ticks",
+      "files": [{ "file": "src/components/partials/Teachers/TeacherFormModal.tsx", "edits": [{ "from": "return [...subjectCatalog, ...own];", "to": "return subjectCatalog;" }] }]
+    },
+    {
+      "id": "J3",
+      "what": "🔴 the DUO programs are filtered out of the catalog (the other pickers' §13.4a rule leaks into the teacher form)",
+      "files": [{ "file": "src/components/partials/Teachers/TeachersContent.tsx", "edits": [{ "from": "(subjects.data?.subjects ?? []).map((s) =>", "to": "(subjects.data?.subjects ?? []).filter((s) => s.kind !== \"DUO\").map((s) =>" }] }]
+    },
+    {
+      "id": "J4",
+      "what": "🔴 the Edit is not seeded from the teacher's own programs — Save sends an empty list and wipes them",
+      "files": [{ "file": "src/components/partials/Teachers/TeacherFormModal.tsx", "edits": [{ "from": "setSubjectIds(teacher?.subjectOptions?.map((s) => s.id) ?? []);", "to": "setSubjectIds([]);" }] }]
+    }
+  ]
+}

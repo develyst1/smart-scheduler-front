@@ -23,6 +23,7 @@ import TeacherWorkDaysSelect from "./TeacherWorkDaysSelect";
 import TeacherRowActions from "./TeacherRowActions";
 import TeacherFormModal from "./TeacherFormModal";
 import { useCan } from "@/hooks/scheduler/useMe";
+import { useSubjects } from "@/hooks/scheduler/useSubjects";
 // REQ-102 (TASK-427) — a NULL figure (masked server-side for a user without `teachers.budget-view`) draws `—`, never ฿0.
 import { minorOrDash, moneyOrDash } from "@/lib/scheduler/money-or-dash";
 import ArchivedTeachers from "./ArchivedTeachers";
@@ -58,13 +59,10 @@ export default function TeachersContent() {
   const [formOpen, setFormOpen] = useState(false);
   const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
 
-  // Subject picker options = the union of subjects already assigned across the roster
-  // (no standalone subjects catalog exists on the FE — see TASK-017 Questions).
-  const subjectCatalog = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const tc of teachers) for (const s of tc.subjectOptions ?? []) map.set(s.id, s.name);
-    return [...map.entries()].map(([value, label]) => ({ value, label }));
-  }, [teachers]);
+  // 🔴 TASK-806 (REQ-121) — the Subjects picker offers EVERY active program (`GET /subjects`), not the union of what some teacher already has: a
+  // program on no teacher (a DUO one) could never be ticked, so it could never be assigned. Both Add and Edit get the same list.
+  const subjects = useSubjects();
+  const subjectCatalog = useMemo(() => (subjects.data?.subjects ?? []).map((s) => ({ value: s.id, label: s.name })), [subjects.data]);
 
   const openAdd = () => {
     setEditTeacher(null);

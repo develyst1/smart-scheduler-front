@@ -21,6 +21,13 @@ interface Props {
 
 export default function TeacherFormModal({ opened, teacher, subjectCatalog, onClose }: Props) {
   const t = useT();
+  // 🔴 TASK-806 — the catalog arrives over the network, and Mantine's MultiSelect DROPS a value that is not in `data`. While the list is loading
+  // (or if it failed) an Edit would show no ticks at all, and the admin would read "no programs" for a teacher who has them. So the teacher's OWN
+  // programs are always in `data`, whatever the catalog is doing; the ticks live in `subjectIds` (seeded from them) and are what Save sends.
+  const subjectOptions = (() => {
+    const own = (teacher?.subjectOptions ?? []).filter((s) => !subjectCatalog.some((c) => c.value === s.id)).map((s) => ({ value: s.id, label: s.name }));
+    return [...subjectCatalog, ...own];
+  })();
   const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const { options: dayOptions } = useWorkDays();
   const create = useCreateTeacher();
@@ -136,7 +143,7 @@ export default function TeacherFormModal({ opened, teacher, subjectCatalog, onCl
         <MultiSelect
           label={t("teachers.formSubjects")}
           description={t("teachers.formSubjectsHint")}
-          data={subjectCatalog}
+          data={subjectOptions}
           value={subjectIds}
           onChange={setSubjectIds}
           searchable
