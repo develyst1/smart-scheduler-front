@@ -767,7 +767,20 @@ export interface DailyReport {
    *   OTHER (ECA / Free / KOL / CAMP hours) and GROUP rows. Counts rows (= hours), so a 5-hour camp day adds 5.
    */
   byTeacher: { teacherId: string; count: number; attended: number; total: number }[];
+  /**
+   * "Others Program" — the day's group programs counted by KIDS, not sessions. Always four entries, order GROUP,
+   * ECA, CAMP, OTHER (a program with nothing that day: `items: []`, `total: null`); inside, one item per name with
+   * its kids. `kids` / `total` are `null` when nothing was recorded (rendered "—"). Counting rules: `kidsByProgram` in `src/lib/scheduler/daily-report.ts`.
+   */
+  kidsByProgram: { program: KidProgram; total: number | null; items: { name: string; kids: number | null }[] }[];
 }
+
+/**
+ * The group programs the Daily report counts kids for. GROUP = a DUO/Group schedule (name / seats); ECA = a
+ * school (title / head count); CAMP = a camp day (kids that day); OTHER = any other schedule — Birthday,
+ * Rent park, … (title / head count).
+ */
+export type KidProgram = "GROUP" | "ECA" | "CAMP" | "OTHER";
 
 // ───────────────────────────── Misc ─────────────────────────────
 

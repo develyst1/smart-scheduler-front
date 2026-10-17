@@ -759,6 +759,16 @@ export interface DailyReportResponse {
    * GROUP row once, never its hidden seat bookings — the FE fallback sees only the primary `teacherId`.
    */
   byTeacher?: Array<{ teacherId: string; count: number; attended: number; total: number }>;
+  /**
+   * NEW — "Kids by program": GROUP / ECA / CAMP / OTHER, each with its names and kids for the day. Shape and
+   * counting rules: `DailyReport["kidsByProgram"]` and `docs/backend-daily-report.md` §10. Ship it in the same
+   * release as `awaiting` — on the new contract the FE renders whatever is here (absent = section shows empty).
+   */
+  kidsByProgram?: Array<{
+    program: "GROUP" | "ECA" | "CAMP" | "OTHER";
+    total: number | null;
+    items: Array<{ name: string; kids: number | null }>;
+  }>;
 }
 
 export type StudentInput =

@@ -1,6 +1,6 @@
 # Daily report — สิ่งที่ backend ต้องปรับ (`GET /reports/daily`)
 
-> สำหรับทีม **smart-scheduler-back** · ฝั่ง FE ทำเสร็จแล้ว (branch `Palm`) · อัปเดต 2026-10-12
+> สำหรับทีม **smart-scheduler-back** · ฝั่ง FE ทำเสร็จแล้ว (branch `Palm`) · อัปเดต 2026-10-17 (เพิ่ม §10 Others Program)
 >
 > ไฟล์อ้างอิงฝั่ง FE:
 > - นิยามตัวเลขทั้งหมด (source of truth ฝั่ง FE): [`src/lib/scheduler/daily-report.ts`](../src/lib/scheduler/daily-report.ts)
@@ -27,6 +27,7 @@
 | 5 | Workload ต่อครู (ดู §4) | เพิ่ม `byTeacher[]` มี `count` / `attended` / `total` |
 | 6 | Filter ครู | รับ query `teacherId` แล้วใช้กับ **ทุก** ตัวเลข |
 | 7 | สถานะ `PENDING_RESCHEDULE` ถูกถอดแล้ว (UC-006) | ไม่ต้องส่ง `reschedulePending` อีก — แทนด้วย `awaiting` |
+| 8 | **ใหม่ (2026-10-17)** Section "Others Program" (ดู §10) | เพิ่ม `kidsByProgram[]` — จำนวนเด็กของ Group / ECA / Camp / Other แยกตามชื่อ |
 
 ### 1.1 UI ที่ทำไปแล้ว — ยึดตามนี้
 
@@ -39,6 +40,7 @@
 | Stat cards 7 ใบ (เรียงตามนี้) | Total booked · Attended · Confirmed · Pending · Awaiting · On leave · Cancelled | `totalBooked`, `attended`, `confirmed`, `pending`, `awaiting`, `onLeave`, `cancelled` |
 | By booking type (Attended) | chip ประเภท + จำนวน 4 ช่อง เรียงตามลำดับที่ส่งมา | `byBookingTypeAttended` |
 | By booking type (Confirmed) | เหมือนกัน | `byBookingTypeConfirmed` |
+| Others Program | การ์ดละโปรแกรม (Group · ECA · Camp · Other) — หัวการ์ด: ชื่อโปรแกรม + ยอดเด็กรวม (ตัวเลขเปล่า ไม่มีหน่วย) · ด้านใน: `ชื่อ … จำนวนเด็ก` ทีละบรรทัด · **แสดงครบ 4 การ์ดเสมอ** — โปรแกรมที่ไม่มีงานในวันนั้นแสดง "—" | `kidsByProgram[]` (§10) |
 | Sessions per teacher (workload) | tile ต่อครู: ชื่อ + ประเภทครู → ช่องซ้าย **Attended / Confirmed** (`2/6`) · ช่องขวา **Total (+Group)** (`7`) — **แสดงเฉพาะตอนเลือก All teachers** | `byTeacher[]` (`attended`, `count`, `total`) |
 
 ข้อกำหนดจาก UI ที่ backend ต้องรักษา:
@@ -48,6 +50,7 @@
 - `byTeacher` ส่งแค่ `teacherId` — ชื่อและประเภทครู FE ดึงจากรายชื่อครูเอง ไม่ต้องส่งมา
 - ลำดับใน `byTeacher` = ลำดับ tile บนหน้าจอ (FE ไม่เรียงใหม่)
 - ไม่มีการ์ด "Awaiting parent (move)" แล้ว — ไม่ต้องส่ง `reschedulePending`
+- `kidsByProgram` เรียงโปรแกรม `GROUP, ECA, CAMP, OTHER` และลำดับ `items` = ลำดับบรรทัดบนการ์ด (FE ไม่เรียงใหม่) · จำนวนเด็กที่ไม่ได้บันทึกส่ง `null` (FE แสดง "—")
 
 ---
 
@@ -155,6 +158,12 @@ GET /api/reports/daily?date=2026-10-12&teacherId=t-arm   ← ใหม่: filte
     { "teacherId": "t-arm", "count": 6, "attended": 2, "total": 7 },
     { "teacherId": "t-cat", "count": 3, "attended": 0, "total": 6 },
     { "teacherId": "t-bee", "count": 1, "attended": 1, "total": 1 }
+  ],
+  "kidsByProgram": [          // ★ (§10)
+    { "program": "GROUP", "total": 3,  "items": [{ "name": "Balance Play", "kids": 3 }] },
+    { "program": "ECA",   "total": 13, "items": [{ "name": "STA", "kids": 5 }, { "name": "ISB", "kids": 8 }] },
+    { "program": "CAMP",  "total": 8,  "items": [{ "name": "October Camp W2", "kids": 8 }] },
+    { "program": "OTHER", "total": 10, "items": [{ "name": "Birthday", "kids": 8 }, { "name": "Rent park", "kids": 2 }] }
   ]
 }
 ```
@@ -276,4 +285,63 @@ FE คำนวณเองจาก 2 endpoint นี้ระหว่าง�
 - [ ] `?teacherId=` กรองทุก counter รวม `onLeave` / `cancelled` / `awaiting`
 - [ ] ส่ง field ใหม่ **ครบทุกตัวพร้อมกัน** — FE สลับมาใช้ตัวเลข backend ทันทีที่เห็น `awaiting` (§6) ถ้าส่งไม่ครบ หน้าจอจะพัง
 - [ ] Performance: 1 request ต่อการเปลี่ยนวัน/ครู — query ไม่ควรช้ากว่า `/calendar` แบบ day
-- [ ] แจ้ง FE เมื่อ deploy แล้ว เพื่อลบ fallback ใน `getDailyReport` และอัปเดต `daily-report.ts` ตามคำตอบของ §7
+- [ ] แจ้ง FE เมื่อ deploy แล้ว เพื่อลบ fallback ใน `getDailyReport` และอัปเดต `daily-report.ts` ตามคำตอบของ §7 และ §10.4
+
+---
+
+## 10. Others Program — section ใหม่ (เพิ่ม 2026-10-17)
+
+> field ใน API ยังชื่อ `kidsByProgram` (นับจำนวนเด็กตามโปรแกรม) — ชื่อ "Others Program" เป็นแค่หัวข้อบนหน้าจอ
+
+### 10.1 ความต้องการจาก client
+นับ **จำนวนเด็ก** (ไม่ใช่จำนวนคาบ) ของงานกลุ่มในวันนั้น แยก 4 โปรแกรม:
+
+| โปรแกรม | client ต้องการ | ตัวอย่าง |
+|---------|-----------------|----------|
+| Group | ชื่อตาราง / จำนวนเด็ก | Balance Play = 3 kids |
+| ECA | นับเป็นโรงเรียน / จำนวนเด็ก | STA = 5, ISB = 8 kids |
+| Camp | จำนวนเด็กในแต่ละวัน | Camp = 8 kids |
+| Other | ตารางอื่นๆ ที่ลงไว้ — ชื่อตาราง (Title) / จำนวนเด็ก | Birthday = 8 kids, Rent park = 2 kids |
+
+UI (ทำเสร็จแล้ว, client เลือกแบบ "4 การ์ดตามโปรแกรม"): section ชื่อ **"Others Program"** · การ์ดละโปรแกรม หัวการ์ด = ชื่อโปรแกรม + ยอดเด็กรวม, ด้านใน = รายการ `ชื่อ … จำนวนเด็ก` — **ตัวเลขไม่มีหน่วย** (ไม่แสดงคำว่า kids ตาม client) — อยู่ใต้ By booking type ทั้งสองแถว เหนือ workload
+
+> 🚧 **ข้อมูลตัวอย่างชั่วคราว:** ระหว่างที่ backend ยังไม่ส่ง `kidsByProgram` ถ้าวันนั้นไม่มีข้อมูล FE จะแสดง **ข้อมูลตัวอย่าง** (Balance Play 3, STA 5, ISB 8, …) หน้าตาเหมือนข้อมูลจริงทุกอย่าง (ไม่มีป้ายกำกับ ไม่ทำให้จาง ตามที่ client ขอ) ให้ client เห็นหน้าตา section — **ไม่ใช่ข้อมูลจริง และบนหน้าจอแยกไม่ออก** เมื่อ backend ship แล้ว FE จะลบออก (`SHOW_SAMPLE_WHEN_EMPTY` / `SAMPLE_PROGRAMS` ใน `ReportsContent.tsx`) ห้ามใช้ตัวเลขตัวอย่างนี้ตรวจผล
+
+### 10.2 ข้อมูลที่ใช้ (mapping ที่ FE ใช้ — backend ช่วยยืนยันใน §9)
+
+| โปรแกรม | แถวที่นับ | ชื่อ (`name`) | จำนวนเด็ก (`kids`) |
+|---------|-----------|---------------|---------------------|
+| `GROUP` | `bookingType = GROUP` | `displayName` (ชื่อกลุ่ม) | จำนวน seat ของกลุ่ม (`group.seats.length`) |
+| `ECA` | `bookingType = OTHER` และ `other.kind = ECA` | `displayName` (= title ที่แอดมินพิมพ์ = ชื่อโรงเรียน) | `other.headCount` |
+| `CAMP` | แถว camp (`OTHER` + `other.kind = CAMP` + `campWeekDayId`) | `displayName` | `campKidCount` ของวันนั้น |
+| `OTHER` | `bookingType = OTHER` ที่ไม่ใช่ ECA / CAMP (`FREE`, `KOL`, ไม่ระบุ) | `displayName` (title) | `other.headCount` |
+
+### 10.3 กติกาการนับ
+- ไม่นับแถว `CANCELLED` และ `PAUSED`
+- 1 booking นับครั้งเดียว แม้มีครูหลายคน (ECA ที่มี 2 ครู ≠ 2 เท่า)
+- **Camp:** `campKidCount` ซ้ำอยู่ทุกชั่วโมงของวันเดียวกัน → นับ **ครั้งเดียวต่อ camp day** (`campWeekDayId`) ห้ามคูณจำนวนชั่วโมง
+- จำนวนเด็กที่ไม่ได้บันทึก (`headCount` ว่าง / กลุ่มไม่มีข้อมูล seat) → `null` ไม่ใช่ `0` · ยอดรวม: `null + n = n`, ถ้าทุกรายการเป็น `null` ยอดรวม = `null`
+- **ส่งครบ 4 โปรแกรมเสมอ** เรียง `GROUP, ECA, CAMP, OTHER` (client ต้องการเห็น 4 การ์ดตายตัว) · โปรแกรมที่ไม่มีงานในวันนั้นส่ง `{ "program": "ECA", "total": null, "items": [] }` → UI แสดง "—" (FE เติมให้ครบ 4 เองด้วยถ้าขาด แต่ขอให้ backend ส่งครบ) · ระหว่างนี้ถ้าทุกโปรแกรมว่าง FE แสดงข้อมูลตัวอย่างแทน ดู §10.1
+- `?teacherId=` ใช้กรอง section นี้ด้วย (นับงานที่ครูคนนั้นอยู่ในรายชื่อครู — รวม ECA หลายครู)
+
+### 10.4 ค่าที่ FE ใช้ไปก่อน — ยังไม่ได้ยืนยันกับ client
+client ยังไม่ได้ตอบข้อเหล่านี้ FE ใช้ค่าด้านล่างไปก่อน ถ้าคำตอบต่างจากนี้ แก้ทั้ง backend และ `kidsByProgram` ใน `src/lib/scheduler/daily-report.ts`
+
+- **K1 — ชื่อเดียวกันหลายรอบในวันเดียว** (เช่น ECA STA รอบเช้า 5 คน รอบบ่าย 6 คน) → FE **รวมเป็นรายการเดียว (11)**
+  - *ทำไมถาม:* ถ้าเป็นเด็กชุดเดียวกันมาสองรอบ การรวมจะนับเด็กซ้ำ (จริงๆ 6 คน) แต่ถ้าเป็นคนละชุดการแยกแสดงจะชัดกว่า ระบบไม่มีข้อมูลรายชื่อเด็กของ ECA/Other (มีแค่ตัวเลข) จึงแยกเองไม่ได้ — Group เท่านั้นที่มีรายชื่อ seat
+- **K2 — เลือกครูรายคน** → FE **กรองตามครู**
+  - *ทำไมถาม:* section นี้อาจตั้งใจให้เห็นภาพรวมเด็กทั้งศูนย์ไม่ว่าเลือกครูไหน ถ้ากรอง ECA ที่มีหลายครูจะขึ้นในทุกครูที่สอน
+- **K3 — ยอดรวมต่อโปรแกรม** (หัวการ์ด) → FE **แสดง** · ยอดรวมทั้งหมดทุกโปรแกรม → **ไม่แสดง**
+  - *ทำไมถาม:* ตัวอย่างของ client ไม่มียอดรวม และยอดรวมข้ามโปรแกรมอาจนับเด็กคนเดียวกันซ้ำ (เด็กคนเดียวอยู่ทั้ง Group และ Camp)
+- **K4 — ไม่ได้กรอกจำนวนเด็ก** → FE **แสดง "—"**
+  - *ทำไมถาม:* `headCount` เป็น field ที่ไม่บังคับกรอก ถ้าแสดง 0 จะดูเหมือนไม่มีเด็กมา ซึ่งต่างจาก "ไม่ได้บันทึก"
+
+### 10.5 Checklist backend (เพิ่มจาก §9)
+- [ ] ยืนยัน mapping ใน §10.2: ชื่อโรงเรียนของ ECA อยู่ใน `title` จริง (ไม่มี field โรงเรียนแยก) · `headCount` คือจำนวนเด็ก · seat ของ GROUP ไม่รวมคนที่ยกเลิก/ลา
+- [ ] `campKidCount` เป็นค่าต่อวันจริง (เหมือนกันทุกชั่วโมง) — และถ้าวันเดียวมี camp มากกว่า 1 week ให้แยกตามชื่อ
+- [ ] Test: ECA STA 2 รอบ (5, 6) + ISB 8 → `ECA total 19, items [STA 11, ISB 8]` (ตาม K1 ปัจจุบัน)
+- [ ] Test: Camp 5 ชั่วโมง `campKidCount = 8` → `CAMP total 8` (ไม่ใช่ 40)
+- [ ] Test: ECA 1 แถวที่มี 2 ครู → นับ 1 ครั้ง · `?teacherId=` ครูคนที่ 2 ก็ต้องเห็นรายการนี้
+- [ ] Test: Other ที่ `headCount` ว่าง → `kids: null`
+- [ ] Test: วันที่ไม่มี Camp → ยังส่ง `{ "program": "CAMP", "total": null, "items": [] }` (ครบ 4 รายการเสมอ)
+- [ ] `kidsByProgram` ส่งมาพร้อม field ใหม่อื่นๆ ใน release เดียวกัน (§6) — ถ้าไม่ส่ง section นี้จะขึ้นข้อมูลตัวอย่าง (ทุกการ์ดว่าง) ทั้งที่มีข้อมูลจริง

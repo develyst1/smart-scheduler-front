@@ -28,6 +28,7 @@ import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOpt
 import { useDailyReport, useTeachers } from "@/hooks/scheduler";
 import { useT } from "@/lib/i18n";
 import type { DailyReport } from "@/types/app/scheduler";
+import { KID_PROGRAMS } from "@/lib/scheduler/daily-report";
 import { useLoadPhase } from "@/lib/ui/load-phase";
 import { SKEL, SKEL_RADIUS } from "@/components/common/skeleton";
 
@@ -151,6 +152,9 @@ export default function ReportsContent() {
           <BookingTypeRow title={t("reports.byTypeAttended")} items={report.byBookingTypeAttended} />
           <BookingTypeRow title={t("reports.byTypeConfirmed")} items={report.byBookingTypeConfirmed} />
 
+          {/* Others Program — Group / ECA / Camp / Other counted by kids (field: `DailyReport["kidsByProgram"]`) */}
+          <KidsByProgramCard programs={report.kidsByProgram} />
+
           {/* workload ต่อครู (เฉพาะตอนดูครูทุกคน) */}
           {teacherId === "ALL" && (
             <Card padding="lg">
@@ -226,11 +230,73 @@ function BookingTypeRow({
       <Text size="sm" fw={600} mb="md">
         {title}
       </Text>
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {items.map((item) => (
-          <Paper key={item.type} withBorder p="md" className="flex items-center gap-3 bg-muted-100/50">
+          <Paper key={item.type} withBorder p="md" className="flex items-center justify-between gap-3 bg-muted-100/50">
             <BookingTypeChip type={item.type} size="md" />
             <span className="text-xl font-bold">{item.count}</span>
+          </Paper>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+/**
+ * 🚧 TEMPORARY — sample rows shown while the day has no group-program data (the backend does not send
+ * `kidsByProgram` yet, and the calendar fallback rarely has head counts filled in), so the client can see the
+ * section's shape. Rendered like real data (no label, no dimming — client request) and never mixed with real rows.
+ * Delete this and `SHOW_SAMPLE_WHEN_EMPTY` once `/reports/daily` ships `kidsByProgram` (docs/backend-daily-report.md §10).
+ */
+const SHOW_SAMPLE_WHEN_EMPTY = true;
+const SAMPLE_PROGRAMS: DailyReport["kidsByProgram"] = [
+  { program: "GROUP", total: 8, items: [{ name: "Balance Play", kids: 3 }, { name: "Skate Crew", kids: 5 }] },
+  { program: "ECA", total: 13, items: [{ name: "STA", kids: 5 }, { name: "ISB", kids: 8 }] },
+  { program: "CAMP", total: 8, items: [{ name: "October Camp W2", kids: 8 }] },
+  { program: "OTHER", total: 10, items: [{ name: "Birthday", kids: 8 }, { name: "Rent park", kids: 2 }] },
+];
+
+/**
+ * "Others Program" — kids per group program: ALWAYS four tiles (Group · ECA · Camp · Other, client request), each
+ * with the program's kid total in its header and one `name … kids` line per group / school / camp / schedule.
+ * A program with nothing that day keeps its tile, showing "—". Numbers carry no unit (client request). Every tile
+ * keeps the same skeleton (header row, divider, list) so totals and counts sit in the same place on every card.
+ * `null` kids = not recorded → "—", never a guessed 0.
+ */
+function KidsByProgramCard({ programs }: { programs: DailyReport["kidsByProgram"] }) {
+  const t = useT();
+  const kids = (n: number | null) => (n === null ? "—" : n);
+  const isSample = programs.every((p) => p.items.length === 0) && SHOW_SAMPLE_WHEN_EMPTY;
+  // Pad to the fixed four in fixed order, whatever the payload carries (a server may omit empty programs).
+  const shown = isSample
+    ? SAMPLE_PROGRAMS
+    : KID_PROGRAMS.map(
+        (program) => programs.find((p) => p.program === program) ?? { program, total: null, items: [] },
+      );
+  return (
+    <Card padding="lg">
+      <Text size="sm" fw={600} mb="md">
+        {t("reports.kidsByProgram")}
+      </Text>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {shown.map((p) => (
+          <Paper key={p.program} withBorder p="md" className="flex h-full flex-col bg-muted-100/50">
+            <div className="mb-2 flex items-baseline justify-between gap-3 border-b border-muted-200 pb-2">
+              <span className="text-sm font-semibold">{t(`reports.program.${p.program}`)}</span>
+              <span className="shrink-0 text-sm font-semibold tabular-nums">{kids(p.total)}</span>
+            </div>
+            {p.items.length === 0 ? (
+              <p className="m-0 text-sm">—</p>
+            ) : (
+              <ul className="m-0 list-none space-y-1 p-0">
+                {p.items.map((item) => (
+                  <li key={item.name} className="flex items-baseline justify-between gap-3 text-sm">
+                    <span className="min-w-0 break-words">{item.name}</span>
+                    <span className="shrink-0 font-semibold tabular-nums">{kids(item.kids)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Paper>
         ))}
       </div>
