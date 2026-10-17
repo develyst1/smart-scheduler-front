@@ -123,10 +123,16 @@ const TEACHER_TYPE_COLOR: Record<TeacherType, SemanticColor> = {
   FREELANCE: "default",
 };
 
-export function TeacherTypeChip({ type, size = "sm" }: { type: TeacherType; size?: Size }) {
+const TEACHER_TYPE_SHORT: Record<TeacherType, string> = {
+  FULL_TIME: "FT",
+  PART_TIME: "PT",
+  FREELANCE: "FL",
+};
+
+export function TeacherTypeChip({ type, size = "sm", short }: { type: TeacherType; size?: Size; short?: boolean }) {
   return (
     <Badge size={size} color={MANTINE_COLOR[TEACHER_TYPE_COLOR[type]]} variant="light" radius="sm" styles={NO_TRUNCATE}>
-      {TEACHER_TYPE_LABEL[type]}
+      {short ? TEACHER_TYPE_SHORT[type] : TEACHER_TYPE_LABEL[type]}
     </Badge>
   );
 }

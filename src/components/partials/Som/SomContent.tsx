@@ -1,49 +1,116 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
-import { Card, Stack, Text, Loader, Group, SimpleGrid, Progress } from "@mantine/core";
+import { Card, Stack, Text, Loader, SimpleGrid } from "@mantine/core";
 import { useSomReport } from "@/hooks/scheduler";
 import { useI18n } from "@/lib/i18n";
-import { SOM_UNKNOWN_KEY, type Breakdown, type BreakdownBucket } from "@/types/app/som";
+import { Lock } from "lucide-react";
+import { NVR_BUCKETS, type NvrBucket, type SomQuery } from "@/types/app/som";
+import { NvrDetailModal } from "./NvrDetailModal";
+import { SomFilters } from "./SomFilters";
+import { CoachCapacitySection } from "./CoachCapacitySection";
+import { ActivityProgramSection } from "./ActivityProgramSection";
+import { DemographicsSection } from "./DemographicsSection";
 
 export default function SomContent() {
   const { t, lang } = useI18n();
-  const { data, isLoading } = useSomReport();
+  // Page-level filters: one month + badge (branch) values for every section but Today (locked to today).
+  const [query, setQuery] = useState<SomQuery>(() => ({
+    month: dayjs().format("YYYY-MM"),
+    badgeValueIds: [],
+  }));
+  const { data, isLoading, isFetching } = useSomReport(query);
+  const [nvrOpen, setNvrOpen] = useState<NvrBucket | null>(null);
 
-  const fmtDate = (iso: string) => dayjs(iso).locale(lang).format(lang === "th" ? "D MMM" : "D MMM YYYY");
+  const monthLabel = dayjs(`${query.month}-01`)
+    .locale(lang)
+    .format("MMMM YYYY");
+
+  const fmtDate = (iso: string) =>
+    dayjs(iso)
+      .locale(lang)
+      .format(lang === "th" ? "D MMM" : "D MMM YYYY");
   const fmtDateTime = (iso: string) =>
-    dayjs(iso).locale(lang).format(lang === "th" ? "D MMM HH:mm น." : "D MMM YYYY, HH:mm");
+    dayjs(iso)
+      .locale(lang)
+      .format(lang === "th" ? "D MMM HH:mm น." : "D MMM YYYY, HH:mm");
+
+  // The title + filters stay put while loading, so changing a filter never makes them jump away.
+  const header = (
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">
+          {t("som.title")}
+        </h1>
+        <p className="text-sm text-muted-500">{t("som.subtitle")}</p>
+        {data && (
+          <p className="mt-0.5 text-xs text-muted-400">
+            {t("som.generatedAt", { time: fmtDateTime(data.generatedAt) })}
+            {isFetching && " · " + t("common.loading")}
+          </p>
+        )}
+      </div>
+      <SomFilters value={query} onChange={setQuery} />
+    </div>
+  );
 
   if (isLoading || !data) {
     return (
-      <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-muted-500">
-        <Loader size="md" />
-        {t("common.loading")}
-      </div>
+      <Stack gap="lg">
+        {header}
+        <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-muted-500">
+          <Loader size="md" />
+          {t("common.loading")}
+        </div>
+      </Stack>
     );
   }
 
-  const { existingCustomers: ec, sportShare, newVsRenewing: nvr, demographics: demo, today } = data;
+  const {
+    existingCustomers: ec,
+    sportShare,
+    newVsRenewing: nvr,
+    demographics: demo,
+    today,
+  } = data;
 
   return (
     <Stack gap="lg">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{t("som.title")}</h1>
-        <p className="text-sm text-muted-500">{t("som.subtitle")}</p>
-        <p className="mt-0.5 text-xs text-muted-400">
-          {t("som.generatedAt", { time: fmtDateTime(data.generatedAt) })}
-        </p>
-      </div>
+      {header}
 
-      {/* 1. Existing customers */}
+      {/* 1. Today */}
       <section>
-        <SectionHeading>{t("som.existingTitle")}</SectionHeading>
-        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
+        <SectionHeading scope={<TodayScope />}>
+          {t("som.todayTitle")}
+        </SectionHeading>
+        <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="sm">
+          {/* Confirmed still reads the live `expected` field until the API ships `confirmed` — see docs/backend-som-dashboard.md §1 */}
+          <Stat label={t("som.confirmed")} value={today.expected} />
+          <Stat label={t("som.attended")} value={today.attended} accent />
+          <Stat
+            label={t("som.attendanceRate")}
+            value={
+              today.expected > 0
+                ? `${Math.round((today.attended / today.expected) * 100)}%`
+                : "—"
+            }
+          />
+        </SimpleGrid>
+      </section>
+
+      {/* 2. Existing customers */}
+      <section>
+        <SectionHeading scope={monthLabel}>
+          {t("som.existingTitle")}
+        </SectionHeading>
+        <SimpleGrid cols={{ base: 2, sm: 3, lg: 5 }} spacing="sm">
           <Stat label={t("som.byCourse")} value={ec.byCourse} />
           <Stat label={t("som.byVoucher")} value={ec.byVoucher} />
           <Stat label={t("som.byRecentTrial")} value={ec.byRecentTrial} />
+          {/* No field in the live API yet — `byRecentSingle`, see docs/backend-som-dashboard.md §2 */}
+          <Stat label={t("som.byRecentSingle")} value="—" />
           <Stat label={t("som.totalCustomers")} value={ec.total} accent />
         </SimpleGrid>
         <p className="mt-1.5 text-xs text-muted-400">
@@ -53,124 +120,123 @@ export default function SomContent() {
 
       {/* 3. New vs renewing */}
       <section>
-        <SectionHeading>{t("som.newVsRenewingTitle", { month: nvr.month })}</SectionHeading>
-        <SimpleGrid cols={{ base: 3 }} spacing="sm">
-          <Stat label={t("som.newByFirstTrial")} value={nvr.newByFirstTrial} />
-          <Stat label={t("som.newByRegistration")} value={nvr.newByRegistration} />
-          <Stat label={t("som.renewing")} value={nvr.renewing} />
+        <SectionHeading scope={monthLabel}>
+          {t("som.newVsRenewingTitle")}
+        </SectionHeading>
+        {/* Only 1st Trial and Renew have a live field today; the rest show "—" until the API ships them —
+            see docs/backend-som-dashboard.md §3 */}
+        <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
+          {NVR_BUCKETS.map((b) => (
+            <Stat
+              key={b}
+              label={t(`som.nvr.${b}`)}
+              value={
+                b === "firstTrial"
+                  ? nvr.newByFirstTrial
+                  : b === "renewCourse"
+                    ? nvr.renewing
+                    : "—"
+              }
+              onClick={() => setNvrOpen(b)}
+            />
+          ))}
         </SimpleGrid>
+        <p className="mt-1.5 text-xs text-muted-400">{t("som.nvrHint")}</p>
+        <NvrDetailModal
+          bucket={nvrOpen}
+          query={query}
+          onClose={() => setNvrOpen(null)}
+        />
       </section>
 
-      {/* 5. Today */}
+      {/* 4. Coach capacity — see docs/backend-som-dashboard.md §4 */}
       <section>
-        <SectionHeading>{t("som.todayTitle")}</SectionHeading>
-        <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="sm">
-          <Stat label={t("som.expected")} value={today.expected} />
-          <Stat label={t("som.attended")} value={today.attended} accent />
-          <Stat
-            label={t("som.attendanceRate")}
-            value={today.expected > 0 ? `${Math.round((today.attended / today.expected) * 100)}%` : "—"}
-          />
-        </SimpleGrid>
+        <SectionHeading scope={monthLabel}>
+          {t("som.coachCapacityTitle")}
+        </SectionHeading>
+        <CoachCapacitySection data={data.coachCapacity} />
       </section>
 
-      {/* 2. Sport share */}
+      {/* 5. Demographics */}
       <section>
-        <SectionHeading>{t("som.sportShareTitle")}</SectionHeading>
-        <BreakdownCard data={sportShare} labelOf={(b) => bucketLabel(b, "sport")} />
+        <SectionHeading scope={monthLabel}>
+          {t("som.demographicsTitle")}
+        </SectionHeading>
+        <DemographicsSection demo={demo} />
       </section>
 
-      {/* 4. Demographics */}
+      {/* 6. Activity / Program */}
       <section>
-        <SectionHeading>{t("som.demographicsTitle")}</SectionHeading>
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-          <BreakdownCard title={t("som.genderTitle")} data={demo.gender} labelOf={(b) => bucketLabel(b, "gender")} />
-          <BreakdownCard title={t("som.ageBandTitle")} data={demo.ageBand} labelOf={(b) => bucketLabel(b, "age")} />
-          <BreakdownCard title={t("som.provinceTitle")} data={demo.province} labelOf={(b) => bucketLabel(b, "text")} />
-          <BreakdownCard title={t("som.nationalityTitle")} data={demo.nationality} labelOf={(b) => bucketLabel(b, "text")} />
-        </SimpleGrid>
+        <SectionHeading scope={monthLabel}>
+          {t("som.sportShareTitle")}
+        </SectionHeading>
+        <ActivityProgramSection
+          data={data.activityProgram}
+          legacy={sportShare}
+        />
       </section>
     </Stack>
   );
 
-  // Label a bucket: the FE supplies language for keys the API doesn't label (unknown, gender), the API's own
-  // label wins where present (e.g. a sport name), everything else is self-labelling (province/nationality/age).
-  function bucketLabel(b: BreakdownBucket, kind: "sport" | "gender" | "age" | "text") {
-    if (b.key === SOM_UNKNOWN_KEY) return t("som.unknown");
-    if (b.label) return b.label;
-    if (kind === "gender")
-      return b.key === "male"
-        ? t("som.genderMale")
-        : b.key === "female"
-          ? t("som.genderFemale")
-          : b.key === "other"
-            ? t("som.genderOther")
-            : b.key;
-    return b.key;
-  }
-
-  function SectionHeading({ children }: { children: ReactNode }) {
-    return <h2 className="mb-2 text-sm font-semibold text-muted-600">{children}</h2>;
-  }
-
-  function BreakdownCard({
-    title,
-    data,
-    labelOf,
+  // Every section says which period its numbers cover: today (locked) or the page's month.
+  function SectionHeading({
+    children,
+    scope,
   }: {
-    title?: string;
-    data: Breakdown;
-    labelOf: (b: BreakdownBucket) => string;
+    children: ReactNode;
+    scope: ReactNode;
   }) {
     return (
-      <Card withBorder padding="md">
-        {title && (
-          <Text fw={600} size="sm" mb={4}>
-            {title}
-          </Text>
-        )}
-        <Text size="xs" c="dimmed" mb="sm">
-          {t("som.coverage", { known: data.known, total: data.total })}
-        </Text>
-        {data.total === 0 ? (
-          <Text size="sm" c="dimmed">
-            {t("som.noData")}
-          </Text>
-        ) : (
-          <Stack gap={8}>
-            {data.buckets
-              .filter((b) => b.count > 0 || b.key === SOM_UNKNOWN_KEY)
-              .map((b) => {
-                const pct = data.total > 0 ? Math.round((b.count / data.total) * 100) : 0;
-                const isUnknown = b.key === SOM_UNKNOWN_KEY;
-                return (
-                  <div key={b.key}>
-                    <Group justify="space-between" gap="xs" wrap="nowrap">
-                      <Text size="sm" c={isUnknown ? "dimmed" : undefined} truncate>
-                        {labelOf(b)}
-                      </Text>
-                      <Text size="xs" c="dimmed" className="shrink-0 tabular-nums">
-                        {b.count} · {pct}%
-                      </Text>
-                    </Group>
-                    <Progress value={pct} size="sm" mt={2} color={isUnknown ? "gray" : "blue"} />
-                  </div>
-                );
-              })}
-          </Stack>
-        )}
-      </Card>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-muted-600">{children}</h2>
+        <span className="inline-flex items-center gap-1 rounded-md bg-muted-50 px-2 py-0.5 text-xs text-muted-500">
+          {scope}
+        </span>
+      </div>
+    );
+  }
+
+  function TodayScope() {
+    return (
+      <>
+        <Lock size={12} aria-hidden />
+        {t("som.todayLocked", {
+          date: dayjs().locale(lang).format("D MMM YYYY"),
+        })}
+      </>
     );
   }
 }
 
-function Stat({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {
+function Stat({
+  label,
+  value,
+  accent,
+  onClick,
+}: {
+  label: string;
+  value: number | string;
+  accent?: boolean;
+  onClick?: () => void;
+}) {
+  const clickable = onClick
+    ? {
+        component: "button" as const,
+        onClick,
+        className: "text-left transition-colors hover:bg-muted-50",
+      }
+    : {};
   return (
-    <Card withBorder padding="sm">
+    <Card withBorder padding="sm" {...clickable}>
       <Text size="xs" c="dimmed">
         {label}
       </Text>
-      <Text fw={700} fz="xl" c={accent ? "blue" : undefined} className="tabular-nums">
+      <Text
+        fw={700}
+        fz="xl"
+        c={accent ? "blue" : undefined}
+        className="tabular-nums"
+      >
         {value}
       </Text>
     </Card>
