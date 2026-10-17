@@ -32,6 +32,7 @@ import {
   type PlanSession,
 } from "@/types/app/scheduler";
 import PlanModal from "./PlanModal";
+import LeaveWeekNotice, { leaveWeeksOf, type LeaveWeek } from "./LeaveWeekNotice";
 import { useCan } from "@/hooks/scheduler/useMe";
 
 interface Props {
@@ -74,6 +75,9 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   // free of quota; the same action later in the plan editor still consumes it (REQ-030 unchanged). The BE owns
   // both that rule and the make-up placement — this state only says WHICH weeks.
   const [absentWeeks, setAbsentWeeks] = useState<number[]>([]);
+  // 🔴 TASK-816 — the previewed weeks the SERVER flagged as on the teacher's leave day (`teacherOnLeave`, TASK-815): always the
+  // CURRENT preview's answer, replaced by every re-preview, never derived from dates here.
+  const [leaveWeeks, setLeaveWeeks] = useState<LeaveWeek[]>([]);
   // 🧹 TASK-311 §2 — `ceiling` state and the `exceedsCeiling` gate it fed are GONE. `REQ-085 §12` deleted the
   // MAX_WEEK rule and TASK-309 made the DTO field false by construction, so the gate could never fire again and
   // could only tell the next reader that a ceiling still refuses. The field itself stays on the contract for
@@ -142,6 +146,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       setPlan(null);
       setError(null);
       setAbsentWeeks([]);
+      setLeaveWeeks([]);
       setDiscount(emptyDiscount());
       setDiscountProblems([]);
     }
@@ -183,6 +188,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
         absentWeeks: weeks.length ? weeks : undefined,
       });
       setAbsentWeeks(p.absentWeeks ?? weeks);
+      setLeaveWeeks(leaveWeeksOf(p.sessions));
       setPlan({
         kind: "course",
         id: "",
@@ -334,6 +340,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
         // TASK-374 — after the plan, before confirm: the whole-course rental, and its line × the count.
         createExtras={
           <Stack gap="xs">
+            {/* 🔴 TASK-816 — a week on the teacher's leave day: warn, one click to the planned absence (the same toggle as the row's own). */}
+            <LeaveWeekNotice weeks={leaveWeeks} pending={preview.isPending} onTick={toggleAbsent} />
             <Checkbox
               label={t("rental.courseToggle")}
               checked={rentalOn}

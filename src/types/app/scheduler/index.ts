@@ -692,6 +692,8 @@ export interface CoursePreviewSession {
   absent?: boolean;
   /** SPEC-049 — an appended make-up for one of those absences (saved EXTENDED). */
   makeup?: boolean;
+  /** 🔴 TASK-815 (BE) → TASK-816 — this week falls on the teacher's recorded LEAVE day. Stays true once the week is ticked as a planned absence. Read as `=== true`. */
+  teacherOnLeave?: boolean;
 }
 
 /** `GET /teachers/:id/work-days/impact` — future LIVE course sessions orphaned by removing weekdays (TASK-100). */

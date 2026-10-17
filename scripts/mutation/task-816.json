@@ -1,0 +1,188 @@
+{
+  "_why": "TASK-816 (FE). One clicked/source test file. Each mutation breaks the OFFER (a missing or wrong warning) or the REQUEST (the week the click ticks) in a way the screen would not make obvious. Written with the set; nothing reconstructed.",
+  "tests": [
+    "src/components/partials/Bookings/leave-week-notice-task816.dom.test.tsx"
+  ],
+  "mutations": [
+    {
+      "id": "W1",
+      "what": "🔴 truthy instead of `=== true` — a server that sends no flag, or a false one, is read as 'on leave'",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/LeaveWeekNotice.tsx",
+          "edits": [
+            {
+              "from": "s.teacherOnLeave === true ?",
+              "to": "s.teacherOnLeave !== undefined ?"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W2",
+      "what": "🔴 the week is the row's 0-based index — the click ticks the WRONG week (the one before)",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/LeaveWeekNotice.tsx",
+          "edits": [
+            {
+              "from": "[{ week: i + 1,",
+              "to": "[{ week: i,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W3",
+      "what": "🔴 a TICKED week is read as not ticked — it keeps shouting and offers the button again",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/LeaveWeekNotice.tsx",
+          "edits": [
+            {
+              "from": "absent: s.absent === true }]",
+              "to": "absent: false }]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W4",
+      "what": "🔴 a ticked week is DROPPED from the list — the admin no longer sees why that day is an absence",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/LeaveWeekNotice.tsx",
+          "edits": [
+            {
+              "from": "s.teacherOnLeave === true ? [",
+              "to": "s.teacherOnLeave === true && s.absent !== true ? ["
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W5",
+      "what": "🔴 the button hands the toggle a DIFFERENT week than the one it sits on",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/LeaveWeekNotice.tsx",
+          "edits": [
+            {
+              "from": "onClick={() => onTick(w.week)}",
+              "to": "onClick={() => onTick(w.week - 1)}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W6",
+      "what": "🔴 the button stays live during a re-preview (a second click races the first)",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/LeaveWeekNotice.tsx",
+          "edits": [
+            {
+              "from": "disabled={pending}",
+              "to": "disabled={false}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W7",
+      "what": "⚠️ the button label is a NEW word instead of the approved 'Planned absence'",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/LeaveWeekNotice.tsx",
+          "edits": [
+            {
+              "from": "{t(\"plan.plannedAbsence\")}",
+              "to": "{t(\"plan.leaveWeekTitle\", vars)}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W8",
+      "what": "🔴 the preview's answer is NOT stored — no warning ever reaches the screen",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/CreatePlanFlow.tsx",
+          "edits": [
+            {
+              "from": "      setLeaveWeeks(leaveWeeksOf(p.sessions));\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W9",
+      "what": "🔴 the button ticks through its OWN path instead of the shared toggle (no re-preview)",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/CreatePlanFlow.tsx",
+          "edits": [
+            {
+              "from": "onTick={toggleAbsent}",
+              "to": "onTick={() => {}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W10",
+      "what": "🔴 the flagged weeks survive closing the form — a warning from the last course shows on the next",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/CreatePlanFlow.tsx",
+          "edits": [
+            {
+              "from": "      setLeaveWeeks([]);\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W11",
+      "what": "🔴 the front decides 'on leave' by a date compare of its own",
+      "files": [
+        {
+          "file": "src/components/partials/Bookings/LeaveWeekNotice.tsx",
+          "edits": [
+            {
+              "from": "s.teacherOnLeave === true ?",
+              "to": "(s.teacherOnLeave === true || new Date(s.date) < new Date(\"2000-01-01\")) ?"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W12",
+      "what": "⚠️ the APPROVED marker is dropped from the English words",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "// ✅ APPROVED by the owner 2026-10-17 (REQ-123 Phase 1, TASK-816)",
+              "to": "// (REQ-123 Phase 1, TASK-816)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,415 @@
+{
+  "_why": "TASK-818 (FE). One clicked test file (the dialog, the header entry, the wire). Each mutation breaks the REQUEST, who is told what, or a default the admin never chose. Written with the set; nothing reconstructed. NOT mutated, on purpose: the two `if (noDate || choosing) return;` waits inside submit — the button is already `disabled` for both, so a pressed-anyway click never reaches them (belt and braces, unreachable by a click). ALSO NOT mutated: the empty-date wait (`noDate`) — it is a second, redundant guard: an empty date is never an advance date, so `refusedForAdmin` already holds the button, and so does the admin door's own tick rule; removing either alone changes nothing observable.",
+  "tests": [
+    "src/components/partials/Calendar/Modal/leave-range-task818.dom.test.tsx",
+    "src/lib/scheduler/teacher-scope.test.ts",
+    "src/components/partials/Teachers/teacher-leave-row.dom.test.tsx"
+  ],
+  "mutations": [
+    {
+      "id": "R1",
+      "what": "🔴 the range body sends `to` = the START — a range goes out as one day",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "from: date, to: dateTo, reason: reason.trim() })",
+              "to": "from: date, to: date, reason: reason.trim() })"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "what": "🔴 `isRange` is never true — a picked end is ignored and the one-day body goes out",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "const isRange = onBehalf && dateTo !== \"\" && dateTo > date;",
+              "to": "const isRange = false;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "what": "🔴 the range ANSWER is not recognised — it falls through to the cancel path and toasts 'sessions cancelled'",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "if (res.mode === \"advance-range\") {",
+              "to": "if (res.mode === (\"never\" as string)) {"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R4",
+      "what": "⚠️ the submit button never names the number of days",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "? isRange\n                ? t(\"teacherLeave.adminSubmitRange\", { name: subject.name, n: rangeDays })\n                : t(\"teacherLeave.adminSubmit\", { name: subject.name })",
+              "to": "? t(\"teacherLeave.adminSubmit\", { name: subject.name })"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R5",
+      "what": "🔴 the end date is offered on the teacher's OWN door too",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "        {onBehalf && (\n          <DatePickerInput\n            label={t(\"teacherLeave.dateTo\")}",
+              "to": "        {true && (\n          <DatePickerInput\n            label={t(\"teacherLeave.dateTo\")}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R6",
+      "what": "🔴 moving the START past the end keeps the old end — a backwards range can be sent",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "            if (dateTo && dateTo <= next) setDateTo(\"\");\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R7",
+      "what": "🔴 an EMPTY date shows the refusal ('pick a date after today') before anything was chosen",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "{refusedForAdmin && !noDate && (",
+              "to": "{refusedForAdmin && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R8",
+      "what": "🔴 the calendar's entry can be saved with NO teacher chosen (the wait is gone)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "refusedForAdmin || noDate || choosing || (!advance",
+              "to": "refusedForAdmin || noDate || (!advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R10",
+      "what": "🔴 the teacher picker offers an INACTIVE teacher",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveTeacherPick.tsx",
+          "edits": [
+            {
+              "from": "const active = teachers.filter((x) => x.active);",
+              "to": "const active = teachers;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R11",
+      "what": "🔴 the picked teacher's id on the wire is a CONSTANT (the title still names the right one)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveTeacherPick.tsx",
+          "edits": [
+            {
+              "from": "onPick(found ? { id: found.id, name: found.nickname || found.name } : null);",
+              "to": "onPick(found ? { id: \"t-1\", name: found.nickname || found.name } : null);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R12",
+      "what": "🔴 the 'will block' line counts the TICKS instead of the day's classes",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "t(\"teacherLeave.willBlock\", { n: rows.length })",
+              "to": "t(\"teacherLeave.willBlock\", { n: ticked.length })"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R13",
+      "what": "🔴 the 'will …' line is stated on the ADMIN door too (it holds no class count)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "{!onBehalf && !isLoading && !noDate && (advance || ticked.length > 0) && (",
+              "to": "{!isLoading && !noDate && (advance || ticked.length > 0) && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R14",
+      "what": "🔴 the 'will cancel' line counts ALL the day's classes, not the ticked ones",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "t(\"teacherLeave.willCancel\", { n: ticked.length })",
+              "to": "t(\"teacherLeave.willCancel\", { n: rows.length })"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R15",
+      "what": "🔴 the range hint always says one day's worth ('all 1 days')",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "t(\"teacherLeave.adminRangeHint\", { name: subject.name, n: rangeDays })",
+              "to": "t(\"teacherLeave.adminRangeHint\", { name: subject.name, n: 1 })"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R16",
+      "what": "🔴 the front copies the server's 31-day limit",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "const rangeDays = isRange ? dayjs(dateTo).diff(dayjs(date), \"day\") + 1 : 1;",
+              "to": "const rangeDays = isRange ? Math.min(31, dayjs(dateTo).diff(dayjs(date), \"day\") + 1) : 1;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R17",
+      "what": "🔴 the per-day badge is SWAPPED — an already-recorded day reads 'Recorded'",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "{d.alreadyRecorded ? t(\"teacherLeave.rangeDayAlready\") : t(\"teacherLeave.rangeDayNew\")}",
+              "to": "{d.alreadyRecorded ? t(\"teacherLeave.rangeDayNew\") : t(\"teacherLeave.rangeDayAlready\")}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R18",
+      "what": "🔴 the range result never says whether the TEACHER was told",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "      {typeof done.teacherNotified === \"number\" && (\n        <Text size=\"xs\" c={done.teacherNotified > 0 ? \"dimmed\" : \"orange\"} data-leave-teacher-told",
+              "to": "      {false && (\n        <Text size=\"xs\" c={done.teacherNotified > 0 ? \"dimmed\" : \"orange\"} data-leave-teacher-told"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H1",
+      "what": "🔴 the Teachers menu opens on a date the admin did not choose again",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherRowActions.tsx",
+          "edits": [
+            {
+              "from": "initialDate=\"\"",
+              "to": "initialDate=\"2099-01-01\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H2",
+      "what": "🔴 the calendar's button is offered to a LINKED account",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/CalendarHeader.tsx",
+          "edits": [
+            {
+              "from": "{!scoped && can(\"action:calendar.status\") && (",
+              "to": "{can(\"action:calendar.status\") && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H3",
+      "what": "🔴 the calendar's button ignores the key",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/CalendarHeader.tsx",
+          "edits": [
+            {
+              "from": "{!scoped && can(\"action:calendar.status\") && (",
+              "to": "{!scoped && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H4",
+      "what": "🔴 the calendar's entry opens on TOMORROW instead of the day being viewed",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/CalendarHeader.tsx",
+          "edits": [
+            {
+              "from": "initialDate={date} pickTeacher",
+              "to": "initialDate={dayjs().add(1, \"day\").format(\"YYYY-MM-DD\")} pickTeacher"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H5",
+      "what": "🔴 the leave strip is NOT refreshed after an admin records a day or a range",
+      "files": [
+        {
+          "file": "src/hooks/scheduler/useScheduler.ts",
+          "edits": [
+            {
+              "from": "      // 🔴 TASK-818 — the leave strip has its own key, and the admin who just recorded a day (or a range) is looking at it.\n      qc.invalidateQueries({ queryKey: [\"leave-days\"] });\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H6",
+      "what": "⚠️ the APPROVED marker is dropped from the English words (they would no longer say the owner approved them)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "// ✅ APPROVED by the owner 2026-10-17 (REQ-123 Phase 1, TASK-818)",
+              "to": "// (REQ-123 Phase 1, TASK-818)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B1",
+      "what": "🔴 (Sober's required bite) the body is BUILT TWICE — the teacher's own door builds its own instead of sharing the one `leaveBody` call",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": ": await leave.mutateAsync(body);",
+              "to": ": await leave.mutateAsync(leaveBody(date, allIds, ticked, reason, advance));"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B2",
+      "what": "🔴 (required) `teacherId` is DROPPED from the range body — the request names nobody",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "await adminLeave.mutateAsync({ teacherId: subject.id, from: date, to: dateTo, reason: reason.trim() })",
+              "to": "await adminLeave.mutateAsync({ from: date, to: dateTo, reason: reason.trim() } as never)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B4",
+      "what": "🔴 (required) the admin refusal is REMOVED — today and the past are no longer refused on the admin door",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "const refusedForAdmin = onBehalf && !advance;",
+              "to": "const refusedForAdmin = false;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B5",
+      "what": "🔴 (required) the cancel-warning guard reverted to `!subject` — the calendar's entry (admin, no teacher picked, today) shows the TEACHER's 'families will be told'",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "{!advance && !onBehalf && (",
+              "to": "{!advance && !subject && ("
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

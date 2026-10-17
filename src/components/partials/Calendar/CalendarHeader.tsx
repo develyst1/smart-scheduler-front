@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import { ActionIcon, Button, CloseButton, MultiSelect, Paper, SegmentedControl, TextInput, Tooltip } from "@mantine/core";
@@ -13,6 +14,8 @@ import { TEACHER_TYPE_LABEL, TIME_SLOTS } from "@/types/app/scheduler";
 import { formatTimeDisplay } from "@/lib/ui/format";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
 import { useI18n } from "@/lib/i18n";
+import { useCan } from "@/hooks/scheduler/useMe";
+import ReportLeaveDialog from "./Modal/ReportLeaveDialog";
 
 export type CalendarView = "day" | "week";
 
@@ -70,6 +73,8 @@ export default function CalendarHeader({
   onReportLeave,
 }: Props) {
   const { lang, t } = useI18n();
+  const can = useCan();
+  const [recordOpen, setRecordOpen] = useState(false);
   // Grouped select data: one group per badge type, active values only.
   const badgeSelectData = badgeTypes
     .filter((bt) => bt.active)
@@ -157,7 +162,16 @@ export default function CalendarHeader({
               {t("teacherLeave.door")}
             </Button>
           )}
+
+          {/* 🔴 TASK-818 (P6) — the ADMIN's entry: record a teacher's leave from where the admin already is. It opens the dialog on the day being
+              viewed (never "tomorrow") and asks whose leave it is. 🚫 Never for a linked account (that is `onReportLeave` above): the server refuses it. */}
+          {!scoped && can("action:calendar.status") && (
+            <Button variant="light" color="orange" size="sm" radius="md" leftSection={<CalendarOff size={15} />} onClick={() => setRecordOpen(true)} data-record-teacher-leave>
+              {t("teacherLeave.recordTeacherLeave")}
+            </Button>
+          )}
         </div>
+        {recordOpen && <ReportLeaveDialog opened initialDate={date} pickTeacher onClose={() => setRecordOpen(false)} />}
       </div>
 
       {/* แถวล่าง: ตัวกรองครูผู้สอน + ค้นหานักเรียน */}

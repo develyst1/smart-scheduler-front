@@ -1,0 +1,340 @@
+{
+  "_why": "TASK-820 (FE). One clicked test file (the panel, Open, Cancel per day and for the range). Each mutation breaks WHICH days / WHICH class / WHO may cancel / WHICH request goes out, in a way the screen would not make obvious. Written with the set; nothing reconstructed.",
+  "tests": [
+    "src/components/partials/Calendar/leave-panel-task820.dom.test.tsx",
+    "src/components/partials/Calendar/lift-leave-task814.dom.test.tsx",
+    "src/lib/scheduler/leave-days.test.ts"
+  ],
+  "mutations": [
+    {
+      "id": "P1",
+      "what": "🔴 the panel shows the chip's DAY only — a range is cut to one day",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "(rangeId ? r.rangeId === rangeId : r.date === date)",
+              "to": "r.date === date"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P2",
+      "what": "🔴 the days are not put in date order",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "    .sort((a, b) => a.date.localeCompare(b.date));",
+              "to": "    ;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P3",
+      "what": "🔴 a DUO class names only the first child",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "return one && two ? `${one} + ${two}` : one || two;",
+              "to": "return one || two;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P4",
+      "what": "🔴 the full name is shown before the nickname",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "const one = c.childNickname || c.childName || \"\";",
+              "to": "const one = c.childName || c.childNickname || \"\";"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P5",
+      "what": "🔴 an 'other' row's title is never shown",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "c.program || c.title || \"\"",
+              "to": "c.program || \"\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P6",
+      "what": "🔴 the panel's read drops `teacherId` — it would list every coach's days",
+      "files": [
+        {
+          "file": "src/services/scheduler.service.ts",
+          "edits": [
+            {
+              "from": "...(teacherId ? { teacherId } : {})",
+              "to": "...({} as Record<string, string>)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P7",
+      "what": "🔴 the panel's window stops one day after the chip — a range running past the week is cut",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": ".add(31, \"day\")",
+              "to": ".add(1, \"day\")"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P8",
+      "what": "🔴 `Open` opens the FIRST class of the day's read instead of the one pressed",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveClassOpener.tsx",
+          "edits": [
+            {
+              "from": "day.find((b) => b.id === classId)",
+              "to": "day[0]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P9",
+      "what": "🔴 `Open` leaves the panel standing over the booking modal",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveChip.tsx",
+          "edits": [
+            {
+              "from": "            setPanel(false);\n            setOpenClass(c);",
+              "to": "            setOpenClass(c);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P10",
+      "what": "🔴 the chip's text no longer opens the panel",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveChip.tsx",
+          "edits": [
+            {
+              "from": "onClick={() => setPanel(true)}",
+              "to": "onClick={() => {}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P11",
+      "what": "🔴 the per-day Cancel is gone from the panel",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "                <CancelLeaveButton teacherId={d.teacherId} teacherName={d.teacherName} date={d.date} />\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P12",
+      "what": "🔴 'Cancel all future days' is offered on a SINGLE-day leave",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "const isRange = Boolean(row.rangeId) && shown.length > 1;",
+              "to": "const isRange = true;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P13",
+      "what": "🔴 'Cancel all future days' is offered when every day is behind us",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "{isRange && anyFuture && can(\"action:calendar.status\") && (",
+              "to": "{isRange && can(\"action:calendar.status\") && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P14",
+      "what": "🔴 'Cancel all future days' ignores the key",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "{isRange && anyFuture && can(\"action:calendar.status\") && (",
+              "to": "{isRange && anyFuture && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P15",
+      "what": "🔴 the range cancel goes to the PER-DAY route (wrong noun)",
+      "files": [
+        {
+          "file": "src/services/scheduler.service.ts",
+          "edits": [
+            {
+              "from": "`/teacher-leave-ranges/${encodeURIComponent(rangeId)}`",
+              "to": "`/teacher-leave-days/${encodeURIComponent(rangeId)}`"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P16",
+      "what": "🔴 a zero `teacherNotified` still toasts 'told' after the range cancel",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftRangeConfirm.tsx",
+          "edits": [
+            {
+              "from": "(res.teacherNotified ?? 0) > 0",
+              "to": "(res.teacherNotified ?? 0) >= 0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P17",
+      "what": "🔴 a refusal of the range cancel is swallowed",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftRangeConfirm.tsx",
+          "edits": [
+            {
+              "from": "        {error && (",
+              "to": "        {false && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P18",
+      "what": "🔴 the strip is NOT refreshed after the range cancel — the lifted chips stay",
+      "files": [
+        {
+          "file": "src/hooks/scheduler/useScheduler.ts",
+          "edits": [
+            {
+              "from": "    mutationFn: (rangeId: string) => liftLeaveRange(rangeId),\n    onSuccess: () => {\n      qc.invalidateQueries({ queryKey: [\"leave-days\"] });\n",
+              "to": "    mutationFn: (rangeId: string) => liftLeaveRange(rangeId),\n    onSuccess: () => {\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P19",
+      "what": "⚠️ the APPROVED marker is dropped from the English words (they would no longer say the owner approved them)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "// ✅ APPROVED by the owner 2026-10-17 (REQ-123 Phase 1, TASK-820)",
+              "to": "// (REQ-123 Phase 1, TASK-820)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P20",
+      "what": "🔴 the range confirm shows the ONE-DAY title (a range reads as one day)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftRangeConfirm.tsx",
+          "edits": [
+            {
+              "from": "t(\"leaveDays.cancelRangeTitle\", {",
+              "to": "t(\"leaveDays.cancelTitle\", {"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q1",
+      "what": "🔴 (Sober's required bite) a booking-cancel hook is added to the panel — the leave panel could now change a CLASS",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "  const t = useT();\n  const can = useCan();",
+              "to": "  const t = useT();\n  void [].map(() => useCancelBooking());\n  const can = useCan();"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q2",
+      "what": "🔴 the panel renders the booking modal itself instead of handing the admin to the opener",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "        {rangeOpen && row.rangeId && (",
+              "to": "        {false && <BookingModal />}\n        {rangeOpen && row.rangeId && ("
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

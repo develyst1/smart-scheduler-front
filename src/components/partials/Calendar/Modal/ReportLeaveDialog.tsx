@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import dayjs from "dayjs";
-import { Alert, Button, Checkbox, Group, Loader, Modal, Stack, Text, Textarea } from "@mantine/core";
+import { Alert, Badge, Button, Checkbox, Group, Loader, Modal, Stack, Text, Textarea } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { AlertTriangle } from "lucide-react";
 import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { notify } from "@/lib/ui/notify";
-import { formatTimeDisplay } from "@/lib/ui/format";
+import { formatDateWithDay, formatTimeDisplay } from "@/lib/ui/format";
 import { calendarDayBookings } from "@/lib/api/mappers";
 import { useCalendar, useReportOwnLeave, useReportTeacherLeave } from "@/hooks/scheduler";
 import { isAdvanceLeaveDate, isAdvanceResult, leaveBody, leaveDefaultTicks } from "@/lib/scheduler/teacher-scope";
 import { StatusChip } from "@/components/common/BookingBadges";
+import TeacherPick from "./LeaveTeacherPick";
 import type { OwnLeaveResult } from "@/types/api/contract";
 
 /**
@@ -44,23 +45,43 @@ import type { OwnLeaveResult } from "@/types/api/contract";
  * than one that refuses.* ⇒ on the admin door the chooser is never rendered at all and a today/past date is refused
  * **with the alternative named**.
  */
+/**
+ * 🔴 **TASK-817 (BE) → TASK-818 — three changes, all on the ADMIN door except the last:**
+ *  1. **A DATE RANGE** (From – To, one reason): `To` is optional, blank = the one day. The answer lists PER DAY its classes and whether it was new.
+ *  2. **A sensible default date:** from the Teachers menu the date starts EMPTY (`initialDate=""`: 🚫 never "tomorrow" — an admin who has not chosen a
+ *     date has not asked for one); from the calendar it is the day being viewed, and `pickTeacher` adds the teacher choice that menu already made.
+ *  3. **Say what saving will do, before saving:** the own door counts what the dialog already holds (the session list / the ticks); the admin door
+ *     does not hold the teacher's classes (the calendar read is the ADMIN's own day), so it says what it does NOT know yet — the list follows the save.
+ */
 export default function ReportLeaveDialog({
   opened,
   initialDate,
   onClose,
-  subject,
+  subject: fixedSubject,
+  pickTeacher = false,
 }: {
   opened: boolean;
   initialDate: string;
   onClose: () => void;
   /** 🔴 TASK-611 — whose leave this is. **Omitted = the signed-in teacher's own**, which is the pre-existing door. */
   subject?: { id: string; name: string };
+  /** 🔴 TASK-818 — the admin door WITHOUT a fixed teacher (the calendar's "Record teacher leave"): the dialog asks whose leave it is. */
+  pickTeacher?: boolean;
 }) {
   const t = useT();
-  const onBehalf = subject != null;
+  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  // 🔑 `subject` below is WHOSE leave this is: the fixed one, or the teacher the admin picked. Absent on an admin door (`choosing`) = not chosen yet.
+  const subject = fixedSubject ?? picked;
+  const onBehalf = fixedSubject != null || pickTeacher;
+  const choosing = onBehalf && !subject;
   const leave = useReportOwnLeave();
   const adminLeave = useReportTeacherLeave();
   const [date, setDate] = useState(initialDate);
+  // 🔴 TASK-818 — the optional END of an admin range. "" = one day. Never set on the teacher's own door (one day, as the server has it).
+  const [dateTo, setDateTo] = useState("");
+  const noDate = date === "";
+  const isRange = onBehalf && dateTo !== "" && dateTo > date;
+  const rangeDays = isRange ? dayjs(dateTo).diff(dayjs(date), "day") + 1 : 1;
   // 🔴 The read is scoped to whoever asked ⇒ on the ADMIN door it would be the admin's own day. It is not asked for at
   // all there (`enabled: !onBehalf`): 🔑 *not fetched and ignored — a request whose answer must never be shown should
   // not be made.*
@@ -86,12 +107,23 @@ export default function ReportLeaveDialog({
     setError(null);
     // 🚫 The two guards (TASK-564's lesson): the button is disabled AND nothing is sent on a date this door refuses.
     if (refusedForAdmin) return;
+    // 🔴 TASK-818 — and the two WAITS (no date yet · no teacher chosen yet): nothing is sent, nothing is refused in words either.
+    if (noDate || choosing) return;
     try {
       // 🔑 ONE body builder for both doors — `leaveBody` is unchanged and needed no new shape. On the admin door the act
       // is always the advance one, so it carries `{ date, reason }` and 🚫 never `sessionIds`.
+      // 🔴 TASK-818 — a RANGE is `{ from, to, reason }` (the server's body; one reason for every day).
       const body = leaveBody(date, allIds, ticked, reason, advance);
-      const res = subject ? await adminLeave.mutateAsync({ teacherId: subject.id, ...body }) : await leave.mutateAsync(body);
+      const res = subject
+        ? isRange
+          ? await adminLeave.mutateAsync({ teacherId: subject.id, from: date, to: dateTo, reason: reason.trim() })
+          : await adminLeave.mutateAsync({ teacherId: subject.id, ...body })
+        : await leave.mutateAsync(body);
       // 🔑 Which act ran is read from the ANSWER, never re-derived from the date we sent.
+      if (res.mode === "advance-range") {
+        setDone(res);
+        return;
+      }
       if (isAdvanceResult(res)) {
         setDone(res);
         return;
@@ -109,7 +141,7 @@ export default function ReportLeaveDialog({
       onClose={onClose}
       centered
       size="md"
-      title={subject ? t("teacherLeave.adminTitle", { name: subject.name }) : t("teacherLeave.title")}
+      title={subject ? t("teacherLeave.adminTitle", { name: subject.name }) : onBehalf ? t("teacherLeave.recordTeacherLeave") : t("teacherLeave.title")}
     >
       <Stack gap="sm">
         {error && (
@@ -117,7 +149,9 @@ export default function ReportLeaveDialog({
             {error}
           </Alert>
         )}
-        {done ? (
+        {done?.mode === "advance-range" ? (
+          <RangeResult done={done} name={subject?.name ?? ""} onClose={onClose} />
+        ) : done ? (
           /* 🔴 TASK-588 — the advance result, in @Jason's §15 order: the day is blocked · these classes are already booked
              and an ADMIN will handle them · 🔑 NOTHING HAS BEEN CANCELLED. The last clause is the one that matters. */
           <Stack gap="sm" data-leave-advance={done.bookings?.length ?? 0}>
@@ -189,16 +223,36 @@ export default function ReportLeaveDialog({
           </Stack>
         ) : (
         <>
+        {pickTeacher && !fixedSubject && <TeacherPick value={picked} onPick={setPicked} />}
         <DatePickerInput
           label={t("teacherLeave.date")}
-          value={date}
-          onChange={(v) => v && setDate(dayjs(v).format("YYYY-MM-DD"))}
+          value={date || null}
+          onChange={(v) => {
+            if (!v) return;
+            const next = dayjs(v).format("YYYY-MM-DD");
+            setDate(next);
+            // 🔴 TASK-818 — an end that is no longer after the start is dropped, never silently sent as a backwards range.
+            if (dateTo && dateTo <= next) setDateTo("");
+          }}
           valueFormat="D MMM YYYY"
           popoverProps={{ withinPortal: true }}
+          data-leave-date-from
         />
+        {onBehalf && (
+          <DatePickerInput
+            label={t("teacherLeave.dateTo")}
+            value={dateTo || null}
+            minDate={date ? dayjs(date).add(1, "day").format("YYYY-MM-DD") : undefined}
+            onChange={(v) => setDateTo(v ? dayjs(v).format("YYYY-MM-DD") : "")}
+            valueFormat="D MMM YYYY"
+            clearable
+            popoverProps={{ withinPortal: true }}
+            data-leave-date-to
+          />
+        )}
         {/* 🔴 TASK-611 — the admin door's refusal, and it NAMES WHAT TO DO INSTEAD. 🚫 Never a bare "not allowed":
             *a reason with no next step is a dead end with a caption.* */}
-        {refusedForAdmin && (
+        {refusedForAdmin && !noDate && (
           <Alert color="yellow" variant="light" icon={<AlertTriangle size={15} />} data-leave-admin-refused>
             <Text size="sm">{t("teacherLeave.adminPastRefused")}</Text>
             <Text size="sm" fw={600} mt={4}>
@@ -210,9 +264,11 @@ export default function ReportLeaveDialog({
             act cancels nothing. What the day already holds is shown AFTER the act, from the server's own list.
             🔴 TASK-611 — and on the ADMIN door it is absent on EVERY date, because the rows would be the admin's own. */}
         {advance ? (
+          choosing ? null : (
           <Alert color="blue" variant="light" data-leave-advance-notice>
-            {subject ? t("teacherLeave.adminHint", { name: subject.name }) : t("teacherLeave.advanceHint")}
+            {isRange && subject ? t("teacherLeave.adminRangeHint", { name: subject.name, n: rangeDays }) : subject ? t("teacherLeave.adminHint", { name: subject.name }) : t("teacherLeave.advanceHint")}
           </Alert>
+          )
         ) : onBehalf ? null : (
         <div data-leave-chooser>
           <Text size="sm" fw={500} mb={4}>
@@ -262,9 +318,16 @@ export default function ReportLeaveDialog({
             false, so it appeared on a screen with NO ticks — and one where today is refused anyway.
             📌 My TASK-595 comment already said this line belongs to the cancel act only; **this is the second door
             that comment did not cover** — *a rule written down for one door does not travel to the next by itself.* */}
-        {!advance && !subject && (
+        {!advance && !onBehalf && (
           <Text size="xs" c="orange" data-leave-cancel-warning>
             {t("teacherLeave.warning")}
+          </Text>
+        )}
+        {/* 🔴 TASK-818 (P7) — what saving WILL do, said plainly BEFORE it is done, with the numbers the dialog already holds: the own door has its
+            session list (the ticks, or the day's classes); the admin door does not (the calendar read is the admin's own day) and its hint above says so. */}
+        {!onBehalf && !isLoading && !noDate && (advance || ticked.length > 0) && (
+          <Text size="sm" fw={500} data-leave-will={advance ? "block" : "cancel"}>
+            {advance ? t("teacherLeave.willBlock", { n: rows.length }) : t("teacherLeave.willCancel", { n: ticked.length })}
           </Text>
         )}
         <Group justify="flex-end" gap="sm">
@@ -276,13 +339,17 @@ export default function ReportLeaveDialog({
           <Button
             color="orange"
             loading={leave.isPending || adminLeave.isPending}
-            disabled={refusedForAdmin || (!advance && ticked.length === 0) || reason.trim().length === 0}
+            disabled={refusedForAdmin || noDate || choosing || (!advance && ticked.length === 0) || reason.trim().length === 0}
             data-leave-submit
             onClick={() => void submit()}
           >
             {subject
-              ? t("teacherLeave.adminSubmit", { name: subject.name })
-              : advance
+              ? isRange
+                ? t("teacherLeave.adminSubmitRange", { name: subject.name, n: rangeDays })
+                : t("teacherLeave.adminSubmit", { name: subject.name })
+              : choosing
+                ? t("teacherLeave.recordTeacherLeave")
+                : advance
                 ? t("teacherLeave.submitAdvance")
                 : t("teacherLeave.submit", { n: ticked.length })}
           </Button>
@@ -291,5 +358,54 @@ export default function ReportLeaveDialog({
         )}
       </Stack>
     </Modal>
+  );
+}
+
+/**
+ * 🔴 **TASK-817 (BE) → TASK-818 — the RANGE result, PER DAY** (the server's own list, in date order): was the day new or already on record (skipped — its
+ * first entry stands), and the live classes booked on it. 🔑 The two sentences an admin must not get wrong are the SAME approved ones as the single day's
+ * result: NOTHING HAS BEEN CANCELLED, and whether the TEACHER was told (read from the COUNT; absent = say nothing).
+ */
+function RangeResult({ done, name, onClose }: { done: OwnLeaveResult; name: string; onClose: () => void }) {
+  const t = useT();
+  const days = done.days ?? [];
+  return (
+    <Stack gap="sm" data-leave-range={days.length}>
+      <Text fw={600}>{t("teacherLeave.adminAdvanceTitle", { date: `${formatDateWithDay(done.from)} – ${formatDateWithDay(done.to)}`, name })}</Text>
+      <Text size="sm">{t("teacherLeave.adminAdvanceBlocked", { name })}</Text>
+      <Stack gap="xs">
+        {days.map((d) => (
+          <div key={d.date} data-leave-range-day={d.date} data-leave-range-already={d.alreadyRecorded ? "yes" : "no"}>
+            <Group gap="xs">
+              <Text size="sm" fw={500} className="tabular-nums">
+                {formatDateWithDay(d.date)}
+              </Text>
+              <Badge size="sm" variant="light" color={d.alreadyRecorded ? "gray" : "blue"}>
+                {d.alreadyRecorded ? t("teacherLeave.rangeDayAlready") : t("teacherLeave.rangeDayNew")}
+              </Badge>
+              <Text size="xs" c="dimmed">
+                {d.bookings.length > 0 ? t("teacherLeave.rangeDayClasses", { n: d.bookings.length }) : t("teacherLeave.rangeDayNone")}
+              </Text>
+            </Group>
+            {d.bookings.map((b) => (
+              <Text key={b.id} size="sm" pl="md" className="tabular-nums">
+                {formatTimeDisplay(b.startTime)} – {formatTimeDisplay(b.endTime)}
+              </Text>
+            ))}
+          </div>
+        ))}
+      </Stack>
+      <Alert color="orange" variant="light" icon={<AlertTriangle size={15} />} data-leave-nothing-cancelled>
+        {t("teacherLeave.adminNothingCancelled")}
+      </Alert>
+      {typeof done.teacherNotified === "number" && (
+        <Text size="xs" c={done.teacherNotified > 0 ? "dimmed" : "orange"} data-leave-teacher-told={done.teacherNotified > 0 ? "yes" : "no"}>
+          {done.teacherNotified > 0 ? t("teacherLeave.adminDoneTeacherTold", { name }) : t("teacherLeave.adminDoneTeacherNotTold", { name })}
+        </Text>
+      )}
+      <Group justify="flex-end">
+        <Button onClick={onClose}>{t("common.close")}</Button>
+      </Group>
+    </Stack>
   );
 }

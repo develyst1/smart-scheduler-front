@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { dictionaries } from "@/lib/i18n/dictionaries";
 import userEvent from "@testing-library/user-event";
+import dayjs from "dayjs";
 import { I18nProvider } from "@/lib/i18n";
 import type { Teacher } from "@/types/app/scheduler";
 
@@ -80,7 +81,7 @@ describe("🔴 TASK-611 — the row action, for an admin who holds the key", () 
     expect(item.getAttribute("aria-disabled")).toBeNull();
   });
 
-  it("🔴 it opens the dialog on THIS teacher, on a date the door ACCEPTS", async () => {
+  it("🔴 it opens the dialog on THIS teacher, with NO date chosen — nothing refused, and the button waits", async () => {
     const user = userEvent.setup();
     mount();
     await openMenu(user);
@@ -88,10 +89,11 @@ describe("🔴 TASK-611 — the row action, for an admin who holds the key", () 
 
     // the title names the row's teacher — 🔑 the identity comes from the row, not from anything the admin types
     await waitFor(() => expect(screen.queryAllByText(/record leave for ครูเอ/i).length).toBeGreaterThan(0));
-    // 🔴 and it opens on a FUTURE date: the advance notice is on screen and the refusal is NOT
-    // *Opening on a date the door refuses would teach an admin the control is broken before they read the reason.*
-    await waitFor(() => expect(document.querySelectorAll("[data-leave-advance-notice]").length).toBe(1));
+    // 🔻 TASK-818 (P6), declared: it used to open on TOMORROW (so the door never opened on a date it refuses). It opens EMPTY now — a date the admin did not choose is a date
+    // they can save by accident. ✅ What this pin protects is intact: the dialog never opens on a date the door REFUSES — no refusal is on screen — and nothing can be sent yet.
+    expect(document.querySelectorAll("[data-leave-advance-notice]").length).toBe(0);
     expect(document.querySelectorAll("[data-leave-admin-refused]").length).toBe(0);
+    expect((document.querySelector("[data-leave-submit]") as HTMLButtonElement).disabled).toBe(true);
     // 🚫 no chooser, on the door's own opening state
     expect(document.querySelectorAll('input[type="checkbox"]').length).toBe(0);
   });
@@ -107,6 +109,14 @@ describe("🔴 TASK-611 — the row action, for an admin who holds the key", () 
     mount();
     await openMenu(user);
     await user.click(document.querySelector("[data-teacher-leave-open]") as HTMLElement);
+    // 🔻 TASK-818 (P6), declared: the date starts empty, so this chooses a FUTURE day through the From picker first (the pressed day's aria-label is "D MMMM YYYY").
+    const label = dayjs().add(2, "day").format("D MMMM YYYY");
+    await user.click(document.querySelector("[data-leave-date-from]") as HTMLElement);
+    const dayBtn = () => [...document.querySelectorAll("button")].filter((b) => b.getAttribute("aria-label") === label).at(-1) as HTMLElement | undefined;
+    for (let i = 0; i < 2 && !dayBtn(); i++) {
+      await user.click([...document.querySelectorAll("button")].filter((b) => (b.getAttribute("class") ?? "").includes("calendarHeaderControl"))[1] as HTMLElement);
+    }
+    await user.click(dayBtn() as HTMLElement);
     await waitFor(() => expect(document.querySelectorAll("[data-leave-advance-notice]").length).toBe(1));
 
     await user.type(document.querySelector("textarea") as HTMLTextAreaElement, "ไปอบรม");

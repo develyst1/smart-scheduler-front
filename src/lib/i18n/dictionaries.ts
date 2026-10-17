@@ -518,6 +518,29 @@ const en = {
   leaveDays: {
     markerClasses: "{name} is away — {n} class(es) to handle",
     markerAway: "{name} is away — nothing booked",
+    // ✅ APPROVED by the owner 2026-10-17 (TASK-814) — COPY-REVIEW-2026-09-29.md, "2026-10-17 — APPROVED … TASK-814" — verbatim.
+    cancelLeave: "Cancel leave",
+    cancelTitle: "Cancel {name}'s leave on {date}?",
+    cancelBody: "That day opens for bookings with this teacher again. Existing classes don't change. The teacher is told on LINE.",
+    cancelYes: "Cancel leave",
+    cancelNo: "Keep leave",
+    cancelToastTold: "Leave cancelled — the teacher was told on LINE",
+    cancelToastNotTold: "Leave cancelled — the teacher has no LINE link, please tell them yourself",
+    // ✅ APPROVED by the owner 2026-10-17 (REQ-123 Phase 1, TASK-820), COPY-REVIEW-2026-09-29.md, verbatim. The two buttons and the two toasts of the range's confirm are the APPROVED ones above.
+    panelTitle: "{name}'s leave",
+    panelNote: "This only shows and cancels the leave. Classes on these days are not changed here — open one to move it, change its teacher or cancel it.",
+    panelOpen: "Open",
+    cancelRange: "Cancel all future days",
+    cancelRangeTitle: "Cancel {name}'s leave from {from} to {to}?",
+    cancelRangeBody: "The days still ahead open for bookings with this teacher again. Days that have already begun stay as they are. Existing classes don't change. The teacher is told on LINE.",
+    // ✅ APPROVED by the owner 2026-10-17 (REQ-123 Phase 1, TASK-821), COPY-REVIEW-2026-09-29.md, verbatim. The row's "N class(es) booked / Nothing booked" are TASK-818's DRAFT keys (`teacherLeave.rangeDay…`); Cancel is TASK-814's approved copy.
+    listTitle: "Teacher leave",
+    listUpcoming: "Upcoming",
+    listPast: "Past",
+    listEmptyUpcoming: "No upcoming teacher leave.",
+    listEmptyPast: "No teacher leave in the last 3 months.",
+    listDays: "{n} days",
+    seeAll: "See all teacher leave →",
   },
   teacherLeave: {
     door: "Report leave",
@@ -578,6 +601,18 @@ const en = {
     adminAdvanceBlocked: "No new class can be booked with {name} that day.",
     adminAdvanceClasses: "{n} class(es) already booked with {name} that day:",
     adminAdvanceNoClasses: "Nothing is booked with {name} that day.",
+    // ✅ APPROVED by the owner 2026-10-17 (REQ-123 Phase 1, TASK-818), COPY-REVIEW-2026-09-29.md, verbatim. Everything not listed here reuses an approved string above.
+    recordTeacherLeave: "Record teacher leave",
+    dateTo: "To (optional — blank means just this day)",
+    adminRangeHint:
+      "Recording leave for {name} blocks all {n} days for new bookings. Classes already booked on those days are not cancelled and no family has been told anything — you will see the list for each day once the leave is recorded.",
+    adminSubmitRange: "Block these {n} days for {name}",
+    willBlock: "Saving only blocks the day for new bookings. {n} class(es) stay on the schedule for an admin to handle.",
+    willCancel: "Saving cancels {n} class(es) and tells their families.",
+    rangeDayNew: "Recorded",
+    rangeDayAlready: "Already on record — the first entry stands",
+    rangeDayClasses: "{n} class(es) booked",
+    rangeDayNone: "Nothing booked",
   },
   // REQ-101 (TASK-429) — the ECA/Free/KOL Manage-plan page
   otherSeries: {
@@ -1354,6 +1389,10 @@ const en = {
     // SPEC-049 / REQ-045 — declared at CREATION, so it is free of quota; wording is the REQ's, not ours.
     plannedAbsence: "Planned absence",
     plannedAbsenceUndo: "Remove planned absence",
+    // ✅ APPROVED by the owner 2026-10-17 (REQ-123 Phase 1, TASK-816), COPY-REVIEW-2026-09-29.md, verbatim. The button itself reuses the approved `plannedAbsence` above.
+    leaveWeekTitle: "A class falls on {name}'s leave day",
+    leaveWeekWarn: "{date} is a leave day for {name}, so this course can't be created yet. Mark it as a planned absence and a make-up is added at the end.",
+    leaveWeekNote: "{date} is on {name}'s leave day and is marked as a planned absence — that's fine.",
     createPreview: "New plan: {n} sessions · absent {d} · ends {date}",
     insert: "Insert make-up",
     editSession: "Edit session",
@@ -2631,6 +2670,29 @@ const th: typeof en = {
   leaveDays: {
     markerClasses: "{name} ลา — มี {n} คาบต้องจัดการ",
     markerAway: "{name} ลา — ไม่มีคาบในวันนั้น",
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-17 (TASK-814) — COPY-REVIEW-2026-09-29.md — ตามต้นฉบับทุกตัวอักษร
+    cancelLeave: "ยกเลิกวันลา",
+    cancelTitle: "ยกเลิกวันลาของครู {name} วันที่ {date}?",
+    cancelBody: "วันนั้นจะกลับมาจองคาบกับครูได้ตามปกติ คาบที่มีอยู่แล้วไม่มีอะไรเปลี่ยน และระบบจะแจ้งครูทาง LINE",
+    cancelYes: "ยกเลิกวันลา",
+    cancelNo: "ไม่ยกเลิก",
+    cancelToastTold: "ยกเลิกวันลาแล้ว — แจ้งครูทาง LINE แล้ว",
+    cancelToastNotTold: "ยกเลิกวันลาแล้ว — ครูยังไม่ได้เชื่อม LINE กรุณาแจ้งครูเอง",
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-17 (REQ-123 Phase 1, TASK-820) — COPY-REVIEW-2026-09-29.md — ตามต้นฉบับทุกตัวอักษร · ปุ่มสองปุ่มและข้อความสองข้อความของหน้ายืนยันช่วงวันลา ใช้ของที่อนุมัติแล้วด้านบน
+    panelTitle: "การลาของครู {name}",
+    panelNote: "หน้านี้ใช้ดูและยกเลิกวันลาเท่านั้น คาบในวันเหล่านี้ไม่ถูกแก้ที่นี่ — กดเปิดคาบเพื่อย้าย เปลี่ยนครู หรือยกเลิกคาบ",
+    panelOpen: "เปิดดู",
+    cancelRange: "ยกเลิกวันลาที่ยังไม่ถึงทั้งหมด",
+    cancelRangeTitle: "ยกเลิกวันลาของครู {name} ตั้งแต่ {from} ถึง {to}?",
+    cancelRangeBody: "วันที่ยังไม่ถึงจะกลับมาจองคาบกับครูได้ตามปกติ วันที่เริ่มหรือผ่านไปแล้วคงไว้ตามเดิม คาบที่มีอยู่แล้วไม่มีอะไรเปลี่ยน และระบบจะแจ้งครูทาง LINE",
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-17 (REQ-123 Phase 1, TASK-821) — COPY-REVIEW-2026-09-29.md — ตามต้นฉบับทุกตัวอักษร · "จองไว้ N คาบ / ไม่มีคาบ" ของแถวใช้คำร่างของ TASK-818 · ปุ่มยกเลิกวันลาใช้คำที่อนุมัติแล้วของ TASK-814
+    listTitle: "การลาของครู",
+    listUpcoming: "ที่จะถึง",
+    listPast: "ที่ผ่านมา",
+    listEmptyUpcoming: "ยังไม่มีการลาของครูที่จะถึง",
+    listEmptyPast: "ไม่มีการลาของครูใน 3 เดือนที่ผ่านมา",
+    listDays: "{n} วัน",
+    seeAll: "ดูการลาของครูทั้งหมด →",
   },
   teacherLeave: {
     door: "แจ้งลาสอน",
@@ -2673,6 +2735,18 @@ const th: typeof en = {
     adminAdvanceBlocked: "จะไม่มีการจองคาบใหม่กับ {name} ในวันนั้น",
     adminAdvanceClasses: "มีคาบที่จองกับ {name} ไว้แล้ว {n} คาบในวันนั้น:",
     adminAdvanceNoClasses: "วันนั้นยังไม่มีคาบที่จองกับ {name}",
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-17 (REQ-123 Phase 1, TASK-818) — COPY-REVIEW-2026-09-29.md — ตามต้นฉบับทุกตัวอักษร · ข้อความอื่นที่ไม่อยู่ในกลุ่มนี้ใช้ของที่อนุมัติแล้วด้านบน
+    recordTeacherLeave: "บันทึกการลาของครู",
+    dateTo: "ถึงวันที่ (ไม่ใส่ = วันเดียว)",
+    adminRangeHint:
+      "การบันทึกลาของครู {name} จะปิดการจองใหม่ตลอด {n} วัน คาบที่จองไว้แล้วในช่วงนั้นไม่ถูกยกเลิกและยังไม่มีการแจ้งครอบครัวใด — จะเห็นรายการคาบของแต่ละวันเมื่อบันทึกเสร็จ",
+    adminSubmitRange: "ปิดการจอง {n} วันของครู {name}",
+    willBlock: "การบันทึกนี้แค่ปิดวันนั้นไม่ให้จองใหม่ คาบที่จองไว้แล้ว {n} คาบยังอยู่ในตาราง ให้แอดมินจัดการ",
+    willCancel: "การบันทึกนี้จะยกเลิก {n} คาบ และแจ้งครอบครัวของคาบเหล่านั้น",
+    rangeDayNew: "บันทึกแล้ว",
+    rangeDayAlready: "มีบันทึกอยู่แล้ว — ใช้รายการแรก",
+    rangeDayClasses: "จองไว้ {n} คาบ",
+    rangeDayNone: "ไม่มีคาบ",
   },
   otherSeries: {
     managePlan: "จัดการตาราง",
@@ -3329,6 +3403,10 @@ const th: typeof en = {
     markAbsence: "บันทึกลา",
     plannedAbsence: "ไม่มาแน่นอน (ลาล่วงหน้า)",
     plannedAbsenceUndo: "ยกเลิกการลาล่วงหน้า",
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-17 (REQ-123 Phase 1, TASK-816) — COPY-REVIEW-2026-09-29.md — ตามต้นฉบับทุกตัวอักษร · ปุ่มใช้คำที่อนุมัติแล้วคือ `plannedAbsence` ด้านบน
+    leaveWeekTitle: "มีคาบตรงกับวันลาของครู {name}",
+    leaveWeekWarn: "วันที่ {date} เป็นวันลาของครู {name} จึงสร้างคอร์สนี้ยังไม่ได้ กดทำเครื่องหมายเป็นลาล่วงหน้า แล้วระบบจะเพิ่มคาบชดเชยต่อท้ายให้",
+    leaveWeekNote: "วันที่ {date} เป็นวันลาของครู {name} และทำเครื่องหมายเป็นลาล่วงหน้าแล้ว — ไม่เป็นไร",
     createPreview: "แผนใหม่: {n} คาบ · ไม่มา {d} · สิ้นสุด {date}",
     insert: "แทรกคาบชดเชย",
     editSession: "แก้ไขคาบ",

@@ -4,6 +4,7 @@ import { UserX } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { leaveMarkerKey, leaveMarkersFor } from "@/lib/scheduler/teacher-scope";
 import type { LeaveDayRow } from "@/types/api/contract";
+import LeaveChip from "./LeaveChip";
 
 /**
  * 🔴 **TASK-587 (BE) → TASK-589 — a coach's blocked day, where an admin already looks.**
@@ -18,8 +19,11 @@ import type { LeaveDayRow } from "@/types/api/contract";
  *  4. ⚠️ **Unlike the camp banner, it is mounted in the WEEK view too** — an admin plans a week, and **a marker you can only
  *     see after navigating into the day is one you find only if you were already looking.**
  *
- * 🚫 **It is not a control.** No link, no button, nothing to press: the owner ruled the admin handles those classes by hand,
- * in the places that already do that.
+ * 🔴 **TASK-820 (the owner's 10-17 approval) — the chip IS now a control, and it is a control for the LEAVE:** its text opens the leave panel
+ * (`LeaveChip` → `LeaveDayPanel`): the leave's days, the classes on each (who · what · when · status) with "Open", and Cancel leave
+ * (TASK-814's approved control, per future day; a range adds "Cancel all future days"). 🚫 **The CLASSES are still handled by hand, in the
+ * booking modal** — "Open" hands the admin to it; nothing is moved, changed or cancelled in bulk from here, and cancelling a leave restores
+ * nothing and tells no family (the teacher is told on LINE by the server). *Both pieces are their own components in their own files.*
  * ⚠️ **Never rendered for a teacher-scoped session** — the read is refused for them (403), so the caller does not even ask.
  */
 export default function LeaveDayBanner({ rows, dates }: { rows: readonly LeaveDayRow[] | undefined; dates: readonly string[] }) {
@@ -41,7 +45,11 @@ export default function LeaveDayBanner({ rows, dates }: { rows: readonly LeaveDa
         >
           <UserX size={14} />
           {/* 🔑 Whose day AND how many classes — a marker that only said "blocked" would send an admin hunting for them. */}
-          <span>{t(leaveMarkerKey(m), { name: m.teacherName, n: String(m.classes), date: m.date })}</span>
+          <LeaveChip
+            row={rows?.find((r) => r.teacherId === m.teacherId && r.date === m.date) as LeaveDayRow}
+            text={t(leaveMarkerKey(m), { name: m.teacherName, n: String(m.classes), date: m.date })}
+            seeAll
+          />
         </span>
       ))}
     </div>

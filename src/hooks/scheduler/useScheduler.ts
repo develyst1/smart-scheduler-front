@@ -27,6 +27,7 @@ import {
   importVoucher,
   type ImportCourseInput,
   type ImportVoucherInput,
+  type AdminLeaveBody,
   getCoursePackages,
   getDailyReport,
   getVouchers,
@@ -34,6 +35,8 @@ import {
   getTeacherTypeOrder,
   markAttended,
   getLeaveDays,
+  liftTeacherLeave,
+  liftLeaveRange,
   reportOwnLeave,
   reportTeacherLeave,
   updateCourseRate,
@@ -555,6 +558,42 @@ export const useLeaveDays = (from: string, to: string, enabled: boolean) =>
     staleTime: 60_000,
   });
 
+/**
+ * 🔴 TASK-820 — ONE coach's recorded days around a date (the leave PANEL's read: a whole range, past days included). Same `["leave-days", …]` family as the strip's read, so
+ * every refresh of the strip refreshes this too. 🚫 `enabled` is the gate, as for the strip: an admin session only.
+ */
+export const useTeacherLeaveDays = (teacherId: string, from: string, to: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ["leave-days", from, to, teacherId],
+    queryFn: () => getLeaveDays(from, to, teacherId),
+    enabled: Boolean(enabled && teacherId && from && to),
+    staleTime: 60_000,
+  });
+
+/** 🔴 TASK-820 — the admin cancels a RANGE's future days (`DELETE /teacher-leave-ranges/:id`). Refreshes the strip + the panel's read + the calendar. */
+export const useLiftLeaveRange = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rangeId: string) => liftLeaveRange(rangeId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave-days"] });
+      invalidateAll(qc);
+    },
+  });
+};
+
+/** 🔴 TASK-814 — the admin cancels a FUTURE leave day. Refreshes the leave strip (its own key) and the calendar. */
+export const useLiftTeacherLeave = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ teacherId, date }: { teacherId: string; date: string }) => liftTeacherLeave(teacherId, date),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave-days"] });
+      invalidateAll(qc);
+    },
+  });
+};
+
 export const useReportOwnLeave = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -567,9 +606,12 @@ export const useReportOwnLeave = () => {
 export const useReportTeacherLeave = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ teacherId, ...body }: { teacherId: string; date: string; sessionIds?: string[]; reason: string }) =>
-      reportTeacherLeave(teacherId, body),
-    onSuccess: () => invalidateAll(qc),
+    mutationFn: ({ teacherId, ...body }: { teacherId: string } & AdminLeaveBody) => reportTeacherLeave(teacherId, body),
+    onSuccess: () => {
+      // 🔴 TASK-818 — the leave strip has its own key, and the admin who just recorded a day (or a range) is looking at it.
+      qc.invalidateQueries({ queryKey: ["leave-days"] });
+      invalidateAll(qc);
+    },
   });
 };
 

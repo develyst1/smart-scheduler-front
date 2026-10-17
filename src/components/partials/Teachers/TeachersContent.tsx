@@ -27,6 +27,7 @@ import { useSubjects } from "@/hooks/scheduler/useSubjects";
 // REQ-102 (TASK-427) — a NULL figure (masked server-side for a user without `teachers.budget-view`) draws `—`, never ฿0.
 import { minorOrDash, moneyOrDash } from "@/lib/scheduler/money-or-dash";
 import ArchivedTeachers from "./ArchivedTeachers";
+import TeacherLeaveList from "./TeacherLeaveList";
 import FreelanceBudgetControls from "./FreelanceBudgetControls";
 import { MANTINE_COLOR } from "@/lib/ui/colors";
 import {
@@ -206,6 +207,9 @@ export default function TeachersContent() {
           </Card>
         );
       })}
+
+      {/* 🔴 TASK-821 (REQ-123 P5) — every teacher's leave, upcoming and past. `#teacher-leave` is where the calendar panel's "See all teacher leave →" lands. */}
+      <TeacherLeaveList />
 
       <ArchivedTeachers />
 

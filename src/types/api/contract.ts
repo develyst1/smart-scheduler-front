@@ -976,6 +976,18 @@ export interface LeaveDayClass {
   endTime: string;
   status: BookingStatus;
   bookingType: string | null;
+  /**
+   * 🔴 TASK-819 (BE) → TASK-820 — WHO and WHAT, so the admin can see which child's class this is without opening it. All OPTIONAL here: an
+   * older server sends none of them, and the panel then shows the time and the status alone. `coChild…` is DUO's second child.
+   */
+  childName?: string | null;
+  childNickname?: string | null;
+  coChildName?: string | null;
+  coChildNickname?: string | null;
+  program?: string | null;
+  /** The title of an "other" row (it has no program). */
+  title?: string | null;
+  inCourse?: boolean;
 }
 /**
  * 🔴 **TASK-587 (BE) → TASK-589 — the ADMIN's read: `GET /teacher-leave-days?from&to`.**
@@ -993,15 +1005,36 @@ export interface LeaveDayRow {
   date: IsoDate;
   reason: string | null;
   createdBy: string | null;
+  /** 🔴 TASK-819 → TASK-820 — the record this day belongs to (TASK-817's range); null / absent = recorded as a single day. Group by it to show a range as one leave. */
+  rangeId?: string | null;
   bookings: LeaveDayClass[];
+}
+
+/**
+ * 🔴 **TASK-819 (BE) → TASK-820 — `DELETE /teacher-leave-ranges/:id`: lifts only the FUTURE days of a range.** `kept` = the days that had begun or passed
+ * (they stay); nothing left to lift is a 400 with the approved future-only sentence. `teacherNotified` as the per-day lift: a number above zero = told.
+ */
+export interface LiftLeaveRangeResponse {
+  rangeId: string;
+  lifted: string[];
+  kept: string[];
+  teacherNotified?: number;
 }
 
 export interface OwnLeaveResult {
   cancelled: number;
   bookingIds: string[];
   familiesNotified: number;
-  /** Present ONLY on the advance act — the discriminator. */
-  mode?: "advance";
+  /** Present ONLY on the advance act — the discriminator. 🔴 TASK-817 (BE) → TASK-818: `"advance-range"` = the admin's DATE RANGE answer (`days` below). */
+  mode?: "advance" | "advance-range";
+  /** 🔴 TASK-817 → TASK-818 — a RANGE answer (`mode: "advance-range"`): one record, many days. `rangeId` is null when every day was already there. */
+  rangeId?: string | null;
+  from?: IsoDate;
+  to?: IsoDate;
+  recordedDays?: number;
+  alreadyRecordedDays?: number;
+  /** Per day, in date order: was it already on record (skipped, the first entry stands) and the live classes booked on it. */
+  days?: { date: IsoDate; alreadyRecorded: boolean; bookings: LeaveDayClass[] }[];
   leave?: { date: IsoDate; reason: string | null };
   alreadyRecorded?: boolean;
   /** The classes already booked on that day. 🚫 Nothing was done to them: an admin handles them by hand. */

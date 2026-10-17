@@ -1,0 +1,248 @@
+{
+  "_why": "TASK-821 (FE). One clicked test file (the Teachers page's leave list + the calendar panel's link). Each mutation breaks a WINDOW the server would refuse, WHICH rows are one leave, WHO may cancel, or WHERE the link shows. Written with the set; nothing reconstructed. T4 (a teacher-scoped session asking) was dropped: the list holds no session read — the Teachers page is behind `menu:teachers`, which a linked teacher does not have.",
+  "tests": [
+    "src/components/partials/Teachers/teacher-leave-list-task821.dom.test.tsx"
+  ],
+  "mutations": [
+    {
+      "id": "T1",
+      "what": "🔴 the UPCOMING window runs 200 days (the server refuses more than 92)",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "today.add(91, \"day\").format(\"YYYY-MM-DD\") : today.subtract(1, \"day\")",
+              "to": "today.add(200, \"day\").format(\"YYYY-MM-DD\") : today.subtract(1, \"day\")"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T2",
+      "what": "🔴 the PAST window starts 200 days back",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "today.subtract(91, \"day\")",
+              "to": "today.subtract(200, \"day\")"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T3",
+      "what": "🔴 the PAST window includes TODAY",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "today.subtract(1, \"day\").format(\"YYYY-MM-DD\");\n  const { data",
+              "to": "today.format(\"YYYY-MM-DD\");\n  const { data"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T5",
+      "what": "🔴 a RANGE is drawn as one row per DAY",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "const key = r.rangeId ? `range:${r.rangeId}` : `day:${r.teacherId}:${r.date}`;",
+              "to": "const key = `day:${r.teacherId}:${r.date}`;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T6",
+      "what": "🔴 two teachers' single days on the same date are MERGED (the key forgets the teacher)",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "`day:${r.teacherId}:${r.date}`;\n    byKey.set",
+              "to": "`day:${r.date}`;\n    byKey.set"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T7",
+      "what": "🔴 a record's class count is the number of DAYS, not of classes",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "n + d.bookings.length",
+              "to": "n + 1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T8",
+      "what": "🔴 the PAST list is not turned round (the oldest comes first)",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "[...data].reverse()",
+              "to": "[...data]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T9",
+      "what": "🔴 a range already behind us still offers 'Cancel all future days'",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "      r.to > todayIso &&\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T10",
+      "what": "🔴 'Cancel all future days' ignores the key",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "can(\"action:calendar.status\") && (",
+              "to": "true && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T11",
+      "what": "🔴 a ONE-day leave gets the RANGE button (and no approved Cancel)",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "{r.rangeId === null ? (",
+              "to": "{false ? ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T12",
+      "what": "🔴 the calendar panel links to the list for a viewer WITHOUT the Teachers menu",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "{seeAll && hasMenu(access, \"menu:teachers\") && (",
+              "to": "{seeAll && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T13",
+      "what": "🔴 the calendar's chip no longer asks the panel for the link",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayBanner.tsx",
+          "edits": [
+            {
+              "from": "            seeAll\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T14",
+      "what": "🔴 the panel opened FROM the list also offers the link (it is already there)",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "<LeaveChip row={r.first} text={parts.filter(Boolean).join(\" · \")} />",
+              "to": "<LeaveChip row={r.first} text={parts.filter(Boolean).join(\" · \")} seeAll />"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T15",
+      "what": "🔴 the list is not mounted on the Teachers page",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeachersContent.tsx",
+          "edits": [
+            {
+              "from": "      <TeacherLeaveList />\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T16",
+      "what": "🔴 the anchor the link lands on is gone",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "id=\"teacher-leave\"",
+              "to": "id=\"x\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T17",
+      "what": "⚠️ the APPROVED marker is dropped from the English words (they would no longer say the owner approved them)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "// ✅ APPROVED by the owner 2026-10-17 (REQ-123 Phase 1, TASK-821)",
+              "to": "// (REQ-123 Phase 1, TASK-821)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

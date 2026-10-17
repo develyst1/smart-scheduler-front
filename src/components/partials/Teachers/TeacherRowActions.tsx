@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ActionIcon, Alert, Button, Group, Menu, Modal, Select, Stack, Text } from "@mantine/core";
-import dayjs from "dayjs";
 import { Archive, CalendarOff, MoreVertical, Pencil, Repeat } from "lucide-react";
 import ReportLeaveDialog from "@/components/partials/Calendar/Modal/ReportLeaveDialog";
 import { notify } from "@/lib/ui/notify";
@@ -122,12 +121,12 @@ export default function TeacherRowActions({
       </Menu>
 
       {/* 🔴 TASK-611 — the SAME dialog the teacher uses, given a subject. 🚫 Not a second screen.
-          🔑 The default date is TOMORROW, because this door only accepts a day after today: *opening on a date the door
-          refuses would teach an admin that the control is broken before they had read the reason.* */}
+          🔴 TASK-818 (P6) — the date starts EMPTY. It was TOMORROW (so the door never opened on a date it refuses), but a date the admin
+          did not choose is a date they can save by accident; the button simply waits for one, and nothing is refused until then. */}
       {leaveOpen && (
         <ReportLeaveDialog
           opened={leaveOpen}
-          initialDate={dayjs().add(1, "day").format("YYYY-MM-DD")}
+          initialDate=""
           onClose={() => setLeaveOpen(false)}
           subject={{ id: teacher.id, name: teacher.nickname || teacher.name }}
         />

@@ -142,12 +142,18 @@ describe("§4 — `Report leave`: one call, the ticks from the scoped day, the b
     // route when there is no subject, the admin's when there is. ✅ What this pin protects is intact and now stated
     // more strongly below: 🔑 **`leaveBody` is called EXACTLY ONCE** in the file, so the two doors cannot hold two
     // ideas of the body, and 🚫 neither door builds one of its own.
-    expect(leaveDialog).toContain("const res = subject ? await adminLeave.mutateAsync({ teacherId: subject.id, ...body }) : await leave.mutateAsync(body);");
+    // 🔻 TASK-818, declared: the admin door gained a RANGE call beside the one-day call (`isRange ? mutateAsync({ teacherId, from, to, reason }) : mutateAsync({ teacherId, ...body })`).
+    // ✅ What this pin protects is intact: `leaveBody` is still called EXACTLY ONCE, the one-day admin call is unchanged, `teacherId` rides in BOTH admin bodies, and the teacher's own
+    // door still sends `body` and nothing else.
+    expect(leaveDialog).toContain("await adminLeave.mutateAsync({ teacherId: subject.id, from: date, to: dateTo, reason: reason.trim() })");
+    expect(leaveDialog).toContain("await adminLeave.mutateAsync({ teacherId: subject.id, ...body })");
+    expect(leaveDialog).toContain(": await leave.mutateAsync(body);");
     // 🔻 TASK-611, declared: + `refusedForAdmin` as the FIRST term. ✅ The two it already protected are unchanged (no
     // ticks on the cancel path, and a reason always); the new one is the admin door's future-only rule.
     // 🔑 And it is the first of TWO guards, as TASK-564 taught: `submit` returns before the request on the same
     // condition, so a pressed-anyway button sends nothing.
-    expect(leaveDialog).toContain("disabled={refusedForAdmin || (!advance && ticked.length === 0) || reason.trim().length === 0}");
+    // 🔻 TASK-818, declared: + `noDate || choosing` — the two WAITS (no date chosen yet · no teacher chosen yet on the calendar's entry). ✅ `refusedForAdmin` is still the FIRST term.
+    expect(leaveDialog).toContain("disabled={refusedForAdmin || noDate || choosing || (!advance && ticked.length === 0) || reason.trim().length === 0}");
     expect(leaveDialog).toContain("if (refusedForAdmin) return;");
     // 🔴 the refusal is derived from the SAME comparison the act uses — 🚫 not a second rule about dates
     expect(leaveDialog).toContain("const refusedForAdmin = onBehalf && !advance;");
@@ -165,7 +171,9 @@ describe("§4 — `Report leave`: one call, the ticks from the scoped day, the b
     // told, and the cancel act happens only on the TEACHER's own door** — on the admin door a today date makes
     // `advance` false, so it rendered on a screen with NO ticks. ✅ What this pin protects (the line is GUARDED, not
     // reworded) is unchanged; the guard is one term wider.
-    expect(leaveDialog).toContain("{!advance && !subject && (");
+    // 🔻 TASK-818, declared: `!subject` → `!onBehalf`. On the calendar's new entry the admin has not PICKED a teacher yet, so `subject` is empty while the door is still the admin's.
+    // ✅ The point is kept: the cancel warning is absent on EVERY admin door and present on the teacher's own.
+    expect(leaveDialog).toContain("{!advance && !onBehalf && (");
     expect(leaveDialog).toContain("data-leave-cancel-warning");
     // 🔻 TASK-611, declared: + `useReportTeacherLeave` — the ADMIN's caller of the SAME act (@Jason's one service
     // function, one fork). 🚫 Still nothing outside the set, which is what this assertion is for.
@@ -220,7 +228,9 @@ describe("§6 — `TEACHER_LEAVE`: read everywhere, offered nowhere", () => {
     // *you are recorded as away* · *booked with YOU* · *an admin will handle them* · *with YOU* — on the screen of the
     // admin who had just acted. ✅ APPROVED (owner 2026-10-04) as @Sober drafted them. 🔑 `advanceAlready` is NEUTRAL
     // and stays SHARED: it is not a fifth variant and must not become one.
-    expect(Object.keys(en).length).toBe(31); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
+    // 🔻 TASK-818, declared: 31 → 41. TEN keys (REQ-123 P1; APPROVED by the owner 2026-10-17, verbatim): `recordTeacherLeave · dateTo · adminRangeHint · adminSubmitRange · willBlock ·
+    // willCancel · rangeDayNew · rangeDayAlready · rangeDayClasses · rangeDayNone` — the range, the calendar's entry, and the "what saving will do" lines. Each is in both languages.
+    expect(Object.keys(en).length).toBe(41); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     for (const k of ["teacherLink", "teacherLinkHint", "teacherNone", "teacherLine"]) {
       expect((dictionaries.en.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);

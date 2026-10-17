@@ -58,6 +58,7 @@ import type {
   ResumeCourseResponse,
   UpdateCourseExpiryResponse,
   LeaveDayRow,
+  LiftLeaveRangeResponse,
   SetTeacherWorkDaysResponse,
   TeacherDTO,
   TeachersResponse,
@@ -504,11 +505,17 @@ export const reportOwnLeave = async (body: { date: string; sessionIds?: string[]
  * set — **refused a linked coach on the coach's OWN door.** ⇒ the admin act hangs off the admin's own noun, beside
  * TASK-587's admin read. 📌 Taken from his route file, not from his report, which still named the old path.
  */
-export const reportTeacherLeave = async (
-  teacherId: string,
-  body: { date: string; sessionIds?: string[]; reason: string },
-): Promise<OwnLeaveResult> => {
-  if (useMock) return mock.reportOwnLeave(body);
+/**
+ * 🔴 **TASK-817 (BE) → TASK-818 — the admin door takes EITHER one day OR a DATE RANGE** (`{ teacherId, from, to, reason }`, one reason, ≤ 31 days
+ * — the server's limit and its sentence; the front does not copy the number). 🚫 A range never carries `sessionIds` (the server refuses it).
+ */
+export type AdminLeaveBody = { date: string; sessionIds?: string[]; reason: string } | { from: string; to: string; reason: string };
+export const reportTeacherLeave = async (teacherId: string, body: AdminLeaveBody): Promise<OwnLeaveResult> => {
+  if (useMock) {
+    // 🔴 TASK-818 — the mock service has no range writer: a range answers the told-nobody, nothing-recorded shape.
+    if ("from" in body) return { cancelled: 0, bookingIds: [], familiesNotified: 0, mode: "advance-range", rangeId: null, from: body.from, to: body.to, recordedDays: 0, alreadyRecordedDays: 0, days: [], teacherNotified: 0 };
+    return mock.reportOwnLeave(body);
+  }
   // 🔑 `teacherId` rides in the BODY (the server's `adminTeacherLeave` = the teacher's own body + whose day it is).
   // 🚫 The actor is never a field: it is the signed-in admin.
   const { data } = await api.post<OwnLeaveResult>("/teacher-leave-days", { teacherId, ...body });
@@ -520,10 +527,36 @@ export const reportTeacherLeave = async (
  * 🚫 A READ: nothing is cancelled or moved from it. ⚠️ **A linked teacher is refused (403)**, so the caller asks only on an
  * admin session — the hook's `enabled`, not a try/catch.
  */
-export const getLeaveDays = async (from: string, to: string): Promise<LeaveDayRow[]> => {
+export const getLeaveDays = async (from: string, to: string, teacherId?: string): Promise<LeaveDayRow[]> => {
   if (useMock) return mock.getLeaveDays(from, to);
-  const { data } = await api.get<{ items: LeaveDayRow[] }>("/teacher-leave-days", { params: { from, to } });
+  // 🔴 TASK-819 → TASK-820 — `teacherId` is optional (one coach's days only — what the leave PANEL asks, to show a whole range); absent ⇒ no key on the wire.
+  const { data } = await api.get<{ items: LeaveDayRow[] }>("/teacher-leave-days", { params: { from, to, ...(teacherId ? { teacherId } : {}) } });
   return data.items;
+};
+
+/**
+ * 🔴 **TASK-819 (BE) → TASK-820 — the admin cancels a whole RANGE's future days: `DELETE /teacher-leave-ranges/:id`.** One call, one LINE to the teacher; days that have begun
+ * or passed stay and come back as `kept`. 🚫 No `mock` twin (the mock holds no leave rows): the mock answer is the lifted-nothing, told-nobody shape.
+ */
+export const liftLeaveRange = async (rangeId: string): Promise<LiftLeaveRangeResponse> => {
+  if (useMock) return { rangeId, lifted: [], kept: [], teacherNotified: 0 };
+  const { data } = await api.delete<LiftLeaveRangeResponse>(`/teacher-leave-ranges/${encodeURIComponent(rangeId)}`);
+  return data;
+};
+
+/**
+ * 🔴 **TASK-814 — the ADMIN cancels a FUTURE advance-leave day: `DELETE /teacher-leave-days/:teacherId/:date`.**
+ * 🔑 It deletes that ONE leave row — it restores nothing, cancels nothing, tells no family; the server LINE-notifies the
+ * teacher and answers `teacherNotified` (1 told · 0 no LINE link). ⚠️ The server refuses today/past (400): the screen
+ * offers the button for a future day only, and does not rely on that being its only guard.
+ * 🚫 No `mock` twin: the mock service holds no leave rows to remove, so the mock answer is the told-nobody shape.
+ */
+export const liftTeacherLeave = async (teacherId: string, date: string): Promise<{ lifted: boolean; teacherNotified?: number }> => {
+  if (useMock) return { lifted: true, teacherNotified: 0 };
+  const { data } = await api.delete<{ lifted: boolean; teacherNotified?: number }>(
+    `/teacher-leave-days/${encodeURIComponent(teacherId)}/${encodeURIComponent(date)}`,
+  );
+  return data;
 };
 
 /** SPEC-011: confirm many PENDING bookings in one call. Partial-success — per-booking outcome in input order. */

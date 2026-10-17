@@ -59,8 +59,28 @@ describe("🔴 TASK-589 — the marker carries WHOSE day and WHETHER THERE IS WO
     expect(readFileSync("src/lib/scheduler/teacher-scope.ts", "utf8")).toContain("the empty case is exactly the one an admin needs BEFORE booking");
   });
 
-  it("🚫 it is NOT a control — no link, no button, nothing to press", () => {
+  // 🔻 TASK-820, declared (ruled by @Sober, 10-17): this pin was "🚫 it is NOT a control — no link, no button, nothing to press". The owner approved the chip as a control FOR THE LEAVE
+  // (TASK-820): its text opens the leave panel. ✅ What this pin protects is kept and now stated as it really is — the CLASSES are still never changed from here, only through the
+  // booking modal: (a) the banner itself holds no press-handler and delegates each chip to `LeaveChip`; (b) the panel holds no booking write (no cancel / move / teacher-change /
+  // status hook or call), and the only mutations in the panel and its two confirms are the two LEAVE lifts.
+  it("🚫 the chip opens the LEAVE; classes are never changed from the panel, only through the booking modal", () => {
+    const C = "src/components/partials/Calendar/";
+    // (a) the banner: no press-handler of its own, each chip is handed to the chip component
     for (const forbidden of ["<Link", "onClick", "<Button", "href="]) expect(banner).not.toContain(forbidden);
+    expect(banner).toContain("<LeaveChip");
+    // (b) the panel: no hook of a booking WRITE, and the data it reads is the leave list alone
+    const panel = codeOf(C + "LeaveDayPanel.tsx");
+    const bookingWrite = /\buse(Cancel|Move|MarkSick|MarkAttended|Pause|Resume|Confirm|Create|Undo|Report|Update|SetBooking)\w*\(/;
+    expect(panel).not.toMatch(bookingWrite);
+    expect(panel).not.toMatch(/\b(api|axios)\.(post|put|patch|delete)\b/);
+    expect([...panel.matchAll(/\buse(Teacher\w+Days|LeaveDays)\(/g)].map((m) => m[0])).toEqual(["useTeacherLeaveDays("]);
+    // the only mutations reachable from the panel are the two leave lifts (its two confirms), each by its own hook
+    expect(codeOf(C + "LiftLeaveConfirm.tsx")).toContain("useLiftTeacherLeave()");
+    expect(codeOf(C + "LiftRangeConfirm.tsx")).toContain("useLiftLeaveRange()");
+    for (const f of ["LiftLeaveConfirm.tsx", "LiftRangeConfirm.tsx", "CancelLeaveButton.tsx"]) expect(codeOf(C + f)).not.toMatch(bookingWrite);
+    // "Open" hands the admin to the EXISTING booking modal — it is mounted by the opener, never rebuilt in the panel
+    expect(codeOf(C + "LeaveClassOpener.tsx")).toContain("<BookingModal");
+    expect(panel).not.toContain("<BookingModal");
   });
 
   it("⚠️ a teacher-scoped session never even ASKS — the gate is `enabled`, not a caught 403", () => {

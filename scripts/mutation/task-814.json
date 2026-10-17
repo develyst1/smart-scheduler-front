@@ -1,0 +1,158 @@
+{
+  "_why": "TASK-814 (FE). One clicked test file. Each mutation breaks the OFFER or the REQUEST in a way the screen would not show. Written with the set; nothing reconstructed.",
+  "tests": [
+    "src/components/partials/Calendar/lift-leave-task814.dom.test.tsx"
+  ],
+  "mutations": [
+    {
+      "id": "L1",
+      "what": "🔴 the button is also offered on TODAY's chip (`<=` → `<`) — the server would answer a 400",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/CancelLeaveButton.tsx",
+          "edits": [
+            {
+              "from": "date <= dayjs()",
+              "to": "date < dayjs()"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L2",
+      "what": "🔴 the button is offered on PAST chips too (no date check at all)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/CancelLeaveButton.tsx",
+          "edits": [
+            {
+              "from": " || date <= dayjs().format(\"YYYY-MM-DD\")",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L3",
+      "what": "🔴 the key is not asked — an admin without `action:calendar.status` gets the button",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/CancelLeaveButton.tsx",
+          "edits": [
+            {
+              "from": "!can(\"action:calendar.status\") || ",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L4",
+      "what": "🔴 the request names the day before the teacher (wrong path)",
+      "files": [
+        {
+          "file": "src/services/scheduler.service.ts",
+          "edits": [
+            {
+              "from": "`/teacher-leave-days/${encodeURIComponent(teacherId)}/${encodeURIComponent(date)}`",
+              "to": "`/teacher-leave-days/${encodeURIComponent(date)}/${encodeURIComponent(teacherId)}`"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L5",
+      "what": "🔴 `Keep leave` runs the cancel instead of closing",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftLeaveConfirm.tsx",
+          "edits": [
+            {
+              "from": "<Button variant=\"default\" onClick={close}",
+              "to": "<Button variant=\"default\" onClick={run}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L6",
+      "what": "🔴 the leave strip is NOT refreshed after the call — the chip stays standing on a day that no longer has a leave",
+      "files": [
+        {
+          "file": "src/hooks/scheduler/useScheduler.ts",
+          "edits": [
+            {
+              "from": "liftTeacherLeave(teacherId, date),\n    onSuccess: () => {\n      qc.invalidateQueries({ queryKey: [\"leave-days\"] });\n      invalidateAll(qc);",
+              "to": "liftTeacherLeave(teacherId, date),\n    onSuccess: () => {\n      invalidateAll(qc);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L7",
+      "what": "🔴 a zero `teacherNotified` still toasts 'told' (`> 0` → `>= 0`) — the admin is never asked to tell the teacher",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftLeaveConfirm.tsx",
+          "edits": [
+            {
+              "from": "(res.teacherNotified ?? 0) > 0",
+              "to": "(res.teacherNotified ?? 0) >= 0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L8",
+      "what": "⚠️ a server that sends NO `teacherNotified` is read as TOLD (`?? 0` → `?? 1`)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftLeaveConfirm.tsx",
+          "edits": [
+            {
+              "from": "(res.teacherNotified ?? 0) > 0",
+              "to": "(res.teacherNotified ?? 1) > 0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L9",
+      "what": "🔴 a refusal is swallowed — the dialog shows nothing and the admin cannot tell why the chip stayed",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftLeaveConfirm.tsx",
+          "edits": [
+            {
+              "from": "        {error && (",
+              "to": "        {false && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L10",
+      "what": "🔴 the approved body wording is altered",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "cancelBody: \"That day opens for bookings with this teacher again.",
+              "to": "cancelBody: \"That day opens again."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
