@@ -109,8 +109,11 @@ export default function SomContent() {
           <Stat label={t("som.byCourse")} value={ec.byCourse} />
           <Stat label={t("som.byVoucher")} value={ec.byVoucher} />
           <Stat label={t("som.byRecentTrial")} value={ec.byRecentTrial} />
-          {/* No field in the live API yet — `byRecentSingle`, see docs/backend-som-dashboard.md §2 */}
-          <Stat label={t("som.byRecentSingle")} value="—" />
+          {/* `recentSingleSession` is preview-filled until the API ships it (lib/som/preview.ts) */}
+          <Stat
+            label={t("som.byRecentSingle")}
+            value={ec.recentSingleSession ?? "—"}
+          />
           <Stat label={t("som.totalCustomers")} value={ec.total} accent />
         </SimpleGrid>
         <p className="mt-1.5 text-xs text-muted-400">
@@ -123,20 +126,14 @@ export default function SomContent() {
         <SectionHeading scope={monthLabel}>
           {t("som.newVsRenewingTitle")}
         </SectionHeading>
-        {/* Only 1st Trial and Renew have a live field today; the rest show "—" until the API ships them —
+        {/* 1st Trial and Renew read live fields; the other four are preview-filled until the API ships them —
             see docs/backend-som-dashboard.md §3 */}
         <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
           {NVR_BUCKETS.map((b) => (
             <Stat
               key={b}
               label={t(`som.nvr.${b}`)}
-              value={
-                b === "firstTrial"
-                  ? nvr.newByFirstTrial
-                  : b === "renewCourse"
-                    ? nvr.renewing
-                    : "—"
-              }
+              value={nvrValue(b)}
               onClick={() => setNvrOpen(b)}
             />
           ))}
@@ -144,6 +141,7 @@ export default function SomContent() {
         <p className="mt-1.5 text-xs text-muted-400">{t("som.nvrHint")}</p>
         <NvrDetailModal
           bucket={nvrOpen}
+          count={nvrOpen ? Number(nvrValue(nvrOpen)) || 0 : 0}
           query={query}
           onClose={() => setNvrOpen(null)}
         />
@@ -154,7 +152,7 @@ export default function SomContent() {
         <SectionHeading scope={monthLabel}>
           {t("som.coachCapacityTitle")}
         </SectionHeading>
-        <CoachCapacitySection data={data.coachCapacity} />
+        <CoachCapacitySection data={data.coachCapacity} month={query.month} />
       </section>
 
       {/* 5. Demographics */}
@@ -177,6 +175,20 @@ export default function SomContent() {
       </section>
     </Stack>
   );
+
+  // The number on each New-vs-Renewing card (also how many rows its detail table shows).
+  function nvrValue(b: NvrBucket): number | string {
+    const v = data!.newVsRenewing;
+    const n = {
+      firstTrial: v.newByFirstTrial,
+      newCourseThisMonth: v.newCourseThisMonth,
+      newCoursePrevMonth: v.newCoursePrevMonth,
+      renewCourse: v.renewing,
+      trialNotConverted: v.trialNotConverted,
+      notRenewed: v.notRenewed,
+    }[b];
+    return n ?? "—";
+  }
 
   // Every section says which period its numbers cover: today (locked) or the page's month.
   function SectionHeading({

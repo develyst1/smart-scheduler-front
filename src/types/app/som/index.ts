@@ -34,6 +34,8 @@ export interface ExistingCustomers {
   byRecentTrial: number;
   total: number;
   recentTrialSince: string; // YYYY-MM-DD
+  /** Not in the live API yet (docs/backend-som-dashboard.md §2). */
+  recentSingleSession?: number;
 }
 
 export interface NewVsRenewing {
@@ -41,6 +43,11 @@ export interface NewVsRenewing {
   newByFirstTrial: number;
   newByRegistration: number;
   renewing: number;
+  /** Not in the live API yet (docs/backend-som-dashboard.md §3). */
+  newCourseThisMonth?: number;
+  newCoursePrevMonth?: number;
+  trialNotConverted?: number;
+  notRenewed?: number;
 }
 
 /** The six New-vs-Renewing cards — each opens a detail table (GET /reports/som/new-vs-renewing/:bucket). */

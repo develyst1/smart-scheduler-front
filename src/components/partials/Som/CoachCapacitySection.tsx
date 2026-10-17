@@ -11,6 +11,7 @@ import {
   type TeacherType,
 } from "@/types/app/scheduler";
 import type { CapacityFigures, CoachCapacity } from "@/types/app/som";
+import { previewCoachCapacity } from "@/lib/som/preview";
 import { ChartTip } from "./ChartTip";
 
 type View = "person" | "type";
@@ -26,9 +27,19 @@ const TYPES = (Object.keys(TEACHER_TYPE_PRIORITY) as TeacherType[]).sort(
  * Renders the API's figures as-is; until the API ships `coachCapacity` the coach names/types come from the
  * teacher list and every figure is "—".
  */
-export function CoachCapacitySection({ data }: { data?: CoachCapacity }) {
+export function CoachCapacitySection({
+  data: live,
+  month,
+}: {
+  data?: CoachCapacity;
+  month: string;
+}) {
   const { t } = useI18n();
   const { data: teachers = [] } = useTeachers();
+  // Until the API ships `coachCapacity`, preview figures for the real coaches (client demo) — lib/som/preview.ts.
+  const data =
+    live ??
+    (teachers.length > 0 ? previewCoachCapacity(teachers, month) : undefined);
   const [view, setView] = useState<View>("person");
 
   const teacherById = new Map(teachers.map((tc) => [tc.id, tc]));

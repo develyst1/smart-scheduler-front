@@ -6,6 +6,7 @@ import "dayjs/locale/th";
 import { Loader, Modal, Select, Table, Text } from "@mantine/core";
 import { useNvrDetail, useTeachers } from "@/hooks/scheduler";
 import { useI18n } from "@/lib/i18n";
+import { previewNvrRows } from "@/lib/som/preview";
 import type { NvrBucket, NvrDetailRow, SomQuery } from "@/types/app/som";
 
 type Column =
@@ -48,16 +49,29 @@ const isNewCourse = (b: NvrBucket) =>
 
 export function NvrDetailModal({
   bucket,
+  count,
   query,
   onClose,
 }: {
   bucket: NvrBucket | null;
+  /** The card's number — a preview table has exactly this many rows. */
+  count: number;
   query: SomQuery;
   onClose: () => void;
 }) {
   const { t, lang } = useI18n();
-  const { data: rows = [], isLoading } = useNvrDetail(bucket, query);
+  const { data, isLoading, isError } = useNvrDetail(bucket, query);
   const { data: teachers = [] } = useTeachers();
+  // Until the detail endpoint is live, show preview rows (real coach names) for the client demo — lib/som/preview.ts.
+  const rows: NvrDetailRow[] =
+    isError && bucket
+      ? previewNvrRows(
+          bucket,
+          count,
+          teachers.map((tc) => tc.id),
+          query.month,
+        )
+      : (data ?? []);
   const [teacherId, setTeacherId] = useState<string | null>(null);
 
   const teacherName = (id?: string | null) => {
@@ -129,7 +143,7 @@ export function NvrDetailModal({
           <Loader size="sm" />
         </div>
       ) : (
-        // On error (e.g. the endpoint isn't live yet) `rows` stays [] — still draw the table so the
+        // No rows (e.g. an empty month) still draws the table so the
         // columns are visible, with the empty-state row inside it.
         <>
           <Text size="xs" c="dimmed" mb="xs">

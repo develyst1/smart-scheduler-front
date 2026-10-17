@@ -9,6 +9,10 @@
 >
 > 🔌 **หน้านี้ต่อ API จริงแล้ว** — ระหว่างรอ backend, FE ยังอ่าน field เดิมอยู่ (คอลัมน์ "Field ปัจจุบัน")
 > พอ backend ส่ง field ใหม่มา FE จะสลับไปอ่าน field ใหม่ (คอลัมน์ "Field ใหม่")
+>
+> 🧪 **ตัวเลขตัวอย่าง (client demo, 2026-10-17)** — field ใหม่ที่ API ยังไม่ส่ง FE เติมตัวเลขตัวอย่างให้ใน [`src/lib/som/preview.ts`](../src/lib/som/preview.ts)
+> (รวม `coachCapacity`, `activityProgram`, `demographics.district`, การ์ด New vs Renewing 4 ใบ, 1 HR และตาราง modal เมื่อ endpoint ยังไม่มี)
+> field ไหนที่ API ส่งมาแล้ว **ค่าจริงชนะเสมอ** — ส่งครบทุกตัวแล้วแจ้ง FE ให้ลบไฟล์นี้
 
 ---
 
@@ -335,11 +339,18 @@ UI (client เลือกดีไซน์แล้ว 2026-10-17) — กร�
 | Card (UI) | แสดง | Field ปัจจุบัน | Field ใหม่ | เปลี่ยนอะไร |
 |-----------|------|-----------------|------------|-------------|
 | **Gender** | ชาย / หญิง / อื่น ๆ / ไม่ระบุ | `demographics.gender` | (เดิม) | ไม่เปลี่ยน — key `male` / `female` / `other` / `unknown` (FE แปลชื่อเอง) |
-| **Age** | 9 ช่วงอายุ + ไม่ระบุ | `demographics.ageBand` | (เดิม) | **ช่วงอายุใหม่** (ตารางล่าง) |
+| **Age** | 9 ช่วงอายุ + ไม่ระบุ | `demographics.ageBand` | (เดิม) | ⚠️ **เปลี่ยนช่วงอายุเป็นชุดใหม่** (§5.1) — ตอนนี้ยังส่งชุดเดิม |
 | **Nationality** | สัญชาติ | `demographics.nationality` | (เดิม) | ไม่เปลี่ยน |
 | **Address** | ปุ่มสลับ **Province / District** | `demographics.province` | `demographics.province` + **`demographics.district`** (ใหม่) | เพิ่ม district — ตอนนี้ FE แสดง "ยังไม่มีข้อมูล" ในแท็บ District |
 
 ### 5.1 Age — ช่วงอายุใหม่
+
+> ⚠️ **Backend ต้องเปลี่ยนช่วงอายุ — FE ไม่แปลงให้**
+> `demographics.ageBand` ตอนนี้ยังส่ง **ช่วงอายุชุดเดิม** (ชุดก่อน spec นี้ — mock ฝั่ง FE เคยใช้ `6-9`, `10-12`) และ FE แสดง bucket ตามที่ส่งมาตรง ๆ
+> (ไม่ re-bucket ฝั่ง FE เพราะต้องใช้วันเกิดรายคน — คำนวณที่ server ที่เดียวให้ทุกหน้าตรงกัน)
+> → กราฟ Age บนหน้าจอจะเป็น 9 ช่วงใหม่ **ก็ต่อเมื่อ backend เปลี่ยนชุด key ตามตารางล่าง**
+> → ช่วงนี้ FE **ไม่เติมตัวเลขตัวอย่าง** ให้ Age (ต่างจาก field ใหม่อื่น) เพราะ API มีข้อมูลอายุจริงอยู่แล้ว
+> ไม่ต้องเพิ่ม field ใหม่ — ใช้ `demographics.ageBand` ตัวเดิม เปลี่ยนแค่ `buckets[].key` / `label` / ลำดับ
 
 ส่ง **ครบ 9 ช่วงเสมอ เรียงตามนี้** (ช่วงที่เป็น 0 ก็ส่ง — FE แสดงทุกช่วง) + `unknown` ท้ายสุด
 

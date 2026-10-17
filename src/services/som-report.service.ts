@@ -1,4 +1,5 @@
 import { api, useMockData } from "@/lib/api/client";
+import { fillSomPreview } from "@/lib/som/preview";
 import {
   SOM_UNKNOWN_KEY,
   type NvrBucket,
@@ -250,11 +251,12 @@ const somParams = (q: SomQuery) => ({
 });
 
 export const getSomReport = async (q: SomQuery): Promise<SomReport> => {
-  if (useMockData) return mockSom();
+  // Fields the API does not send yet are filled with preview numbers for the client demo (lib/som/preview.ts).
+  if (useMockData) return fillSomPreview(mockSom(), q.month);
   const { data } = await api.get<SomReport>("/reports/som", {
     params: somParams(q),
   });
-  return data;
+  return fillSomPreview(data, q.month);
 };
 
 const mockNvrDetail = (bucket: NvrBucket): NvrDetailRow[] => {
