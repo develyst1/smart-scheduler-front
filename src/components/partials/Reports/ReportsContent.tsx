@@ -3,7 +3,6 @@
 import { useState } from "react";
 import dayjs from "dayjs";
 import {
-  Badge,
   Card,
   Skeleton,
   ThemeIcon,
@@ -246,7 +245,7 @@ function BookingTypeRow({
 /**
  * 🚧 TEMPORARY — sample rows shown while the day has no group-program data (the backend does not send
  * `kidsByProgram` yet, and the calendar fallback rarely has head counts filled in), so the client can see the
- * section's shape. Always rendered under a "Sample data" badge — never mixed with real rows.
+ * section's shape. Dimmed (no label, client request) and never mixed with real rows.
  * Delete this and `SHOW_SAMPLE_WHEN_EMPTY` once `/reports/daily` ships `kidsByProgram` (docs/backend-daily-report.md §10).
  */
 const SHOW_SAMPLE_WHEN_EMPTY = true;
@@ -276,16 +275,9 @@ function KidsByProgramCard({ programs }: { programs: DailyReport["kidsByProgram"
       );
   return (
     <Card padding="lg">
-      <div className="mb-4 flex items-center gap-2">
-        <Text size="sm" fw={600}>
-          {t("reports.kidsByProgram")}
-        </Text>
-        {isSample && (
-          <Badge variant="light" color="gray" size="sm">
-            {t("reports.sampleData")}
-          </Badge>
-        )}
-      </div>
+      <Text size="sm" fw={600} mb="md">
+        {t("reports.kidsByProgram")}
+      </Text>
       <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 ${isSample ? "opacity-60" : ""}`}>
         {shown.map((p) => (
           <Paper key={p.program} withBorder p="md" className="flex h-full flex-col bg-muted-100/50">

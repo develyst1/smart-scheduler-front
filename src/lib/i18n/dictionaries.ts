@@ -1957,6 +1957,8 @@ const en = {
     noSessions: "No sessions today",
     workloadRatioHint: "Attended / Confirmed",
     workloadTotal: "Total (+Group)",
+    kidsByProgram: "Others Program",
+    program: { GROUP: "Group", ECA: "ECA", CAMP: "Camp", OTHER: "Other" },
     statTotalBooked: "Total booked",
     statAttended: "Attended",
     statConfirmed: "Confirmed",
@@ -2012,9 +2014,6 @@ const en = {
     // §17c screen 5 — VERBATIM (EN half)
     birthDateLabel: "Please enter the date of birth in (DD-MM-YYYY)",
     // 🔴 TASK-566 (REQ-110 item 10) — **“(optional)” is gone from all three placeholders.** The ข้าม path is removed and
-    kidsByProgram: "Others Program",
-    sampleData: "Sample data",
-    program: { GROUP: "Group", ECA: "ECA", CAMP: "Camp", OTHER: "Other" },
     // 🔑 *a skip that survives as a hint is still an invitation* — a parent who reads “optional” and leaves it blank now
     // meets a refusal instead of the outcome the hint promised.
     birthDatePlaceholder: "DD-MM-YYYY",
@@ -3891,6 +3890,8 @@ const th: typeof en = {
     noSessions: "ไม่มีคาบเรียนในวันนี้",
     workloadRatioHint: "มาเรียน / ยืนยันแล้ว",
     workloadTotal: "รวม (+กลุ่ม)",
+    kidsByProgram: "โปรแกรมอื่นๆ",
+    program: { GROUP: "Group", ECA: "ECA", CAMP: "แคมป์", OTHER: "อื่นๆ" },
     statTotalBooked: "ลงเรียนทั้งหมด",
     statAttended: "มาเรียนจริง",
     statConfirmed: "ยืนยันแล้ว",
@@ -4000,9 +4001,6 @@ const th: typeof en = {
   },
   checkin: {
     invalidLink: "ลิงก์เช็คอินไม่ถูกต้อง (ไม่พบโทเคน)",
-    kidsByProgram: "โปรแกรมอื่นๆ",
-    sampleData: "ข้อมูลตัวอย่าง",
-    program: { GROUP: "Group", ECA: "ECA", CAMP: "แคมป์", OTHER: "อื่นๆ" },
     cannotNow: "ไม่สามารถเช็คอินได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง",
     connectFail: "เชื่อมต่อระบบไม่ได้ กรุณาลองใหม่อีกครั้ง",
     loading: "กำลังเช็คอิน…",

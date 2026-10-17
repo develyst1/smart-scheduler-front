@@ -305,7 +305,7 @@ FE คำนวณเองจาก 2 endpoint นี้ระหว่าง�
 
 UI (ทำเสร็จแล้ว, client เลือกแบบ "4 การ์ดตามโปรแกรม"): section ชื่อ **"Others Program"** · การ์ดละโปรแกรม หัวการ์ด = ชื่อโปรแกรม + ยอดเด็กรวม, ด้านใน = รายการ `ชื่อ … จำนวนเด็ก` — **ตัวเลขไม่มีหน่วย** (ไม่แสดงคำว่า kids ตาม client) — อยู่ใต้ By booking type ทั้งสองแถว เหนือ workload
 
-> 🚧 **ข้อมูลตัวอย่างชั่วคราว:** ระหว่างที่ backend ยังไม่ส่ง `kidsByProgram` ถ้าวันนั้นไม่มีข้อมูล FE จะแสดง **ข้อมูลตัวอย่าง** (Balance Play 3, STA 5, ISB 8, …) แบบจางพร้อมป้าย "Sample data" ให้ client เห็นหน้าตา section — **ไม่ใช่ข้อมูลจริง** เมื่อ backend ship แล้ว FE จะลบออก (`SHOW_SAMPLE_WHEN_EMPTY` / `SAMPLE_PROGRAMS` ใน `ReportsContent.tsx`) ห้ามใช้ตัวเลขตัวอย่างนี้ตรวจผล
+> 🚧 **ข้อมูลตัวอย่างชั่วคราว:** ระหว่างที่ backend ยังไม่ส่ง `kidsByProgram` ถ้าวันนั้นไม่มีข้อมูล FE จะแสดง **ข้อมูลตัวอย่าง** (Balance Play 3, STA 5, ISB 8, …) แบบจาง (ไม่มีป้ายกำกับ ตามที่ client ขอ) ให้ client เห็นหน้าตา section — **ไม่ใช่ข้อมูลจริง** เมื่อ backend ship แล้ว FE จะลบออก (`SHOW_SAMPLE_WHEN_EMPTY` / `SAMPLE_PROGRAMS` ใน `ReportsContent.tsx`) ห้ามใช้ตัวเลขตัวอย่างนี้ตรวจผล
 
 ### 10.2 ข้อมูลที่ใช้ (mapping ที่ FE ใช้ — backend ช่วยยืนยันใน §9)
 
