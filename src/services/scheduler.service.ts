@@ -1034,7 +1034,8 @@ export const getVouchers = async (query: VouchersQuery = {}): Promise<Paged<Vouc
 /** True once `/reports/daily` speaks the new contract (see `DailyReportResponse`) — `awaiting` is its marker. */
 function isFullDailyReport(
   r: DailyReportResponse,
-): r is DailyReportResponse & Omit<DailyReport, "date" | "attendanceRate"> & { attendanceRate?: number } {
+): r is DailyReportResponse &
+  Omit<DailyReport, "date" | "attendanceRate" | "kidsByProgram"> & { attendanceRate?: number } {
   return r.awaiting !== undefined;
 }
 
@@ -1046,14 +1047,16 @@ export const getDailyReport = async (date: string, teacherId?: string): Promise<
   if (isFullDailyReport(base)) {
     // `attendanceRate` is optional on the wire — derive it with the same formula when the server omits it.
     const rate = base.totalBooked > 0 ? Math.round((base.attended / base.totalBooked) * 100) : 0;
-    return { ...base, attendanceRate: base.attendanceRate ?? rate };
+    return { ...base, attendanceRate: base.attendanceRate ?? rate, kidsByProgram: base.kidsByProgram ?? [] };
   }
 
   // FE fallback until the backend ships the new contract (docs/backend-daily-report.md): recompute every stat
   // from raw rows so the definitions are right, the teacher filter applies to ALL counters, and no number is
   // a mix of old server semantics and new FE ones. Cancelled rows ride the calendar via `includeCancelled`;
   // PAUSED rows are off the calendar, so they come from the bookings list by their original date.
-  const forTeacher = (b: Booking) => !teacherId || b.teacherId === teacherId;
+  // Any assigned teacher, not just `teacherId` (= teachers[0]) — a multi-teacher ECA belongs to each of them.
+  const forTeacher = (b: Booking) =>
+    !teacherId || b.teacherId === teacherId || (b.teachers ?? []).some((tc) => tc.id === teacherId);
   const [cal, paused] = await Promise.all([
     getCalendar(date, "day", true),
     getAllBookings({ status: "PAUSED", from: date, to: date, teacherId, limit: 200 }),

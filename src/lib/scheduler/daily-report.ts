@@ -1,4 +1,5 @@
-import type { Booking, BookingStatus, BookingType, DailyReport } from "@/types/app/scheduler";
+import type { Booking, BookingStatus, BookingType, DailyReport, KidProgram } from "@/types/app/scheduler";
+import { isCampRow } from "@/lib/camp/grid";
 
 /**
  * Daily report counters — the ONE place the FE defines what each stat means. Pure, no IO.
@@ -74,6 +75,7 @@ export function summarizeDailyReport(
     byBookingTypeAttended: perLessonType(booked, (b) => b.status === "ATTENDED"),
     byBookingTypeConfirmed: perLessonType(booked, isConfirmed),
     byTeacher: workloadByTeacher(rows.filter(isBooked)),
+    kidsByProgram: kidsByProgram(rows.filter(isBooked)),
   };
 }
 
@@ -98,4 +100,64 @@ export function workloadByTeacher(rows: Booking[]): DailyReport["byTeacher"] {
   return [...map.entries()]
     .map(([teacherId, v]) => ({ teacherId, ...v }))
     .sort((a, b) => b.total - a.total || b.count - a.count);
+}
+
+/** The four group programs, in the order the "Kids by program" cards render. */
+export const KID_PROGRAMS: readonly KidProgram[] = ["GROUP", "ECA", "CAMP", "OTHER"];
+
+/** Which program a row belongs to, or null for a 1:1 lesson. CAMP / ECA are OTHER rows told apart by `other.kind`. */
+export function kidProgramOf(b: Booking): KidProgram | null {
+  if (b.bookingType === "GROUP") return "GROUP";
+  if (b.bookingType !== "OTHER") return null;
+  if (isCampRow(b)) return "CAMP";
+  if (b.other?.kind === "ECA") return "ECA";
+  return "OTHER"; // FREE / KOL / no kind — "ตารางอื่นๆ" (Birthday, Rent park, …)
+}
+
+/** Kids on one row: GROUP = its seats, CAMP = the date's kid count, ECA / OTHER = the typed head count. */
+const kidsOf = (b: Booking, program: KidProgram): number | null => {
+  if (program === "GROUP") return b.group ? b.group.seats.length : null;
+  if (program === "CAMP") return b.campKidCount ?? null;
+  return b.other?.headCount ?? null;
+};
+
+/** Sum where `null` = "not recorded": unknown + n = n, unknown + unknown stays unknown (rendered "—"). */
+const addKids = (a: number | null, b: number | null) => (a === null ? b : b === null ? a : a + b);
+
+/**
+ * "Kids by program" — per program, one item per NAME (`displayName`: the group / school / camp / schedule
+ * title) with the day's kids, plus the program total. All four programs, always.
+ *
+ * Counting rules (provisional defaults until the client confirms — see `docs/backend-daily-report.md` §10):
+ * - the same name several times a day is ONE item, kids summed (ECA "STA" 5 + 6 → 11)
+ * - a row is counted once even if several teachers carry it (deduped by booking id)
+ * - CAMP: the kid count is per DATE and repeated on every hour block, so it is taken once per camp day
+ *   (`campWeekDayId`), never once per hour
+ * - cancelled / paused rows are not counted (the caller passes booked rows only)
+ */
+export function kidsByProgram(rows: Booking[]): DailyReport["kidsByProgram"] {
+  const seenRow = new Set<string>();
+  const seenCampDay = new Set<string>();
+  const byProgram = new Map<KidProgram, Map<string, number | null>>();
+
+  for (const b of rows) {
+    const program = kidProgramOf(b);
+    if (!program || seenRow.has(b.id)) continue;
+    seenRow.add(b.id);
+    if (program === "CAMP") {
+      const day = b.campWeekDayId ?? b.id;
+      if (seenCampDay.has(day)) continue;
+      seenCampDay.add(day);
+    }
+    const items = byProgram.get(program) ?? new Map<string, number | null>();
+    const kids = kidsOf(b, program);
+    items.set(b.displayName, items.has(b.displayName) ? addKids(items.get(b.displayName) ?? null, kids) : kids);
+    byProgram.set(program, items);
+  }
+
+  // Always all four programs (the UI shows four fixed cards); one with no rows has `items: []`, `total: null`.
+  return KID_PROGRAMS.map((program) => {
+    const items = [...(byProgram.get(program)?.entries() ?? [])].map(([name, kids]) => ({ name, kids }));
+    return { program, total: items.reduce<number | null>((sum, i) => addKids(sum, i.kids), null), items };
+  });
 }
