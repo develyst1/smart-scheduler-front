@@ -1,0 +1,281 @@
+{
+  "_why": "TASK-822 (FE). One clicked test file (F1 refusals first + the backstop, F2 the result rows + Open). Each mutation breaks WHETHER a refused range goes out, WHICH sentence shows, or WHAT the result row says. Written with the set; nothing reconstructed.",
+  "tests": [
+    "src/components/partials/Calendar/Modal/leave-range-refusals-task822.dom.test.tsx",
+    "src/components/partials/Calendar/Modal/leave-range-task818.dom.test.tsx",
+    "src/components/partials/Calendar/leave-panel-task820.dom.test.tsx",
+    "src/lib/scheduler/teacher-scope.test.ts"
+  ],
+  "mutations": [
+    {
+      "id": "F1a",
+      "what": "🔴 no client-side check at all — a 32-day range goes out to the server",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/leave-range.ts",
+          "edits": [
+            {
+              "from": "  return dayjs(to).diff(dayjs(from), \"day\") + 1 > MAX_LEAVE_RANGE_DAYS ? \"teacherLeave.rangeTooLong\" : null;",
+              "to": "  return null;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1b",
+      "what": "🔴 the off-by-one on 31 (the count is not inclusive: a 32-day range passes)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/leave-range.ts",
+          "edits": [
+            {
+              "from": "dayjs(to).diff(dayjs(from), \"day\") + 1 > MAX_LEAVE_RANGE_DAYS",
+              "to": "dayjs(to).diff(dayjs(from), \"day\") > MAX_LEAVE_RANGE_DAYS"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1c",
+      "what": "🔴 the off-by-one the other way (31 days is refused)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/leave-range.ts",
+          "edits": [
+            {
+              "from": "dayjs(to).diff(dayjs(from), \"day\") + 1 > MAX_LEAVE_RANGE_DAYS",
+              "to": "dayjs(to).diff(dayjs(from), \"day\") + 1 >= MAX_LEAVE_RANGE_DAYS"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1d",
+      "what": "🔴 an end BEFORE the start is not refused",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/leave-range.ts",
+          "edits": [
+            {
+              "from": "  if (to < from) return \"teacherLeave.rangeEndBeforeStart\";\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1e",
+      "what": "🔴 the button does not wait while a refusal stands",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "choosing || rangeIssue !== null ||",
+              "to": "choosing ||"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1f",
+      "what": "🔴 a pressed-anyway submit still sends a refused range (the second guard is gone)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "if (noDate || choosing || rangeIssue) return;",
+              "to": "if (noDate || choosing) return;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1g",
+      "what": "🔴 the refusal sentence is not drawn (the dialog refuses silently)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "        {rangeIssue && (\n          <Alert color=\"red\"",
+              "to": "        {false && (\n          <Alert color=\"red\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1h",
+      "what": "🔴 the backstop falls back to the GENERIC line (the server's `details` are not read)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "setError(issue ? t(issue) : e instanceof ApiClientError",
+              "to": "setError(e instanceof ApiClientError"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1i",
+      "what": "🔴 the backstop shows ONE fixed language's sentence, not the current one (English viewer sees Thai)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "setError(issue ? t(issue) : e instanceof ApiClientError",
+              "to": "setError(issue ? \"ลาล่วงหน้าได้ไม่เกิน 31 วันต่อครั้ง\" : e instanceof ApiClientError"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1j",
+      "what": "🔴 the ENGLISH words are missing (the key shows its name instead)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "    rangeTooLong: \"A leave can cover at most 31 days at a time\",\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1k",
+      "what": "🔴 the THAI words are altered (not the approved sentence)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "    rangeTooLong: \"ลาล่วงหน้าได้ไม่เกิน 31 วันต่อครั้ง\",",
+              "to": "    rangeTooLong: \"ลาล่วงหน้าได้ไม่เกิน 30 วันต่อครั้ง\","
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1l",
+      "what": "🔴 the backstop reads the sentence from ANY field (the `to` path is not required)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/leave-range.ts",
+          "edits": [
+            {
+              "from": "issue.path[issue.path.length - 1] === \"to\" && ",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F2a",
+      "what": "🔴 the result goes back to TIME ONLY (no child, no program, no status)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveClassRow.tsx",
+          "edits": [
+            {
+              "from": "        {[leaveClassWho(c), leaveClassWhat(c)].filter(Boolean).join(\" · \")}",
+              "to": "        {\"\"}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F2b",
+      "what": "🔴 a DUO class names only the first child in the result",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveClassRow.tsx",
+          "edits": [
+            {
+              "from": "return one && two ? `${one} + ${two}` : one || two;",
+              "to": "return one || two;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F2c",
+      "what": "🔴 `Open` is removed from the admin's result rows",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "<LeaveClassRow key={b.id} c={b} onOpen={onBehalf ? setOpenClass : undefined} />",
+              "to": "<LeaveClassRow key={b.id} c={b} />"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F2d",
+      "what": "🔴 `Open` is removed from the RANGE result's rows",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "<LeaveClassRow key={b.id} c={b} onOpen={onOpenClass} />",
+              "to": "<LeaveClassRow key={b.id} c={b} />"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F2e",
+      "what": "🔴 the teacher's OWN result offers Open too",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "onOpen={onBehalf ? setOpenClass : undefined}",
+              "to": "onOpen={setOpenClass}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F2f",
+      "what": "🔴 `Open` is wired but the booking modal's opener is not mounted",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "{openClass && <LeaveClassOpener",
+              "to": "{false && <LeaveClassOpener"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

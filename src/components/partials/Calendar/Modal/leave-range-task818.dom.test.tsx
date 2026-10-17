@@ -176,16 +176,23 @@ describe("🔴 TASK-818 P2 — the admin door takes FROM – TO (one reason)", (
     expect(q("[data-leave-date-to]")).toBe(1);
   });
 
-  it("🔑 moving the START past the end DROPS the end — a backwards range is never sent", async () => {
+  // 🔻 TASK-822, declared: this test was "moving the START past the end DROPS the end". The end is no longer dropped silently (TEST-108 F1: a hidden change is worse than a shown one) —
+  // it STAYS, the dialog refuses in words and the button waits. ✅ What it protects is kept: a backwards range is never sent, and moving the start back under the end gives the range again.
+  it("🔑 moving the START past the end KEEPS the end and refuses it — a backwards range is never sent", async () => {
     const user = userEvent.setup();
     mount(FROM, { subject: SUBJECT });
     await pickDay(user, "to", TO);
     expect(submitText()).toContain("3 days");
     await pickDay(user, "from", iso(12));
-    expect(submitText()).toBe("Block this day for ครูเอ");
-    // 🔑 and the end is really GONE, not just ignored: moving the start back must NOT bring the old end back to life
+    await waitFor(() => expect(q("[data-leave-range-refused]")).toBe(1));
+    await typeReason(user);
+    expect(submitBtn().disabled).toBe(true);
+    await user.click(submitBtn());
+    expect(leaves().length).toBe(0);
+    // 🔑 and the end is really kept: moving the start back under it brings the range back
     await pickDay(user, "from", iso(8));
-    expect(submitText()).toBe("Block this day for ครูเอ");
+    await waitFor(() => expect(q("[data-leave-range-refused]")).toBe(0));
+    expect(submitText()).toBe("Block these 2 days for ครูเอ");
   });
 
   it("🔑 the RANGE answer is shown PER DAY — new vs already on record, each day's classes — and it is NOT read as a cancel", async () => {

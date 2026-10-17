@@ -14,7 +14,10 @@ import { useCalendar, useReportOwnLeave, useReportTeacherLeave } from "@/hooks/s
 import { isAdvanceLeaveDate, isAdvanceResult, leaveBody, leaveDefaultTicks } from "@/lib/scheduler/teacher-scope";
 import { StatusChip } from "@/components/common/BookingBadges";
 import TeacherPick from "./LeaveTeacherPick";
-import type { OwnLeaveResult } from "@/types/api/contract";
+import LeaveClassRow from "../LeaveClassRow";
+import LeaveClassOpener from "../LeaveClassOpener";
+import { leaveRangeIssue, rangeIssueFromError } from "./leave-range";
+import type { LeaveDayClass, OwnLeaveResult } from "@/types/api/contract";
 
 /**
  * REQ-097 C-2 (TASK-406/407) — a LINKED teacher reports their OWN leave: a date (default today), MY sessions that day
@@ -82,6 +85,10 @@ export default function ReportLeaveDialog({
   const noDate = date === "";
   const isRange = onBehalf && dateTo !== "" && dateTo > date;
   const rangeDays = isRange ? dayjs(dateTo).diff(dayjs(date), "day") + 1 : 1;
+  // 🔴 TASK-822 (F1) — the range's two refusals (end before start · over 31 days), said HERE before any request, in the viewer's language; the button waits while one stands.
+  const rangeIssue = onBehalf && date !== "" ? leaveRangeIssue(date, dateTo) : null;
+  // 🔴 TASK-822 (F2) — "Open" on a class of the result: the real booking modal (the admin's door only).
+  const [openClass, setOpenClass] = useState<LeaveDayClass | null>(null);
   // 🔴 The read is scoped to whoever asked ⇒ on the ADMIN door it would be the admin's own day. It is not asked for at
   // all there (`enabled: !onBehalf`): 🔑 *not fetched and ignored — a request whose answer must never be shown should
   // not be made.*
@@ -108,7 +115,7 @@ export default function ReportLeaveDialog({
     // 🚫 The two guards (TASK-564's lesson): the button is disabled AND nothing is sent on a date this door refuses.
     if (refusedForAdmin) return;
     // 🔴 TASK-818 — and the two WAITS (no date yet · no teacher chosen yet): nothing is sent, nothing is refused in words either.
-    if (noDate || choosing) return;
+    if (noDate || choosing || rangeIssue) return;
     try {
       // 🔑 ONE body builder for both doors — `leaveBody` is unchanged and needed no new shape. On the admin door the act
       // is always the advance one, so it carries `{ date, reason }` and 🚫 never `sessionIds`.
@@ -131,11 +138,14 @@ export default function ReportLeaveDialog({
       notify({ title: t("teacherLeave.done", { n: res.cancelled, families: res.familiesNotified }), color: "success" });
       onClose();
     } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : (e as Error).message);
+      // 🔴 TASK-822 (F1) — the server's real range sentence rides in `details` (its message is one generic line): show the approved text in OUR language instead.
+      const issue = rangeIssueFromError(e);
+      setError(issue ? t(issue) : e instanceof ApiClientError ? e.message : (e as Error).message);
     }
   };
 
   return (
+    <>
     <Modal
       opened={opened}
       onClose={onClose}
@@ -150,7 +160,7 @@ export default function ReportLeaveDialog({
           </Alert>
         )}
         {done?.mode === "advance-range" ? (
-          <RangeResult done={done} name={subject?.name ?? ""} onClose={onClose} />
+          <RangeResult done={done} name={subject?.name ?? ""} onClose={onClose} onOpenClass={setOpenClass} />
         ) : done ? (
           /* 🔴 TASK-588 — the advance result, in @Jason's §15 order: the day is blocked · these classes are already booked
              and an ADMIN will handle them · 🔑 NOTHING HAS BEEN CANCELLED. The last clause is the one that matters. */
@@ -179,9 +189,7 @@ export default function ReportLeaveDialog({
                 </Text>
                 <Stack gap={2}>
                   {(done.bookings ?? []).map((b) => (
-                    <Text key={b.id} size="sm" className="tabular-nums">
-                      {formatTimeDisplay(b.startTime)} – {formatTimeDisplay(b.endTime)}
-                    </Text>
+                    <LeaveClassRow key={b.id} c={b} onOpen={onBehalf ? setOpenClass : undefined} />
                   ))}
                 </Stack>
               </>
@@ -231,8 +239,7 @@ export default function ReportLeaveDialog({
             if (!v) return;
             const next = dayjs(v).format("YYYY-MM-DD");
             setDate(next);
-            // 🔴 TASK-818 — an end that is no longer after the start is dropped, never silently sent as a backwards range.
-            if (dateTo && dateTo <= next) setDateTo("");
+            // 🔻 TASK-822: the end is no longer dropped silently when the start moves past it — it stays, and the refusal below says why (a hidden change is worse than a shown one).
           }}
           valueFormat="D MMM YYYY"
           popoverProps={{ withinPortal: true }}
@@ -250,6 +257,11 @@ export default function ReportLeaveDialog({
             data-leave-date-to
           />
         )}
+        {rangeIssue && (
+          <Alert color="red" variant="light" icon={<AlertTriangle size={15} />} data-leave-range-refused={rangeIssue}>
+            {t(rangeIssue)}
+          </Alert>
+        )}
         {/* 🔴 TASK-611 — the admin door's refusal, and it NAMES WHAT TO DO INSTEAD. 🚫 Never a bare "not allowed":
             *a reason with no next step is a dead end with a caption.* */}
         {refusedForAdmin && !noDate && (
@@ -264,7 +276,7 @@ export default function ReportLeaveDialog({
             act cancels nothing. What the day already holds is shown AFTER the act, from the server's own list.
             🔴 TASK-611 — and on the ADMIN door it is absent on EVERY date, because the rows would be the admin's own. */}
         {advance ? (
-          choosing ? null : (
+          choosing || rangeIssue ? null : (
           <Alert color="blue" variant="light" data-leave-advance-notice>
             {isRange && subject ? t("teacherLeave.adminRangeHint", { name: subject.name, n: rangeDays }) : subject ? t("teacherLeave.adminHint", { name: subject.name }) : t("teacherLeave.advanceHint")}
           </Alert>
@@ -339,7 +351,7 @@ export default function ReportLeaveDialog({
           <Button
             color="orange"
             loading={leave.isPending || adminLeave.isPending}
-            disabled={refusedForAdmin || noDate || choosing || (!advance && ticked.length === 0) || reason.trim().length === 0}
+            disabled={refusedForAdmin || noDate || choosing || rangeIssue !== null || (!advance && ticked.length === 0) || reason.trim().length === 0}
             data-leave-submit
             onClick={() => void submit()}
           >
@@ -358,6 +370,9 @@ export default function ReportLeaveDialog({
         )}
       </Stack>
     </Modal>
+    {/* 🔴 TASK-822 (F2) — "Open" on a class of the result: the real booking modal, on that class (the same opener as the panel's). */}
+    {openClass && <LeaveClassOpener classId={openClass.id} date={openClass.date} onClose={() => setOpenClass(null)} />}
+    </>
   );
 }
 
@@ -366,7 +381,7 @@ export default function ReportLeaveDialog({
  * first entry stands), and the live classes booked on it. 🔑 The two sentences an admin must not get wrong are the SAME approved ones as the single day's
  * result: NOTHING HAS BEEN CANCELLED, and whether the TEACHER was told (read from the COUNT; absent = say nothing).
  */
-function RangeResult({ done, name, onClose }: { done: OwnLeaveResult; name: string; onClose: () => void }) {
+function RangeResult({ done, name, onClose, onOpenClass }: { done: OwnLeaveResult; name: string; onClose: () => void; onOpenClass: (c: LeaveDayClass) => void }) {
   const t = useT();
   const days = done.days ?? [];
   return (
@@ -388,9 +403,7 @@ function RangeResult({ done, name, onClose }: { done: OwnLeaveResult; name: stri
               </Text>
             </Group>
             {d.bookings.map((b) => (
-              <Text key={b.id} size="sm" pl="md" className="tabular-nums">
-                {formatTimeDisplay(b.startTime)} – {formatTimeDisplay(b.endTime)}
-              </Text>
+              <LeaveClassRow key={b.id} c={b} onOpen={onOpenClass} />
             ))}
           </div>
         ))}

@@ -1,5 +1,5 @@
 {
-  "_why": "TASK-818 (FE). One clicked test file (the dialog, the header entry, the wire). Each mutation breaks the REQUEST, who is told what, or a default the admin never chose. Written with the set; nothing reconstructed. NOT mutated, on purpose: the two `if (noDate || choosing) return;` waits inside submit — the button is already `disabled` for both, so a pressed-anyway click never reaches them (belt and braces, unreachable by a click). ALSO NOT mutated: the empty-date wait (`noDate`) — it is a second, redundant guard: an empty date is never an advance date, so `refusedForAdmin` already holds the button, and so does the admin door's own tick rule; removing either alone changes nothing observable.",
+  "_why": "TASK-818 (FE). One clicked test file (the dialog, the header entry, the wire). Each mutation breaks the REQUEST, who is told what, or a default the admin never chose. Written with the set; nothing reconstructed. NOT mutated, on purpose: the two `if (noDate || choosing) return;` waits inside submit — the button is already `disabled` for both, so a pressed-anyway click never reaches them (belt and braces, unreachable by a click). ALSO NOT mutated: the empty-date wait (`noDate`) — it is a second, redundant guard: an empty date is never an advance date, so `refusedForAdmin` already holds the button, and so does the admin door's own tick rule; removing either alone changes nothing observable. R6 (moving the start past the end keeps the old end) was dropped by TASK-822: the end is no longer dropped silently — it stays and is REFUSED in words; that refusal is guarded by set 822.",
   "tests": [
     "src/components/partials/Calendar/Modal/leave-range-task818.dom.test.tsx",
     "src/lib/scheduler/teacher-scope.test.ts",
@@ -82,21 +82,6 @@
       ]
     },
     {
-      "id": "R6",
-      "what": "🔴 moving the START past the end keeps the old end — a backwards range can be sent",
-      "files": [
-        {
-          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
-          "edits": [
-            {
-              "from": "            if (dateTo && dateTo <= next) setDateTo(\"\");\n",
-              "to": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
       "id": "R7",
       "what": "🔴 an EMPTY date shows the refusal ('pick a date after today') before anything was chosen",
       "files": [
@@ -119,8 +104,8 @@
           "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
           "edits": [
             {
-              "from": "refusedForAdmin || noDate || choosing || (!advance",
-              "to": "refusedForAdmin || noDate || (!advance"
+              "from": "choosing || rangeIssue !== null || (!advance",
+              "to": "rangeIssue !== null || (!advance"
             }
           ]
         }

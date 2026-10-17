@@ -613,6 +613,9 @@ const en = {
     rangeDayAlready: "Already on record — the first entry stands",
     rangeDayClasses: "{n} class(es) booked",
     rangeDayNone: "Nothing booked",
+    // ✅ APPROVED by the owner 2026-10-17 (REQ-123 Phase 1, TASK-817), COPY-REVIEW-2026-09-29.md, verbatim — the two range refusals, now also shown by the dialog (TASK-822).
+    rangeEndBeforeStart: "The end date can't be before the start date",
+    rangeTooLong: "A leave can cover at most 31 days at a time",
   },
   // REQ-101 (TASK-429) — the ECA/Free/KOL Manage-plan page
   otherSeries: {
@@ -2747,6 +2750,9 @@ const th: typeof en = {
     rangeDayAlready: "มีบันทึกอยู่แล้ว — ใช้รายการแรก",
     rangeDayClasses: "จองไว้ {n} คาบ",
     rangeDayNone: "ไม่มีคาบ",
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-17 (REQ-123 Phase 1, TASK-817) — COPY-REVIEW-2026-09-29.md — ตามต้นฉบับทุกตัวอักษร — ข้อความปฏิเสธช่วงวันลา 2 ข้อ ที่หน้าต่างแจ้งลาแสดงเองด้วย (TASK-822)
+    rangeEndBeforeStart: "วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม",
+    rangeTooLong: "ลาล่วงหน้าได้ไม่เกิน 31 วันต่อครั้ง",
   },
   otherSeries: {
     managePlan: "จัดการตาราง",

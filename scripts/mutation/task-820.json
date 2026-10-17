@@ -41,7 +41,7 @@
       "what": "🔴 a DUO class names only the first child",
       "files": [
         {
-          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "file": "src/components/partials/Calendar/LeaveClassRow.tsx",
           "edits": [
             {
               "from": "return one && two ? `${one} + ${two}` : one || two;",
@@ -56,7 +56,7 @@
       "what": "🔴 the full name is shown before the nickname",
       "files": [
         {
-          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "file": "src/components/partials/Calendar/LeaveClassRow.tsx",
           "edits": [
             {
               "from": "const one = c.childNickname || c.childName || \"\";",
@@ -71,7 +71,7 @@
       "what": "🔴 an 'other' row's title is never shown",
       "files": [
         {
-          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "file": "src/components/partials/Calendar/LeaveClassRow.tsx",
           "edits": [
             {
               "from": "c.program || c.title || \"\"",

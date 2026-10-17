@@ -153,7 +153,8 @@ describe("§4 — `Report leave`: one call, the ticks from the scoped day, the b
     // 🔑 And it is the first of TWO guards, as TASK-564 taught: `submit` returns before the request on the same
     // condition, so a pressed-anyway button sends nothing.
     // 🔻 TASK-818, declared: + `noDate || choosing` — the two WAITS (no date chosen yet · no teacher chosen yet on the calendar's entry). ✅ `refusedForAdmin` is still the FIRST term.
-    expect(leaveDialog).toContain("disabled={refusedForAdmin || noDate || choosing || (!advance && ticked.length === 0) || reason.trim().length === 0}");
+    // 🔻 TASK-822, declared: + `rangeIssue !== null` — the button also WAITS while a range refusal stands (end before start · over 31 days; TEST-108 F1). ✅ `refusedForAdmin` is still the FIRST term.
+    expect(leaveDialog).toContain("disabled={refusedForAdmin || noDate || choosing || rangeIssue !== null || (!advance && ticked.length === 0) || reason.trim().length === 0}");
     expect(leaveDialog).toContain("if (refusedForAdmin) return;");
     // 🔴 the refusal is derived from the SAME comparison the act uses — 🚫 not a second rule about dates
     expect(leaveDialog).toContain("const refusedForAdmin = onBehalf && !advance;");
@@ -230,7 +231,8 @@ describe("§6 — `TEACHER_LEAVE`: read everywhere, offered nowhere", () => {
     // and stays SHARED: it is not a fifth variant and must not become one.
     // 🔻 TASK-818, declared: 31 → 41. TEN keys (REQ-123 P1; APPROVED by the owner 2026-10-17, verbatim): `recordTeacherLeave · dateTo · adminRangeHint · adminSubmitRange · willBlock ·
     // willCancel · rangeDayNew · rangeDayAlready · rangeDayClasses · rangeDayNone` — the range, the calendar's entry, and the "what saving will do" lines. Each is in both languages.
-    expect(Object.keys(en).length).toBe(41); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
+    // 🔻 TASK-822, declared: 41 → 43. TWO keys, both APPROVED (owner 2026-10-17, REQ-123 Phase 1, verbatim): `rangeEndBeforeStart · rangeTooLong` — the range's two refusals, now shown by the dialog itself.
+    expect(Object.keys(en).length).toBe(43); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     for (const k of ["teacherLink", "teacherLinkHint", "teacherNone", "teacherLine"]) {
       expect((dictionaries.en.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);

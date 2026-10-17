@@ -4,24 +4,18 @@ import { useState } from "react";
 import dayjs from "dayjs";
 import Link from "next/link";
 import { Badge, Button, Group, Loader, Modal, Stack, Text } from "@mantine/core";
-import { StatusChip } from "@/components/common/BookingBadges";
 import { useT } from "@/lib/i18n";
-import { formatDateWithDay, formatTimeDisplay } from "@/lib/ui/format";
+import { formatDateWithDay } from "@/lib/ui/format";
 import { useCan, useMe } from "@/hooks/scheduler/useMe";
 import { hasMenu } from "@/lib/rbac/menus";
 import { useTeacherLeaveDays } from "@/hooks/scheduler";
 import type { LeaveDayClass, LeaveDayRow } from "@/types/api/contract";
 import CancelLeaveButton from "./CancelLeaveButton";
+import LeaveClassRow from "./LeaveClassRow";
 import LiftRangeConfirm from "./LiftRangeConfirm";
 
-/** The child (DUO: both) — nickname first, as everywhere else on the calendar. Empty when an older server sent no names. */
-export const leaveClassWho = (c: LeaveDayClass): string => {
-  const one = c.childNickname || c.childName || "";
-  const two = c.coChildNickname || c.coChildName || "";
-  return one && two ? `${one} + ${two}` : one || two;
-};
-/** The program, or an "other" row's title. Empty when an older server sent neither. */
-export const leaveClassWhat = (c: LeaveDayClass): string => c.program || c.title || "";
+// 🔻 TASK-822: the two helpers and the row moved to `LeaveClassRow.tsx` (the leave dialog's result shows the same row); re-exported so every import of them keeps working.
+export { leaveClassWho, leaveClassWhat } from "./LeaveClassRow";
 
 /** The days of ONE leave: the whole range when the record has a `rangeId`, otherwise the one day. Date order; the server's own rows, never re-derived. */
 export const daysOfLeave = (rows: readonly LeaveDayRow[], teacherId: string, date: string, rangeId: string | null | undefined): LeaveDayRow[] =>
@@ -94,18 +88,7 @@ export default function LeaveDayPanel({
               {d.bookings.length > 0 && (
                 <Stack gap={4} mt={4}>
                   {d.bookings.map((c) => (
-                    <Group key={c.id} gap="xs" wrap="nowrap" data-leave-panel-class={c.id}>
-                      <Text size="sm" className="tabular-nums" w={96}>
-                        {formatTimeDisplay(c.startTime)} – {formatTimeDisplay(c.endTime)}
-                      </Text>
-                      <Text size="sm" className="min-w-0 flex-1 truncate">
-                        {[leaveClassWho(c), leaveClassWhat(c)].filter(Boolean).join(" · ")}
-                      </Text>
-                      <StatusChip status={c.status} />
-                      <Button size="compact-xs" variant="light" onClick={() => onOpenClass(c)} data-leave-class-open={c.id}>
-                        {t("leaveDays.panelOpen")}
-                      </Button>
-                    </Group>
+                    <LeaveClassRow key={c.id} c={c} onOpen={onOpenClass} />
                   ))}
                 </Stack>
               )}
