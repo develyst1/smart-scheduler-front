@@ -245,7 +245,7 @@ function BookingTypeRow({
 /**
  * 🚧 TEMPORARY — sample rows shown while the day has no group-program data (the backend does not send
  * `kidsByProgram` yet, and the calendar fallback rarely has head counts filled in), so the client can see the
- * section's shape. Dimmed (no label, client request) and never mixed with real rows.
+ * section's shape. Rendered like real data (no label, no dimming — client request) and never mixed with real rows.
  * Delete this and `SHOW_SAMPLE_WHEN_EMPTY` once `/reports/daily` ships `kidsByProgram` (docs/backend-daily-report.md §10).
  */
 const SHOW_SAMPLE_WHEN_EMPTY = true;
@@ -278,7 +278,7 @@ function KidsByProgramCard({ programs }: { programs: DailyReport["kidsByProgram"
       <Text size="sm" fw={600} mb="md">
         {t("reports.kidsByProgram")}
       </Text>
-      <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 ${isSample ? "opacity-60" : ""}`}>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {shown.map((p) => (
           <Paper key={p.program} withBorder p="md" className="flex h-full flex-col bg-muted-100/50">
             <div className="mb-2 flex items-baseline justify-between gap-3 border-b border-muted-200 pb-2">
@@ -286,7 +286,7 @@ function KidsByProgramCard({ programs }: { programs: DailyReport["kidsByProgram"
               <span className="shrink-0 text-sm font-semibold tabular-nums">{kids(p.total)}</span>
             </div>
             {p.items.length === 0 ? (
-              <p className="m-0 text-sm text-muted-400">—</p>
+              <p className="m-0 text-sm">—</p>
             ) : (
               <ul className="m-0 list-none space-y-1 p-0">
                 {p.items.map((item) => (
