@@ -1819,6 +1819,7 @@ const en = {
     byRecentSingle: "1 HR (last 3 months)",
     totalCustomers: "Total customers",
     trialWindow: "Last 3 months: since {date}",
+    trialRange: "1st Trial / 1 HR: {from} – {to}",
     // 2. activity share
     sportShareTitle: "Activity / Program",
     activityHint: "Active classes by category",
@@ -3871,6 +3872,7 @@ const th: typeof en = {
     byRecentSingle: "1 ชม. (3 เดือนล่าสุด)",
     totalCustomers: "ลูกค้าทั้งหมด",
     trialWindow: "3 เดือนล่าสุด: ตั้งแต่ {date}",
+    trialRange: "ทดลองเรียน / 1 ชม.: {from} – {to}",
     sportShareTitle: "กิจกรรม / โปรแกรม",
     activityHint: "คลาสที่ active แยกตามหมวด",
     activityTypeHint: "คอร์ส + วอยเชอร์ + 1 ชม.",

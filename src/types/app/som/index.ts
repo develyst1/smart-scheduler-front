@@ -34,8 +34,16 @@ export interface ExistingCustomers {
   byRecentTrial: number;
   total: number;
   recentTrialSince: string; // YYYY-MM-DD
-  /** Not in the live API yet (docs/backend-som-dashboard.md §2). */
+  // ── New contract (docs/backend-som-dashboard.md §2). The legacy fields above keep their old (buggy) values on
+  // the server so nothing else breaks — the screen reads these whenever they are present.
+  month?: string; // YYYY-MM
+  activeCourse?: number;
+  activeVoucher?: number;
+  recentFirstTrial?: number;
   recentSingleSession?: number;
+  totalCustomers?: number;
+  recentFrom?: string; // YYYY-MM
+  recentTo?: string; // YYYY-MM
 }
 
 export interface NewVsRenewing {
@@ -43,7 +51,10 @@ export interface NewVsRenewing {
   newByFirstTrial: number;
   newByRegistration: number;
   renewing: number;
-  /** Not in the live API yet (docs/backend-som-dashboard.md §3). */
+  // ── New contract (docs/backend-som-dashboard.md §3). Legacy `newByFirstTrial` / `renewing` stay buggy on the
+  // server (Renew is always 0) — the screen reads these whenever they are present.
+  firstTrial?: number;
+  renewCourse?: number;
   newCourseThisMonth?: number;
   newCoursePrevMonth?: number;
   trialNotConverted?: number;
@@ -131,8 +142,13 @@ export interface ActivityProgram {
 
 export interface TodaySection {
   date: string; // YYYY-MM-DD
+  /** Legacy — superseded by `confirmed` (kept by the server so older screens don't break). */
   expected: number;
   attended: number;
+  /** New contract (docs/backend-som-dashboard.md §1): CONFIRMED + ATTENDED today. */
+  confirmed?: number;
+  /** attended ÷ confirmed × 100, rounded; 0 when nothing is confirmed. */
+  attendanceRate?: number;
 }
 
 export interface SomReport {

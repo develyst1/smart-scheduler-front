@@ -32,6 +32,8 @@ export default function SomContent() {
     dayjs(iso)
       .locale(lang)
       .format(lang === "th" ? "D MMM" : "D MMM YYYY");
+  const fmtMonth = (ym: string) =>
+    dayjs(`${ym}-01`).locale(lang).format("MMM YYYY");
   const fmtDateTime = (iso: string) =>
     dayjs(iso)
       .locale(lang)
@@ -75,6 +77,7 @@ export default function SomContent() {
     demographics: demo,
     today,
   } = data;
+  const confirmed = today.confirmed ?? today.expected;
 
   return (
     <Stack gap="lg">
@@ -86,15 +89,17 @@ export default function SomContent() {
           {t("som.todayTitle")}
         </SectionHeading>
         <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="sm">
-          {/* Confirmed still reads the live `expected` field until the API ships `confirmed` — see docs/backend-som-dashboard.md §1 */}
-          <Stat label={t("som.confirmed")} value={today.expected} />
+          {/* New contract first (§1); the legacy `expected` is only a fallback for servers/mocks without it. */}
+          <Stat label={t("som.confirmed")} value={confirmed} />
           <Stat label={t("som.attended")} value={today.attended} accent />
           <Stat
             label={t("som.attendanceRate")}
             value={
-              today.expected > 0
-                ? `${Math.round((today.attended / today.expected) * 100)}%`
-                : "—"
+              today.attendanceRate !== undefined
+                ? `${today.attendanceRate}%`
+                : confirmed > 0
+                  ? `${Math.round((today.attended / confirmed) * 100)}%`
+                  : "—"
             }
           />
         </SimpleGrid>
@@ -106,18 +111,37 @@ export default function SomContent() {
           {t("som.existingTitle")}
         </SectionHeading>
         <SimpleGrid cols={{ base: 2, sm: 3, lg: 5 }} spacing="sm">
-          <Stat label={t("som.byCourse")} value={ec.byCourse} />
-          <Stat label={t("som.byVoucher")} value={ec.byVoucher} />
-          <Stat label={t("som.byRecentTrial")} value={ec.byRecentTrial} />
-          {/* `recentSingleSession` is preview-filled until the API ships it (lib/som/preview.ts) */}
+          {/* New contract first (§2). The server keeps the legacy fields at their old, buggy values (Active Course
+              counted ended/paused courses, Trial counted cancellations) — they are only a fallback. */}
+          <Stat
+            label={t("som.byCourse")}
+            value={ec.activeCourse ?? ec.byCourse}
+          />
+          <Stat
+            label={t("som.byVoucher")}
+            value={ec.activeVoucher ?? ec.byVoucher}
+          />
+          <Stat
+            label={t("som.byRecentTrial")}
+            value={ec.recentFirstTrial ?? ec.byRecentTrial}
+          />
           <Stat
             label={t("som.byRecentSingle")}
             value={ec.recentSingleSession ?? "—"}
           />
-          <Stat label={t("som.totalCustomers")} value={ec.total} accent />
+          <Stat
+            label={t("som.totalCustomers")}
+            value={ec.totalCustomers ?? ec.total}
+            accent
+          />
         </SimpleGrid>
         <p className="mt-1.5 text-xs text-muted-400">
-          {t("som.trialWindow", { date: fmtDate(ec.recentTrialSince) })}
+          {ec.recentFrom && ec.recentTo
+            ? t("som.trialRange", {
+                from: fmtMonth(ec.recentFrom),
+                to: fmtMonth(ec.recentTo),
+              })
+            : t("som.trialWindow", { date: fmtDate(ec.recentTrialSince) })}
         </p>
       </section>
 
@@ -180,10 +204,10 @@ export default function SomContent() {
   function nvrValue(b: NvrBucket): number | string {
     const v = data!.newVsRenewing;
     const n = {
-      firstTrial: v.newByFirstTrial,
+      firstTrial: v.firstTrial ?? v.newByFirstTrial,
       newCourseThisMonth: v.newCourseThisMonth,
       newCoursePrevMonth: v.newCoursePrevMonth,
-      renewCourse: v.renewing,
+      renewCourse: v.renewCourse ?? v.renewing,
       trialNotConverted: v.trialNotConverted,
       notRenewed: v.notRenewed,
     }[b];

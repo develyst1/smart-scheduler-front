@@ -60,8 +60,40 @@ GET /reports/som/new-vs-renewing/:bucket?month=2026-10&badgeValueIds=bv1,bv2
 - server ที่ยังไม่รองรับ query จะ ignore ไปเอง — FE ส่งไปแล้วตั้งแต่ตอนนี้
 
 ❓ คำถามเปิด:
-- **Q0.1** Badge ผูกกับอะไร — booking (คาบ) หรือ นักเรียน? Section ที่นับ "คน" (Existing Customers, Demographic) จะกรองจาก badge ของคาบที่คนนั้นเรียน หรือ badge ของตัวนักเรียน?
+- ~~Q0.1~~ ✅ Badge ติดกับ **การจอง** — section ที่นับเป็นคนกรองจาก badge ของการจองของคนนั้น (backend 2026-10-19, §0.2)
 - **Q0.2** Coach Capacity + badge: `bookedHours` นับเฉพาะคาบที่มี badge นั้นได้ แต่ `availableHours` (ชั่วโมงที่สอนได้) จะแบ่งตามสาขาอย่างไร? หรือไม่กรอง available?
+
+---
+
+## 0.2 คำตอบจาก backend (2026-10-19 — back ขึ้น UAT แล้ว)
+
+**FE เปลี่ยนแล้ว:** การ์ดที่เคยอ่าน field เก่า ตอนนี้อ่าน field ใหม่ก่อน (field เก่าใช้เป็น fallback เท่านั้น)
+
+| การ์ด | อ่าน (ใหม่) | fallback (เก่า — server คงค่าเดิมที่มีบั๊กไว้) |
+|-------|-------------|-------------------------------------------|
+| Today · Confirmed | `today.confirmed` | `today.expected` |
+| Today · Attendance | `today.attendanceRate` (= attended ÷ confirmed) | FE คำนวณจาก confirmed |
+| Active Course | `existingCustomers.activeCourse` | `byCourse` (เคยนับคอร์สที่จบ / พักแล้ว) |
+| Active Voucher | `existingCustomers.activeVoucher` | `byVoucher` |
+| 1st Trial (Existing) | `existingCustomers.recentFirstTrial` | `byRecentTrial` (เคยนับรวมที่ยกเลิก) |
+| Total Customers | `existingCustomers.totalCustomers` | `total` |
+| บรรทัดใต้การ์ด Existing | `recentFrom` – `recentTo` | `recentTrialSince` |
+| New vs Renewing · 1st Trial | `newVsRenewing.firstTrial` | `newByFirstTrial` |
+| New vs Renewing · Renew Course | `newVsRenewing.renewCourse` | `renewing` (เคยเป็น 0 เสมอ) |
+
+**ข้อมูลจริงที่ต่างจากที่ FE เขียนไว้ (backend ทำตามนี้):**
+- **Badge ติดกับการจองแต่ละครั้ง** ไม่ได้ติดกับนักเรียน → section ที่นับเป็นคน กรองจาก badge ของการจองของคนนั้น (ปิด **Q0.1**)
+- **District** มาจากที่อยู่ของผู้ปกครอง เก็บเป็นรหัสตั้งแต่ 12 ต.ค. — ตอนนี้รู้เขต 121 จาก 312 คน ที่เหลือเป็น "ไม่ระบุ" จนกว่าแอดมินจะเติม (ตอบ **Q5.3**)
+- **Voucher ไม่มีวิชาผูกอยู่** → หมวดใน Activity / Program ดูจากวิชาของคาบที่เรียนจริงแต่ละคาบ (ตอบบางส่วนของ **Q6.4**)
+- **Remark** (เหตุผลที่ไม่ต่อคอร์ส) ยังไม่มีที่เก็บ → ส่ง `null` ไปก่อน FE แสดง `—` (Q3.9 ค้าง — โด่งจะคุยต่อ)
+- **Renew:** คอร์สที่ "พัก" ไม่นับว่าจบ (พักแล้วกลับมาเรียนต่อได้) จึงยังไม่นับเป็นเคสต่อคอร์ส (ตอบบางส่วนของ **Q3.7**)
+- **First Trial:** เด็กที่มีคอร์สอยู่แล้ว (ซื้อก่อนสิ้นเดือนนั้น) ถือเป็นลูกค้าคอร์ส ไม่นับใน First Trial — ใช้กฎเดียวกันกับการ์ด "1st Trial, no course"
+- **Today:** attendanceRate = attended ÷ confirmed ตามสูตรใน §1
+- `?month` และ `?badgeValueIds` — backend ใช้แล้วใน field ใหม่
+
+**ข้อจำกัด:** ระบบไม่ได้เก็บประวัติการพักของคอร์ส → ตัวเลขย้อนหลังเดือนก่อน ๆ ไม่รู้ว่าคอร์สไหนเคยพัก
+
+**รอ client ยืนยัน:** ช่วงอายุ §5.1 — สรุปประชุมเขียน "1, 2, 3, 4, 5, 7, 8, 10, 20+, 40+, 55+" ส่วนในชีทลูกค้าช่องระหว่าง 11–13 กับ 55+ ว่างอยู่ — FE ใช้ 14-19 / 20-39 / 40-54 / 55+ (Q5.1) backend ใช้ตามนี้ไปก่อน แก้ทีหลังได้
 
 ---
 
