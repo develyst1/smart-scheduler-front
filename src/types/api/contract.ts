@@ -1017,8 +1017,29 @@ export interface LeaveDayRow {
   createdBy: string | null;
   /** 🔴 TASK-819 → TASK-820 — the record this day belongs to (TASK-817's range); null / absent = recorded as a single day. Group by it to show a range as one leave. */
   rangeId?: string | null;
+  /** 🔻 TASK-826 (REQ-125 ruling B) → TASK-828 — present ONLY when this leave day took the teacher OFF co-taught classes that run on with others. `bookings` then lists only what is left to HANDLE. */
+  continues?: Array<{ bookingId: string; startTime: string; with: string[] }>;
   bookings: LeaveDayClass[];
 }
+
+/**
+ * 🔴 **TASK-826 (BE) → TASK-828 — REQ-125 ruling B: one teacher's leave on a CO-TAUGHT class (an Other / ECA with extra teachers, a GROUP row with extra coaches) takes only THAT
+ * teacher off; the class runs on with the others and no family is told.** The keys below ride an answer ONLY when a co-taught class was involved (a sole-teacher answer is unchanged).
+ * 🔑 The numbers the screens show come from these answers and from the PREVIEW — never from `additionalTeachers` (whether another teacher REMAINS depends on THEIR leave).
+ */
+export interface LeaveContinuedClass { bookingId: string; startTime: string; with: string[]; promotedTo: string | null }
+/** D4 — nobody could take the main seat: the class is LEFT AS IT IS for the admin to handle (its own refusal words, when there are any, in `message`). */
+export interface LeaveToHandleClass { bookingId: string; startTime: string; reason: "no-eligible-main"; message?: string }
+export interface LeaveSplit { continues?: LeaveContinuedClass[]; toHandle?: LeaveToHandleClass[] }
+/** A class Cancel leave put the teacher back on (D2: as an extra, at the old rate). */
+export interface RestoredLeaveClass { bookingId: string; date: IsoDate; startTime: string }
+
+export type LeavePreviewOutcome = "continues" | "cancel" | "toHandle" | "cannot";
+export interface LeavePreviewClass { bookingId: string; startTime: string; outcome: LeavePreviewOutcome; with: string[]; promoted?: string }
+export interface LeavePreviewCounts { continues: number; cancel: number; toHandle: number; cannot: number }
+export interface LeavePreviewDay { date: IsoDate; mode: "same-day" | "advance"; classes: LeavePreviewClass[]; counts: LeavePreviewCounts }
+/** `GET /teachers/me/leave?preview=YYYY-MM-DD` (the teacher's own) · `GET /teacher-leave-days/preview?teacherId&from[&to]` (the admin's): read-only, "what will saving do?"; past days are absent. */
+export interface LeavePreview { teacherId: string; days: LeavePreviewDay[]; counts: LeavePreviewCounts }
 
 /**
  * 🔴 **TASK-819 (BE) → TASK-820 — `DELETE /teacher-leave-ranges/:id`: lifts only the FUTURE days of a range.** `kept` = the days that had begun or passed
@@ -1029,6 +1050,8 @@ export interface LiftLeaveRangeResponse {
   lifted: string[];
   kept: string[];
   teacherNotified?: number;
+  /** 🔻 TASK-826 (D2) — the co-taught classes the teacher was put back on; absent when none. */
+  restored?: RestoredLeaveClass[];
 }
 
 export interface OwnLeaveResult {
@@ -1044,7 +1067,12 @@ export interface OwnLeaveResult {
   recordedDays?: number;
   alreadyRecordedDays?: number;
   /** Per day, in date order: was it already on record (skipped, the first entry stands) and the live classes booked on it. */
-  days?: { date: IsoDate; alreadyRecorded: boolean; bookings: LeaveDayClass[] }[];
+  days?: ({ date: IsoDate; alreadyRecorded: boolean; bookings: LeaveDayClass[] } & LeaveSplit)[];
+  /** 🔻 TASK-826 — a one-day record / a same-day act answer: the co-taught classes taken off (running on with others) and the D4 ones left as they are. Absent when none. */
+  continues?: LeaveContinuedClass[];
+  toHandle?: LeaveToHandleClass[];
+  /** 🔻 TASK-826 — a RANGE: how many co-taught classes (over all days) the teacher was taken off. */
+  continuedClasses?: number;
   leave?: { date: IsoDate; reason: string | null };
   alreadyRecorded?: boolean;
   /** The classes already booked on that day. 🚫 Nothing was done to them: an admin handles them by hand. */

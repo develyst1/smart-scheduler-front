@@ -225,8 +225,8 @@
           "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
           "edits": [
             {
-              "from": "<LeaveClassRow key={b.id} c={b} onOpen={onBehalf ? setOpenClass : undefined} />",
-              "to": "<LeaveClassRow key={b.id} c={b} />"
+              "from": "<LeaveClassRow c={b} onOpen={onBehalf ? setOpenClass : undefined} />",
+              "to": "<LeaveClassRow c={b} />"
             }
           ]
         }
@@ -240,8 +240,8 @@
           "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
           "edits": [
             {
-              "from": "<LeaveClassRow key={b.id} c={b} onOpen={onOpenClass} />",
-              "to": "<LeaveClassRow key={b.id} c={b} />"
+              "from": "<LeaveClassRow c={b} onOpen={onOpenClass} />",
+              "to": "<LeaveClassRow c={b} />"
             }
           ]
         }

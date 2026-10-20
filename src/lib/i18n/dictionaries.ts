@@ -616,6 +616,11 @@ const en = {
     // ✅ APPROVED by the owner 2026-10-17 (REQ-123 Phase 1, TASK-817), COPY-REVIEW-2026-09-29.md, verbatim — the two range refusals, now also shown by the dialog (TASK-822).
     rangeEndBeforeStart: "The end date can't be before the start date",
     rangeTooLong: "A leave can cover at most 31 days at a time",
+    // ✅ APPROVED by the owner 2026-10-20 (REQ-125 ruling B), COPY-REVIEW-2026-09-29.md, verbatim (TASK-828).
+    coTaughtOwn: "{n} co-taught class(es) go on with the other teachers, without you.",
+    coTaughtAdmin: "{n} co-taught class(es) will go on with the other teachers; {name} is taken off them.",
+    continuesWith: "Continues with {names}",
+    cannotTakeOff: "{name} can't be taken off the {time} class: no other teacher of it is free at that time. Please handle this class in the calendar.",
   },
   // REQ-101 (TASK-429) — the ECA/Free/KOL Manage-plan page
   otherSeries: {
@@ -2819,6 +2824,11 @@ const th: typeof en = {
     // ✅ อนุมัติโดยเจ้าของ 2026-10-17 (REQ-123 Phase 1, TASK-817) — COPY-REVIEW-2026-09-29.md — ตามต้นฉบับทุกตัวอักษร — ข้อความปฏิเสธช่วงวันลา 2 ข้อ ที่หน้าต่างแจ้งลาแสดงเองด้วย (TASK-822)
     rangeEndBeforeStart: "วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม",
     rangeTooLong: "ลาล่วงหน้าได้ไม่เกิน 31 วันต่อครั้ง",
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-20 (REQ-125 ruling B) — COPY-REVIEW-2026-09-29.md — ตามต้นฉบับทุกตัวอักษร (TASK-828)
+    coTaughtOwn: "อีก {n} คาบที่สอนร่วมกับครูท่านอื่นจะยังเรียนตามปกติ โดยไม่มีคุณ",
+    coTaughtAdmin: "คาบที่สอนร่วมกับครูท่านอื่น {n} คาบ จะนำครู {name} ออก และยังเรียนตามปกติ",
+    continuesWith: "สอนต่อโดย {names}",
+    cannotTakeOff: "ยังนำครู {name} ออกจากคาบ {time} ไม่ได้ เพราะครูท่านอื่นของคาบนี้ไม่ว่างในเวลานั้น — กรุณาจัดการคาบนี้ในปฏิทิน",
   },
   otherSeries: {
     managePlan: "จัดการตาราง",

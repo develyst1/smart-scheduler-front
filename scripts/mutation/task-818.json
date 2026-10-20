@@ -1,5 +1,5 @@
 {
-  "_why": "TASK-818 (FE). One clicked test file (the dialog, the header entry, the wire). Each mutation breaks the REQUEST, who is told what, or a default the admin never chose. Written with the set; nothing reconstructed. NOT mutated, on purpose: the two `if (noDate || choosing) return;` waits inside submit — the button is already `disabled` for both, so a pressed-anyway click never reaches them (belt and braces, unreachable by a click). ALSO NOT mutated: the empty-date wait (`noDate`) — it is a second, redundant guard: an empty date is never an advance date, so `refusedForAdmin` already holds the button, and so does the admin door's own tick rule; removing either alone changes nothing observable. R6 (moving the start past the end keeps the old end) was dropped by TASK-822: the end is no longer dropped silently — it stays and is REFUSED in words; that refusal is guarded by set 822.",
+  "_why": "TASK-818 (FE). One clicked test file (the dialog, the header entry, the wire). Each mutation breaks the REQUEST, who is told what, or a default the admin never chose. Written with the set; nothing reconstructed. NOT mutated, on purpose: the two `if (noDate || choosing) return;` waits inside submit — the button is already `disabled` for both, so a pressed-anyway click never reaches them (belt and braces, unreachable by a click). ALSO NOT mutated: the empty-date wait (`noDate`) — it is a second, redundant guard: an empty date is never an advance date, so `refusedForAdmin` already holds the button, and so does the admin door's own tick rule; removing either alone changes nothing observable. R6 (moving the start past the end keeps the old end) was dropped by TASK-822: the end is no longer dropped silently — it stays and is REFUSED in words; that refusal is guarded by set 822. R12/R14 follow the will-line into LeaveWillDo.tsx (TASK-828, now read from the server's preview); R13 (the admin door states a count) is retired — set 828 guards the admin line (W5 wrong number · W6 shown when nothing is co-taught · W7 asked for today).",
   "tests": [
     "src/components/partials/Calendar/Modal/leave-range-task818.dom.test.tsx",
     "src/lib/scheduler/teacher-scope.test.ts",
@@ -143,29 +143,14 @@
     },
     {
       "id": "R12",
-      "what": "🔴 the 'will block' line counts the TICKS instead of the day's classes",
+      "what": "🔴 the 'will block' line counts the TICKS instead of what the preview says is left to handle",
       "files": [
         {
-          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "t(\"teacherLeave.willBlock\", { n: rows.length })",
-              "to": "t(\"teacherLeave.willBlock\", { n: ticked.length })"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "R13",
-      "what": "🔴 the 'will …' line is stated on the ADMIN door too (it holds no class count)",
-      "files": [
-        {
-          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
-          "edits": [
-            {
-              "from": "{!onBehalf && !isLoading && !noDate && (advance || ticked.length > 0) && (",
-              "to": "{!isLoading && !noDate && (advance || ticked.length > 0) && ("
+              "from": "const n = counts.toHandle + counts.cannot;",
+              "to": "const n = ticked.length;"
             }
           ]
         }
@@ -176,11 +161,11 @@
       "what": "🔴 the 'will cancel' line counts ALL the day's classes, not the ticked ones",
       "files": [
         {
-          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "t(\"teacherLeave.willCancel\", { n: ticked.length })",
-              "to": "t(\"teacherLeave.willCancel\", { n: rows.length })"
+              "from": "ticked.filter((id) => outcome.get(id) !== \"continues\").length",
+              "to": "data.days.flatMap((d) => d.classes).length"
             }
           ]
         }

@@ -232,7 +232,9 @@ describe("§6 — `TEACHER_LEAVE`: read everywhere, offered nowhere", () => {
     // 🔻 TASK-818, declared: 31 → 41. TEN keys (REQ-123 P1; APPROVED by the owner 2026-10-17, verbatim): `recordTeacherLeave · dateTo · adminRangeHint · adminSubmitRange · willBlock ·
     // willCancel · rangeDayNew · rangeDayAlready · rangeDayClasses · rangeDayNone` — the range, the calendar's entry, and the "what saving will do" lines. Each is in both languages.
     // 🔻 TASK-822, declared: 41 → 43. TWO keys, both APPROVED (owner 2026-10-17, REQ-123 Phase 1, verbatim): `rangeEndBeforeStart · rangeTooLong` — the range's two refusals, now shown by the dialog itself.
-    expect(Object.keys(en).length).toBe(43); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
+    // 🔻 TASK-828, declared: 43 → 47. FOUR keys, all APPROVED (owner 2026-10-20, REQ-125 ruling B, COPY-REVIEW 2026-10-20, verbatim): `coTaughtOwn · coTaughtAdmin · continuesWith · cannotTakeOff` — the P7 co-taught
+    // counts (the teacher's own door · the admin's), the "Continues with {names}" row tag and the D4 sentence.
+    expect(Object.keys(en).length).toBe(47); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     for (const k of ["teacherLink", "teacherLinkHint", "teacherNone", "teacherLine"]) {
       expect((dictionaries.en.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);

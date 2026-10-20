@@ -14,7 +14,8 @@ import { useCalendar, useReportOwnLeave, useReportTeacherLeave } from "@/hooks/s
 import { isAdvanceLeaveDate, isAdvanceResult, leaveBody, leaveDefaultTicks } from "@/lib/scheduler/teacher-scope";
 import { StatusChip } from "@/components/common/BookingBadges";
 import TeacherPick from "./LeaveTeacherPick";
-import LeaveClassRow from "../LeaveClassRow";
+import LeaveClassRow, { LeaveCannotNote, LeaveContinuesRow } from "../LeaveClassRow";
+import LeaveWillDo from "./LeaveWillDo";
 import LeaveClassOpener from "../LeaveClassOpener";
 import { leaveRangeIssue, rangeIssueFromError } from "./leave-range";
 import type { LeaveDayClass, OwnLeaveResult } from "@/types/api/contract";
@@ -189,14 +190,25 @@ export default function ReportLeaveDialog({
                 </Text>
                 <Stack gap={2}>
                   {(done.bookings ?? []).map((b) => (
-                    <LeaveClassRow key={b.id} c={b} onOpen={onBehalf ? setOpenClass : undefined} />
+                    <div key={b.id}>
+                      <LeaveClassRow c={b} onOpen={onBehalf ? setOpenClass : undefined} />
+                      {subject && done.toHandle?.some((x) => x.bookingId === b.id) && <LeaveCannotNote name={subject.name} startTime={b.startTime} />}
+                    </div>
                   ))}
                 </Stack>
               </>
-            ) : (
+            ) : (done.continues?.length ?? 0) > 0 ? null : (
               <Text size="sm" c="dimmed">
                 {subject ? t("teacherLeave.adminAdvanceNoClasses", { name: subject.name }) : t("teacherLeave.advanceNoClasses")}
               </Text>
+            )}
+            {/* 🔴 TASK-828 — co-taught classes the leave took the teacher OFF: they continue with the others, nothing to do. */}
+            {(done.continues?.length ?? 0) > 0 && (
+              <Stack gap={2} data-leave-continues-list={done.continues?.length}>
+                {done.continues?.map((c) => (
+                  <LeaveContinuesRow key={c.bookingId} c={c} />
+                ))}
+              </Stack>
             )}
             {/* 🔑 Never a toast, never abbreviated: a teacher who believes their classes were cancelled will not turn up.
                 🔴 TASK-611 — and for the ADMIN it is worse, so the sentence is written for whoever is reading: *an admin who
@@ -335,13 +347,16 @@ export default function ReportLeaveDialog({
             {t("teacherLeave.warning")}
           </Text>
         )}
-        {/* 🔴 TASK-818 (P7) — what saving WILL do, said plainly BEFORE it is done, with the numbers the dialog already holds: the own door has its
-            session list (the ticks, or the day's classes); the admin door does not (the calendar read is the admin's own day) and its hint above says so. */}
-        {!onBehalf && !isLoading && !noDate && (advance || ticked.length > 0) && (
-          <Text size="sm" fw={500} data-leave-will={advance ? "block" : "cancel"}>
-            {advance ? t("teacherLeave.willBlock", { n: rows.length }) : t("teacherLeave.willCancel", { n: ticked.length })}
-          </Text>
-        )}
+        {/* 🔴 TASK-818 (P7) → TASK-828 (REQ-125 ruling B) — what saving WILL do, said BEFORE it is done, from the server's PREVIEW (whether a co-taught class continues depends on
+            whether another teacher remains — not something the calendar rows say): the split counts live in `LeaveWillDo`. */}
+        <LeaveWillDo
+          ready={!noDate && !choosing && !rangeIssue && !isLoading}
+          adminFor={onBehalf ? subject : null}
+          date={date}
+          to={isRange ? dateTo : date}
+          advance={advance}
+          ticked={ticked}
+        />
         <Group justify="flex-end" gap="sm">
           <Button variant="subtle" onClick={onClose}>
             {t("common.cancel")}
@@ -403,7 +418,13 @@ function RangeResult({ done, name, onClose, onOpenClass }: { done: OwnLeaveResul
               </Text>
             </Group>
             {d.bookings.map((b) => (
-              <LeaveClassRow key={b.id} c={b} onOpen={onOpenClass} />
+              <div key={b.id}>
+                <LeaveClassRow c={b} onOpen={onOpenClass} />
+                {d.toHandle?.some((x) => x.bookingId === b.id) && <LeaveCannotNote name={name} startTime={b.startTime} />}
+              </div>
+            ))}
+            {d.continues?.map((c) => (
+              <LeaveContinuesRow key={c.bookingId} c={c} />
             ))}
           </div>
         ))}
