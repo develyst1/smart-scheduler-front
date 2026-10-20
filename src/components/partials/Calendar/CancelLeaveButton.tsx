@@ -16,7 +16,7 @@ import LiftLeaveConfirm from "./LiftLeaveConfirm";
  * CLASSES") reads from that file.
  * ⚠️ The key is asked as a LITERAL: `action-gate.test.ts` sweeps `src` for them to find every door in the product.
  */
-export default function CancelLeaveButton({ teacherId, teacherName, date }: { teacherId: string; teacherName: string; date: string }) {
+export default function CancelLeaveButton({ teacherId, teacherName, date, restores = 0 }: { teacherId: string; teacherName: string; date: string; restores?: number }) {
   const t = useT();
   const can = useCan();
   const [open, setOpen] = useState(false);
@@ -31,7 +31,7 @@ export default function CancelLeaveButton({ teacherId, teacherName, date }: { te
       >
         {t("leaveDays.cancelLeave")}
       </button>
-      <LiftLeaveConfirm opened={open} onClose={() => setOpen(false)} teacherId={teacherId} teacherName={teacherName} date={date} />
+      <LiftLeaveConfirm opened={open} onClose={() => setOpen(false)} teacherId={teacherId} teacherName={teacherName} date={date} restoreN={restores} />
     </>
   );
 }

@@ -1073,6 +1073,8 @@ export interface OwnLeaveResult {
   toHandle?: LeaveToHandleClass[];
   /** 🔻 TASK-826 — a RANGE: how many co-taught classes (over all days) the teacher was taken off. */
   continuedClasses?: number;
+  /** 🔻 TASK-829 (REQ-125 K1) — a SAME-DAY answer: how many admins the "class left as it is" alert was queued for. Present ONLY when a class was left as it is (D4); absent / 0 ⇒ nobody was alerted. */
+  adminsAlerted?: number;
   leave?: { date: IsoDate; reason: string | null };
   alreadyRecorded?: boolean;
   /** The classes already booked on that day. 🚫 Nothing was done to them: an admin handles them by hand. */

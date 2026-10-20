@@ -149,8 +149,8 @@
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "const n = counts.toHandle + counts.cannot;",
-              "to": "const n = ticked.length;"
+              "from": "{ n: counts.toHandle + counts.cannot }",
+              "to": "{ n: ticked.length }"
             }
           ]
         }
@@ -158,14 +158,14 @@
     },
     {
       "id": "R14",
-      "what": "🔴 the 'will cancel' line counts ALL the day's classes, not the ticked ones",
+      "what": "🔴 the 'will cancel' line counts ALL the day's classes, not the ticked ones that the preview cancels",
       "files": [
         {
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "ticked.filter((id) => outcome.get(id) !== \"continues\").length",
-              "to": "data.days.flatMap((d) => d.classes).length"
+              "from": "ticked.filter((id) => outcome.get(id) === \"cancel\").length",
+              "to": "day.length"
             }
           ]
         }

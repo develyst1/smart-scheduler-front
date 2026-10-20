@@ -83,7 +83,7 @@ export default function LeaveDayPanel({
                     {d.bookings.length > 0 ? t("teacherLeave.rangeDayClasses", { n: d.bookings.length }) : t("teacherLeave.rangeDayNone")}
                   </Text>
                 </Group>
-                <CancelLeaveButton teacherId={d.teacherId} teacherName={d.teacherName} date={d.date} />
+                <CancelLeaveButton teacherId={d.teacherId} teacherName={d.teacherName} date={d.date} restores={d.continues?.length ?? 0} />
               </Group>
               {(d.continues?.length ?? 0) > 0 && (
                 <Stack gap={4} mt={4} data-leave-panel-continues={d.date}>
@@ -119,7 +119,15 @@ export default function LeaveDayPanel({
           </Link>
         )}
         {rangeOpen && row.rangeId && (
-          <LiftRangeConfirm opened onClose={() => setRangeOpen(false)} rangeId={row.rangeId} teacherName={row.teacherName} from={first} to={last} />
+          <LiftRangeConfirm
+            opened
+            onClose={() => setRangeOpen(false)}
+            rangeId={row.rangeId}
+            teacherName={row.teacherName}
+            from={first}
+            to={last}
+            restoreN={shown.filter((d) => d.date > today).reduce((n, d) => n + (d.continues?.length ?? 0), 0)}
+          />
         )}
       </Stack>
     </Modal>

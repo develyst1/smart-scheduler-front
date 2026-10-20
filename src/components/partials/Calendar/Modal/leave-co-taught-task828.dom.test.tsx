@@ -199,6 +199,69 @@ describe("🔴 TASK-828 P7 — the teacher's OWN door: split counts from the PRE
   });
 });
 
+describe("🔴 TASK-828 rework (TEST-111) — the own door's counts come ONLY from the preview's outcomes", () => {
+  const D4 = (name: string, time: string) => `${name} can't be taken off the ${time} class: no other teacher of it is free at that time. Please handle this class in the calendar.`;
+
+  it("🔑 F1: same-day with 1 sole + 1 D4 → 'cancels 1' (a D4 class is left as it is, no family told) + the approved D4 sentence — though all three are TICKED in the session list", async () => {
+    // m1 = sole (cancel), m2 = D4 (cannot); m3 is ticked in the list but the preview does not name it a cancel
+    ownPreview = () => previewOf(TODAY, [{ ...cls("m1", "cancel"), startTime: "10:00" }, { ...cls("m2", "cannot"), startTime: "11:00" }]);
+    mount(TODAY);
+    await waitFor(() => expect(q('[data-leave-will="cancel"]')).toBe(1));
+    expect(document.querySelector('[data-leave-will="cancel"]')?.textContent).toBe("Saving cancels 1 class(es) and tells their families.");
+    expect(q("[data-leave-d4]")).toBe(1);
+    expect(document.querySelector("[data-leave-d4]")?.textContent).toBe(D4("ฉัน", "11:00"));
+  });
+
+  it("🔑 F1: when the ONLY class is a D4 one there is NO 'cancels' line at all — just the D4 sentence", async () => {
+    ownPreview = () => previewOf(TODAY, [{ ...cls("m2", "cannot"), startTime: "11:00" }]);
+    mount(TODAY);
+    await waitFor(() => expect(q("[data-leave-d4]")).toBe(1));
+    expect(q("[data-leave-will]")).toBe(0);
+  });
+
+  it("🔑 F1: the D4 sentence in Thai is the approved Thai, naming the teacher and the time", async () => {
+    ownPreview = () => previewOf(TODAY, [{ ...cls("m2", "cannot"), startTime: "11:00" }]);
+    mount(TODAY, {}, "th");
+    await waitFor(() => expect(q("[data-leave-d4]")).toBe(1));
+    expect(document.querySelector("[data-leave-d4]")?.textContent).toBe("ยังนำครู ฉัน ออกจากคาบ 11:00 ไม่ได้ เพราะครูท่านอื่นของคาบนี้ไม่ว่างในเวลานั้น — กรุณาจัดการคาบนี้ในปฏิทิน");
+  });
+
+  it("🔑 the D4 sentence appears ONLY under a 'cannot' class (a sole class that is cancelled, or one that continues, gets none)", async () => {
+    ownPreview = () => previewOf(TODAY, [cls("m1", "cancel"), cls("m2", "continues", ["อื่น"]), cls("m3", "cannot")]);
+    mount(TODAY);
+    await waitFor(() => expect(q("[data-leave-will]")).toBe(1));
+    expect(q("[data-leave-d4]")).toBe(1);
+    expect(q('[data-leave-d4="m3"]')).toBe(1);
+  });
+
+  it("🚫 a D4 class that is not among the day's rows we hold names no one: no sentence rather than a guessed name", async () => {
+    ownPreview = () => previewOf(TODAY, [cls("ghost", "cannot")]);
+    mount(TODAY);
+    await new Promise((r) => setTimeout(r, 250));
+    expect(q("[data-leave-d4]")).toBe(0);
+  });
+
+  it("🔑 F2: a FUTURE day on the teacher's own door shows the approved co-taught line with the preview's count (3), beside 'N class(es) stay'", async () => {
+    ownPreview = () => previewOf(FUTURE, [cls("m1", "continues", ["อื่น"]), cls("m2", "continues", ["อื่น"]), cls("m3", "continues", ["อื่น"])]);
+    mount(FUTURE);
+    await waitFor(() => expect(q('[data-leave-co-taught="own"]')).toBe(1));
+    expect(document.querySelector('[data-leave-co-taught="own"]')?.textContent).toBe(EN_OWN(3));
+    expect(document.querySelector('[data-leave-will="block"]')?.textContent).toBe("Saving only blocks the day for new bookings. 0 class(es) stay on the schedule for an admin to handle.");
+  });
+
+  it("🔑 F2 in Thai, and a FUTURE day with nothing co-taught has no co-taught line", async () => {
+    ownPreview = () => previewOf(FUTURE, [cls("m1", "continues", ["อื่น"]), cls("m2", "toHandle")]);
+    mount(FUTURE, {}, "th");
+    await waitFor(() => expect(q('[data-leave-co-taught="own"]')).toBe(1));
+    expect(document.querySelector('[data-leave-co-taught="own"]')?.textContent).toBe("อีก 1 คาบที่สอนร่วมกับครูท่านอื่นจะยังเรียนตามปกติ โดยไม่มีคุณ");
+    cleanup();
+    ownPreview = () => previewOf(FUTURE, [cls("m1", "toHandle")]);
+    mount(FUTURE);
+    await waitFor(() => expect(q('[data-leave-will="block"]')).toBe(1));
+    expect(q("[data-leave-co-taught]")).toBe(0);
+  });
+});
+
 describe("🔴 TASK-828 P7 — the ADMIN's door: the approved co-taught line, from the preview", () => {
   it("🔑 ONE future day: the preview is asked for THAT teacher and day, and the line says how many go on with the others and who is taken off", async () => {
     adminPreview = () => previewOf(FUTURE, [cls("m1", "continues", ["อื่น"]), cls("m2", "continues", ["อื่น"]), cls("m3", "toHandle")], "t-77");

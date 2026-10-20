@@ -1,0 +1,264 @@
+{
+  "_why": "TASK-829 (FE). One clicked test file (the same-day result view). Each mutation hides or miscounts one outcome (cancelled / continues / LEFT AS IT IS), shows the view when it must not (a sole-teacher day), or changes how the dialog ends. Written with the set; nothing reconstructed.",
+  "tests": [
+    "src/components/partials/Calendar/Modal/leave-same-day-task829.dom.test.tsx",
+    "src/components/partials/Calendar/Modal/leave-co-taught-task828.dom.test.tsx"
+  ],
+  "mutations": [
+    {
+      "id": "Y1",
+      "what": "🔴 (required) the LEFT-AS-IT-IS class is hidden from the result — TEST-111's finding, back again",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveSameDayResult.tsx",
+          "edits": [
+            {
+              "from": "      {(res.toHandle?.length ?? 0) > 0 && (\n        <Stack gap={4} data-leave-same-day-left",
+              "to": "      {false && (\n        <Stack gap={4} data-leave-same-day-left"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y2",
+      "what": "🔴 the continuing classes are hidden from the result",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveSameDayResult.tsx",
+          "edits": [
+            {
+              "from": "      {(res.continues?.length ?? 0) > 0 && (\n        <Stack gap={2} data-leave-same-day-continues",
+              "to": "      {false && (\n        <Stack gap={2} data-leave-same-day-continues"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y3",
+      "what": "🔴 the headline counts the left-as-is classes as cancelled",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveSameDayResult.tsx",
+          "edits": [
+            {
+              "from": "t(\"teacherLeave.done\", { n: res.cancelled, families: res.familiesNotified })",
+              "to": "t(\"teacherLeave.done\", { n: res.bookingIds.length + (res.toHandle?.length ?? 0), families: res.familiesNotified })"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y4",
+      "what": "🔴 the cancelled list includes the left-as-is class",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveSameDayResult.tsx",
+          "edits": [
+            {
+              "from": "const cancelled = res.bookingIds.flatMap(",
+              "to": "const cancelled = [...res.bookingIds, ...(res.toHandle ?? []).map((x) => x.bookingId)].flatMap("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y5",
+      "what": "🔴 a SOLE-teacher day shows the result view too (today's toast + close is gone)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "if (!isAdvanceResult(res) && ((res.continues?.length ?? 0) > 0 || (res.toHandle?.length ?? 0) > 0)) {",
+              "to": "if (!isAdvanceResult(res)) {"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y6",
+      "what": "🔴 an answer with ONLY continuing classes is not shown (falls back to the toast)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "if (!isAdvanceResult(res) && ((res.continues?.length ?? 0) > 0 || (res.toHandle?.length ?? 0) > 0)) {",
+              "to": "if (!isAdvanceResult(res) && ((res.toHandle?.length ?? 0) > 0)) {"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y7",
+      "what": "🔴 an answer with ONLY a left-as-is class is not shown — the exact TEST-111 case",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "if (!isAdvanceResult(res) && ((res.continues?.length ?? 0) > 0 || (res.toHandle?.length ?? 0) > 0)) {",
+              "to": "if (!isAdvanceResult(res) && ((res.continues?.length ?? 0) > 0)) {"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y8",
+      "what": "🔴 a left-as-is class with no known teacher gets a guessed name ('undefined')",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveSameDayResult.tsx",
+          "edits": [
+            {
+              "from": "            return name ? (",
+              "to": "            return true ? ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y9",
+      "what": "🔴 the dialog closes itself right after showing the result",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "        setSameDay(res);\n        return;",
+              "to": "        setSameDay(res);\n        onClose();\n        return;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y10",
+      "what": "🔴 the old toast fires on top of the result",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "        setSameDay(res);\n        return;",
+              "to": "        setSameDay(res);\n        notify({ title: t(\"teacherLeave.done\", { n: res.cancelled, families: res.familiesNotified }), color: \"success\" });\n        return;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y11",
+      "what": "🔴 the result's Close button does nothing",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveSameDayResult.tsx",
+          "edits": [
+            {
+              "from": "<Button onClick={onClose}>",
+              "to": "<Button onClick={() => {}}>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y12",
+      "what": "🔴 (Sober's required) 'an admin has been told' is shown at adminsAlerted = 0",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveSameDayResult.tsx",
+          "edits": [
+            {
+              "from": "(res.adminsAlerted ?? 0) > 0 && (",
+              "to": "(res.adminsAlerted ?? 0) >= 0 && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y13",
+      "what": "🔴 (Sober's required) 'an admin has been told' is shown when adminsAlerted is ABSENT",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveSameDayResult.tsx",
+          "edits": [
+            {
+              "from": "(res.adminsAlerted ?? 0) > 0 && (",
+              "to": "(res.adminsAlerted ?? 1) > 0 && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y14",
+      "what": "🔴 the line is INFERRED from a left-as-is class instead of read from adminsAlerted",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveSameDayResult.tsx",
+          "edits": [
+            {
+              "from": "(res.adminsAlerted ?? 0) > 0 && (",
+              "to": "(res.toHandle?.length ?? 0) > 0 && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y15",
+      "what": "⚠️ the APPROVED marker is dropped from the English words (they would no longer say the owner approved them)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "// ✅ APPROVED by the owner 2026-10-21 (REQ-125 K1, TASK-829)",
+              "to": "// (REQ-125 K1, TASK-829)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y16",
+      "what": "🔴 the English words are altered (not the approved sentence)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "adminToldLeftAsIs: \"The admins have been told about",
+              "to": "adminToldLeftAsIs: \"An admin has been told about"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y17",
+      "what": "🔴 the Thai words are altered (not the approved sentence)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "adminToldLeftAsIs: \"แจ้งแอดมินแล้วเรื่องคาบที่ยังไม่มีครูรับแทน\"",
+              "to": "adminToldLeftAsIs: \"แจ้งแอดมินแล้ว\""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

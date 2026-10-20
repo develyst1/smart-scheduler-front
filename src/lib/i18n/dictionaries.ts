@@ -534,6 +534,12 @@ const en = {
     cancelRangeTitle: "Cancel {name}'s leave from {from} to {to}?",
     cancelRangeBody: "The days still ahead open for bookings with this teacher again. Days that have already begun stay as they are. Existing classes don't change. The teacher is told on LINE.",
     // ✅ APPROVED by the owner 2026-10-17 (REQ-123 Phase 1, TASK-821), COPY-REVIEW-2026-09-29.md, verbatim. The row's "N class(es) booked / Nothing booked" are TASK-818's DRAFT keys (`teacherLeave.rangeDay…`); Cancel is TASK-814's approved copy.
+    // ✅ APPROVED by the owner 2026-10-21 (REQ-125 O1 = A, "O1 A"), COPY-REVIEW-2026-09-29.md, verbatim — the two Cancel-leave confirms when the leave took the teacher off n > 0 co-taught classes:
+    // «Existing classes don't change.» becomes «{name} goes back on the {n} co-taught class(es) they were taken off when the leave was recorded. Other classes don't change.» (n = 0 keeps `cancelBody` / `cancelRangeBody` as they are.)
+    cancelBodyRestores: "That day opens for bookings with this teacher again. {name} goes back on the {n} co-taught class(es) they were taken off when the leave was recorded. Other classes don't change. The teacher is told on LINE.",
+    cancelRangeBodyRestores: "The days still ahead open for bookings with this teacher again. Days that have already begun stay as they are. {name} goes back on the {n} co-taught class(es) they were taken off when the leave was recorded. Other classes don't change. The teacher is told on LINE.",
+    // ✅ APPROVED by the owner 2026-10-21 (REQ-125 K1, TASK-829), COPY-REVIEW-2026-09-29.md, verbatim.
+    adminToldLeftAsIs: "The admins have been told about the class(es) left as they are.",
     listTitle: "Teacher leave",
     listUpcoming: "Upcoming",
     listPast: "Past",
@@ -2760,6 +2766,11 @@ const th: typeof en = {
     cancelRangeTitle: "ยกเลิกวันลาของครู {name} ตั้งแต่ {from} ถึง {to}?",
     cancelRangeBody: "วันที่ยังไม่ถึงจะกลับมาจองคาบกับครูได้ตามปกติ วันที่เริ่มหรือผ่านไปแล้วคงไว้ตามเดิม คาบที่มีอยู่แล้วไม่มีอะไรเปลี่ยน และระบบจะแจ้งครูทาง LINE",
     // ✅ อนุมัติโดยเจ้าของ 2026-10-17 (REQ-123 Phase 1, TASK-821) — COPY-REVIEW-2026-09-29.md — ตามต้นฉบับทุกตัวอักษร · "จองไว้ N คาบ / ไม่มีคาบ" ของแถวใช้คำร่างของ TASK-818 · ปุ่มยกเลิกวันลาใช้คำที่อนุมัติแล้วของ TASK-814
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-21 (REQ-125 O1 = A, "O1 A") — COPY-REVIEW-2026-09-29.md — ตามต้นฉบับทุกตัวอักษร — หน้ายืนยันยกเลิกวันลา 2 หน้า เมื่อวันลาที่บันทึกนำครูออกจากคาบที่สอนร่วม n > 0 คาบ: ประโยค «คาบที่มีอยู่แล้วไม่มีอะไรเปลี่ยน» ถูกแทนด้วยประโยคใหม่ (n = 0 ใช้ `cancelBody` / `cancelRangeBody` เดิมทุกตัวอักษร)
+    cancelBodyRestores: "วันนั้นจะกลับมาจองคาบกับครูได้ตามปกติ ครู {name} จะกลับเข้าคาบที่สอนร่วม {n} คาบที่ถูกนำออกไปตอนบันทึกลา คาบอื่นไม่มีอะไรเปลี่ยน และระบบจะแจ้งครูทาง LINE",
+    cancelRangeBodyRestores: "วันที่ยังไม่ถึงจะกลับมาจองคาบกับครูได้ตามปกติ วันที่เริ่มหรือผ่านไปแล้วคงไว้ตามเดิม ครู {name} จะกลับเข้าคาบที่สอนร่วม {n} คาบที่ถูกนำออกไปตอนบันทึกลา คาบอื่นไม่มีอะไรเปลี่ยน และระบบจะแจ้งครูทาง LINE",
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-21 (REQ-125 K1, TASK-829) — COPY-REVIEW-2026-09-29.md — ตามต้นฉบับทุกตัวอักษร
+    adminToldLeftAsIs: "แจ้งแอดมินแล้วเรื่องคาบที่ยังไม่มีครูรับแทน",
     listTitle: "การลาของครู",
     listUpcoming: "ที่จะถึง",
     listPast: "ที่ผ่านมา",

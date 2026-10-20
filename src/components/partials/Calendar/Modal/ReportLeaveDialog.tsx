@@ -16,6 +16,7 @@ import { StatusChip } from "@/components/common/BookingBadges";
 import TeacherPick from "./LeaveTeacherPick";
 import LeaveClassRow, { LeaveCannotNote, LeaveContinuesRow } from "../LeaveClassRow";
 import LeaveWillDo from "./LeaveWillDo";
+import LeaveSameDayResult from "./LeaveSameDayResult";
 import LeaveClassOpener from "../LeaveClassOpener";
 import { leaveRangeIssue, rangeIssueFromError } from "./leave-range";
 import type { LeaveDayClass, OwnLeaveResult } from "@/types/api/contract";
@@ -90,6 +91,8 @@ export default function ReportLeaveDialog({
   const rangeIssue = onBehalf && date !== "" ? leaveRangeIssue(date, dateTo) : null;
   // 🔴 TASK-822 (F2) — "Open" on a class of the result: the real booking modal (the admin's door only).
   const [openClass, setOpenClass] = useState<LeaveDayClass | null>(null);
+  // 🔴 TASK-829 — a teacher's own SAME-DAY answer that involved a co-taught class stays ON SCREEN (continues · cancelled · left as it is) instead of closing on a toast.
+  const [sameDay, setSameDay] = useState<OwnLeaveResult | null>(null);
   // 🔴 The read is scoped to whoever asked ⇒ on the ADMIN door it would be the admin's own day. It is not asked for at
   // all there (`enabled: !onBehalf`): 🔑 *not fetched and ignored — a request whose answer must never be shown should
   // not be made.*
@@ -132,6 +135,12 @@ export default function ReportLeaveDialog({
         setDone(res);
         return;
       }
+      // 🔴 TASK-829 (REQ-125 K1) — the same-day answer carries `continues` / `toHandle` ONLY when a co-taught class was involved: then show what happened (a class left as it is must not vanish
+      // behind a toast). A sole-teacher-only day has neither key and falls through to today's toast + close, unchanged.
+      if (!isAdvanceResult(res) && ((res.continues?.length ?? 0) > 0 || (res.toHandle?.length ?? 0) > 0)) {
+        setSameDay(res);
+        return;
+      }
       if (isAdvanceResult(res)) {
         setDone(res);
         return;
@@ -160,7 +169,9 @@ export default function ReportLeaveDialog({
             {error}
           </Alert>
         )}
-        {done?.mode === "advance-range" ? (
+        {sameDay ? (
+          <LeaveSameDayResult res={sameDay} rows={rows} onClose={onClose} />
+        ) : done?.mode === "advance-range" ? (
           <RangeResult done={done} name={subject?.name ?? ""} onClose={onClose} onOpenClass={setOpenClass} />
         ) : done ? (
           /* 🔴 TASK-588 — the advance result, in @Jason's §15 order: the day is blocked · these classes are already booked
@@ -356,6 +367,7 @@ export default function ReportLeaveDialog({
           to={isRange ? dateTo : date}
           advance={advance}
           ticked={ticked}
+          ownRows={rows}
         />
         <Group justify="flex-end" gap="sm">
           <Button variant="subtle" onClick={onClose}>

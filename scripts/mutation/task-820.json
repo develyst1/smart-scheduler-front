@@ -1,5 +1,5 @@
 {
-  "_why": "TASK-820 (FE). One clicked test file (the panel, Open, Cancel per day and for the range). Each mutation breaks WHICH days / WHICH class / WHO may cancel / WHICH request goes out, in a way the screen would not make obvious. Written with the set; nothing reconstructed.",
+  "_why": "TASK-820 (FE). One clicked test file (the panel, Open, Cancel per day and for the range). Each mutation breaks WHICH days / WHICH class / WHO may cancel / WHICH request goes out, in a way the screen would not make obvious. Written with the set; nothing reconstructed. P11's anchor follows the per-day Cancel's new `restores` prop (REQ-125 O1).",
   "tests": [
     "src/components/partials/Calendar/leave-panel-task820.dom.test.tsx",
     "src/components/partials/Calendar/lift-leave-task814.dom.test.tsx",
@@ -164,7 +164,7 @@
           "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
           "edits": [
             {
-              "from": "                <CancelLeaveButton teacherId={d.teacherId} teacherName={d.teacherName} date={d.date} />\n",
+              "from": "                <CancelLeaveButton teacherId={d.teacherId} teacherName={d.teacherName} date={d.date} restores={d.continues?.length ?? 0} />\n",
               "to": ""
             }
           ]

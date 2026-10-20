@@ -1,5 +1,5 @@
 {
-  "_why": "TASK-828 (FE). One clicked test file (the preview-driven P7 counts, the record result, the panel, the strip, the approved strings). Each mutation breaks WHAT a count says (a co-taught class cancelled / handled / continuing), WHERE the number comes from (the server's preview, never additionalTeachers), or what a continuing / left-as-is class looks like. Written with the set; nothing reconstructed.",
+  "_why": "TASK-828 (FE). One clicked test file (the preview-driven P7 counts, the record result, the panel, the strip, the approved strings). Each mutation breaks WHAT a count says (a co-taught class cancelled / handled / continuing), WHERE the number comes from (the server's preview, never additionalTeachers), or what a continuing / left-as-is class looks like. Written with the set; nothing reconstructed. W1/W3/W4 anchors follow the own-door tail of LeaveWillDo (TASK-828 rework, TEST-111): cancels = outcome `cancel` only; X1..X4 are the rework's bites.",
   "tests": [
     "src/components/partials/Calendar/Modal/leave-co-taught-task828.dom.test.tsx",
     "src/components/partials/Calendar/Modal/leave-range-task818.dom.test.tsx"
@@ -7,13 +7,13 @@
   "mutations": [
     {
       "id": "W1",
-      "what": "🔴 'cancels N' counts EVERY ticked class — a co-taught class that continues is told to the teacher as cancelled",
+      "what": "🔴 'cancels N' counts EVERY ticked class — a co-taught class that continues, and a D4 class left as it is, are told to the teacher as cancelled",
       "files": [
         {
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "ticked.filter((id) => outcome.get(id) !== \"continues\").length",
+              "from": "ticked.filter((id) => outcome.get(id) === \"cancel\").length",
               "to": "ticked.length"
             }
           ]
@@ -43,8 +43,8 @@
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "const n = counts.toHandle + counts.cannot;",
-              "to": "const n = counts.toHandle + counts.cannot + counts.continues;"
+              "from": "{ n: counts.toHandle + counts.cannot }",
+              "to": "{ n: counts.toHandle + counts.cannot + counts.continues }"
             }
           ]
         }
@@ -58,8 +58,8 @@
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "const n = counts.toHandle + counts.cannot;",
-              "to": "const n = counts.toHandle;"
+              "from": "{ n: counts.toHandle + counts.cannot }",
+              "to": "{ n: counts.toHandle }"
             }
           ]
         }
@@ -330,6 +330,66 @@
             {
               "from": "กรุณาจัดการคาบนี้ในปฏิทิน\",",
               "to": "กรุณาจัดการคาบนี้ด้วยตนเอง\","
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "X1",
+      "what": "🔴 (TEST-111 F1, required) a `cannot` (D4) class is COUNTED AS A CANCEL — the old behaviour: 'cancels 2' when the server cancels 1",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "outcome.get(id) === \"cancel\"",
+              "to": "outcome.get(id) !== \"continues\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "X2",
+      "what": "🔴 (TEST-111 F2, required) the teacher's door has no co-taught line on a FUTURE day",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "      {counts.continues > 0 && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">",
+              "to": "      {!advance && counts.continues > 0 && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "X3",
+      "what": "🔴 the D4 sentence is not shown on the teacher's door",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "      {d4.map((x) => (",
+              "to": "      {false && d4.map((x) => ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "X4",
+      "what": "🔴 the D4 sentence is drawn under EVERY class that is not continuing (a plain cancelled one too)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": ".filter((c) => c.outcome === \"cannot\")",
+              "to": ".filter((c) => c.outcome !== \"continues\")"
             }
           ]
         }

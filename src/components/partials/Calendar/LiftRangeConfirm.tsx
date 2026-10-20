@@ -22,6 +22,7 @@ export default function LiftRangeConfirm({
   teacherName,
   from,
   to,
+  restoreN = 0,
 }: {
   opened: boolean;
   onClose: () => void;
@@ -29,6 +30,8 @@ export default function LiftRangeConfirm({
   teacherName: string;
   from: string;
   to: string;
+  /** 🔴 REQ-125 O1 — the co-taught classes the range's FUTURE days took the teacher off (the list's `continues`, summed over those days); n > 0 ⇒ the approved restoring body, 0 ⇒ today's. */
+  restoreN?: number;
 }) {
   const t = useT();
   const lift = useLiftLeaveRange();
@@ -59,7 +62,7 @@ export default function LiftRangeConfirm({
       data-lift-range-dialog={rangeId}
     >
       <Stack gap="md">
-        <Text size="sm">{t("leaveDays.cancelRangeBody")}</Text>
+        <Text size="sm">{restoreN > 0 ? t("leaveDays.cancelRangeBodyRestores", { name: teacherName, n: restoreN }) : t("leaveDays.cancelRangeBody")}</Text>
         {error && (
           <Text size="sm" c="red" data-lift-range-error>
             {error}
