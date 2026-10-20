@@ -10,6 +10,7 @@ import {
   Text,
   UnstyledButton,
 } from "@mantine/core";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { ChartTip } from "./ChartTip";
 import {
@@ -167,7 +168,7 @@ export function DemographicsSection({
         })()}
       </Panel>
 
-      {/* Address — Province / District toggle, ranked bars. District is not in the live API yet. */}
+      {/* Address — Province / District toggle, ranked bars; a district row expands to its แขวง/ตำบล. */}
       <Panel
         title={t("som.addressTitle")}
         data={address}
@@ -184,7 +185,13 @@ export function DemographicsSection({
           />
         }
       >
-        <RankedBars key={addrView} data={address} />
+        <RankedBars
+          key={addrView}
+          data={address}
+          drill={
+            addrView === "district" ? demo.subdistrictByDistrict : undefined
+          }
+        />
       </Panel>
     </SimpleGrid>
   );
@@ -235,48 +242,86 @@ function Panel({
   );
 }
 
-// Module-level (not nested) so its own "Show all" state survives the parent re-rendering.
-function RankedBars({ data }: { data: Breakdown }) {
+// Module-level (not nested) so its own "Show all" / expanded state survives the parent re-rendering.
+// `drill` (District only): sub-breakdowns keyed by the row's key — a row that has one gets a chevron and expands
+// in place to its sub-areas (แขวง/ตำบล); several rows can be open at once. A row missing from `drill` has no data.
+function RankedBars({
+  data,
+  drill,
+}: {
+  data: Breakdown;
+  drill?: Record<string, Breakdown>;
+}) {
   const { t } = useI18n();
   const [all, setAll] = useState(false);
+  const [open, setOpen] = useState<Set<string>>(() => new Set());
   const rows = data.buckets.filter(
     (b) => b.key !== SOM_UNKNOWN_KEY && b.count > 0,
   );
   const shown = all ? rows : rows.slice(0, TOP_N);
   const max = Math.max(1, ...rows.map((b) => b.count));
+  const toggle = (key: string) =>
+    setOpen((s) => {
+      const next = new Set(s);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
   return (
     <Stack gap={6}>
       {shown.map((b) => {
         const p = data.known > 0 ? Math.round((b.count / data.known) * 100) : 0;
+        const sub = drill?.[b.key];
+        const expanded = !!sub && open.has(b.key);
+        const tip = t("som.chartTip", {
+          name: b.label || b.key,
+          n: b.count,
+          pct: p,
+        });
+        const cols = drill
+          ? "grid-cols-[1rem_minmax(0,9rem)_minmax(0,1fr)_auto]"
+          : "grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto]";
+        const rowBody = (
+          <>
+            {drill && (
+              <span className="flex justify-center text-muted-400">
+                {sub &&
+                  (expanded ? (
+                    <ChevronDown size={14} aria-hidden />
+                  ) : (
+                    <ChevronRight size={14} aria-hidden />
+                  ))}
+              </span>
+            )}
+            <Text size="sm">{b.label || b.key}</Text>
+            <Bar value={b.count} max={max} color="blue.5" />
+            <Text size="xs" c="dimmed" className="w-16 text-right tabular-nums">
+              {b.count} · {p}%
+            </Text>
+          </>
+        );
         return (
-          <ChartTip
-            key={b.key}
-            label={t("som.chartTip", {
-              name: b.label || b.key,
-              n: b.count,
-              pct: p,
-            })}
-          >
-            <div className="grid cursor-default grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-3 rounded hover:bg-muted-50">
-              <Text size="sm">{b.label || b.key}</Text>
-              <div className="h-2 overflow-hidden rounded bg-muted-100">
+          <div key={b.key}>
+            <ChartTip label={tip}>
+              {sub ? (
+                <UnstyledButton
+                  onClick={() => toggle(b.key)}
+                  aria-expanded={expanded}
+                  className={`grid w-full ${cols} items-center gap-3 rounded text-left hover:bg-muted-50`}
+                >
+                  {rowBody}
+                </UnstyledButton>
+              ) : (
                 <div
-                  className="h-full rounded"
-                  style={{
-                    width: `${(b.count / max) * 100}%`,
-                    backgroundColor: colorVar("blue.5"),
-                  }}
-                />
-              </div>
-              <Text
-                size="xs"
-                c="dimmed"
-                className="w-16 text-right tabular-nums"
-              >
-                {b.count} · {p}%
-              </Text>
-            </div>
-          </ChartTip>
+                  className={`grid cursor-default ${cols} items-center gap-3 rounded hover:bg-muted-50`}
+                >
+                  {rowBody}
+                </div>
+              )}
+            </ChartTip>
+            {expanded && sub && <SubRows data={sub} />}
+          </div>
         );
       })}
       {rows.length > TOP_N && (
@@ -288,5 +333,80 @@ function RankedBars({ data }: { data: Breakdown }) {
         </UnstyledButton>
       )}
     </Stack>
+  );
+}
+
+// One district's sub-areas, indented under its row. Every sub-area is shown (the API sends them all, largest
+// first); "Not specified" is shown dimmed when it has anyone. % = share of the district's own total.
+function SubRows({ data }: { data: Breakdown }) {
+  const { t } = useI18n();
+  const rows = data.buckets.filter((b) => b.count > 0);
+  const max = Math.max(1, ...rows.map((b) => b.count));
+  if (rows.length === 0) {
+    return (
+      <Text size="xs" c="dimmed" className="mb-1 ml-7 mt-1">
+        {t("som.noData")}
+      </Text>
+    );
+  }
+  return (
+    <Stack gap={4} className="mb-2 ml-7 mt-1 border-l border-muted-200 pl-3">
+      {rows.map((b) => {
+        const unknown = b.key === SOM_UNKNOWN_KEY;
+        const name = unknown ? t("som.unknown") : b.label || b.key;
+        const p = data.total > 0 ? Math.round((b.count / data.total) * 100) : 0;
+        return (
+          <ChartTip
+            key={b.key}
+            label={t("som.chartTip", { name, n: b.count, pct: p })}
+          >
+            <div className="grid cursor-default grid-cols-[minmax(0,8rem)_minmax(0,1fr)_auto] items-center gap-3 rounded hover:bg-muted-50">
+              <Text size="xs" c={unknown ? "dimmed" : undefined}>
+                {name}
+              </Text>
+              <Bar
+                value={b.count}
+                max={max}
+                color={unknown ? "gray.4" : "blue.3"}
+                thin
+              />
+              <Text
+                size="xs"
+                c="dimmed"
+                className="w-16 text-right tabular-nums"
+              >
+                {b.count} · {p}%
+              </Text>
+            </div>
+          </ChartTip>
+        );
+      })}
+    </Stack>
+  );
+}
+
+function Bar({
+  value,
+  max,
+  color,
+  thin,
+}: {
+  value: number;
+  max: number;
+  color: string;
+  thin?: boolean;
+}) {
+  return (
+    <div
+      className={`${thin ? "h-1.5" : "h-2"} overflow-hidden rounded bg-muted-100`}
+    >
+      <div
+        className="h-full rounded"
+        style={{
+          width: `${(value / max) * 100}%`,
+          backgroundColor: colorVar(color),
+        }}
+      />
+    </div>
   );
 }

@@ -74,6 +74,28 @@ const mockSom = (): SomReport => {
         ],
         20,
       ),
+      // Keyed by the district row's key; "10-sathon" deliberately absent (= no sub-area data).
+      subdistrictByDistrict: {
+        "10-bangrak": {
+          buckets: [
+            { key: "100401", label: "สีลม", count: 2 },
+            { key: "100403", label: "สี่พระยา", count: 1 },
+            { key: SOM_UNKNOWN_KEY, count: 0 },
+          ],
+          known: 3,
+          unknown: 0,
+          total: 3,
+        },
+        "83-kathu": {
+          buckets: [
+            { key: "830202", label: "ป่าตอง", count: 1 },
+            { key: SOM_UNKNOWN_KEY, count: 0 },
+          ],
+          known: 1,
+          unknown: 0,
+          total: 1,
+        },
+      },
       province: bd(
         [
           { key: "กรุงเทพมหานคร", count: 4 },
