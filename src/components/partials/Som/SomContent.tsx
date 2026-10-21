@@ -72,12 +72,10 @@ export default function SomContent() {
 
   const {
     existingCustomers: ec,
-    sportShare,
     newVsRenewing: nvr,
     demographics: demo,
     today,
   } = data;
-  const confirmed = today.confirmed ?? today.expected;
 
   return (
     <Stack gap="lg">
@@ -89,17 +87,14 @@ export default function SomContent() {
           {t("som.todayTitle")}
         </SectionHeading>
         <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="sm">
-          {/* New contract first (§1); the legacy `expected` is only a fallback for servers/mocks without it. */}
-          <Stat label={t("som.confirmed")} value={confirmed} />
+          {/* New contract only (§1). A missing / null field shows "—" — never the legacy `expected`, which the
+              server keeps at its old value. */}
+          <Stat label={t("som.confirmed")} value={today.confirmed ?? "—"} />
           <Stat label={t("som.attended")} value={today.attended} accent />
           <Stat
             label={t("som.attendanceRate")}
             value={
-              today.attendanceRate !== undefined
-                ? `${today.attendanceRate}%`
-                : confirmed > 0
-                  ? `${Math.round((today.attended / confirmed) * 100)}%`
-                  : "—"
+              today.attendanceRate != null ? `${today.attendanceRate}%` : "—"
             }
           />
         </SimpleGrid>
@@ -111,19 +106,13 @@ export default function SomContent() {
           {t("som.existingTitle")}
         </SectionHeading>
         <SimpleGrid cols={{ base: 2, sm: 3, lg: 5 }} spacing="sm">
-          {/* New contract first (§2). The server keeps the legacy fields at their old, buggy values (Active Course
-              counted ended/paused courses, Trial counted cancellations) — they are only a fallback. */}
-          <Stat
-            label={t("som.byCourse")}
-            value={ec.activeCourse ?? ec.byCourse}
-          />
-          <Stat
-            label={t("som.byVoucher")}
-            value={ec.activeVoucher ?? ec.byVoucher}
-          />
+          {/* New contract only (§2). A missing / null field shows "—" — never the legacy fields, which the server
+              keeps at their old, buggy values (Active Course counted ended/paused courses, Trial counted cancellations). */}
+          <Stat label={t("som.byCourse")} value={ec.activeCourse ?? "—"} />
+          <Stat label={t("som.byVoucher")} value={ec.activeVoucher ?? "—"} />
           <Stat
             label={t("som.byRecentTrial")}
-            value={ec.recentFirstTrial ?? ec.byRecentTrial}
+            value={ec.recentFirstTrial ?? "—"}
           />
           <Stat
             label={t("som.byRecentSingle")}
@@ -131,7 +120,7 @@ export default function SomContent() {
           />
           <Stat
             label={t("som.totalCustomers")}
-            value={ec.totalCustomers ?? ec.total}
+            value={ec.totalCustomers ?? "—"}
             accent
           />
         </SimpleGrid>
@@ -150,8 +139,8 @@ export default function SomContent() {
         <SectionHeading scope={monthLabel}>
           {t("som.newVsRenewingTitle")}
         </SectionHeading>
-        {/* 1st Trial and Renew read live fields; the other four are preview-filled until the API ships them —
-            see docs/backend-som-dashboard.md §3 */}
+        {/* Every card reads the new contract (§3); a missing / null field shows "—" (never the legacy fields).
+            Clicking a card opens its detail table. */}
         <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
           {NVR_BUCKETS.map((b) => (
             <Stat
@@ -165,7 +154,6 @@ export default function SomContent() {
         <p className="mt-1.5 text-xs text-muted-400">{t("som.nvrHint")}</p>
         <NvrDetailModal
           bucket={nvrOpen}
-          count={nvrOpen ? Number(nvrValue(nvrOpen)) || 0 : 0}
           query={query}
           onClose={() => setNvrOpen(null)}
         />
@@ -176,7 +164,7 @@ export default function SomContent() {
         <SectionHeading scope={monthLabel}>
           {t("som.coachCapacityTitle")}
         </SectionHeading>
-        <CoachCapacitySection data={data.coachCapacity} month={query.month} />
+        <CoachCapacitySection data={data.coachCapacity} />
       </section>
 
       {/* 5. Demographics */}
@@ -192,10 +180,7 @@ export default function SomContent() {
         <SectionHeading scope={monthLabel}>
           {t("som.sportShareTitle")}
         </SectionHeading>
-        <ActivityProgramSection
-          data={data.activityProgram}
-          legacy={sportShare}
-        />
+        <ActivityProgramSection data={data.activityProgram} />
       </section>
     </Stack>
   );
@@ -204,10 +189,10 @@ export default function SomContent() {
   function nvrValue(b: NvrBucket): number | string {
     const v = data!.newVsRenewing;
     const n = {
-      firstTrial: v.firstTrial ?? v.newByFirstTrial,
+      firstTrial: v.firstTrial,
       newCourseThisMonth: v.newCourseThisMonth,
       newCoursePrevMonth: v.newCoursePrevMonth,
-      renewCourse: v.renewCourse ?? v.renewing,
+      renewCourse: v.renewCourse,
       trialNotConverted: v.trialNotConverted,
       notRenewed: v.notRenewed,
     }[b];

@@ -1867,6 +1867,8 @@ const en = {
     nvrTeacherFilter: "Teacher (course or 1st Trial)",
     nvrAllTeachers: "All teachers",
     nvrRowCount: "{n} rows",
+    nvrLoadError: "Couldn't load the list",
+    retry: "Try again",
     nvrCol: {
       student: "Student",
       package: "Package",
@@ -3928,6 +3930,8 @@ const th: typeof en = {
     nvrTeacherFilter: "ครู (คอร์สหรือทดลองเรียน)",
     nvrAllTeachers: "ครูทุกคน",
     nvrRowCount: "{n} รายการ",
+    nvrLoadError: "โหลดรายชื่อไม่สำเร็จ",
+    retry: "ลองอีกครั้ง",
     nvrCol: {
       student: "นักเรียน",
       package: "แพ็กเกจ",

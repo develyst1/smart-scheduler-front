@@ -3,10 +3,17 @@
 import { useState } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
-import { Loader, Modal, Select, Table, Text } from "@mantine/core";
+import {
+  Alert,
+  Button,
+  Loader,
+  Modal,
+  Select,
+  Table,
+  Text,
+} from "@mantine/core";
 import { useNvrDetail, useTeachers } from "@/hooks/scheduler";
 import { useI18n } from "@/lib/i18n";
-import { previewNvrRows } from "@/lib/som/preview";
 import type { NvrBucket, NvrDetailRow, SomQuery } from "@/types/app/som";
 
 type Column =
@@ -49,29 +56,17 @@ const isNewCourse = (b: NvrBucket) =>
 
 export function NvrDetailModal({
   bucket,
-  count,
   query,
   onClose,
 }: {
   bucket: NvrBucket | null;
-  /** The card's number — a preview table has exactly this many rows. */
-  count: number;
   query: SomQuery;
   onClose: () => void;
 }) {
   const { t, lang } = useI18n();
-  const { data, isLoading, isError } = useNvrDetail(bucket, query);
+  const { data, isLoading, isError, refetch } = useNvrDetail(bucket, query);
   const { data: teachers = [] } = useTeachers();
-  // Until the detail endpoint is live, show preview rows (real coach names) for the client demo — lib/som/preview.ts.
-  const rows: NvrDetailRow[] =
-    isError && bucket
-      ? previewNvrRows(
-          bucket,
-          count,
-          teachers.map((tc) => tc.id),
-          query.month,
-        )
-      : (data ?? []);
+  const rows: NvrDetailRow[] = data ?? [];
   const [teacherId, setTeacherId] = useState<string | null>(null);
 
   const teacherName = (id?: string | null) => {
@@ -142,6 +137,13 @@ export function NvrDetailModal({
         <div className="flex h-24 items-center justify-center">
           <Loader size="sm" />
         </div>
+      ) : isError ? (
+        // A failed request says so — never an empty table that reads as "nobody".
+        <Alert color="red" variant="light" title={t("som.nvrLoadError")}>
+          <Button size="xs" variant="default" mt="xs" onClick={() => refetch()}>
+            {t("som.retry")}
+          </Button>
+        </Alert>
       ) : (
         // No rows (e.g. an empty month) still draws the table so the
         // columns are visible, with the empty-state row inside it.

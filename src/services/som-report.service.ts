@@ -1,5 +1,4 @@
 import { api, useMockData } from "@/lib/api/client";
-import { fillSomPreview } from "@/lib/som/preview";
 import {
   SOM_UNKNOWN_KEY,
   type NvrBucket,
@@ -25,6 +24,14 @@ const mockSom = (): SomReport => {
       byRecentTrial: 5,
       total: 20,
       recentTrialSince: "2026-05-01",
+      month: "2026-08",
+      activeCourse: 12,
+      activeVoucher: 7,
+      recentFirstTrial: 5,
+      recentSingleSession: 4,
+      totalCustomers: 20,
+      recentFrom: "2026-06",
+      recentTo: "2026-08",
     },
     sportShare: bd(
       [
@@ -40,6 +47,12 @@ const mockSom = (): SomReport => {
       newByFirstTrial: 4,
       newByRegistration: 3,
       renewing: 2,
+      firstTrial: 4,
+      renewCourse: 2,
+      newCourseThisMonth: 3,
+      newCoursePrevMonth: 1,
+      trialNotConverted: 2,
+      notRenewed: 1,
     },
     demographics: {
       gender: bd(
@@ -112,7 +125,13 @@ const mockSom = (): SomReport => {
         20,
       ),
     },
-    today: { date: "2026-08-01", expected: 18, attended: 11 },
+    today: {
+      date: "2026-08-01",
+      expected: 18,
+      attended: 11,
+      confirmed: 18,
+      attendanceRate: 61,
+    },
     activityProgram: {
       categories: [
         {
@@ -273,12 +292,11 @@ const somParams = (q: SomQuery) => ({
 });
 
 export const getSomReport = async (q: SomQuery): Promise<SomReport> => {
-  // Fields the API does not send yet are filled with preview numbers for the client demo (lib/som/preview.ts).
-  if (useMockData) return fillSomPreview(mockSom(), q.month);
+  if (useMockData) return mockSom();
   const { data } = await api.get<SomReport>("/reports/som", {
     params: somParams(q),
   });
-  return fillSomPreview(data, q.month);
+  return data;
 };
 
 const mockNvrDetail = (bucket: NvrBucket): NvrDetailRow[] => {

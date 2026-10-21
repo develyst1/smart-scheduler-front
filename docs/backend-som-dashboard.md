@@ -10,9 +10,9 @@
 > 🔌 **หน้านี้ต่อ API จริงแล้ว** — ระหว่างรอ backend, FE ยังอ่าน field เดิมอยู่ (คอลัมน์ "Field ปัจจุบัน")
 > พอ backend ส่ง field ใหม่มา FE จะสลับไปอ่าน field ใหม่ (คอลัมน์ "Field ใหม่")
 >
-> 🧪 **ตัวเลขตัวอย่าง (client demo, 2026-10-17)** — field ใหม่ที่ API ยังไม่ส่ง FE เติมตัวเลขตัวอย่างให้ใน [`src/lib/som/preview.ts`](../src/lib/som/preview.ts)
-> (รวม `coachCapacity`, `activityProgram`, `demographics.district`, การ์ด New vs Renewing 4 ใบ, 1 HR และตาราง modal เมื่อ endpoint ยังไม่มี)
-> field ไหนที่ API ส่งมาแล้ว **ค่าจริงชนะเสมอ** — ส่งครบทุกตัวแล้วแจ้ง FE ให้ลบไฟล์นี้
+> ✅ **ลบตัวเลขตัวอย่างแล้ว (2026-10-21)** — backend ส่งครบทุก field แล้ว FE ลบ `src/lib/som/preview.ts` ออก
+> และเลิก fallback ไป field เก่าด้วย: field ใหม่ที่ไม่มี / เป็น `null` → แสดง **"—"** (ไม่เติมตัวเลขสมมติ และไม่ใช้ค่า field เก่าที่มีบั๊กแทน)
+> modal New vs Renewing ถ้า request error → แสดงข้อความ "โหลดรายชื่อไม่สำเร็จ" + ปุ่มลองอีกครั้ง (ไม่แสดงรายชื่อแต่งขึ้น)
 
 ---
 
@@ -67,9 +67,9 @@ GET /reports/som/new-vs-renewing/:bucket?month=2026-10&badgeValueIds=bv1,bv2
 
 ## 0.2 คำตอบจาก backend (2026-10-19 — back ขึ้น UAT แล้ว)
 
-**FE เปลี่ยนแล้ว:** การ์ดที่เคยอ่าน field เก่า ตอนนี้อ่าน field ใหม่ก่อน (field เก่าใช้เป็น fallback เท่านั้น)
+**FE เปลี่ยนแล้ว:** การ์ดที่เคยอ่าน field เก่า ตอนนี้อ่าน field ใหม่ **อย่างเดียว** (ตั้งแต่ 2026-10-21 เลิก fallback ไป field เก่าแล้ว — field ใหม่ว่าง = "—")
 
-| การ์ด | อ่าน (ใหม่) | fallback (เก่า — server คงค่าเดิมที่มีบั๊กไว้) |
+| การ์ด | อ่าน (ใหม่) | field เก่าที่เลิกอ่าน (server คงค่าเดิมที่มีบั๊กไว้) |
 |-------|-------------|-------------------------------------------|
 | Today · Confirmed | `today.confirmed` | `today.expected` |
 | Today · Attendance | `today.attendanceRate` (= attended ÷ confirmed) | FE คำนวณจาก confirmed |
