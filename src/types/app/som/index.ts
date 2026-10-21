@@ -159,8 +159,11 @@ export interface SomReport {
     gender: Breakdown;
     ageBand: Breakdown;
     province: Breakdown;
-    /** Not in the live API yet. Bucket `label` = "District, Province". */
+    /** Bucket `label` = "District, Province". */
     district?: Breakdown;
+    /** แขวง/ตำบล per district, keyed by the district row's `key` (same people + filters as `district`). A district
+     *  missing here has no data. Each total = that district's count in `district`. */
+    subdistrictByDistrict?: Record<string, Breakdown>;
     nationality: Breakdown;
   };
   today: TodaySection;
