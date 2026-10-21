@@ -38,7 +38,7 @@ const calendarFor = (date: string) => ({
       columns: [
         {
           teacherId: "me",
-          slots: ["m1", "m2", "m3"].map((id, i) => ({
+          slots: ["m1", "m2", "m3", "m4"].map((id, i) => ({
             startTime: `1${i}:00:00`,
             booking: {
               id,
@@ -259,6 +259,77 @@ describe("🔴 TASK-828 rework (TEST-111) — the own door's counts come ONLY fr
     mount(FUTURE);
     await waitFor(() => expect(q('[data-leave-will="block"]')).toBe(1));
     expect(q("[data-leave-co-taught]")).toBe(0);
+  });
+});
+
+describe("🔴 TASK-828 rework F3 (TEST-111 re-check) — every before-save line follows the TICKS (the act touches only the ticked sessions)", () => {
+  // 1 sole (m1) + 2 co-taught (m2, m3) + 1 D4 (m4); the dialog opens with all four ticked
+  const four = () => previewOf(TODAY, [cls("m1", "cancel"), cls("m2", "continues", ["อื่น"]), cls("m3", "continues", ["อื่น"]), { ...cls("m4", "cannot"), startTime: "13:00" }]);
+  const boxes = () => [...document.querySelectorAll('input[type="checkbox"]')] as HTMLInputElement[];
+  const untick = async (user: ReturnType<typeof userEvent.setup>, ...idx: number[]) => {
+    for (const i of idx) await user.click(boxes()[i]);
+  };
+  const lines = () => ({
+    cancel: document.querySelector('[data-leave-will="cancel"]')?.textContent ?? null,
+    coTaught: document.querySelector('[data-leave-co-taught="own"]')?.textContent ?? null,
+    d4: q("[data-leave-d4]"),
+  });
+
+  it("🔑 everything ticked ⇒ today's numbers: cancels 1, 2 go on without you, one D4 sentence", async () => {
+    ownPreview = four;
+    mount(TODAY);
+    await waitFor(() => expect(q("[data-leave-d4]")).toBe(1));
+    expect(lines()).toEqual({ cancel: "Saving cancels 1 class(es) and tells their families.", coTaught: EN_OWN(2), d4: 1 });
+  });
+
+  it("🔑 ONLY the sole class ticked ⇒ 'cancels 1', NO co-taught line, NO D4 sentence — the unticked ones are not touched", async () => {
+    ownPreview = four;
+    const user = userEvent.setup();
+    mount(TODAY);
+    await waitFor(() => expect(boxes().length).toBe(4));
+    await untick(user, 1, 2, 3);
+    await waitFor(() => expect(q("[data-leave-d4]")).toBe(0));
+    expect(lines()).toEqual({ cancel: "Saving cancels 1 class(es) and tells their families.", coTaught: null, d4: 0 });
+  });
+
+  it("🔑 the co-taught classes ticked (sole + D4 not) ⇒ the co-taught line with 2 (not the day's), no D4", async () => {
+    ownPreview = four;
+    const user = userEvent.setup();
+    mount(TODAY);
+    await waitFor(() => expect(boxes().length).toBe(4));
+    await untick(user, 3); // the D4
+    await waitFor(() => expect(q("[data-leave-d4]")).toBe(0));
+    expect(lines().coTaught).toBe(EN_OWN(2));
+    await untick(user, 1); // one of the two co-taught
+    await waitFor(() => expect(lines().coTaught).toBe(EN_OWN(1)));
+    expect(lines().d4).toBe(0);
+  });
+
+  it("🔑 the D4 class ticked on its own ⇒ its sentence, and no cancel line, no co-taught line", async () => {
+    ownPreview = four;
+    const user = userEvent.setup();
+    mount(TODAY);
+    await waitFor(() => expect(boxes().length).toBe(4));
+    await untick(user, 0, 1, 2);
+    await waitFor(() => expect(q("[data-leave-will]")).toBe(0));
+    expect(lines()).toEqual({ cancel: null, coTaught: null, d4: 1 });
+  });
+
+  it("🔑 nothing ticked ⇒ nothing is said (nothing will be touched)", async () => {
+    ownPreview = four;
+    const user = userEvent.setup();
+    mount(TODAY);
+    await waitFor(() => expect(boxes().length).toBe(4));
+    await untick(user, 0, 1, 2, 3);
+    await waitFor(() => expect(q("[data-leave-d4]") + q("[data-leave-co-taught]") + q("[data-leave-will]")).toBe(0));
+  });
+
+  it("🔑 a FUTURE day records the WHOLE day (no chooser, no ticks): the co-taught line counts every continuing class", async () => {
+    ownPreview = () => previewOf(FUTURE, [cls("m1", "toHandle"), cls("m2", "continues", ["อื่น"]), cls("m3", "continues", ["อื่น"]), cls("m4", "cannot")]);
+    mount(FUTURE);
+    await waitFor(() => expect(q('[data-leave-co-taught="own"]')).toBe(1));
+    expect(document.querySelector('[data-leave-co-taught="own"]')?.textContent).toBe(EN_OWN(2));
+    expect(document.querySelector('[data-leave-will="block"]')?.textContent).toContain("2 class(es) stay");
   });
 });
 

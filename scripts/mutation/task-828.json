@@ -1,5 +1,5 @@
 {
-  "_why": "TASK-828 (FE). One clicked test file (the preview-driven P7 counts, the record result, the panel, the strip, the approved strings). Each mutation breaks WHAT a count says (a co-taught class cancelled / handled / continuing), WHERE the number comes from (the server's preview, never additionalTeachers), or what a continuing / left-as-is class looks like. Written with the set; nothing reconstructed. W1/W3/W4 anchors follow the own-door tail of LeaveWillDo (TASK-828 rework, TEST-111): cancels = outcome `cancel` only; X1..X4 are the rework's bites.",
+  "_why": "TASK-828 (FE). One clicked test file (the preview-driven P7 counts, the record result, the panel, the strip, the approved strings). Each mutation breaks WHAT a count says (a co-taught class cancelled / handled / continuing), WHERE the number comes from (the server's preview, never additionalTeachers), or what a continuing / left-as-is class looks like. Written with the set; nothing reconstructed. W1/W3/W4 anchors follow the own-door tail of LeaveWillDo (TASK-828 rework, TEST-111): cancels = outcome `cancel` only; X1..X4 are the rework's bites. F3 (TEST-111 re-check): W1/W3/W4/X1/X4 anchors follow the filtered `scope`; F3a-d are the rework's bites.",
   "tests": [
     "src/components/partials/Calendar/Modal/leave-co-taught-task828.dom.test.tsx",
     "src/components/partials/Calendar/Modal/leave-range-task818.dom.test.tsx"
@@ -13,7 +13,7 @@
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "ticked.filter((id) => outcome.get(id) === \"cancel\").length",
+              "from": "scope.filter((c) => c.outcome === \"cancel\").length",
               "to": "ticked.length"
             }
           ]
@@ -28,7 +28,7 @@
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "      {counts.continues > 0 && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">",
+              "from": "      {continuesN > 0 && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">",
               "to": "      {false && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">"
             }
           ]
@@ -43,8 +43,8 @@
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "{ n: counts.toHandle + counts.cannot }",
-              "to": "{ n: counts.toHandle + counts.cannot + counts.continues }"
+              "from": "{ n: blockN }",
+              "to": "{ n: blockN + counts.continues }"
             }
           ]
         }
@@ -58,8 +58,8 @@
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "{ n: counts.toHandle + counts.cannot }",
-              "to": "{ n: counts.toHandle }"
+              "from": "scope.filter((c) => c.outcome === \"toHandle\" || c.outcome === \"cannot\").length",
+              "to": "scope.filter((c) => c.outcome === \"toHandle\").length"
             }
           ]
         }
@@ -343,8 +343,8 @@
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "outcome.get(id) === \"cancel\"",
-              "to": "outcome.get(id) !== \"continues\""
+              "from": "scope.filter((c) => c.outcome === \"cancel\").length",
+              "to": "scope.filter((c) => c.outcome === \"cancel\" || c.outcome === \"cannot\").length"
             }
           ]
         }
@@ -358,8 +358,8 @@
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "      {counts.continues > 0 && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">",
-              "to": "      {!advance && counts.continues > 0 && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">"
+              "from": "      {continuesN > 0 && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">",
+              "to": "      {!advance && continuesN > 0 && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">"
             }
           ]
         }
@@ -390,6 +390,66 @@
             {
               "from": ".filter((c) => c.outcome === \"cannot\")",
               "to": ".filter((c) => c.outcome !== \"continues\")"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F3a",
+      "what": "🔴 (Sober's required) the co-taught n comes from `day.counts` (the WHOLE day) instead of the ticked classes",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "const continuesN = scope.filter((c) => c.outcome === \"continues\").length;",
+              "to": "const continuesN = counts.continues;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F3b",
+      "what": "🔴 (Sober's required) the D4 sentence is shown for an UNTICKED D4 class",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "const d4 = scope\n    .filter((c) => c.outcome === \"cannot\")",
+              "to": "const d4 = day\n    .filter((c) => c.outcome === \"cannot\")"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F3c",
+      "what": "🔴 the cancel count ignores the ticks (every `cancel` of the day)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "const cancelN = scope.filter((c) => c.outcome === \"cancel\").length;",
+              "to": "const cancelN = day.filter((c) => c.outcome === \"cancel\").length;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F3d",
+      "what": "🔴 the scope is always the whole day (the ticks are never applied)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "const scope = advance ? day : day.filter((c) => tickedIds.has(c.bookingId));",
+              "to": "const scope = day;"
             }
           ]
         }

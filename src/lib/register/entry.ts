@@ -30,16 +30,15 @@ export const toCustomerDate = (widgetValue: string | null): string =>
 export interface AreaPick {
   code: string;
   nameTh: string;
+  nameEn: string;
 }
 /**
- * 🔴 **TASK-580 §2 (Tanya's F-D) — `nameEn` is GONE from this type, deliberately.**
- *
- * The dataset ships **garbled** English (*"Khnong Tntnai"* for คลองตันเหนือ), and TASK-355 used it for the option label in
- * EN mode — the ONE place any of it reached a screen. **The Thai is correct, and the Thai is what we store and send**, so the
- * value was never wrong; only the label was. ⇒ **Thai names in both languages** (the FIELD labels are still translated).
- * 🚫 We do not own the package's strings and did not patch them. 🔑 **Removing the field rather than the call site means a
- * future reader arrives as a compile error instead of as garbled text on a parent's phone** — TASK-545's rule, reused.
+ * 🔴 **TASK-830 — the English name is BACK, for the option LABEL on the EN page only.** TASK-580 §2 (Tanya's F-D) removed it because the
+ * old package's English was garbled (*"Khnong Tntnai"*); the dataset is now ours (TASK-800/801) and TASK-803's DOPA corrections fixed it.
+ * ✅ Unchanged: the option VALUE is the geocode, and what is picked, joined, sent and stored is `nameTh` — the TH page is byte-identical.
+ * `nameEn` is DISPLAY only; a row with no English falls back to the Thai (`areaLabel`), never to a blank.
  */
+export const areaLabel = (r: AreaPick, lang: string) => (lang === "th" ? r.nameTh : r.nameEn || r.nameTh);
 
 /**
  * `§7b` — Bangkok's tiers are **เขต / แขวง**; every other province's are **อำเภอ / ตำบล** (the two words are
@@ -80,9 +79,9 @@ export interface AddressBook {
 }
 
 /** Rows come per postal code, so a sub-district with two codes appears twice — collapse on the geocode. */
-const uniqueByCode = (rows: { code: string; nameTh: string }[]): AreaPick[] => {
+const uniqueByCode = (rows: { code: string; nameTh: string; nameEn: string }[]): AreaPick[] => {
   const seen = new Map<string, AreaPick>();
-  for (const r of rows) if (!seen.has(r.code)) seen.set(r.code, { code: r.code, nameTh: r.nameTh });
+  for (const r of rows) if (!seen.has(r.code)) seen.set(r.code, { code: r.code, nameTh: r.nameTh, nameEn: r.nameEn });
   return [...seen.values()];
 };
 
@@ -112,7 +111,7 @@ export const loadAddressBook = async (): Promise<AddressBook> => {
       .then((res) => {
         // (a rejection, not a `throw`: §7a pins that this file holds no `throw` — the date reorder above is the Rule-1 subject)
         if (!res.ok) return Promise.reject(new Error(`area list ${path}: ${res.status}`));
-        return res.json() as Promise<{ code: string; nameTh: string }[]>;
+        return res.json() as Promise<{ code: string; nameTh: string; nameEn: string }[]>;
       })
       .then((rows) => uniqueByCode(rows));
     kept.set(path, p);

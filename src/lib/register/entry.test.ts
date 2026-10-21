@@ -136,14 +136,13 @@ describe("§7b — the address book: three lazy routes, by CODE (TASK-801)", () 
     expect(asked.length).toBe(3);
   });
 
-  it("🔑 rows are { code, nameTh } in the server's order — the English name never rides the row (TASK-580)", async () => {
+  it("🔑 rows are { code, nameTh, nameEn } in the server's order — the English name rides along for the EN label (TASK-830)", async () => {
     const book = await loadAddressBook();
     expect(book.provinces).toEqual([
-      { code: "10", nameTh: "กรุงเทพมหานคร" },
-      { code: "50", nameTh: "เชียงใหม่" },
-      { code: "38", nameTh: "บึงกาฬ" },
+      { code: "10", nameTh: "กรุงเทพมหานคร", nameEn: "Bangkok" },
+      { code: "50", nameTh: "เชียงใหม่", nameEn: "Chiang Mai" },
+      { code: "38", nameTh: "บึงกาฬ", nameEn: "Bueng Kan" },
     ]);
-    expect(JSON.stringify(book.provinces)).not.toContain("nameEn");
   });
 
   it("🔑 lookups are by CODE because district NAMES repeat — จอมทอง is in both Bangkok and Chiang Mai, kept apart", async () => {

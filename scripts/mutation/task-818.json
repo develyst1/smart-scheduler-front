@@ -149,7 +149,7 @@
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "{ n: counts.toHandle + counts.cannot }",
+              "from": "{ n: blockN }",
               "to": "{ n: ticked.length }"
             }
           ]
@@ -164,7 +164,7 @@
           "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
           "edits": [
             {
-              "from": "ticked.filter((id) => outcome.get(id) === \"cancel\").length",
+              "from": "scope.filter((c) => c.outcome === \"cancel\").length",
               "to": "day.length"
             }
           ]

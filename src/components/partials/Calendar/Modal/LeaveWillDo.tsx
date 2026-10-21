@@ -11,10 +11,11 @@ import { useLeavePreview } from "@/hooks/scheduler";
  * 🔑 **Why a preview and not the numbers the dialog holds:** whether a co-taught class CONTINUES depends on whether ANOTHER teacher of it remains (not on leave that day) — a fact the
  * calendar rows (\`additionalTeachers\`) do not carry. The server answers it with the same decision the act makes ("preview = act"), so these lines can never promise what the act will not
  * do. 🚫 Until the preview has answered (or if it fails) NOTHING is said: a count we cannot back is worse than none.
- * - **The teacher's own door** (TEST-111, TASK-828 rework): every number comes from the preview's OUTCOMES — never from the session list. **Today** ⇒ "cancels N class(es) and tells their
- *   families" with N = the TICKED classes whose outcome is `cancel` (a `cannot` — D4, left as it is, no family told — is NOT a cancel, and neither is a `continues`); **a future day** ⇒
- *   "only blocks … N class(es) stay" with N = what is left to handle (`toHandle` + `cannot`). **Both days** ⇒ the approved "{n} co-taught class(es) go on with the other teachers,
- *   without you." when any class continues, and the approved D4 sentence under each `cannot` class.
+ * - **The teacher's own door** (TEST-111, TASK-828 rework + F3): every number comes from the preview's per-class OUTCOMES — never from the session list, and **never from `day.counts`
+ *   (the WHOLE day)**. **Today:** the act touches ONLY the ticked sessions (`sessionIds`), so EVERY line follows the ticks — the preview's `classes` are first filtered to the ticked ids, and the
+ *   cancel count, the co-taught count and the D4 sentence all come from that filtered list ("cancels N class(es) and tells their families": the ticked `cancel`s; a `cannot` — D4, left as it
+ *   is, no family told — is not a cancel, nor is a `continues`; the approved co-taught line and D4 sentence only for ticked classes). **A future day** records the WHOLE day (no chooser, no
+ *   ticks): "only blocks … N class(es) stay" = `toHandle` + `cannot`, plus the same co-taught line and D4 sentences, over every class.
  * - **The admin's door:** the approved "{n} co-taught class(es) will go on with the other teachers; {name} is taken off them." (its own hint above already says the rest).
  * 📌 In its own component so the dialog file holds no new data hook (TASK-406's pin lists the only ones it may).
  */
@@ -55,9 +56,11 @@ export default function LeaveWillDo({
   }
 
   const day = data.days.flatMap((d) => d.classes);
-  const outcome = new Map(day.map((c) => [c.bookingId, c.outcome] as const));
+  // 🔴 F3 — the scope of what saving touches: today ⇒ only the TICKED classes (preview = act on the same ids); an advance day ⇒ the whole day. Every count below comes from THIS list.
+  const tickedIds = new Set(ticked);
+  const scope = advance ? day : day.filter((c) => tickedIds.has(c.bookingId));
   // D4: the class stays as it is. The sentence names the MAIN teacher of that class (on the own door, that is the teacher themself — the only case a D4 can arise)
-  const d4 = day
+  const d4 = scope
     .filter((c) => c.outcome === "cannot")
     .flatMap((c) => {
       const main = ownRows.find((r) => r.id === c.bookingId)?.teachers[0];
@@ -65,15 +68,17 @@ export default function LeaveWillDo({
       const time = formatTimeDisplay(c.startTime); // formatted BEFORE it reaches `t()` (the shape sweep's rule)
       return name ? [{ id: c.bookingId, text: t("teacherLeave.cannotTakeOff", { name, time }) }] : [];
     });
-  const cancelN = ticked.filter((id) => outcome.get(id) === "cancel").length;
+  const cancelN = scope.filter((c) => c.outcome === "cancel").length;
+  const continuesN = scope.filter((c) => c.outcome === "continues").length;
+  const blockN = scope.filter((c) => c.outcome === "toHandle" || c.outcome === "cannot").length;
   const showBlock = advance; // a future day always says what saving does (it may be "0 class(es) stay")
   const showCancel = !advance && cancelN > 0;
-  if (!showBlock && !showCancel && counts.continues === 0 && d4.length === 0) return null;
+  if (!showBlock && !showCancel && continuesN === 0 && d4.length === 0) return null;
   return (
     <>
       {showBlock && (
         <Text size="sm" fw={500} data-leave-will="block">
-          {t("teacherLeave.willBlock", { n: counts.toHandle + counts.cannot })}
+          {t("teacherLeave.willBlock", { n: blockN })}
         </Text>
       )}
       {showCancel && (
@@ -81,9 +86,9 @@ export default function LeaveWillDo({
           {t("teacherLeave.willCancel", { n: cancelN })}
         </Text>
       )}
-      {counts.continues > 0 && (
+      {continuesN > 0 && (
         <Text size="sm" fw={500} data-leave-co-taught="own">
-          {t("teacherLeave.coTaughtOwn", { n: counts.continues })}
+          {t("teacherLeave.coTaughtOwn", { n: continuesN })}
         </Text>
       )}
       {d4.map((x) => (
