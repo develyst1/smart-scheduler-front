@@ -243,20 +243,6 @@ function BookingTypeRow({
 }
 
 /**
- * 🚧 TEMPORARY — sample rows shown while the day has no group-program data (the backend does not send
- * `kidsByProgram` yet, and the calendar fallback rarely has head counts filled in), so the client can see the
- * section's shape. Rendered like real data (no label, no dimming — client request) and never mixed with real rows.
- * Delete this and `SHOW_SAMPLE_WHEN_EMPTY` once `/reports/daily` ships `kidsByProgram` (docs/backend-daily-report.md §10).
- */
-const SHOW_SAMPLE_WHEN_EMPTY = true;
-const SAMPLE_PROGRAMS: DailyReport["kidsByProgram"] = [
-  { program: "GROUP", total: 8, items: [{ name: "Balance Play", kids: 3 }, { name: "Skate Crew", kids: 5 }] },
-  { program: "ECA", total: 13, items: [{ name: "STA", kids: 5 }, { name: "ISB", kids: 8 }] },
-  { program: "CAMP", total: 8, items: [{ name: "October Camp W2", kids: 8 }] },
-  { program: "OTHER", total: 10, items: [{ name: "Birthday", kids: 8 }, { name: "Rent park", kids: 2 }] },
-];
-
-/**
  * "Others Program" — kids per group program: ALWAYS four tiles (Group · ECA · Camp · Other, client request), each
  * with the program's kid total in its header and one `name … kids` line per group / school / camp / schedule.
  * A program with nothing that day keeps its tile, showing "—". Numbers carry no unit (client request). Every tile
@@ -266,13 +252,11 @@ const SAMPLE_PROGRAMS: DailyReport["kidsByProgram"] = [
 function KidsByProgramCard({ programs }: { programs: DailyReport["kidsByProgram"] }) {
   const t = useT();
   const kids = (n: number | null) => (n === null ? "—" : n);
-  const isSample = programs.every((p) => p.items.length === 0) && SHOW_SAMPLE_WHEN_EMPTY;
-  // Pad to the fixed four in fixed order, whatever the payload carries (a server may omit empty programs).
-  const shown = isSample
-    ? SAMPLE_PROGRAMS
-    : KID_PROGRAMS.map(
-        (program) => programs.find((p) => p.program === program) ?? { program, total: null, items: [] },
-      );
+  // Pad to the fixed four in fixed order, whatever the payload carries (a server may omit empty programs) — a day
+  // with no program kids shows four "—" tiles.
+  const shown = KID_PROGRAMS.map(
+    (program) => programs.find((p) => p.program === program) ?? { program, total: null, items: [] },
+  );
   return (
     <Card padding="lg">
       <Text size="sm" fw={600} mb="md">
