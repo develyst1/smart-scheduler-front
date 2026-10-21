@@ -218,7 +218,7 @@ describe("🔴 the date — DD-MM-YYYY text, echoed back before submit, omitted 
     expect(confirm).toContain("value={birthDate} />");
     expect(confirm).not.toContain("reviewSkipped");
     // 🔑 and the address row shows what will actually be USED: the household's own province when one is on file
-    expect(confirm).toContain("addressOnFile ? provinceOnFile || t(\"register.addressOnFile\") : addressLine");
+    expect(confirm).toContain("addressOnFile ? provinceOnFile || t(\"register.addressOnFile\") : addressShown");
     expect(confirm).toContain("onClick={submitCreate}");
   });
 
@@ -412,13 +412,12 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
     expect(toggle).not.toMatch(/setPhase|localStorage|fetch|reload/);
     // every `lang` on the page: the destructure, the DatesProvider locale, and (TASK-351) the tier LABEL choice — all
     // three are RENDERING; nothing keyed on it sets state (no `[lang]` effect, no setter on a `lang` branch)
-    // 🔻 TASK-580 §2 — THREE now, not four: the option LABEL no longer reads `lang`, because the dataset's English is
-    // garbled (Tanya's F-D). See the §8b pin below for the full declaration.
+    // 🔻 TASK-830 — NINE now: the option LABEL (`areaLabel(r, lang)`) and the confirm row's English join (`addressShown`: the test and the label) read `lang` again — all RENDERING, none sets state.
     // 🔻 TASK-591: SIX now. The three above, plus **the language of the SERVER's own refusal sentence** — read in the
     // duplicate branch, destructured in `FailureAlert`, and used there to pick `message.TH` / `message.EN`.
     // 🔑 **Every one of the six is still RENDERING or SELECTING; none sets state**, which is the property this pin is for.
-    expect((page.match(/\blang\b/g) ?? []).length).toBe(6);
-    expect(page).toContain("rows.map((r) => ({ value: r.code, label: r.nameTh }))");
+    expect((page.match(/\blang\b/g) ?? []).length).toBe(9);
+    expect(page).toContain("rows.map((r) => ({ value: r.code, label: areaLabel(r, lang) }))");
     expect(page).toContain("<DatesProvider settings={{ locale: lang, firstDayOfWeek: 0 }}>");
     expect(page).not.toMatch(/\[lang\]/);
     expect(page).not.toMatch(/lang [!=]== "(th|en)"[^\n]*set[A-Z]/);
@@ -497,10 +496,10 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
    * ✅ Unchanged through all three rounds: **the option VALUE is the geocode, and everything STORED or SENT is `nameTh`**
    * — the `§9.1` repair path and the report depend on the Thai spelling.
    */
-  it("§8b (TASK-580) — option labels are THAI in both languages; the JOIN and the SEND are unchanged", () => {
-    expect(page).toContain("rows.map((r) => ({ value: r.code, label: r.nameTh }))");
+  it("§8b (TASK-580 → TASK-830) — option labels follow the language (EN: our dataset's English); the JOIN and the SEND stay Thai", () => {
+    expect(page).toContain("rows.map((r) => ({ value: r.code, label: areaLabel(r, lang) }))");
     // 🔑 and it cannot come back by accident: the field is gone from the TYPE, so a future reader is a compile error
-    expect(codeOf("src/lib/register/entry.ts")).not.toContain("nameEn");
+    expect(codeOf("src/lib/register/entry.ts")).toContain("nameEn: string");
     // the right half, unchanged since TASK-351: nothing stored ever reads the English name
     expect(page).toContain(
       "joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })",
@@ -516,7 +515,7 @@ describe("§8 (TASK-350) — ONE language at a time, a prominent TH/EN toggle AB
     const confirm = page.slice(page.indexOf('phase.kind === "confirm"'), page.indexOf('phase.kind === "done"'));
     // 🔴 TASK-566 — see the confirm-screen pin: no `(skipped)` fallback exists now. The LINE is still what is echoed
     // when the household has no address on file, which is what this pin is about.
-    expect(confirm).toContain(": addressLine} />");
+    expect(confirm).toContain(": addressShown} />");
     expect(confirm).not.toMatch(/nameEn|\blang\b/);
   });
 
@@ -573,7 +572,7 @@ describe("§9 (TASK-353) — the PROVINCE travels as its own field, full name; t
     const confirm = page.slice(page.indexOf('phase.kind === "confirm"'), page.indexOf('phase.kind === "done"'));
     // 🔴 TASK-566 — see the confirm-screen pin: no `(skipped)` fallback exists now. The LINE is still what is echoed
     // when the household has no address on file, which is what this pin is about.
-    expect(confirm).toContain(": addressLine} />");
+    expect(confirm).toContain(": addressShown} />");
     expect(confirm).not.toContain("pickedProvince");
     const fixable = page.slice(page.indexOf('r.code === "NAME_REQUIRED"'), page.indexOf('r.code === "NOT_LINKED"'));
     expect(fixable).toContain('r.code === "PROVINCE_UNKNOWN"');
@@ -657,12 +656,13 @@ describe("§10 (TASK-355) — SOM SCHEDULE · English options · a linked accoun
     expect((page.match(/childCount === 1/g) ?? []).length).toBe(1); // one ternary, one place
   });
 
-  it("🔻 TASK-580 §2 — the English name no longer rides the row at all (the type forbids a reader)", () => {
+  it("🔻 TASK-830 (was TASK-580 §2) — the English name rides the row again, for the EN label only", () => {
     const entry = codeOf("src/lib/register/entry.ts");
     // 📌 It was carried "for the option LABEL in EN mode only". That label is Thai now, so the field is DELETED rather
     // than left unused: **an unused garbled field is a reader waiting to happen.**
-    expect(entry).not.toContain("nameEn");
-    expect(entry).toContain("const uniqueByCode = (rows: { code: string; nameTh: string }[]): AreaPick[] =>");
+    // 🔻 TASK-830: REVERSED — the English name rides the row again (display only: the option label on the EN page); the Thai is still what is stored.
+    expect(entry).toContain("nameEn: string");
+    expect(entry).toContain("const uniqueByCode = (rows: { code: string; nameTh: string; nameEn: string }[]): AreaPick[] =>");
     // 🔻 TASK-801 (REQ-118, ruling B), declared: the address book is no longer the bundled package — it is served by the back end's three area routes (the gate found the package's geocodes wrong for ~21 % of rows). ✅ What these pins protect — lookups by CODE, the page loading the book only while the form is on screen, no English name on the row — is unchanged.
     expect(entry).not.toMatch(/thai-address-universal/);
   });

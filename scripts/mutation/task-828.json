@@ -1,0 +1,459 @@
+{
+  "_why": "TASK-828 (FE). One clicked test file (the preview-driven P7 counts, the record result, the panel, the strip, the approved strings). Each mutation breaks WHAT a count says (a co-taught class cancelled / handled / continuing), WHERE the number comes from (the server's preview, never additionalTeachers), or what a continuing / left-as-is class looks like. Written with the set; nothing reconstructed. W1/W3/W4 anchors follow the own-door tail of LeaveWillDo (TASK-828 rework, TEST-111): cancels = outcome `cancel` only; X1..X4 are the rework's bites. F3 (TEST-111 re-check): W1/W3/W4/X1/X4 anchors follow the filtered `scope`; F3a-d are the rework's bites.",
+  "tests": [
+    "src/components/partials/Calendar/Modal/leave-co-taught-task828.dom.test.tsx",
+    "src/components/partials/Calendar/Modal/leave-range-task818.dom.test.tsx"
+  ],
+  "mutations": [
+    {
+      "id": "W1",
+      "what": "🔴 'cancels N' counts EVERY ticked class — a co-taught class that continues, and a D4 class left as it is, are told to the teacher as cancelled",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "scope.filter((c) => c.outcome === \"cancel\").length",
+              "to": "ticked.length"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W2",
+      "what": "🔴 the approved co-taught line is never shown to the teacher",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "      {continuesN > 0 && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">",
+              "to": "      {false && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W3",
+      "what": "🔴 a future day's 'N class(es) stay' also counts the ones that continue",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "{ n: blockN }",
+              "to": "{ n: blockN + counts.continues }"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W4",
+      "what": "🔴 a future day's 'N class(es) stay' forgets the D4 ones (left as they are)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "scope.filter((c) => c.outcome === \"toHandle\" || c.outcome === \"cannot\").length",
+              "to": "scope.filter((c) => c.outcome === \"toHandle\").length"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W5",
+      "what": "🔴 the admin's line says the wrong number (the to-handle count)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "t(\"teacherLeave.coTaughtAdmin\", { n: counts.continues, name: adminFor.name })",
+              "to": "t(\"teacherLeave.coTaughtAdmin\", { n: counts.toHandle, name: adminFor.name })"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W6",
+      "what": "🔴 the admin's line is shown even when nothing is co-taught",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "    return counts.continues > 0 ? (",
+              "to": "    return true ? ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W7",
+      "what": "🔴 the admin door asks the preview for TODAY too (the door refuses it)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "ready && (adminFor ? advance : true)",
+              "to": "ready"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W8",
+      "what": "🔴 the preview is asked before the dialog is ready (no date / no teacher / a refused range)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "ready && (adminFor ? advance : true)",
+              "to": "(adminFor ? advance : true)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W9",
+      "what": "🔴 a number is said before the server has answered (an unavailable preview reads as zero)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "  const counts = data?.counts;",
+              "to": "  const counts = data?.counts ?? { continues: 0, cancel: 0, toHandle: 0, cannot: 0 };"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W10",
+      "what": "🔴 the teacher's own preview does not name the day asked about",
+      "files": [
+        {
+          "file": "src/services/scheduler.service.ts",
+          "edits": [
+            {
+              "from": "{ params: { preview: date } }",
+              "to": "{ params: {} }"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W11",
+      "what": "🔴 the admin's preview for a RANGE drops `to`",
+      "files": [
+        {
+          "file": "src/services/scheduler.service.ts",
+          "edits": [
+            {
+              "from": "params: { teacherId, from, ...(to ? { to } : {}) }",
+              "to": "params: { teacherId, from }"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W12",
+      "what": "🔴 the 'Continues with' tag is replaced by bare names",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveClassRow.tsx",
+          "edits": [
+            {
+              "from": "{t(\"teacherLeave.continuesWith\", { names: c.with.join(\", \") })}",
+              "to": "{c.with.join(\", \")}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W13",
+      "what": "🔴 the teachers a class continues with are not in the server's order (main first)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveClassRow.tsx",
+          "edits": [
+            {
+              "from": "names: c.with.join(\", \")",
+              "to": "names: [...c.with].reverse().join(\", \")"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W14",
+      "what": "🔴 the D4 sentence is shown under EVERY class of the result, not only the left-as-is one",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "{subject && done.toHandle?.some((x) => x.bookingId === b.id) && <LeaveCannotNote",
+              "to": "{subject && <LeaveCannotNote"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W15",
+      "what": "🔴 'Nothing is booked' is said while co-taught classes continue",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "            ) : (done.continues?.length ?? 0) > 0 ? null : (",
+              "to": "            ) : ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W16",
+      "what": "🔴 the one-day result does not list the continuing classes",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "            {(done.continues?.length ?? 0) > 0 && (\n              <Stack gap={2} data-leave-continues-list",
+              "to": "            {false && (\n              <Stack gap={2} data-leave-continues-list"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W17",
+      "what": "🔴 the range result drops a day's continuing classes",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/ReportLeaveDialog.tsx",
+          "edits": [
+            {
+              "from": "            {d.continues?.map((c) => (\n              <LeaveContinuesRow key={c.bookingId} c={c} />\n            ))}\n",
+              "to": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W18",
+      "what": "🔴 the leave panel does not show the continuing classes",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "              {(d.continues?.length ?? 0) > 0 && (",
+              "to": "              {false && ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W19",
+      "what": "🔴 the strip counts the continuing classes as 'to handle'",
+      "files": [
+        {
+          "file": "src/lib/scheduler/teacher-scope.ts",
+          "edits": [
+            {
+              "from": "classes: (r.bookings ?? []).length }));\n// 🚫 **Not sorted here.**",
+              "to": "classes: (r.bookings ?? []).length + (((r as { continues?: unknown[] }).continues ?? []).length) }));\n// 🚫 **Not sorted here.**"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W20",
+      "what": "⚠️ the APPROVED marker is dropped from the English words",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "// ✅ APPROVED by the owner 2026-10-20 (REQ-125 ruling B)",
+              "to": "// (REQ-125 ruling B)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W21",
+      "what": "🔴 the English tag is reworded (not the approved sentence)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "continuesWith: \"Continues with {names}\"",
+              "to": "continuesWith: \"Continuing with {names}\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "W22",
+      "what": "🔴 the Thai D4 sentence is altered",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "กรุณาจัดการคาบนี้ในปฏิทิน\",",
+              "to": "กรุณาจัดการคาบนี้ด้วยตนเอง\","
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "X1",
+      "what": "🔴 (TEST-111 F1, required) a `cannot` (D4) class is COUNTED AS A CANCEL — the old behaviour: 'cancels 2' when the server cancels 1",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "scope.filter((c) => c.outcome === \"cancel\").length",
+              "to": "scope.filter((c) => c.outcome === \"cancel\" || c.outcome === \"cannot\").length"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "X2",
+      "what": "🔴 (TEST-111 F2, required) the teacher's door has no co-taught line on a FUTURE day",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "      {continuesN > 0 && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">",
+              "to": "      {!advance && continuesN > 0 && (\n        <Text size=\"sm\" fw={500} data-leave-co-taught=\"own\">"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "X3",
+      "what": "🔴 the D4 sentence is not shown on the teacher's door",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "      {d4.map((x) => (",
+              "to": "      {false && d4.map((x) => ("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "X4",
+      "what": "🔴 the D4 sentence is drawn under EVERY class that is not continuing (a plain cancelled one too)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": ".filter((c) => c.outcome === \"cannot\")",
+              "to": ".filter((c) => c.outcome !== \"continues\")"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F3a",
+      "what": "🔴 (Sober's required) the co-taught n comes from `day.counts` (the WHOLE day) instead of the ticked classes",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "const continuesN = scope.filter((c) => c.outcome === \"continues\").length;",
+              "to": "const continuesN = counts.continues;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F3b",
+      "what": "🔴 (Sober's required) the D4 sentence is shown for an UNTICKED D4 class",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "const d4 = scope\n    .filter((c) => c.outcome === \"cannot\")",
+              "to": "const d4 = day\n    .filter((c) => c.outcome === \"cannot\")"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F3c",
+      "what": "🔴 the cancel count ignores the ticks (every `cancel` of the day)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "const cancelN = scope.filter((c) => c.outcome === \"cancel\").length;",
+              "to": "const cancelN = day.filter((c) => c.outcome === \"cancel\").length;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F3d",
+      "what": "🔴 the scope is always the whole day (the ticks are never applied)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/Modal/LeaveWillDo.tsx",
+          "edits": [
+            {
+              "from": "const scope = advance ? day : day.filter((c) => tickedIds.has(c.bookingId));",
+              "to": "const scope = day;"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

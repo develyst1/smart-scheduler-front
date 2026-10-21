@@ -11,7 +11,7 @@ import { hasMenu } from "@/lib/rbac/menus";
 import { useTeacherLeaveDays } from "@/hooks/scheduler";
 import type { LeaveDayClass, LeaveDayRow } from "@/types/api/contract";
 import CancelLeaveButton from "./CancelLeaveButton";
-import LeaveClassRow from "./LeaveClassRow";
+import LeaveClassRow, { LeaveContinuesRow } from "./LeaveClassRow";
 import LiftRangeConfirm from "./LiftRangeConfirm";
 
 // 🔻 TASK-822: the two helpers and the row moved to `LeaveClassRow.tsx` (the leave dialog's result shows the same row); re-exported so every import of them keeps working.
@@ -83,8 +83,15 @@ export default function LeaveDayPanel({
                     {d.bookings.length > 0 ? t("teacherLeave.rangeDayClasses", { n: d.bookings.length }) : t("teacherLeave.rangeDayNone")}
                   </Text>
                 </Group>
-                <CancelLeaveButton teacherId={d.teacherId} teacherName={d.teacherName} date={d.date} />
+                <CancelLeaveButton teacherId={d.teacherId} teacherName={d.teacherName} date={d.date} restores={d.continues?.length ?? 0} />
               </Group>
+              {(d.continues?.length ?? 0) > 0 && (
+                <Stack gap={4} mt={4} data-leave-panel-continues={d.date}>
+                  {d.continues?.map((c) => (
+                    <LeaveContinuesRow key={c.bookingId} c={c} />
+                  ))}
+                </Stack>
+              )}
               {d.bookings.length > 0 && (
                 <Stack gap={4} mt={4}>
                   {d.bookings.map((c) => (
@@ -112,7 +119,15 @@ export default function LeaveDayPanel({
           </Link>
         )}
         {rangeOpen && row.rangeId && (
-          <LiftRangeConfirm opened onClose={() => setRangeOpen(false)} rangeId={row.rangeId} teacherName={row.teacherName} from={first} to={last} />
+          <LiftRangeConfirm
+            opened
+            onClose={() => setRangeOpen(false)}
+            rangeId={row.rangeId}
+            teacherName={row.teacherName}
+            from={first}
+            to={last}
+            restoreN={shown.filter((d) => d.date > today).reduce((n, d) => n + (d.continues?.length ?? 0), 0)}
+          />
         )}
       </Stack>
     </Modal>

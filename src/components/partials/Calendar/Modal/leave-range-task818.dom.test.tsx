@@ -78,7 +78,18 @@ mock.module("@/lib/api/client", () => ({
   useMockData: false,
   api: {
     ...realClient.api,
-    get: async (_url: string, cfg?: { params?: { date?: string } }) => ({ data: calendarFor(cfg?.params?.date ?? TODAY) }),
+    // 🔻 TASK-828, declared: the own door's "what saving will do" is read from the server's PREVIEW (`GET /teachers/me/leave?preview=`). Here every class of the day is the LAST teacher's:
+    // "toHandle" on a future day, "cancel" today. ✅ The numbers the 818 tests assert are unchanged.
+    get: async (url: string, cfg?: { params?: { date?: string; preview?: string } }) => {
+      if (url === "/teachers/me/leave") {
+        const day = cfg?.params?.preview ?? TODAY;
+        const outcome = day > TODAY ? "toHandle" : "cancel";
+        const classes = ["mine-1", "mine-2"].map((bookingId) => ({ bookingId, startTime: "10:00", outcome, with: [] as string[] }));
+        const counts = { continues: 0, cancel: 0, toHandle: 0, cannot: 0, [outcome]: classes.length };
+        return { data: { teacherId: "me", days: [{ date: day, mode: day > TODAY ? "advance" : "same-day", classes, counts }], counts } };
+      }
+      return { data: calendarFor(cfg?.params?.date ?? TODAY) };
+    },
     post: async (url: string, body: Record<string, unknown>) => {
       posts.push({ url, body });
       return { data: answer };

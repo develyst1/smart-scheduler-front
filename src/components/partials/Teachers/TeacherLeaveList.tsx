@@ -24,6 +24,8 @@ export interface LeaveRecord {
   classes: number;
   /** the record's first day as the server sent it — what the panel is opened on */
   first: LeaveDayRow;
+  /** the record's days, date order — what the range's Cancel counts its restores from (REQ-125 O1) */
+  rows: LeaveDayRow[];
   days: number;
 }
 
@@ -46,6 +48,7 @@ export const leaveRecordsOf = (rows: readonly LeaveDayRow[]): LeaveRecord[] => {
       reason: sorted[0].reason,
       classes: sorted.reduce((n, d) => n + d.bookings.length, 0),
       first: sorted[0],
+      rows: sorted,
       days: sorted.length,
     };
   });
@@ -127,7 +130,7 @@ export default function TeacherLeaveList() {
                     </div>
                     {/* 🔴 Cancel: the approved 814 control for a ONE-DAY record (it asks the key and the date itself); a RANGE with a day still ahead gets the range's own button. */}
                     {r.rangeId === null ? (
-                      <CancelLeaveButton teacherId={r.teacherId} teacherName={r.teacherName} date={r.from} />
+                      <CancelLeaveButton teacherId={r.teacherId} teacherName={r.teacherName} date={r.from} restores={r.first.continues?.length ?? 0} />
                     ) : (
                       r.to > todayIso &&
                       can("action:calendar.status") && (
@@ -143,7 +146,7 @@ export default function TeacherLeaveList() {
           </div>
         ))}
       </Stack>
-      {rangeFor?.rangeId && <LiftRangeConfirm opened onClose={() => setRangeFor(null)} rangeId={rangeFor.rangeId} teacherName={rangeFor.teacherName} from={rangeFor.from} to={rangeFor.to} />}
+      {rangeFor?.rangeId && <LiftRangeConfirm opened onClose={() => setRangeFor(null)} rangeId={rangeFor.rangeId} teacherName={rangeFor.teacherName} from={rangeFor.from} to={rangeFor.to} restoreN={rangeFor.rows.filter((d) => d.date > todayIso).reduce((n, d) => n + (d.continues?.length ?? 0), 0)} />}
     </Card>
   );
 }

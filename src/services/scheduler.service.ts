@@ -59,6 +59,7 @@ import type {
   UpdateCourseExpiryResponse,
   LeaveDayRow,
   LiftLeaveRangeResponse,
+  LeavePreview,
   SetTeacherWorkDaysResponse,
   TeacherDTO,
   TeachersResponse,
@@ -532,6 +533,23 @@ export const getLeaveDays = async (from: string, to: string, teacherId?: string)
   // 🔴 TASK-819 → TASK-820 — `teacherId` is optional (one coach's days only — what the leave PANEL asks, to show a whole range); absent ⇒ no key on the wire.
   const { data } = await api.get<{ items: LeaveDayRow[] }>("/teacher-leave-days", { params: { from, to, ...(teacherId ? { teacherId } : {}) } });
   return data.items;
+};
+
+/**
+ * 🔴 **TASK-826 (BE) → TASK-828 — "what will saving do?" (REQ-125 ruling B), read-only: the same decision the act makes (preview = act), per class: `continues` (another teacher
+ * remains) · `cancel` (same-day, the last teacher) · `toHandle` (advance, the last teacher) · `cannot` (D4).** The teacher's own door asks one day; the admin's asks a range for ONE
+ * teacher. 🚫 No `mock` twin: the mock holds no co-taught classes, so the mock answer is "nothing is co-taught".
+ */
+const emptyPreview = (teacherId: string): LeavePreview => ({ teacherId, days: [], counts: { continues: 0, cancel: 0, toHandle: 0, cannot: 0 } });
+export const getOwnLeavePreview = async (date: string): Promise<LeavePreview> => {
+  if (useMock) return emptyPreview("me");
+  const { data } = await api.get<LeavePreview>("/teachers/me/leave", { params: { preview: date } });
+  return data;
+};
+export const getTeacherLeavePreview = async (teacherId: string, from: string, to?: string): Promise<LeavePreview> => {
+  if (useMock) return emptyPreview(teacherId);
+  const { data } = await api.get<LeavePreview>("/teacher-leave-days/preview", { params: { teacherId, from, ...(to ? { to } : {}) } });
+  return data;
 };
 
 /**

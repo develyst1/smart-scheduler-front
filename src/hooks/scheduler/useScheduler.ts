@@ -37,6 +37,8 @@ import {
   getLeaveDays,
   liftTeacherLeave,
   liftLeaveRange,
+  getOwnLeavePreview,
+  getTeacherLeavePreview,
   reportOwnLeave,
   reportTeacherLeave,
   updateCourseRate,
@@ -568,6 +570,18 @@ export const useTeacherLeaveDays = (teacherId: string, from: string, to: string,
     queryFn: () => getLeaveDays(from, to, teacherId),
     enabled: Boolean(enabled && teacherId && from && to),
     staleTime: 60_000,
+  });
+
+/**
+ * 🔴 TASK-828 (REQ-125 ruling B) — "what will saving do?" for the leave dialog. `teacherId` set ⇒ the ADMIN's preview over `from`…`to`; absent ⇒ the teacher's OWN preview of `from`.
+ * 🚫 `enabled` is the gate. Never invalidated by a write on purpose: it is keyed by what is asked, and the dialog closes (or shows its result) after the act.
+ */
+export const useLeavePreview = (teacherId: string | null, from: string, to: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ["leave-preview", teacherId ?? "me", from, to],
+    queryFn: () => (teacherId ? getTeacherLeavePreview(teacherId, from, to !== from ? to : undefined) : getOwnLeavePreview(from)),
+    enabled: Boolean(enabled && from),
+    staleTime: 0,
   });
 
 /** 🔴 TASK-820 — the admin cancels a RANGE's future days (`DELETE /teacher-leave-ranges/:id`). Refreshes the strip + the panel's read + the calendar. */

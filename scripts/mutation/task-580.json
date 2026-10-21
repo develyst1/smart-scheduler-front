@@ -61,14 +61,14 @@
   },
   {
     "id": "A5",
-    "what": "🔴 F-D — the garbled English names come back to the parent's dropdowns",
+    "what": "🔻 TASK-830 (was: garbled English comes back) — the option label goes back to Thai-only on the EN page, 580's old behaviour",
     "files": [
       {
         "file": "src/components/partials/Register/RegisterContent.tsx",
         "edits": [
           {
-            "from": "    rows.map((r) => ({ value: r.code, label: r.nameTh }));",
-            "to": "    rows.map((r) => ({ value: r.code, label: lang === \"th\" ? r.nameTh : (r as { nameEn?: string }).nameEn ?? r.nameTh }));"
+            "from": "    rows.map((r) => ({ value: r.code, label: areaLabel(r, lang) }));",
+            "to": "    rows.map((r) => ({ value: r.code, label: r.nameTh }));"
           }
         ]
       }
@@ -76,14 +76,14 @@
   },
   {
     "id": "A6",
-    "what": "the English name rides the row again (an unused garbled field waiting for a reader)",
+    "what": "🔻 TASK-830 (was: English rides the row) — the loader's dedupe drops the English name",
     "files": [
       {
         "file": "src/lib/register/entry.ts",
         "edits": [
           {
-            "from": "const uniqueByCode = (rows: { code: string; nameTh: string }[]): AreaPick[] => {\n  const seen = new Map<string, AreaPick>();\n  for (const r of rows) if (!seen.has(r.code)) seen.set(r.code, { code: r.code, nameTh: r.nameTh });",
-            "to": "const uniqueByCode = (rows: { code: string; nameTh: string; nameEn: string }[]): AreaPick[] => {\n  const seen = new Map<string, AreaPick>();\n  for (const r of rows) if (!seen.has(r.code)) seen.set(r.code, { code: r.code, nameTh: r.nameTh, nameEn: r.nameEn } as AreaPick);"
+            "from": "nameEn: r.nameEn });",
+            "to": "nameEn: r.nameTh });"
           }
         ]
       }
@@ -97,8 +97,8 @@
         "file": "src/components/partials/Register/RegisterContent.tsx",
         "edits": [
           {
-            "from": "      ? joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh })",
-            "to": "      ? joinAddress({ subDistrict: subPick?.code, district: distPick?.nameTh, province: provPick?.nameTh })"
+            "from": "const addressLine = joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh });",
+            "to": "const addressLine = joinAddress({ subDistrict: subPick?.code, district: distPick?.nameTh, province: provPick?.nameTh });"
           }
         ]
       }

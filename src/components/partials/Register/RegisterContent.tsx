@@ -8,6 +8,7 @@ import { LanguageToggle, useI18n, useT } from "@/lib/i18n";
 import { obtainIdToken } from "@/lib/register/liff";
 import { phoneLanguage } from "@/lib/register/locale";
 import {
+  areaLabel,
   joinAddress,
   loadAddressBook,
   tierWordsFor,
@@ -137,6 +138,8 @@ export default function RegisterContent() {
   const [subDistricts, setSubDistricts] = useState<AreaPick[]>([]);
   /** Display only — 🚫 never sent. The server builds the stored line from the three parts, in its own order. */
   const addressLine = joinAddress({ subDistrict: subPick?.nameTh, district: distPick?.nameTh, province: provPick?.nameTh });
+  /** TASK-830 — what the confirm row SHOWS: the English names on the EN page (display only; `addressLine` above is the Thai that is sent). */
+  const addressShown = lang === "th" ? addressLine : [subPick, distPick, provPick].filter((p): p is AreaPick => !!p).map((p) => areaLabel(p, lang)).join(" ");
   /** 🔑 All THREE, or the address is not answered. Two parts do not submit — the same shape the server requires. */
   const addressComplete = Boolean(provPick?.nameTh && distPick?.nameTh && subPick?.nameTh);
   // TASK-353 (§9) — PICKED ⇒ the province's FULL name for `parents.province`; TYPED ⇒ nothing (the server does not
@@ -247,9 +250,9 @@ export default function RegisterContent() {
   // §10.2 — the option LABEL follows the language (DISPLAY); the option VALUE is the geocode either way, and what
   // is picked, joined and sent is `nameTh` regardless — the stored strings are Thai.
   const asOptions = (rows: AreaPick[]) =>
-    // 🔴 TASK-580 §2 (F-D) — THAI names in both languages: the dataset's English is garbled (*"Khnong Tntnai"*), the Thai
-    // is correct, and the Thai is what we store. The field LABELS are still translated; only the area names are not.
-    rows.map((r) => ({ value: r.code, label: r.nameTh }));
+    // 🔴 TASK-830 — the label follows the language again (EN → our dataset's English, which TASK-803 corrected; TH unchanged). The VALUE is the
+    // geocode and what is sent is `nameTh` either way — TASK-580's garbled English was the old package's, not ours.
+    rows.map((r) => ({ value: r.code, label: areaLabel(r, lang) }));
 
   /**
    * §C0 — `TOKEN_EXPIRED` ⇒ re-init LIFF and retry ONCE. Nothing else is retried: `TOKEN_WRONG_CHANNEL` is a
@@ -754,7 +757,7 @@ export default function RegisterContent() {
                     cannot happen is an invitation to make it happen again. The address row shows what is ON FILE when the
                     household has one, because that is what will be used. */}
                 <ReviewRow label={t("register.reviewBirthDate")} value={birthDate} />
-                <ReviewRow label={t("register.reviewProvince")} value={addressOnFile ? provinceOnFile || t("register.addressOnFile") : addressLine} />
+                <ReviewRow label={t("register.reviewProvince")} value={addressOnFile ? provinceOnFile || t("register.addressOnFile") : addressShown} />
               </div>
               <Text fz="sm">{t("register.confirmQuestion")}</Text>
               <Button loading={busy} disabled={!formComplete} data-confirm-save onClick={submitCreate}>

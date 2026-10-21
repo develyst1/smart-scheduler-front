@@ -1,0 +1,203 @@
+{
+  "_why": "REQ-125 O1 (folded into the TASK-828 rework). One clicked test file: the two Cancel-leave confirms' conditional sentence. Each mutation breaks WHEN the new sentence shows (n = 0 must be today's text), WHICH n it carries (the list's `continues` for that day; a range's FUTURE days only) or the approved words. Written with the set; nothing reconstructed.",
+  "tests": [
+    "src/components/partials/Calendar/cancel-restores-o1.dom.test.tsx"
+  ],
+  "mutations": [
+    {
+      "id": "A1",
+      "what": "🔴 (required) the new sentence shows at n = 0 — ONE-day confirm ('goes back on the 0 co-taught class(es)')",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftLeaveConfirm.tsx",
+          "edits": [
+            {
+              "from": "restoreN > 0 ? t(\"leaveDays.cancelBodyRestores\"",
+              "to": "restoreN >= 0 ? t(\"leaveDays.cancelBodyRestores\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A2",
+      "what": "🔴 (required) the new sentence shows at n = 0 — RANGE confirm",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftRangeConfirm.tsx",
+          "edits": [
+            {
+              "from": "restoreN > 0 ? t(\"leaveDays.cancelRangeBodyRestores\"",
+              "to": "restoreN >= 0 ? t(\"leaveDays.cancelRangeBodyRestores\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A3",
+      "what": "🔴 the panel's range counts the days that have BEGUN too (their classes are not put back)",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "shown.filter((d) => d.date > today).reduce(",
+              "to": "shown.reduce("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A4",
+      "what": "🔴 the list's range counts every day of the record, not just the future ones",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "rangeFor.rows.filter((d) => d.date > todayIso).reduce(",
+              "to": "rangeFor.rows.reduce("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A5",
+      "what": "🔴 the panel's one-day n is 'one' instead of the day's co-taught count",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LeaveDayPanel.tsx",
+          "edits": [
+            {
+              "from": "restores={d.continues?.length ?? 0}",
+              "to": "restores={d.continues ? 1 : 0}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A6",
+      "what": "🔴 the list's one-day Cancel passes no count (it always says today's sentence)",
+      "files": [
+        {
+          "file": "src/components/partials/Teachers/TeacherLeaveList.tsx",
+          "edits": [
+            {
+              "from": "restores={r.first.continues?.length ?? 0}",
+              "to": "restores={0}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A7",
+      "what": "🔴 the sentence does not name the teacher",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftLeaveConfirm.tsx",
+          "edits": [
+            {
+              "from": "{ name: teacherName, n: restoreN }",
+              "to": "{ n: restoreN }"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A8",
+      "what": "🔴 the one-day confirm never switches to the restoring body",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftLeaveConfirm.tsx",
+          "edits": [
+            {
+              "from": "{restoreN > 0 ? t(\"leaveDays.cancelBodyRestores\"",
+              "to": "{false ? t(\"leaveDays.cancelBodyRestores\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A9",
+      "what": "🔴 the range confirm never switches to the restoring body",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/LiftRangeConfirm.tsx",
+          "edits": [
+            {
+              "from": "{restoreN > 0 ? t(\"leaveDays.cancelRangeBodyRestores\"",
+              "to": "{false ? t(\"leaveDays.cancelRangeBodyRestores\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A10",
+      "what": "🔴 the per-day button does not hand its count on to the confirm",
+      "files": [
+        {
+          "file": "src/components/partials/Calendar/CancelLeaveButton.tsx",
+          "edits": [
+            {
+              "from": "restoreN={restores} />",
+              "to": "restoreN={0} />"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A11",
+      "what": "⚠️ the APPROVED marker is dropped from the English words",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "// ✅ APPROVED by the owner 2026-10-21 (REQ-125 O1 = A",
+              "to": "// (REQ-125 O1 = A"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A12",
+      "what": "🔴 the English sentence is reworded (not the approved one)",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "{name} goes back on the {n} co-taught class(es) they were taken off when the leave was recorded. Other classes don't change. The teacher is told on LINE.\",\n    cancelRangeBodyRestores",
+              "to": "{name} returns to the {n} co-taught class(es) they were taken off when the leave was recorded. Other classes don't change. The teacher is told on LINE.\",\n    cancelRangeBodyRestores"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A13",
+      "what": "🔴 the Thai sentence is altered",
+      "files": [
+        {
+          "file": "src/lib/i18n/dictionaries.ts",
+          "edits": [
+            {
+              "from": "ครู {name} จะกลับเข้าคาบที่สอนร่วม {n} คาบที่ถูกนำออกไปตอนบันทึกลา คาบอื่นไม่มีอะไรเปลี่ยน และระบบจะแจ้งครูทาง LINE\",\n    cancelRangeBodyRestores",
+              "to": "ครู {name} จะกลับเข้าคาบที่สอนร่วม {n} คาบ คาบอื่นไม่มีอะไรเปลี่ยน และระบบจะแจ้งครูทาง LINE\",\n    cancelRangeBodyRestores"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

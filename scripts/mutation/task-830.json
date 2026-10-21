@@ -1,0 +1,160 @@
+{
+  "_why": "TASK-830 (FE). The EN page shows our dataset's English area names in both pickers and the confirm row; TH is byte-identical; what is SENT stays Thai + geocodes. E1/E2 register options, E3/E4 admin picker, E5/E6 areaLabel, E7 loader, E8/E9 confirm row, E10 the wire.",
+  "tests": [
+    "src/components/partials/Register/address-english-task830.dom.test.tsx",
+    "src/lib/register/entry.test.ts",
+    "src/lib/register/register-page.test.ts"
+  ],
+  "mutations": [
+    {
+      "id": "E1",
+      "what": "🔴 the EN page's options go back to the Thai names (the bug Khwan reported)",
+      "files": [
+        {
+          "file": "src/components/partials/Register/RegisterContent.tsx",
+          "edits": [
+            {
+              "from": "    rows.map((r) => ({ value: r.code, label: areaLabel(r, lang) }));",
+              "to": "    rows.map((r) => ({ value: r.code, label: r.nameTh }));"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "what": "🔴 the TH page's options start showing English too (TH must be byte-identical)",
+      "files": [
+        {
+          "file": "src/components/partials/Register/RegisterContent.tsx",
+          "edits": [
+            {
+              "from": "    rows.map((r) => ({ value: r.code, label: areaLabel(r, lang) }));",
+              "to": "    rows.map((r) => ({ value: r.code, label: r.nameEn }));"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "what": "the admin form's picker stays on the Thai names on the EN page",
+      "files": [
+        {
+          "file": "src/components/partials/People/AreaPicker.tsx",
+          "edits": [
+            {
+              "from": "rows.map((r) => ({ value: r.code, label: areaLabel(r, lang) }));",
+              "to": "rows.map((r) => ({ value: r.code, label: r.nameTh }));"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E4",
+      "what": "the admin form's picker shows English on the TH page too",
+      "files": [
+        {
+          "file": "src/components/partials/People/AreaPicker.tsx",
+          "edits": [
+            {
+              "from": "rows.map((r) => ({ value: r.code, label: areaLabel(r, lang) }));",
+              "to": "rows.map((r) => ({ value: r.code, label: r.nameEn }));"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E5",
+      "what": "a row with no English shows a BLANK instead of its Thai",
+      "files": [
+        {
+          "file": "src/lib/register/entry.ts",
+          "edits": [
+            {
+              "from": "r.nameEn || r.nameTh",
+              "to": "r.nameEn"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E6",
+      "what": "the language test is inverted (EN shows Thai, TH shows English)",
+      "files": [
+        {
+          "file": "src/lib/register/entry.ts",
+          "edits": [
+            {
+              "from": "lang === \"th\" ? r.nameTh",
+              "to": "lang !== \"th\" ? r.nameTh"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E7",
+      "what": "the loader drops the English name (it rides the row as the Thai)",
+      "files": [
+        {
+          "file": "src/lib/register/entry.ts",
+          "edits": [
+            {
+              "from": "nameEn: r.nameEn });",
+              "to": "nameEn: r.nameTh });"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E8",
+      "what": "🔴 the confirm row is English on the TH page too",
+      "files": [
+        {
+          "file": "src/components/partials/Register/RegisterContent.tsx",
+          "edits": [
+            {
+              "from": "lang === \"th\" ? addressLine : [subPick",
+              "to": "false ? addressLine : [subPick"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E9",
+      "what": "the confirm row stays Thai on the EN page",
+      "files": [
+        {
+          "file": "src/components/partials/Register/RegisterContent.tsx",
+          "edits": [
+            {
+              "from": "lang === \"th\" ? addressLine : [subPick",
+              "to": "true ? addressLine : [subPick"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E10",
+      "what": "🚫 what is SENT starts following the label (district goes out in English)",
+      "files": [
+        {
+          "file": "src/components/partials/Register/RegisterContent.tsx",
+          "edits": [
+            {
+              "from": "district: addressOnFile ? undefined : distPick?.nameTh || undefined,",
+              "to": "district: addressOnFile ? undefined : (distPick ? areaLabel(distPick, lang) : undefined),"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

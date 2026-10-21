@@ -22,12 +22,15 @@ export default function LiftLeaveConfirm({
   teacherId,
   teacherName,
   date,
+  restoreN = 0,
 }: {
   opened: boolean;
   onClose: () => void;
   teacherId: string;
   teacherName: string;
   date: string;
+  /** 🔴 REQ-125 O1 — how many co-taught classes this leave day took the teacher OFF (the list's `continues` for that day): n > 0 ⇒ the approved "goes back on the {n} co-taught class(es)" body; 0 ⇒ today's body. */
+  restoreN?: number;
 }) {
   const t = useT();
   const lift = useLiftTeacherLeave();
@@ -55,7 +58,7 @@ export default function LiftLeaveConfirm({
   return (
     <Modal opened={opened} onClose={close} title={t("leaveDays.cancelTitle", { name: teacherName, date })} centered data-lift-leave-dialog={`${teacherId}|${date}`}>
       <Stack gap="md">
-        <Text size="sm">{t("leaveDays.cancelBody")}</Text>
+        <Text size="sm">{restoreN > 0 ? t("leaveDays.cancelBodyRestores", { name: teacherName, n: restoreN }) : t("leaveDays.cancelBody")}</Text>
         {error && (
           <Text size="sm" c="red" data-lift-leave-error>
             {error}

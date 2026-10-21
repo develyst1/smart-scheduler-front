@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Select, Stack } from "@mantine/core";
 import { useI18n } from "@/lib/i18n";
-import { loadAddressBook, tierWordsFor, type AddressBook, type AreaPick } from "@/lib/register/entry";
+import { areaLabel, loadAddressBook, tierWordsFor, type AddressBook, type AreaPick } from "@/lib/register/entry";
 
 /** The three levels as the DOPA CODES — the only thing the form holds, sends and prefills from. */
 export interface AreaCodes {
@@ -21,7 +21,7 @@ export const areaState = (a: AreaCodes): "none" | "full" | "half" => {
 
 /**
  * 🔴 **TASK-801 (REQ-118) — the admin parent form's address: the SAME 3-level picker the register page uses** (province → district →
- * sub-district, the register page's address book, option labels in Thai in both languages per TASK-580, values are the geocodes).
+ * sub-district, the register page's address book, option labels follow the language (TASK-830; Thai on the TH page), values are the geocodes).
  *
  * 🔑 Held as CODES end to end: a form that holds names cannot tell two same-named districts apart (the page's own rule — lookups are by
  * geocode). The dataset is loaded here by `loadAddressBook()`, a dynamic `import()`, so it never enters the main bundle.
@@ -79,7 +79,7 @@ export default function AreaPicker({
   }, [book, value.district]);
 
   const tier = lang === "th" ? tierWordsFor(value.province) : { district: t("register.addrDistrict"), subDistrict: t("register.addrSubDistrict") };
-  const options = (rows: AreaPick[]) => rows.map((r) => ({ value: r.code, label: r.nameTh }));
+  const options = (rows: AreaPick[]) => rows.map((r) => ({ value: r.code, label: areaLabel(r, lang) }));
   const placeholder = t("register.addrPickPlaceholder");
   const legacyValue = legacyProvince && !value.province ? `legacy:${legacyProvince}` : null;
   const provinceData = legacyValue ? [{ value: legacyValue, label: legacyProvince as string, disabled: true }, ...options(book?.provinces ?? [])] : options(book?.provinces ?? []);
