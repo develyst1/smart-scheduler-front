@@ -1,4 +1,4 @@
-import { describe, expect, it, mock, beforeEach, afterEach } from "bun:test";
+import { describe, expect, it, mock, beforeEach, afterEach, setSystemTime } from "bun:test";
 import { createElement as h } from "react";
 import { readFileSync } from "node:fs";
 import { MantineProvider } from "@mantine/core";
@@ -22,7 +22,10 @@ const posts: Array<{ url: string; body: Record<string, unknown> }> = [];
 let answer: unknown = null;
 let allowed = true;
 
-const iso = (offset: number) => dayjs().add(offset, "day").format("YYYY-MM-DD");
+// 🔻 Clock fix (2026-10-25): these dates were "today + n" from the REAL clock, so the suite went red whenever +7 days crossed a month end. The clock is now pinned
+// to a fixed mid-month day (in `beforeEach`), so every date below — and the page's own "today" — is the same on any run day. Each test's point is unchanged.
+const CLOCK = "2026-10-12T09:00:00";
+const iso = (offset: number) => dayjs(CLOCK).add(offset, "day").format("YYYY-MM-DD");
 const TODAY = iso(0);
 const FROM = iso(7);
 const TO = iso(9);
@@ -139,8 +142,12 @@ const pickDay = async (user: ReturnType<typeof userEvent.setup>, field: "from" |
   await user.click(dayBtn() as HTMLElement);
 };
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  setSystemTime(); // the real clock is back for every other file
+});
 beforeEach(() => {
+  setSystemTime(new Date(CLOCK)); // 🔑 the page's own "today" is the same fixed day as the dates below
   posts.length = 0;
   allowed = true;
   answer = { mode: "advance", cancelled: 0, bookingIds: [], familiesNotified: 0, teacherNotified: 1, leave: { date: FROM, reason: "ไปอบรม" }, alreadyRecorded: false, bookings: [] };

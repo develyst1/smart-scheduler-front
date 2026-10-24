@@ -3,10 +3,12 @@
 // Credentials provider — which calls the backend via axios — lives in auth.ts.
 
 import type { NextAuthConfig } from "next-auth";
+import { readTokenExp, SESSION_MAX_AGE_SECONDS, tokenLive } from "@/lib/auth/token-expiry";
 
 export const authConfig = {
   trustHost: true,
-  session: { strategy: "jwt" },
+  // REQ-128 L1 — one fixed 7-day login (the API token's own lifetime). The rolling session can never outlive that token: see the `jwt` callback.
+  session: { strategy: "jwt", maxAge: SESSION_MAX_AGE_SECONDS },
   pages: { signIn: "/login" },
   providers: [], // real providers are added in auth.ts
   callbacks: {
@@ -23,7 +25,11 @@ export const authConfig = {
         token.menus = user.menus;
         token.actions = user.actions;
         token.teacherId = user.teacherId ?? null;
+        // REQ-128 L1 — the API token's own expiry (a claim READ, never verified here); the back end stays the authority.
+        token.backendExp = readTokenExp(user.backendToken);
       }
+      // Once the API token has expired — or its expiry is unknown (fail closed) — end the session: the user lands on the login page cleanly instead of meeting a 401 mid-action.
+      if (!tokenLive(token.backendExp)) return null;
       return token;
     },
     session({ session, token }) {

@@ -37,6 +37,8 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     backendToken?: string;
+    /** REQ-128 L1 — the API token's `exp` (seconds), read once at sign-in; the session ends when it passes. */
+    backendExp?: number | null;
     role?: Role;
     username?: string;
     userId?: string;

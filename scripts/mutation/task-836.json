@@ -1,0 +1,46 @@
+{
+  "_why": "TASK-836 (FE, REQ-128 L1). The front session ends exactly when the API token expires (7 days). One test file: real JWT-shaped strings through the real jwt callback with a set clock. M1/M2 the 7-day lifetime, M3 the end-of-session check, M4 the boundary second, M5/M6/M9 fail-closed and the claim read, M7 the 401 sign-out stays.",
+  "tests": ["src/lib/auth/token-expiry.test.ts"],
+  "mutations": [
+    {
+      "id": "M1",
+      "what": "the NextAuth session maxAge is dropped (back to the 30-day default)",
+      "files": [{ "file": "src/auth.config.ts", "edits": [{ "from": "session: { strategy: \"jwt\", maxAge: SESSION_MAX_AGE_SECONDS },", "to": "session: { strategy: \"jwt\" }," }] }]
+    },
+    {
+      "id": "M2",
+      "what": "the lifetime goes back to 12 h",
+      "files": [{ "file": "src/lib/auth/token-expiry.ts", "edits": [{ "from": "export const SESSION_MAX_AGE_SECONDS = 7 * 24 * 3600;", "to": "export const SESSION_MAX_AGE_SECONDS = 12 * 3600;" }] }]
+    },
+    {
+      "id": "M3",
+      "what": "🔴 the end-of-session check is removed (the session outlives the API token again)",
+      "files": [{ "file": "src/auth.config.ts", "edits": [{ "from": "      if (!tokenLive(token.backendExp)) return null;\n", "to": "" }] }]
+    },
+    {
+      "id": "M4",
+      "what": "the boundary flips: the very second of exp is still live",
+      "files": [{ "file": "src/lib/auth/token-expiry.ts", "edits": [{ "from": "nowSeconds < exp;", "to": "nowSeconds <= exp;" }] }]
+    },
+    {
+      "id": "M5",
+      "what": "🔴 a missing exp is treated as valid (fails open)",
+      "files": [{ "file": "src/lib/auth/token-expiry.ts", "edits": [{ "from": "typeof exp === \"number\" && nowSeconds < exp;", "to": "typeof exp !== \"number\" || nowSeconds < exp;" }] }]
+    },
+    {
+      "id": "M6",
+      "what": "the exp is not read at sign-in (a far-future stand-in is stored)",
+      "files": [{ "file": "src/auth.config.ts", "edits": [{ "from": "token.backendExp = readTokenExp(user.backendToken);", "to": "token.backendExp = Number.MAX_SAFE_INTEGER;" }] }]
+    },
+    {
+      "id": "M7",
+      "what": "🚫 the 401 sign-out is narrowed (a revoked/disabled user would no longer be thrown out at once)",
+      "files": [{ "file": "src/lib/api/client.ts", "edits": [{ "from": "error.response?.status === 401 && typeof window !== \"undefined\" && !useMockData", "to": "error.response?.status === 419 && typeof window !== \"undefined\" && !useMockData" }] }]
+    },
+    {
+      "id": "M8",
+      "what": "the claim read accepts any value as the exp (a string / null exp slips through)",
+      "files": [{ "file": "src/lib/auth/token-expiry.ts", "edits": [{ "from": "return typeof exp === \"number\" && Number.isFinite(exp) ? exp : null;", "to": "return exp !== undefined ? Number(exp) : null;" }] }]
+    }
+  ]
+}
