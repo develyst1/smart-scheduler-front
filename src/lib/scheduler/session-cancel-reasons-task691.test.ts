@@ -79,8 +79,8 @@ describe("🔴 TASK-694 — where it is OFFERED, and where it must NOT be", () =
   it("🔑 the session cancel's WIRE accepts the wider type; the course / voucher end do NOT", () => {
     const svc = code("src/services/scheduler.service.ts");
     expect(svc.includes("reasonCode?: SessionCancelReason,")).toBe(true);
-    // endCourse / endVoucher still take the three
-    expect(svc.includes("export const endCourse = async (courseId: string, input: { reason: EndCourseReason; note?: string })")).toBe(true);
+    // endVoucher still takes the three; 🔻 TASK-837: endCourse takes the three + the course-only ENDED_EARLY (`CourseEndReason`)
+    expect(svc.includes("export const endCourse = async (courseId: string, input: { reason: CourseEndReason; note?: string })")).toBe(true);
     expect(svc.includes("export const endVoucher = async (voucherId: string, input: { reason: EndCourseReason; note?: string })")).toBe(true);
   });
 });

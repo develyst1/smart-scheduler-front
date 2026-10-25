@@ -8,7 +8,9 @@ import { ApiClientError } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { useEndCourse, useEndVoucher, usePreviewEndCourse, usePreviewEndVoucher } from "@/hooks/scheduler";
 import {
+  COURSE_ONLY_END_REASONS,
   END_COURSE_REASONS,
+  type CourseEndReason,
   type EndCoursePreview,
   type EndCourseReason,
   type EntitlementKind,
@@ -56,7 +58,7 @@ export default function EndCourseDialog({ opened, target, onClose, onEnded }: Pr
   const targetId = target?.id ?? null;
 
   const [data, setData] = useState<EndCoursePreview | null>(null);
-  const [reason, setReason] = useState<EndCourseReason | null>(null);
+  const [reason, setReason] = useState<CourseEndReason | null>(null);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -81,7 +83,8 @@ export default function EndCourseDialog({ opened, target, onClose, onEnded }: Pr
     if (!targetId || !reason) return;
     setError(null);
     try {
-      if (isVoucher) await endVoucherMut.mutateAsync({ voucherId: targetId, reason, note: note.trim() || undefined });
+      // (the voucher's radios never offer ENDED_EARLY, so its reason is always one of the three)
+      if (isVoucher) await endVoucherMut.mutateAsync({ voucherId: targetId, reason: reason as EndCourseReason, note: note.trim() || undefined });
       else await endCourseMut.mutateAsync({ courseId: targetId, reason, note: note.trim() || undefined });
       notify({ title: t(copy.done), color: "success" });
       onEnded?.();
@@ -141,13 +144,16 @@ export default function EndCourseDialog({ opened, target, onClose, onEnded }: Pr
             <Radio.Group
               label={t("endCourse.reasonLabel")}
               value={reason ?? ""}
-              onChange={(v) => setReason(v as EndCourseReason)}
+              onChange={(v) => setReason(v as CourseEndReason)}
               required
             >
               <Stack gap="xs" mt="xs">
                 {END_COURSE_REASONS.map((r) => (
                   <Radio key={r} value={r} label={t(`endCourse.${r}`)} />
                 ))}
+                {/* 🔴 TASK-837 — ENDED_EARLY (ตัดจบคอร์ส) is a COURSE-only reason: the voucher's DB check refuses it, so its dialog never offers it. */}
+                {!isVoucher &&
+                  COURSE_ONLY_END_REASONS.map((r) => <Radio key={r} value={r} label={t(`endCourse.${r}`)} />)}
               </Stack>
             </Radio.Group>
 

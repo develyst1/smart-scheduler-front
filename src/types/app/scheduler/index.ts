@@ -357,7 +357,7 @@ export interface CoursePackage {
   subject?: SubjectOption | null;
   /** REQ-036 — carried here as well so `toCourseView`'s spread yields a complete view offline. */
   endedAt?: string | null;
-  endReason?: EndCourseReason | null;
+  endReason?: CourseEndReason | null;
   /** TASK-198/199 — set while the course is PAUSED (reversible; cleared on resume). Carried on the offline
    *  shape too, so `toCourseView` can report DROPPED without casting its own input.
    */
@@ -392,7 +392,7 @@ export interface CoursePackageView extends Omit<CoursePackage, "weekday" | "star
    *  **Required on the VIEW** (both builders always set it): making it optional is how it silently became
    *  `undefined` and a cancelled course kept its green `ปกติ` badge. A type beats a reminder — TASK-184's lesson. */
   endedAt: string | null;
-  endReason: EndCourseReason | null;
+  endReason: CourseEndReason | null;
   /** TASK-188/189 — **the** lifecycle answer, from the server. The badge reads this; nothing re-computes it. */
   status: CourseStatus;
 }
@@ -477,6 +477,15 @@ export interface PlanSession {
 /** REQ-036 — the three reasons a course may be ended early. **The contract; there is no fourth.** */
 export const END_COURSE_REASONS = ["PROGRAM_CHANGED", "CUSTOMER_CANCELLED", "ADMIN_ERROR"] as const;
 export type EndCourseReason = (typeof END_COURSE_REASONS)[number];
+/**
+ * 🔴 **TASK-837 (REQ-126) — the one reason ONLY ending a COURSE may carry:** `ENDED_EARLY` (*ตัดจบคอร์ส* / *Course ended early*). The same SIBLING-list shape as
+ * `SESSION_ONLY_CANCEL_REASONS`, for the same reason: `END_COURSE_REASONS` is read by the voucher end too, whose DB check refuses the code (and the word "course"
+ * is wrong on a voucher) — so it is NOT a fourth member of that list, and the voucher dialog / wire never see it.
+ */
+export const COURSE_ONLY_END_REASONS = ["ENDED_EARLY"] as const;
+/** What a COURSE end may send — derived by SPREAD (the server derives its twin the same way). */
+export const COURSE_END_REASONS = [...END_COURSE_REASONS, ...COURSE_ONLY_END_REASONS] as const;
+export type CourseEndReason = (typeof COURSE_END_REASONS)[number];
 
 /**
  * 🔴 **TASK-691 (REQ-112) — reasons ONLY a SESSION cancel may carry.** `SCHOOL_ISSUE` (*ปัญหาจากทางเรา*) is what gives the family +1 week
@@ -538,7 +547,7 @@ export interface CoursePlanSummary {
   /** REQ-036 — the BE's plan summary carries these (`lib/leave.ts:61-62`); an ended course must not read as
    *  "never started" just because its live sessions are gone. */
   endedAt?: string | null;
-  endReason?: EndCourseReason | null;
+  endReason?: CourseEndReason | null;
   /** TASK-188/199 — the SAME server lifecycle the card badge renders. The plan reads it rather than deriving
    *  "is this course writable?" a second way, which is the duplication TASK-189 removed. */
   status?: CourseStatus;

@@ -74,6 +74,7 @@ import type {
 import type {
   ConfirmCourseResult,
   CourseStatus,
+  CourseEndReason,
   EndCoursePreview,
   EndCourseReason,
   SessionCancelReason,
@@ -82,7 +83,7 @@ import type {
 } from "@/types/app/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import type { OtherKind, OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
-import type { GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
+import type { ChangeTeacherTimeInput, ChangeTeacherTimePreview, ChangeTeacherTimeResult, GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
 import { groupSeriesBody, type GroupSeriesInput, type GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 import { startChangeBody, type StartChangeForecast, type StartChangeResult } from "@/lib/scheduler/course-start";
 import { summarizeDailyReport } from "@/lib/scheduler/daily-report";
@@ -1237,7 +1238,7 @@ export const previewEndCourse = async (courseId: string): Promise<EndCoursePrevi
   return data;
 };
 
-export const endCourse = async (courseId: string, input: { reason: EndCourseReason; note?: string }) => {
+export const endCourse = async (courseId: string, input: { reason: CourseEndReason; note?: string }) => {
   if (useMock) return mock.endCourse(courseId, input);
   const { data } = await api.post(`/courses/${courseId}/cancel`, {
     reason: input.reason,
@@ -1262,6 +1263,31 @@ export const endVoucher = async (voucherId: string, input: { reason: EndCourseRe
   const { data } = await api.post(`/vouchers/${voucherId}/cancel`, {
     reason: input.reason,
     note: input.note,
+  });
+  return data;
+};
+
+/**
+ * 🔴 TASK-838 (REQ-127) — the rest of a course moves to a new teacher, day and time, in ONE act. Same three fields as the resume's body, and `teacherId` is
+ * ALWAYS sent. The preview is the act dry-run (writes nothing): the dialog's `{n}` is read from it, never counted here.
+ * (Kept ABOVE `resumeCourse`: `resume-teacher.test.ts` reads a fixed window after it for the resume's own "omit the key" rule — this act names its teacher on purpose.)
+ */
+export const previewChangeTeacherTime = async (courseId: string, input: ChangeTeacherTimeInput): Promise<ChangeTeacherTimePreview> => {
+  if (useMock) return mock.previewChangeTeacherTime(courseId, input);
+  const { data } = await api.post<ChangeTeacherTimePreview>(`/courses/${courseId}/change-teacher-time/preview`, {
+    startDate: input.startDate,
+    startTime: input.startTime,
+    teacherId: input.teacherId,
+  });
+  return data;
+};
+
+export const changeTeacherTime = async (courseId: string, input: ChangeTeacherTimeInput): Promise<ChangeTeacherTimeResult> => {
+  if (useMock) return mock.changeTeacherTime(courseId, input);
+  const { data } = await api.post<ChangeTeacherTimeResult>(`/courses/${courseId}/change-teacher-time`, {
+    startDate: input.startDate,
+    startTime: input.startTime,
+    teacherId: input.teacherId,
   });
   return data;
 };
@@ -1322,7 +1348,6 @@ export const resumeCourse = async (
   });
   return data;
 };
-
 /**
  * TASK-574 — the FORECAST: `POST /courses/:id/start-date/preview`, the act's own plan, read-only, **same gate and same
  * refusals**. ⚠️ It answers `forecast: true` because the act re-checks clashes and each date's teacher gate: **a refusal

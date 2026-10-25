@@ -1,0 +1,55 @@
+{
+  "_why": "TASK-837 (FE, REQ-126). Khwan's words on the existing end-course act + the course-only 5th reason ENDED_EARLY. One clicked test file (the words, the radios per dialog, the bodies) + the two pins it turned. M1/M4/M5/M6/M8 the approved words, M2 the code sent, M3/M7 the voucher offering the reason, M9 the course wire's type.",
+  "tests": [
+    "src/components/partials/Bookings/end-course-early-task837.dom.test.tsx",
+    "src/lib/scheduler/voucher-end.test.ts",
+    "src/lib/scheduler/session-cancel-reasons-task691.test.ts"
+  ],
+  "mutations": [
+    {
+      "id": "M1",
+      "what": "the end-course button goes back to \"Cancel course\"",
+      "files": [{ "file": "src/lib/i18n/dictionaries.ts", "edits": [{ "from": "    action: \"End course early\",", "to": "    action: \"Cancel course\"," }] }]
+    },
+    {
+      "id": "M2",
+      "what": "🔴 choosing the new reason sends ANOTHER code (ADMIN_ERROR)",
+      "files": [{ "file": "src/components/partials/Bookings/EndCourseDialog.tsx", "edits": [{ "from": "COURSE_ONLY_END_REASONS.map((r) => <Radio key={r} value={r}", "to": "COURSE_ONLY_END_REASONS.map((r) => <Radio key={r} value=\"ADMIN_ERROR\"" }] }]
+    },
+    {
+      "id": "M3",
+      "what": "🚫 the voucher dialog offers the course-only reason (the guard is gone)",
+      "files": [{ "file": "src/components/partials/Bookings/EndCourseDialog.tsx", "edits": [{ "from": "{!isVoucher &&\n                  COURSE_ONLY_END_REASONS", "to": "{true &&\n                  COURSE_ONLY_END_REASONS" }] }]
+    },
+    {
+      "id": "M4",
+      "what": "the new reason reads another word in EN",
+      "files": [{ "file": "src/lib/i18n/dictionaries.ts", "edits": [{ "from": "    ENDED_EARLY: \"Course ended early\",", "to": "    ENDED_EARLY: \"Course cancelled\"," }] }]
+    },
+    {
+      "id": "M5",
+      "what": "the new reason reads ยกเลิกคอร์ส in TH (not her ตัดจบคอร์ส)",
+      "files": [{ "file": "src/lib/i18n/dictionaries.ts", "edits": [{ "from": "    ENDED_EARLY: \"ตัดจบคอร์ส\",", "to": "    ENDED_EARLY: \"ยกเลิกคอร์ส\"," }] }]
+    },
+    {
+      "id": "M6",
+      "what": "the confirm sentence (EN) goes back to the old \"Cancel the … course\" wording",
+      "files": [{ "file": "src/lib/i18n/dictionaries.ts", "edits": [{ "from": "confirmLine: \"End the {program} course for {student} early — the {n} remaining sessions are removed. It cannot be undone.\",", "to": "confirmLine: \"Cancel the {program} course for {student} — this removes the {n} remaining sessions. It cannot be undone.\"," }] }]
+    },
+    {
+      "id": "M7",
+      "what": "🔴 ENDED_EARLY is added to the SHARED three-reason list (the voucher path would offer it)",
+      "files": [{ "file": "src/types/app/scheduler/index.ts", "edits": [{ "from": "export const END_COURSE_REASONS = [\"PROGRAM_CHANGED\", \"CUSTOMER_CANCELLED\", \"ADMIN_ERROR\"] as const;", "to": "export const END_COURSE_REASONS = [\"PROGRAM_CHANGED\", \"CUSTOMER_CANCELLED\", \"ADMIN_ERROR\", \"ENDED_EARLY\"] as const;" }] }]
+    },
+    {
+      "id": "M8",
+      "what": "a «copy pending» marker ships on an approved string",
+      "files": [{ "file": "src/lib/i18n/dictionaries.ts", "edits": [{ "from": "    title: \"End this course early?\",", "to": "    title: \"End this course early? «copy pending»\"," }] }]
+    },
+    {
+      "id": "M9",
+      "what": "the course wire is narrowed back to the three reasons",
+      "files": [{ "file": "src/services/scheduler.service.ts", "edits": [{ "from": "export const endCourse = async (courseId: string, input: { reason: CourseEndReason; note?: string })", "to": "export const endCourse = async (courseId: string, input: { reason: EndCourseReason; note?: string })" }] }]
+    }
+  ]
+}

@@ -1048,6 +1048,12 @@ export const resumeCourse = (courseId: string, input: { startDate: string; start
   });
 };
 
+/** TASK-838 — offline stand-ins for "change teacher / time for the rest": a dry-run answer and an acknowledged act. */
+export const previewChangeTeacherTime = (_courseId: string, input: { startDate: string; startTime: string; teacherId: string }) =>
+  delay({ n: 4, firstDate: input.startDate, lastDate: dayjs(input.startDate).add(3, "week").format("YYYY-MM-DD") });
+export const changeTeacherTime = (courseId: string, _input: { startDate: string; startTime: string; teacherId: string }) =>
+  delay({ id: courseId, moved: 4, needsReconfirm: 2 });
+
 /** TASK-571 — offline: one week later, two weeks skipped for the coach's leave, three sessions to reconfirm. */
 /** TASK-574 — offline: the same shape the act will return, plus `forecast: true`. */
 export const previewCourseStart = (courseId: string, startDate: string) =>

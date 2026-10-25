@@ -141,7 +141,7 @@ export interface CourseSummary {
    *  `size` still reads what the family BOUGHT; these say the plan is finished. Required, not optional: an
    *  ended course that silently maps to `undefined` is the `ปกติ` badge bug (TASK-183). */
   endedAt: string | null;
-  endReason: "PROGRAM_CHANGED" | "CUSTOMER_CANCELLED" | "ADMIN_ERROR" | null;
+  endReason: "PROGRAM_CHANGED" | "CUSTOMER_CANCELLED" | "ADMIN_ERROR" | "ENDED_EARLY" | null;
   /** SPEC-064 / TASK-188 — the course's lifecycle status, computed SERVER-side with a fixed precedence
    *  (CANCELLED → COMPLETED → EXPIRED → ACTIVE) so every course is exactly one. **The badge renders this.**
    *  The FE must never re-derive lifecycle: a second computation is precisely what let a cancelled course show a
@@ -414,6 +414,27 @@ export interface ResumeCourseResponse {
   /** Whether it actually moved — the difference between *"it moved because the course moved"* and a number
    *  that changed on its own. That distinction is what REQ-082's audit exists to keep answerable. */
   expiryExtended: boolean;
+}
+
+/**
+ * 🔴 **TASK-838 (REQ-127) — "change teacher / time for the rest": ONE act that moves a course's remaining live sessions IN PLACE to a new teacher, start date and time.**
+ * The body is the resume's three fields, and the teacher is ALWAYS named (the act exists to say who teaches the rest). The preview is a dry run in a rolled-back
+ * transaction — **the dialog's `{n}` comes from it and from nowhere else.** `clashes` is the server's own list; a refusal (`SLOT_TAKEN` …) is its sentence.
+ */
+export interface ChangeTeacherTimeInput {
+  startDate: IsoDate;
+  startTime: string;
+  teacherId: string;
+}
+/** What the act answers that the screen reads: how many CONFIRMED sessions went back to PENDING (their confirmation was of the old slot). Absent / 0 ⇒ nothing to say. */
+export interface ChangeTeacherTimeResult {
+  needsReconfirm?: number;
+}
+export interface ChangeTeacherTimePreview {
+  n: number;
+  firstDate: IsoDate | null;
+  lastDate: IsoDate | null;
+  clashes?: unknown[];
 }
 
 /**

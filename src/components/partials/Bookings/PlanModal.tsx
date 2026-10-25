@@ -18,7 +18,7 @@ import {
   Text,
 } from "@mantine/core";
 import { Checkbox, Textarea, Tooltip } from "@mantine/core";
-import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Ticket, UserMinus, X } from "lucide-react";
+import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Repeat, Ticket, UserMinus, X } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
 import { formatDateDisplay, formatDateWithDay, formatTimeDisplay } from "@/lib/ui/format";
@@ -55,6 +55,7 @@ import EndCourseDialog from "./EndCourseDialog";
 import { useUndoControl } from "@/components/common/UndoControl";
 import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
+import ChangeTeacherTimeDialog from "./ChangeTeacherTimeDialog";
 import { canResumeCourse, isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import { visiblePlanRows } from "@/lib/scheduler/plan-rows";
 import { toTimeSlot } from "@/lib/scheduler/time-slot";
@@ -152,6 +153,8 @@ export default function PlanModal({
   const [endOpen, setEndOpen] = useState(false);
   // TASK-199 — pause / resume. One dialog, two modes; `null` = closed.
   const [dropMode, setDropMode] = useState<"drop" | "resume" | null>(null);
+  // TASK-838 (REQ-127) — "change teacher / time for the rest": one act on the rest of THIS course.
+  const [changeRestOpen, setChangeRestOpen] = useState(false);
   // TASK-202 — confirm every PENDING session at once. `skips` is kept in state because a skip is a fact the
   // admin must see: "10 confirmed" when 9 were is worse than 9 and the reason.
   const confirmCourseMut = useConfirmCourse();
@@ -174,6 +177,7 @@ export default function PlanModal({
       setPending(null);
       setEndOpen(false);
       setDropMode(null);
+      setChangeRestOpen(false);
       setSkips([]);
     }
   }, [opened]);
@@ -480,6 +484,21 @@ export default function PlanModal({
                     {t("endCourse.drop")}
                   </Button>
                 )}
+                {/* 🔴 TASK-838 (REQ-127) — the rest of the course moves to a new teacher, day and time, in ONE act. Only on a writable course (this block), by `bookings.course-plan` (the plan editor's key — the back's routes require it). */}
+                {can("action:bookings.course-plan") && (
+                  <Button
+                    variant="light"
+                    color="blue"
+                    size="xs"
+                    leftSection={<Repeat size={14} />}
+                    onClick={() => {
+                      setError(null);
+                      setChangeRestOpen(true);
+                    }}
+                  >
+                    {t("plan.changeRest")}
+                  </Button>
+                )}
                 {can("action:bookings.course-cancel") && (
                   <Button
                     variant="light"
@@ -640,6 +659,21 @@ export default function PlanModal({
           courseTeacherId={courseLastRow?.teacher?.id ?? null}
           onClose={() => setDropMode(null)}
           onDone={onClose}
+        />
+      )}
+      {/* TASK-838 — mounted only while open (no fallback flash); the same slot/teacher facts the pause/resume dialog reads. The plan re-reads on the act, and the dialog closes onto it:
+          "ยืนยันทั้งคอร์ส" is the next step. */}
+      {changeRestOpen && (
+        <ChangeTeacherTimeDialog
+          opened
+          courseId={isCourse && !isCreate ? (plan?.id ?? null) : null}
+          program={courseSlot?.subject?.name ?? null}
+          student={plan?.student?.nickname || plan?.student?.name || null}
+          courseStartTime={courseSlot?.startTime ?? null}
+          courseWeekday={courseSlot ? dayjs(courseSlot.date).day() : null}
+          courseSubject={courseSlot?.subject ?? null}
+          courseTeacherId={courseLastRow?.teacher?.id ?? null}
+          onClose={() => setChangeRestOpen(false)}
         />
       )}
     </Modal>

@@ -70,7 +70,8 @@ describe("§2 — the card, the ONE dialog, the pair", () => {
   it("ONE dialog component: `EndCourseDialog` takes `target: { kind, id }`; the voucher picks the voucher pair, the course the course pair; the voucher shows the doomed draws and the frozen `remaining` (server's, no subtraction)", () => {
     expect(dialog).toContain('const isVoucher = target?.kind === "voucher";');
     expect(dialog).toContain("const preview = isVoucher ? previewVoucher : previewCourse;");
-    expect(dialog).toContain("if (isVoucher) await endVoucherMut.mutateAsync({ voucherId: targetId, reason, note: note.trim() || undefined });");
+    // 🔻 TASK-837: the dialog's state is `CourseEndReason` now, so the voucher call narrows it — its radios never offer ENDED_EARLY (pinned in end-course-early-task837.test.ts)
+    expect(dialog).toContain("if (isVoucher) await endVoucherMut.mutateAsync({ voucherId: targetId, reason: reason as EndCourseReason, note: note.trim() || undefined });");
     expect(dialog).toContain("else await endCourseMut.mutateAsync({ courseId: targetId, reason, note: note.trim() || undefined });");
     expect(dialog).toContain('{isVoucher && typeof data.remaining === "number" && (');
     expect(dialog).toContain('{t("voucher.endKept", { n: data.remaining })}');

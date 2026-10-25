@@ -83,6 +83,8 @@ import {
   endVoucher,
   dropCourse,
   resumeCourse,
+  previewChangeTeacherTime,
+  changeTeacherTime,
   updateCourseExpiry,
   previewVoucherExpiry,
   updateVoucherExpiry,
@@ -100,8 +102,9 @@ import {
   type ExtraSessionInput,
 } from "@/services/scheduler.service";
 import { undoBody } from "@/lib/scheduler/undo";
-import type { EndCourseReason, PlanChange, RecordRentalInput, SessionCancelReason, TeacherType } from "@/types/app/scheduler";
+import type { CourseEndReason, EndCourseReason, PlanChange, RecordRentalInput, SessionCancelReason, TeacherType } from "@/types/app/scheduler";
 import type { OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
+import type { ChangeTeacherTimeInput } from "@/types/api/contract";
 import type { GroupSeriesInput, GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 
 export const TEACHERS_KEY = ["teachers"] as const;
@@ -326,7 +329,7 @@ export const usePreviewEndCourse = () =>
 export const useEndCourse = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ courseId, reason, note }: { courseId: string; reason: EndCourseReason; note?: string }) =>
+    mutationFn: ({ courseId, reason, note }: { courseId: string; reason: CourseEndReason; note?: string }) =>
       endCourse(courseId, { reason, note }),
     onSuccess: () => invalidateAll(qc),
   });
@@ -426,6 +429,21 @@ export const useResumeCourse = () => {
       /** TASK-360 — only when the dialog chose a different teacher; `undefined` ⇒ the key is not sent. */
       teacherId?: string;
     }) => resumeCourse(courseId, { startDate, startTime, teacherId }),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/** TASK-838 — the dry run of "change teacher / time for the rest": writes nothing; the dialog's `{n}` is read from it. */
+export const usePreviewChangeTeacherTime = () =>
+  useMutation({
+    mutationFn: ({ courseId, ...input }: { courseId: string } & ChangeTeacherTimeInput) => previewChangeTeacherTime(courseId, input),
+  });
+
+/** TASK-838 — the act: the rest of the course moves in place. Invalidates everything (the plan, the calendar, the notices). */
+export const useChangeTeacherTime = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, ...input }: { courseId: string } & ChangeTeacherTimeInput) => changeTeacherTime(courseId, input),
     onSuccess: () => invalidateAll(qc),
   });
 };

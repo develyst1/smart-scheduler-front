@@ -1,0 +1,75 @@
+{
+  "_why": "TASK-838 (FE, REQ-127). One clicked test file (the dialog: the server's n, the body, the teacher always named, the clash sentence, the confirm that waits, the permission) + the action-gate and resume-teacher pins I touched/kept. M1 n from the client, M2 teacher not sent, M3 button without the key, M4 confirm before the answer, M5 clash swallowed, M6/M7 the approved words, M8 the route.",
+  "tests": [
+    "src/components/partials/Bookings/change-teacher-time-task838.dom.test.tsx",
+    "src/lib/rbac/action-gate.test.ts",
+    "src/lib/scheduler/resume-teacher.test.ts"
+  ],
+  "mutations": [
+    {
+      "id": "M1",
+      "what": "🔴 the sentence's {n} stops being the server's (a client number)",
+      "files": [{ "file": "src/components/partials/Bookings/ChangeTeacherTimeDialog.tsx", "edits": [{ "from": "{t(\"plan.changeRestLine\", { n: answer.n })}", "to": "{t(\"plan.changeRestLine\", { n: answer.n + 1 })}" }] }]
+    },
+    {
+      "id": "M2",
+      "what": "🔴 the teacher is not sent on the act",
+      "files": [{ "file": "src/services/scheduler.service.ts", "edits": [{ "from": "`/courses/${courseId}/change-teacher-time`, {\n    startDate: input.startDate,\n    startTime: input.startTime,\n    teacherId: input.teacherId,\n  });", "to": "`/courses/${courseId}/change-teacher-time`, {\n    startDate: input.startDate,\n    startTime: input.startTime,\n  });" }] }]
+    },
+    {
+      "id": "M3",
+      "what": "🚫 the plan-modal button is shown without `bookings.course-plan`",
+      "files": [{ "file": "src/components/partials/Bookings/PlanModal.tsx", "edits": [{ "from": "{can(\"action:bookings.course-plan\") && (\n                  <Button\n                    variant=\"light\"\n                    color=\"blue\"", "to": "{true && (\n                  <Button\n                    variant=\"light\"\n                    color=\"blue\"" }] }]
+    },
+    {
+      "id": "M10",
+      "what": "🚫 the button is gated by the WRONG key again (`course-edit`, the task's first wording)",
+      "files": [{ "file": "src/components/partials/Bookings/PlanModal.tsx", "edits": [{ "from": "{can(\"action:bookings.course-plan\") && (\n                  <Button\n                    variant=\"light\"\n                    color=\"blue\"", "to": "{can(\"action:bookings.course-edit\") && (\n                  <Button\n                    variant=\"light\"\n                    color=\"blue\"" }] }]
+    },
+    {
+      "id": "M4",
+      "what": "the Confirm can be pressed before the server has answered",
+      "files": [{ "file": "src/components/partials/Bookings/ChangeTeacherTimeDialog.tsx", "edits": [{ "from": "disabled={!courseId || !teacherId || !startDate || !startTime || !answer}", "to": "disabled={!courseId || !teacherId || !startDate || !startTime}" }] }]
+    },
+    {
+      "id": "M5",
+      "what": "🔴 a clash is swallowed into a generic failure instead of the server's sentence",
+      "files": [{ "file": "src/components/partials/Bookings/ChangeTeacherTimeDialog.tsx", "edits": [{ "from": "nothing was written.\n      setError(e instanceof ApiClientError ? e.message : t(\"plan.genericError\"));", "to": "nothing was written.\n      setError(t(\"plan.genericError\"));" }] }]
+    },
+    {
+      "id": "M6",
+      "what": "the approved EN line is reworded",
+      "files": [{ "file": "src/lib/i18n/dictionaries.ts", "edits": [{ "from": "changeRestLine: \"The remaining {n} sessions move to the chosen teacher", "to": "changeRestLine: \"The remaining {n} sessions will move to the chosen teacher" }] }]
+    },
+    {
+      "id": "M7",
+      "what": "the approved TH button is shortened",
+      "files": [{ "file": "src/lib/i18n/dictionaries.ts", "edits": [{ "from": "changeRest: \"เปลี่ยนครู / เวลา ทั้งคอร์ส\",", "to": "changeRest: \"เปลี่ยนครู ทั้งคอร์ส\"," }] }]
+    },
+    {
+      "id": "M9",
+      "what": "🚫 the dialog's Confirm (the act) is offered without `bookings.course-plan`",
+      "files": [{ "file": "src/components/partials/Bookings/ChangeTeacherTimeDialog.tsx", "edits": [{ "from": "{can(\"action:bookings.course-plan\") && (", "to": "{true && (" }] }]
+    },
+    {
+      "id": "M11",
+      "what": "🔴 the reconfirm alert is hidden (an admin could move a course and never confirm it again)",
+      "files": [{ "file": "src/components/partials/Bookings/ChangeTeacherTimeDialog.tsx", "edits": [{ "from": "if ((res?.needsReconfirm ?? 0) > 0) {", "to": "if (false) {" }] }]
+    },
+    {
+      "id": "M12",
+      "what": "the alert's n is not the server's needsReconfirm",
+      "files": [{ "file": "src/components/partials/Bookings/ChangeTeacherTimeDialog.tsx", "edits": [{ "from": "title={t(\"courseStart.reconfirmTitle\", { n: reconfirm })}", "to": "title={t(\"courseStart.reconfirmTitle\", { n: 1 })}" }] }]
+    },
+    {
+      "id": "M13",
+      "what": "the alert is shown at 0 too",
+      "files": [{ "file": "src/components/partials/Bookings/ChangeTeacherTimeDialog.tsx", "edits": [{ "from": "if ((res?.needsReconfirm ?? 0) > 0) {", "to": "if ((res?.needsReconfirm ?? 0) >= 0) {" }] }]
+    },
+    {
+      "id": "M8",
+      "what": "the preview is asked on the wrong route",
+      "files": [{ "file": "src/services/scheduler.service.ts", "edits": [{ "from": "`/courses/${courseId}/change-teacher-time/preview`", "to": "`/courses/${courseId}/change-teacher/preview`" }] }]
+    }
+  ]
+}

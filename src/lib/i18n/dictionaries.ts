@@ -207,21 +207,24 @@ const en = {
     resumeExpiryMoved: "The expiry moved to {date} to cover the new last session.",
     resumeExpirySame: "The expiry is unchanged: {date}.",
     resumeDone: "Course resumed",
-    action: "Cancel course",
-    title: "Cancel this course?",
-    confirmLine: "Cancel the {program} course for {student} — this removes the {n} remaining sessions. It cannot be undone.",
+    // ✅ APPROVED by the owner 2026-10-25 (REQ-126), COPY-REVIEW-2026-09-29.md §2026-10-25, verbatim — the end-course act's button + dialog (the behaviour is unchanged).
+    action: "End course early",
+    title: "End this course early?",
+    confirmLine: "End the {program} course for {student} early — the {n} remaining sessions are removed. It cannot be undone.",
     reasonLabel: "Reason",
     reasonRequired: "Pick a reason to continue",
     PROGRAM_CHANGED: "Customer changed activity",
     CUSTOMER_CANCELLED: "Customer no longer wants it",
     ADMIN_ERROR: "Admin entered it by mistake",
+    // ✅ APPROVED by the owner 2026-10-25 (REQ-126), verbatim — a COURSE end only (the dialog option AND the coach's LINE reason); never offered on a voucher.
+    ENDED_EARLY: "Course ended early",
     // ✅ APPROVED (owner 2026-10-06, §T-REQ112-A A5) — SESSION cancel only; read by the tray and the notices too.
     SCHOOL_ISSUE: "A problem on our side",
     TEACHER_LEAVE: "Teacher leave", // REQ-097 — read-only: written by the teacher's own leave, never offered in a dialog
     noteLabel: "Note (optional)",
     alreadyEnded: "This course has already been cancelled.",
-    confirm: "Cancel the course",
-    done: "Course cancelled",
+    confirm: "End course early",
+    done: "Course ended early",
   },
   attendeeNote: {
     label: "Session note",
@@ -1359,6 +1362,9 @@ const en = {
 
   plan: {
     manage: "Manage plan",
+    // ✅ APPROVED by the owner 2026-10-25 (REQ-127), COPY-REVIEW-2026-09-29.md §2026-10-25, verbatim — the button in the plan modal (also the dialog's title) and the dialog's line (`{n}` = the server's preview, never counted here).
+    changeRest: "Change teacher / time for the rest",
+    changeRestLine: "The remaining {n} sessions move to the chosen teacher, on the new day and time. Sessions already taught don't change.",
     title: "{name} — plan",
     loading: "Loading…",
     loadError: "Couldn't load the plan.",
@@ -2469,21 +2475,24 @@ const th: typeof en = {
     resumeExpiryMoved: "วันหมดอายุขยับเป็น {date} เพื่อให้ครอบคลุมคาบสุดท้ายใหม่",
     resumeExpirySame: "วันหมดอายุเท่าเดิม: {date}",
     resumeDone: "กลับมาเรียนแล้ว",
-    action: "ยกเลิกคอร์ส",
-    title: "ยกเลิกคอร์สนี้?",
-    confirmLine: "ยกเลิกคอร์ส {program} ของ {student} — จะลบคาบที่เหลือ {n} คาบ ทำแล้วย้อนกลับไม่ได้",
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-25 (REQ-126), COPY-REVIEW-2026-09-29.md §2026-10-25, ตรงตัว — ปุ่มและหน้าต่างของการตัดจบคอร์ส (พฤติกรรมเดิมทุกอย่าง)
+    action: "ตัดจบคอร์ส",
+    title: "ตัดจบคอร์สนี้?",
+    confirmLine: "ตัดจบคอร์ส {program} ของ {student} — คาบที่เหลือ {n} คาบจะถูกนำออกจากตาราง ทำแล้วย้อนกลับไม่ได้",
     reasonLabel: "เหตุผล",
     reasonRequired: "เลือกเหตุผลก่อนจึงจะดำเนินการต่อได้",
     PROGRAM_CHANGED: "ลูกค้าเปลี่ยนกิจกรรม",
     CUSTOMER_CANCELLED: "ลูกค้าไม่เอาแล้ว",
     ADMIN_ERROR: "แอดมินคีย์ผิด",
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-25 (REQ-126) ตรงตัว — ใช้กับการตัดจบ "คอร์ส" เท่านั้น (ตัวเลือกในหน้าต่าง และเหตุผลที่โค้ชเห็นใน LINE) ไม่เสนอที่ voucher
+    ENDED_EARLY: "ตัดจบคอร์ส",
     // ✅ APPROVED (owner 2026-10-06, §T-REQ112-A A5) — คำของลูกค้าเอง ตรงตัว
     SCHOOL_ISSUE: "ปัญหาจากทางเรา",
     TEACHER_LEAVE: "ครูลา",
     noteLabel: "หมายเหตุ (ไม่บังคับ)",
     alreadyEnded: "คอร์สนี้ถูกยกเลิกไปแล้ว",
-    confirm: "ยกเลิกคอร์ส",
-    done: "ยกเลิกคอร์สแล้ว",
+    confirm: "ตัดจบคอร์ส",
+    done: "ตัดจบคอร์สแล้ว",
   },
   attendeeNote: {
     label: "โน้ตของคาบนี้",
@@ -3465,6 +3474,9 @@ const th: typeof en = {
 
   plan: {
     manage: "จัดการแผน",
+    // ✅ อนุมัติโดยเจ้าของ 2026-10-25 (REQ-127), COPY-REVIEW-2026-09-29.md §2026-10-25, ตรงตัว — ปุ่มในหน้าแผน (และชื่อหน้าต่าง) กับประโยคในหน้าต่าง ({n} มาจาก preview ของเซิร์ฟเวอร์เท่านั้น)
+    changeRest: "เปลี่ยนครู / เวลา ทั้งคอร์ส",
+    changeRestLine: "คาบที่เหลือ {n} คาบจะย้ายไปเรียนกับครูที่เลือก ตามวันและเวลาใหม่ คาบที่เรียนไปแล้วไม่เปลี่ยน",
     title: "แผนของ {name}",
     loading: "กำลังโหลด…",
     loadError: "โหลดแผนไม่สำเร็จ",
