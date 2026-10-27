@@ -1,2 +1,1 @@
 # smart-scheduler-front
-# SOM
