@@ -7,6 +7,7 @@ import { Card, Stack, Text, Badge, Alert, Loader, Group, Anchor } from "@mantine
 import { AlertTriangle, CircleCheck, Clock } from "lucide-react";
 import { useAttention } from "@/hooks/scheduler";
 import { useI18n } from "@/lib/i18n";
+import { attentionHref } from "@/lib/scheduler/attention-link";
 import type { AttentionCheck } from "@/types/app/attention";
 
 /** Checks whose work is cleared on a specific screen. Keyed by the API's check key. */
@@ -101,7 +102,14 @@ export default function AttentionContent() {
             <Stack gap={4} mt="sm">
               {c.items.map((it) => (
                 <div key={it.id} className="text-sm">
-                  {it.label}
+                  {/* REQ-132 — an item that names a course / voucher opens THAT plan window; the label is the server's words. No `link` ⇒ plain text, exactly as before. */}
+                  {it.link ? (
+                    <Anchor component={Link} href={attentionHref(it.link)} size="sm" data-attention-link={it.link.kind}>
+                      {it.label}
+                    </Anchor>
+                  ) : (
+                    it.label
+                  )}
                   {it.hint && <span className="ml-1.5 text-xs text-muted-400">· {it.hint}</span>}
                 </div>
               ))}

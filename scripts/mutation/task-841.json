@@ -1,0 +1,46 @@
+{
+  "_why": "TASK-841 (FE, REQ-132). One clicked test file: the Attention page's anchors (href + label), the URL the Bookings page reads, and the hook that opens the plan window once. M1 the link dropped, M2 the wrong id in the URL, M3 ?course= ignored on load, M4 a voucher link under the wrong key, M5 no kind check, M6 reopens, M7 opens without loading, M8 the Bookings page stops using the hook.",
+  "tests": ["src/components/partials/Attention/attention-link-task841.dom.test.tsx"],
+  "mutations": [
+    {
+      "id": "M1",
+      "what": "🔴 the link is dropped (every item is plain text again)",
+      "files": [{ "file": "src/components/partials/Attention/AttentionContent.tsx", "edits": [{ "from": "{it.link ? (", "to": "{false ? (" }] }]
+    },
+    {
+      "id": "M2",
+      "what": "🔴 the wrong id in the URL (the kind where the id belongs)",
+      "files": [{ "file": "src/lib/scheduler/attention-link.ts", "edits": [{ "from": "=${encodeURIComponent(link.id)}`", "to": "=${encodeURIComponent(link.kind)}`" }] }]
+    },
+    {
+      "id": "M3",
+      "what": "🔴 ?course= is ignored on load",
+      "files": [{ "file": "src/lib/scheduler/attention-link.ts", "edits": [{ "from": "const course = get(\"course\");", "to": "const course = null as string | null;" }] }]
+    },
+    {
+      "id": "M4",
+      "what": "a voucher link is written under ?course=",
+      "files": [{ "file": "src/lib/scheduler/attention-link.ts", "edits": [{ "from": "${link.kind === \"voucher\" ? \"voucher\" : \"course\"}=", "to": "course=" }] }]
+    },
+    {
+      "id": "M5",
+      "what": "an id of the OTHER kind opens a window (no kind check)",
+      "files": [{ "file": "src/hooks/scheduler/useOpenPlanFromLink.ts", "edits": [{ "from": "    if (plan.data.kind !== request.kind) return;\n", "to": "" }] }]
+    },
+    {
+      "id": "M6",
+      "what": "the window REopens after the admin closed it (the once-guard is gone)",
+      "files": [{ "file": "src/hooks/scheduler/useOpenPlanFromLink.ts", "edits": [{ "from": "    done.current = true;\n", "to": "" }] }]
+    },
+    {
+      "id": "M7",
+      "what": "🔴 the window opens before the plan has loaded (an unknown id would open an error window)",
+      "files": [{ "file": "src/hooks/scheduler/useOpenPlanFromLink.ts", "edits": [{ "from": "if (!request || done.current || !plan.data) return;\n    if (plan.data.kind !== request.kind) return;", "to": "if (!request || done.current) return;" }] }]
+    },
+    {
+      "id": "M8",
+      "what": "the Bookings page stops opening the window from the link",
+      "files": [{ "file": "src/components/partials/Bookings/BookingsContent.tsx", "edits": [{ "from": "  useOpenPlanFromLink(request, setPlanId);", "to": "" }] }]
+    }
+  ]
+}
