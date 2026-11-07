@@ -6,8 +6,10 @@ import "dayjs/locale/th";
 import {
   Alert,
   Button,
+  Group,
   Loader,
   Modal,
+  Pagination,
   Select,
   Table,
   Text,
@@ -51,6 +53,9 @@ const COLUMNS: Record<NvrBucket, Column[]> = {
   notRenewed: ["student", "package", "courseTeacher", "date", "remark"],
 };
 
+// The detail endpoint sends every row (no server paging), so the table pages on the client.
+const PAGE_SIZE = 10;
+
 const isNewCourse = (b: NvrBucket) =>
   b === "newCourseThisMonth" || b === "newCoursePrevMonth";
 
@@ -68,6 +73,7 @@ export function NvrDetailModal({
   const { data: teachers = [] } = useTeachers();
   const rows: NvrDetailRow[] = data ?? [];
   const [teacherId, setTeacherId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const teacherName = (id?: string | null) => {
     if (!id) return t("common.none");
@@ -79,6 +85,7 @@ export function NvrDetailModal({
 
   const close = () => {
     setTeacherId(null);
+    setPage(1);
     onClose();
   };
 
@@ -92,6 +99,10 @@ export function NvrDetailModal({
             r.courseTeacherId === teacherId || r.trialTeacherId === teacherId,
         )
       : rows;
+  const totalPages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+  const current = Math.min(page, totalPages);
+  const start = (current - 1) * PAGE_SIZE;
+  const pageRows = shown.slice(start, start + PAGE_SIZE);
 
   const cell = (r: NvrDetailRow, c: Column) => {
     switch (c) {
@@ -117,7 +128,7 @@ export function NvrDetailModal({
   };
 
   return (
-    <Modal opened onClose={close} title={t(`som.nvr.${bucket}`)} size="xl">
+    <Modal opened onClose={close} title={t(`som.nvr.${bucket}`)} size="68rem">
       {isNewCourse(bucket) && (
         <Select
           className="mb-3 max-w-xs"
@@ -128,7 +139,10 @@ export function NvrDetailModal({
             label: tc.nickname || tc.name,
           }))}
           value={teacherId}
-          onChange={setTeacherId}
+          onChange={(id) => {
+            setTeacherId(id);
+            setPage(1);
+          }}
           clearable
           searchable
         />
@@ -149,7 +163,11 @@ export function NvrDetailModal({
         // columns are visible, with the empty-state row inside it.
         <>
           <Text size="xs" c="dimmed" mb="xs">
-            {t("som.nvrRowCount", { n: shown.length })}
+            {t("overview.rowRange", {
+              from: shown.length === 0 ? 0 : start + 1,
+              to: start + pageRows.length,
+              total: shown.length,
+            })}
           </Text>
           <Table.ScrollContainer type="native" minWidth={cols.length * 120}>
             <Table verticalSpacing="xs" highlightOnHover>
@@ -175,13 +193,13 @@ export function NvrDetailModal({
                     </Table.Td>
                   </Table.Tr>
                 ) : (
-                  shown.map((r, i) => (
-                    <Table.Tr key={`${r.studentId}-${i}`}>
+                  pageRows.map((r, i) => (
+                    <Table.Tr key={`${r.studentId}-${start + i}`}>
                       <Table.Td
                         ta="right"
                         className="tabular-nums text-muted-400"
                       >
-                        {i + 1}
+                        {start + i + 1}
                       </Table.Td>
                       {cols.map((c) => (
                         <Table.Td key={c}>{cell(r, c)}</Table.Td>
@@ -192,6 +210,18 @@ export function NvrDetailModal({
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>
+          {totalPages > 1 && (
+            <Group justify="flex-end" mt="md">
+              <Pagination
+                total={totalPages}
+                value={current}
+                onChange={setPage}
+                size="sm"
+                radius="md"
+                withEdges
+              />
+            </Group>
+          )}
         </>
       )}
     </Modal>

@@ -1877,7 +1877,6 @@ const en = {
     nvrHint: "Click a card to see who",
     nvrTeacherFilter: "Teacher (course or 1st Trial)",
     nvrAllTeachers: "All teachers",
-    nvrRowCount: "{n} rows",
     nvrLoadError: "Couldn't load the list",
     retry: "Try again",
     nvrCol: {
@@ -3951,7 +3950,6 @@ const th: typeof en = {
     nvrHint: "กดที่การ์ดเพื่อดูรายชื่อ",
     nvrTeacherFilter: "ครู (คอร์สหรือทดลองเรียน)",
     nvrAllTeachers: "ครูทุกคน",
-    nvrRowCount: "{n} รายการ",
     nvrLoadError: "โหลดรายชื่อไม่สำเร็จ",
     retry: "ลองอีกครั้ง",
     nvrCol: {
