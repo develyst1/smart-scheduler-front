@@ -1,4 +1,5 @@
 import { api, useMockData } from "@/lib/api/client";
+import { somPeriodParams } from "@/lib/som/period";
 import {
   SOM_UNKNOWN_KEY,
   type NvrBucket,
@@ -281,16 +282,16 @@ const mockSom = (): SomReport => {
   };
 };
 
-/** REQ-013: the whole SOM dashboard from one snapshot. The FE renders it as-is. */
-// `month` + `badgeValueIds` (comma-joined, omitted = all branches) go on every SOM request. A server that does not
-// read them yet just ignores them and answers its usual snapshot.
+// The period (month, or from + to, or nothing = everything) and `badgeValueIds` (comma-joined, omitted = all
+// branches) go on every SOM request, the detail tables included.
 const somParams = (q: SomQuery) => ({
-  month: q.month,
+  ...somPeriodParams(q.period),
   ...(q.badgeValueIds.length > 0
     ? { badgeValueIds: q.badgeValueIds.join(",") }
     : {}),
 });
 
+/** REQ-013: the whole SOM dashboard from one snapshot. The FE renders it as-is. */
 export const getSomReport = async (q: SomQuery): Promise<SomReport> => {
   if (useMockData) return mockSom();
   const { data } = await api.get<SomReport>("/reports/som", {

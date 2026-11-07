@@ -7,7 +7,13 @@ import { Card, Stack, Text, Loader, SimpleGrid } from "@mantine/core";
 import { useSomReport } from "@/hooks/scheduler";
 import { useI18n } from "@/lib/i18n";
 import { Lock } from "lucide-react";
-import { NVR_BUCKETS, type NvrBucket, type SomQuery } from "@/types/app/som";
+import { resolveSomScope } from "@/lib/som/period";
+import {
+  NVR_BUCKETS,
+  type NvrBucket,
+  type SomPeriodEcho,
+  type SomQuery,
+} from "@/types/app/som";
 import { NvrDetailModal } from "./NvrDetailModal";
 import { SomFilters } from "./SomFilters";
 import { CoachCapacitySection } from "./CoachCapacitySection";
@@ -16,24 +22,26 @@ import { DemographicsSection } from "./DemographicsSection";
 
 export default function SomContent() {
   const { t, lang } = useI18n();
-  // Page-level filters: one month + badge (branch) values for every section but Today (locked to today).
-  const [query, setQuery] = useState<SomQuery>(() => ({
-    month: dayjs().format("YYYY-MM"),
+  // Page-level filters: one period + badge (branch) values for every section but Today (locked to today).
+  // The page opens on everything (client, 2026-11).
+  const [query, setQuery] = useState<SomQuery>({
+    period: { kind: "all" },
     badgeValueIds: [],
-  }));
+  });
   const { data, isLoading, isFetching } = useSomReport(query);
   const [nvrOpen, setNvrOpen] = useState<NvrBucket | null>(null);
 
-  const monthLabel = dayjs(`${query.month}-01`)
-    .locale(lang)
-    .format("MMMM YYYY");
-
-  const fmtDate = (iso: string) =>
-    dayjs(iso)
-      .locale(lang)
-      .format(lang === "th" ? "D MMM" : "D MMM YYYY");
+  const fmtDay = (iso: string) => dayjs(iso).locale(lang).format("D MMM YYYY");
   const fmtMonth = (ym: string) =>
     dayjs(`${ym}-01`).locale(lang).format("MMM YYYY");
+  // What a section's scope tag says: the period its own response reports, not simply what is selected.
+  const scopeLabel = (echo?: SomPeriodEcho | null) => {
+    const scope = resolveSomScope(echo, query.period);
+    if (scope.kind === "all") return t("som.periodAll");
+    if (scope.kind === "month")
+      return dayjs(`${scope.month}-01`).locale(lang).format("MMMM YYYY");
+    return `${fmtDay(scope.from)} – ${fmtDay(scope.to)}`;
+  };
   const fmtDateTime = (iso: string) =>
     dayjs(iso)
       .locale(lang)
@@ -102,7 +110,7 @@ export default function SomContent() {
 
       {/* 2. Existing customers */}
       <section>
-        <SectionHeading scope={monthLabel}>
+        <SectionHeading scope={scopeLabel(ec)}>
           {t("som.existingTitle")}
         </SectionHeading>
         <SimpleGrid cols={{ base: 2, sm: 3, lg: 5 }} spacing="sm">
@@ -124,19 +132,20 @@ export default function SomContent() {
             accent
           />
         </SimpleGrid>
-        <p className="mt-1.5 text-xs text-muted-400">
-          {ec.recentFrom && ec.recentTo
-            ? t("som.trialRange", {
-                from: fmtMonth(ec.recentFrom),
-                to: fmtMonth(ec.recentTo),
-              })
-            : t("som.trialWindow", { date: fmtDate(ec.recentTrialSince) })}
-        </p>
+        {/* Only when the server reports a 1st Trial / 1 HR window — with no month selected there may be none. */}
+        {ec.recentFrom && ec.recentTo && (
+          <p className="mt-1.5 text-xs text-muted-400">
+            {t("som.trialRange", {
+              from: fmtMonth(ec.recentFrom),
+              to: fmtMonth(ec.recentTo),
+            })}
+          </p>
+        )}
       </section>
 
       {/* 3. New vs renewing */}
       <section>
-        <SectionHeading scope={monthLabel}>
+        <SectionHeading scope={scopeLabel(nvr)}>
           {t("som.newVsRenewingTitle")}
         </SectionHeading>
         {/* Every card reads the new contract (§3); a missing / null field shows "—" (never the legacy fields).
@@ -161,15 +170,18 @@ export default function SomContent() {
 
       {/* 4. Coach capacity — see docs/backend-som-dashboard.md §4 */}
       <section>
-        <SectionHeading scope={monthLabel}>
+        <SectionHeading scope={scopeLabel(data.coachCapacity)}>
           {t("som.coachCapacityTitle")}
         </SectionHeading>
-        <CoachCapacitySection data={data.coachCapacity} />
+        <CoachCapacitySection
+          data={data.coachCapacity}
+          periodLabel={scopeLabel(data.coachCapacity)}
+        />
       </section>
 
       {/* 5. Demographics */}
       <section>
-        <SectionHeading scope={monthLabel}>
+        <SectionHeading scope={scopeLabel(demo)}>
           {t("som.demographicsTitle")}
         </SectionHeading>
         <DemographicsSection demo={demo} />
@@ -177,7 +189,7 @@ export default function SomContent() {
 
       {/* 6. Activity / Program */}
       <section>
-        <SectionHeading scope={monthLabel}>
+        <SectionHeading scope={scopeLabel(data.activityProgram)}>
           {t("som.sportShareTitle")}
         </SectionHeading>
         <ActivityProgramSection data={data.activityProgram} />

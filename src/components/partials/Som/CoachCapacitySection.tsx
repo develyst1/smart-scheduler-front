@@ -21,15 +21,19 @@ const TYPES = (Object.keys(TEACHER_TYPE_PRIORITY) as TeacherType[]).sort(
 
 /**
  * Coach capacity (client pick B2, 2026-10-17) — one table, By person / By type toggle. Hours = booked / available
- * for the month; Weekday and Weekend cells each show the % (bold), "booked / available h" under it and a thin
- * single-color bar — no intensity shading. A period with nothing available shows 0, not a special label.
- * Renders the API's figures as-is; until the API ships `coachCapacity` the coach names/types come from the
- * teacher list and every figure is "—".
+ * for the period; Weekday and Weekend cells each show the % (bold), "booked / available h" under it and a thin
+ * single-color bar — no intensity shading.
+ * Freelance (client, 2026-11) has no fixed hours, so it shows taught hours only: no "/ h", %, or bar. A weekday /
+ * weekend with no hours at all (e.g. a part-timer's non-working days, "0 / 0") shows "—".
+ * Renders the API's figures as-is; without `coachCapacity` the coach names/types come from the teacher list and
+ * every figure is "—".
  */
 export function CoachCapacitySection({
   data,
+  periodLabel,
 }: {
   data?: CoachCapacity | null;
+  periodLabel: string;
 }) {
   const { t } = useI18n();
   const { data: teachers = [] } = useTeachers();
@@ -81,7 +85,7 @@ export function CoachCapacitySection({
       <Group justify="space-between" mb="sm" gap="xs">
         <Text size="xs" c="dimmed">
           {data
-            ? t("som.capacityMonth", { month: data.month })
+            ? t("som.capacityPeriod", { period: periodLabel })
             : t("som.capacityHint")}
         </Text>
         <SegmentedControl
@@ -132,7 +136,7 @@ export function CoachCapacitySection({
                     <Table.Td>
                       <TeacherTypeChip type={r.type} short />
                     </Table.Td>
-                    <Figures f={r.f} who={r.name} />
+                    <Figures f={r.f} who={r.name} type={r.type} />
                   </Table.Tr>
                 ))
               )
@@ -150,7 +154,11 @@ export function CoachCapacitySection({
                   <Table.Td ta="right" className="tabular-nums">
                     {r.coaches ?? t("common.none")}
                   </Table.Td>
-                  <Figures f={r.f} who={TEACHER_TYPE_LABEL[r.type]} />
+                  <Figures
+                    f={r.f}
+                    who={TEACHER_TYPE_LABEL[r.type]}
+                    type={r.type}
+                  />
                 </Table.Tr>
               ))
             )}
@@ -160,7 +168,16 @@ export function CoachCapacitySection({
     </Card>
   );
 
-  function Figures({ f, who }: { f?: CapacityFigures; who: string }) {
+  function Figures({
+    f,
+    who,
+    type,
+  }: {
+    f?: CapacityFigures;
+    who: string;
+    type: TeacherType;
+  }) {
+    const taughtOnly = type === "FREELANCE";
     if (!f) {
       return (
         <>
@@ -176,7 +193,8 @@ export function CoachCapacitySection({
           <span className="font-semibold">{f.bookedHours}</span>
           <span className="text-xs text-muted-400">
             {" "}
-            / {f.availableHours} {t("som.capHoursUnit")}
+            {!taughtOnly && f.availableHours > 0 && `/ ${f.availableHours} `}
+            {t("som.capHoursUnit")}
           </span>
         </Table.Td>
         <Period
@@ -185,6 +203,7 @@ export function CoachCapacitySection({
           pct={f.weekdayPct}
           booked={f.weekdayBookedHours}
           available={f.weekdayAvailableHours}
+          taughtOnly={taughtOnly}
         />
         <Period
           who={who}
@@ -192,6 +211,7 @@ export function CoachCapacitySection({
           pct={f.weekendPct}
           booked={f.weekendBookedHours}
           available={f.weekendAvailableHours}
+          taughtOnly={taughtOnly}
         />
       </>
     );
@@ -203,7 +223,23 @@ export function CoachCapacitySection({
     pct: number;
     booked: number;
     available: number;
+    taughtOnly: boolean;
   }) {
+    // Hours taught with nothing to measure them against: Freelance always; anyone else only if they taught outside
+    // their working days — those hours are real, so they stay visible rather than turning into "—".
+    if (p.taughtOnly || (p.available === 0 && p.booked > 0)) {
+      return (
+        <Table.Td className="whitespace-nowrap tabular-nums">
+          <Text size="sm" fw={600} span className="tabular-nums">
+            {p.booked}
+          </Text>{" "}
+          <Text size="xs" c="dimmed" span>
+            {t("som.capHoursUnit")}
+          </Text>
+        </Table.Td>
+      );
+    }
+    if (p.available === 0) return <Table.Td>{t("common.none")}</Table.Td>;
     return (
       <Table.Td>
         <ChartTip

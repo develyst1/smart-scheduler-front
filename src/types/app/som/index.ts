@@ -3,11 +3,24 @@ import type { TeacherType } from "@/types/app/scheduler";
 // SOM dashboard (REQ-013 / SPEC-020). One snapshot from GET /api/reports/som; the FE renders it as-is —
 // no recomputation, no re-bucketing, no age derivation (all server-side so every surface agrees).
 
-/** Page-level filters (client, 2026-10-17): one month + badge (branch) values, applied to every section but Today. */
+/** The page's time period (client, 2026-11): everything, one month, or a custom date range. */
+export type SomPeriod =
+  | { kind: "all" }
+  | { kind: "month"; month: string } // YYYY-MM
+  | { kind: "range"; from: string; to: string }; // YYYY-MM-DD, inclusive
+
+/** Page-level filters: one period + badge (branch) values, applied to every section but Today. */
 export interface SomQuery {
-  month: string; // YYYY-MM
+  period: SomPeriod;
   /** Empty = all branches. */
   badgeValueIds: string[];
+}
+
+/** The period a section says it covers. `month` is null unless a month was selected. */
+export interface SomPeriodEcho {
+  month?: string | null; // YYYY-MM
+  from?: string | null; // YYYY-MM-DD
+  to?: string | null; // YYYY-MM-DD
 }
 
 /** Stable key for the "unknown / ไม่ระบุ" bucket — the FE labels it from its own dictionary (API supplies identity). */
@@ -28,7 +41,7 @@ export interface Breakdown {
   total: number;
 }
 
-export interface ExistingCustomers {
+export interface ExistingCustomers extends SomPeriodEcho {
   byCourse: number;
   byVoucher: number;
   byRecentTrial: number;
@@ -36,18 +49,16 @@ export interface ExistingCustomers {
   recentTrialSince: string; // YYYY-MM-DD
   // ── New contract (docs/backend-som-dashboard.md §2). The legacy fields above keep their old (buggy) values on
   // the server so nothing else breaks — the screen reads these whenever they are present.
-  month?: string; // YYYY-MM
   activeCourse?: number;
   activeVoucher?: number;
   recentFirstTrial?: number;
   recentSingleSession?: number;
   totalCustomers?: number;
-  recentFrom?: string; // YYYY-MM
-  recentTo?: string; // YYYY-MM
+  recentFrom?: string | null; // YYYY-MM
+  recentTo?: string | null; // YYYY-MM
 }
 
-export interface NewVsRenewing {
-  month: string; // YYYY-MM
+export interface NewVsRenewing extends SomPeriodEcho {
   newByFirstTrial: number;
   newByRegistration: number;
   renewing: number;
@@ -89,11 +100,12 @@ export interface NvrDetailRow {
   remark?: string | null;
 }
 
-/** Hours + weekday/weekend split for one coach or one coach type, over `CoachCapacity.month`. */
+/** Hours + weekday/weekend split for one coach or one coach type, over the section's period. */
 export interface CapacityFigures {
-  /** Hours actually booked/taught in the month (weekday + weekend). */
+  /** Hours actually booked/taught in the period (weekday + weekend). */
   bookedHours: number;
-  /** Hours the coach(es) could teach in the month (their working days × 9 slots). */
+  /** Hours the coach(es) could teach in the period (their working days × 9 slots). Freelance = 0: they have no fixed
+   *  hours, so the screen shows taught hours only. */
   availableHours: number;
   /** Mon–Fri: booked / available hours and booked ÷ available as 0–100 rounded (0 when nothing available). */
   weekdayBookedHours: number;
@@ -116,8 +128,7 @@ export interface CoachCapacityType extends CapacityFigures {
   coaches: number;
 }
 
-export interface CoachCapacity {
-  month: string; // YYYY-MM
+export interface CoachCapacity extends SomPeriodEcho {
   byPerson: CoachCapacityPerson[];
   byType: CoachCapacityType[];
 }
@@ -136,7 +147,7 @@ export interface ActivityCategory {
   total: number;
 }
 
-export interface ActivityProgram {
+export interface ActivityProgram extends SomPeriodEcho {
   categories: ActivityCategory[];
 }
 
@@ -155,7 +166,7 @@ export interface SomReport {
   existingCustomers: ExistingCustomers;
   sportShare: Breakdown;
   newVsRenewing: NewVsRenewing;
-  demographics: {
+  demographics: SomPeriodEcho & {
     gender: Breakdown;
     ageBand: Breakdown;
     province: Breakdown;
@@ -167,9 +178,9 @@ export interface SomReport {
     nationality: Breakdown;
   };
   today: TodaySection;
-  /** Not in the live API yet — the section renders its columns with "—" until it is. */
+  /** Absent / null → the section renders its columns with "—". */
   coachCapacity?: CoachCapacity;
-  /** Not in the live API yet — `sportShare` feeds the Total column until it is. */
+  /** Absent / null → "No data yet" (never the legacy `sportShare`). */
   activityProgram?: ActivityProgram;
   generatedAt: string; // ISO
 }
