@@ -16,8 +16,8 @@ frontoffice; most-built repo in the workspace.
 > not the UI.
 >
 > **Tasks/scope live in the `smart-scheduler-requirement` repo, not a `todo.md`** (todo files were
-> removed 2026-07-08 — do not recreate them). Open `smart-scheduler-requirement/requirement.html`
-> and treat `Partial` / `Planned` items as the work queue. See the root `../CLAUDE.md` §"How work is
+> removed 2026-07-08 — do not recreate them). Scope: `smart-scheduler-requirement/01-master-plan/`
+> + `02-requirements/` (the July `requirement.html` is archived in `_archive/2026-07-hub/`). See the root `../CLAUDE.md` §"How work is
 > assigned" for the full policy.
 
 ## Stack (as actually installed — see [package.json](package.json))
