@@ -116,20 +116,30 @@ export default function SomContent() {
         <SimpleGrid cols={{ base: 2, sm: 3, lg: 5 }} spacing="sm">
           {/* New contract only (§2). A missing / null field shows "—" — never the legacy fields, which the server
               keeps at their old, buggy values (Active Course counted ended/paused courses, Trial counted cancellations). */}
-          <Stat label={t("som.byCourse")} value={ec.activeCourse ?? "—"} />
-          <Stat label={t("som.byVoucher")} value={ec.activeVoucher ?? "—"} />
           <Stat
-            label={t("som.byRecentTrial")}
-            value={ec.recentFirstTrial ?? "—"}
+            label={t("som.byCourse")}
+            value={ec.activeCourse ?? "—"}
+            tone="orange"
           />
           <Stat
-            label={t("som.byRecentSingle")}
-            value={ec.recentSingleSession ?? "—"}
+            label={t("som.byVoucher")}
+            value={ec.activeVoucher ?? "—"}
+            tone="orange"
           />
           <Stat
             label={t("som.totalCustomers")}
             value={ec.totalCustomers ?? "—"}
-            accent
+            tone="orange"
+          />
+          <Stat
+            label={t("som.byRecentSingle")}
+            value={ec.recentSingleSession ?? "—"}
+            tone="orange"
+          />
+          <Stat
+            label={t("som.byRecentTrial")}
+            value={ec.recentFirstTrial ?? "—"}
+            tone="gray"
           />
         </SimpleGrid>
         {/* Only when the server reports a 1st Trial / 1 HR window — with no month selected there may be none. */}
@@ -156,6 +166,7 @@ export default function SomContent() {
               key={b}
               label={t(`som.nvr.${b}`)}
               value={nvrValue(b)}
+              tone={NVR_TONE[b]}
               onClick={() => setNvrOpen(b)}
             />
           ))}
@@ -241,33 +252,63 @@ export default function SomContent() {
   }
 }
 
+/** Card colors, set per card by the client. */
+type StatTone = "orange" | "green" | "gray";
+
+// Text on a toned card is always black (client); only the background carries the color.
+const STAT_TONE_BG: Record<StatTone, string> = {
+  orange: "rgb(249 115 22 / 0.4)", // orange-500, same strength as the green
+  green: "rgb(var(--cal-att) / 0.4)", // the calendar's "attended" green
+  gray: "rgb(var(--cal-leave) / 0.34)", // the calendar's "leave" slate, same fill strength
+};
+
+const NVR_TONE: Record<NvrBucket, StatTone> = {
+  firstTrial: "green",
+  newCourseThisMonth: "green",
+  trialNotConverted: "gray",
+  newCoursePrevMonth: "green",
+  renewCourse: "green",
+  notRenewed: "gray",
+};
+
 function Stat({
   label,
   value,
   accent,
+  tone,
   onClick,
 }: {
   label: string;
   value: number | string;
   accent?: boolean;
+  /** Colors the whole card. */
+  tone?: StatTone;
   onClick?: () => void;
 }) {
   const clickable = onClick
     ? {
         component: "button" as const,
         onClick,
-        className: "text-left transition-colors hover:bg-muted-50",
+        // A card that opens a modal has to look pressable: pointer, darker border (`!` beats the Card's own border), lift,
+        // shadow, and a keyboard focus ring.
+        className:
+          "cursor-pointer text-left transition hover:!border-black/30 hover:shadow-md hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary motion-safe:hover:-translate-y-0.5",
       }
     : {};
   return (
-    <Card withBorder padding="sm" {...clickable}>
-      <Text size="xs" c="dimmed">
+    <Card
+      withBorder
+      padding="sm"
+      style={tone ? { backgroundColor: STAT_TONE_BG[tone] } : undefined}
+      {...clickable}
+    >
+      <Text size="xs" c={tone ? "black" : "dimmed"}>
         {label}
       </Text>
       <Text
         fw={700}
         fz="xl"
-        c={accent ? "blue" : undefined}
+        c={tone ? "black" : accent ? "blue" : undefined}
         className="tabular-nums"
       >
         {value}

@@ -100,6 +100,7 @@ export function SomFilters({
       >
         <SegmentedControl
           size="sm"
+          bg="gray.3"
           value={mode}
           onChange={(v) => changeMode(v as Mode)}
           data={[
