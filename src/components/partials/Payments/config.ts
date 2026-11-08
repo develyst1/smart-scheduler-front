@@ -3,7 +3,7 @@
  * makes no call, the sale form shows no Payment Method select and makes no follow-up call. The routes (`/payments`, TASK-875)
  * do not exist on sid yet; flip this to `true` in one line AFTER TASK-875 is on sid.
  */
-export const PAYMENTS_LIVE = false;
+export const PAYMENTS_LIVE = true;
 
 /**
  * TASK-876: dev-only fake for the payment API (SPEC-099 §8.5 + §8.9), used until TASK-875's routes exist.

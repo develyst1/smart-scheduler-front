@@ -53,6 +53,8 @@ import {
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 import EndCourseDialog from "./EndCourseDialog";
 import PaymentCard from "@/components/partials/Payments/PaymentCard"; // TASK-876 (SPEC-099 §8)
+import BranchLine from "@/components/partials/Branch/BranchLine"; // TASK-898 (F1): read-only branch, and
+import CourseBranchControl from "@/components/partials/Branch/CourseBranchControl"; // the whole-course change (both gated by BRANCH_LIVE)
 import { useUndoControl } from "@/components/common/UndoControl";
 import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
@@ -308,6 +310,8 @@ export default function PlanModal({
       ) : !plan ? null : (
         <Stack gap="md">
           <SummaryBar plan={plan} />
+          {/* TASK-898 (F1) — the branch the plan reader returned, read-only, only when it is not BRAVO (nothing until SB sends it). */}
+          <BranchLine branch={plan.summary.branch} />
 
           {/* Every skip, with the SERVER's reason — the point of the endpoint returning per-session results. */}
           {skips.length > 0 && (
@@ -504,6 +508,8 @@ export default function PlanModal({
                     {t("plan.changeRest")}
                   </Button>
                 )}
+                {/* 🔻 TASK-898 (F1) — the whole course's branch (and its not-yet-attended sessions), next to Change teacher. Same key. */}
+                {canPlan && <CourseBranchControl courseId={plan.id} current={plan.summary.branch} />}
                 {can("action:bookings.course-cancel") && (
                   <Button
                     variant="light"

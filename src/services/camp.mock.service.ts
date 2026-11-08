@@ -1,6 +1,6 @@
 // REQ-095 Stage 3a — offline camp. In-memory rows; the same shapes as the real service. The mock is not a rule engine:
 // it plans what it is asked and echoes the units arithmetic only so the card renders.
-import type { CampDayCheckin, CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDayResult, CampWeekDays } from "@/types/api/contract";
+import type { CampConfirmBody, CampConfirmResult, CampDayCheckin, CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDayResult, CampWeekDays } from "@/types/api/contract";
 import type { CampDayPatch } from "@/lib/camp/grid";
 import { datesBetween, type CampDayStatusWrite, type CampHalf, type SellCampInput } from "@/lib/camp/units";
 import type { CreateCampWeekInput, UpdateCampWeekInput } from "./camp.service";
@@ -131,11 +131,23 @@ export const sellCampPackage = async (input: SellCampInput) => {
     days: [],
     createdBy: "mock",
     createdAt: new Date().toISOString(),
+    confirmedOn: null,
+    amountMinor: ({ "FULL|FULL_WEEK": 1150000, "HALF|FULL_WEEK": 590000, "FULL|DAILY": 260000 * days, "HALF|DAILY": 130000 * days } as Record<string, number>)[`${input.kind}|${input.plan}`] ?? null,
   };
   packages.push(p);
   let planned = 0;
   if (input.firstWeek) planned = (await redeemCampDays(p.id, input.firstWeek.weekId, input.firstWeek.dates, input.firstWeek.half)).planned as number;
   return delay({ package: clone(p), planned });
+};
+
+/** TASK-901 — the offline fake of D3: refuses a second confirm like the server; the revenue date is today. */
+export const confirmCampPackage = (packageId: string, body: CampConfirmBody) => {
+  const p = packages.find((x) => x.id === packageId);
+  if (!p) return Promise.reject(new ApiClientError("NOT_FOUND", "ไม่พบแพ็กเกจแคมป์", 404));
+  if (p.confirmedOn) return Promise.reject(new ApiClientError("ALREADY_CONFIRMED", "แคมป์นี้ยืนยันแล้ว", 409));
+  if (p.amountMinor == null) return Promise.reject(new ApiClientError("NO_FEE", "แคมป์นี้ยังไม่มีรายการขาย", 409));
+  p.confirmedOn = new Date().toISOString().slice(0, 10);
+  return delay<CampConfirmResult>({ packageId, confirmedOn: p.confirmedOn, amountMinor: p.amountMinor, method: body.method });
 };
 
 export const redeemCampDays = (packageId: string, weekId: string, dates: string[], half: CampHalf) => {

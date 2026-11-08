@@ -109,6 +109,7 @@ const SITE_INVENTORY = [
   "src/components/partials/Camp/WeekRoster.tsx → action:camp.redeem",
   "src/components/partials/Camp/WeekRoster.tsx → action:camp.sell",
   "src/components/partials/Camp/WeekRoster.tsx → action:camp.week-open",
+  "src/components/partials/CampConfirm/CampConfirmBlock.tsx → action:camp.sell", // 🔻 TASK-901: D3 «Confirm camp» — the same right as selling (SPEC-099 §11)
   "src/components/partials/LinkRequests/LinkRequestsContent.tsx → action:link-requests.decide",
   "src/components/partials/LinkRequests/LinkRequestsContent.tsx → action:link-requests.unlink",
   "src/components/partials/OtherSeries/OtherSeriesModal.tsx → action:bookings.course-confirm",

@@ -1,7 +1,7 @@
 import type { ExpiryWarning } from "@/types/api/contract";
 import type { OtherFacts } from "@/lib/scheduler/other-schedule";
 import type { GroupFacts } from "@/lib/scheduler/group-session";
-import type { CheckinChannel } from "@/types/api/contract";
+import type { Branch, CheckinChannel } from "@/types/api/contract";
 
 // ───────────────────────────── Teachers ─────────────────────────────
 
@@ -157,6 +157,8 @@ export interface BookingTeacherRef {
 
 export interface Booking {
   id: string;
+  /** 🔻 TASK-898 (F1) — the branch where this class happens; BRAVO when the server sends none. */
+  branch?: Branch;
   /** 🔻 TASK-703 (REQ-115) — THE MARKER, as the server sends it (`BookingDTO.isMakeup` / `PlanSessionRow.isMakeup`, TASK-702): this class GREW FROM A LEAVE. A make-up is born CONFIRMED, so the status no longer says it; the «ขยายคาบ» badge reads THIS, never `status === "EXTENDED"`. Read as `=== true`: an older/mock row without it claims nothing. */
   isMakeup?: boolean;
   /**
@@ -544,6 +546,8 @@ export interface ExpiryPreview {
 
 export interface CoursePlanSummary {
   kind: "course";
+  /** 🔻 TASK-898 (F1) — the course's branch, when the plan reader sends it (optional: SB's plan summary does not carry it yet). */
+  branch?: Branch;
   size: number;
   // 🔴 TASK-658 (REQ-112) — `leaveUsed` / `leaveQuota` are GONE from the plan summary: the only screen that read them printed
   // "Leave {used}/{quota}", which is exactly the "x of y" this task removes.
@@ -561,6 +565,8 @@ export interface CoursePlanSummary {
 
 export interface VoucherPlanSummary {
   kind: "voucher";
+  /** 🔻 TASK-898 (F1) — the voucher's branch, when the plan reader sends it (optional: not carried yet). */
+  branch?: Branch;
   totalHours: number;
   usedHours: number;
   hoursRemaining: number;

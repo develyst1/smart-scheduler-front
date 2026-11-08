@@ -71,8 +71,8 @@ const openMethodSelect = async () =>
   userEvent.click(document.querySelector("[role='dialog'] input[aria-haspopup='listbox']") as Element);
 
 describe("PaymentCard — the ship gate", () => {
-  it("with the gate OFF (the tree's default) it renders nothing and makes NO call", async () => {
-    mount({}); // no `live` ⇒ the real PAYMENTS_LIVE constant
+  it("with the gate OFF it renders nothing and makes NO call", async () => {
+    mount({ live: false }); // the gate switched off explicitly (the tree's constant is now on)
     await new Promise((r) => setTimeout(r, 300));
     // (Mantine's provider injects its own <style>, so the body is not empty text; the card's words and DOM must be absent.)
     expect(text()).not.toContain("Payment");
@@ -82,9 +82,9 @@ describe("PaymentCard — the ship gate", () => {
     expect(document.querySelectorAll("button").length).toBe(0);
     expect(listCalls).toBe(0);
   });
-  it("the tree ships with the gate OFF and the fake OFF", async () => {
+  it("the tree ships LIVE (TASK-875 is on sid with the same deploy) and with the fake OFF", async () => {
     const cfg = await import("./config");
-    expect(cfg.PAYMENTS_LIVE).toBe(false);
+    expect(cfg.PAYMENTS_LIVE).toBe(true);
     expect(cfg.USE_FAKE_PAYMENTS).toBe(false);
   });
 });

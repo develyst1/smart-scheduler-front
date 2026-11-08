@@ -56,6 +56,10 @@ import DiscountSection from "@/components/common/DiscountSection";
 import AttendeeNoteInput from "@/components/common/AttendeeNoteInput";
 import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
 import { useT } from "@/lib/i18n";
+// TASK-898 (F1) — the Branch field (create + Move session) and its read-only line; all gated by `BRANCH_LIVE`.
+import BranchSelect, { DEFAULT_BRANCH } from "@/components/partials/Branch/BranchSelect";
+import { BRANCH_LIVE } from "@/components/partials/Branch/config";
+import type { Branch } from "@/types/api/contract";
 import {
   useBadges,
   useCatalogItems,
@@ -536,6 +540,8 @@ function ViewBooking({
             field with nothing in it reads as information that went missing (TASK-219's lesson). */}
         {booking.subject && <Field label={t("booking.subject")} value={booking.subject} />}
         <Field label={t("booking.date")} value={booking.date} />
+        {/* TASK-898 (F1) — the branch the server returned, read-only, only when it is not BRAVO (and only while the field is live). */}
+        {BRANCH_LIVE && booking.branch === "OTHER" && <Field label={t("branch.label")} value={t("branch.OTHER")} />}
         {/* 🔴 TASK-329 §3 — one of the three that no grep for a render shape could find: the time is inside a
             `value=` PROP, not a JSX interpolation. Routed for the reason TASK-324 settled — a renderer that is
             correct only because a mapper in another repo is correct breaks silently the day that mapper moves.
@@ -1018,6 +1024,8 @@ function MoveBookingForm({
   const [teacherId, setTeacherId] = useState(booking.teacherId);
   const [date, setDate] = useState(booking.date);
   const [startTime, setStartTime] = useState(booking.startTime);
+  // TASK-898 (F1) — a ONE-OFF branch change for THIS booking only; sent only when it differs from the booking's own.
+  const [branch, setBranch] = useState<Branch>(booking.branch ?? DEFAULT_BRANCH);
   // REQ-095 §13.3 (TASK-424) — a COURSE session carries the server's three rate facts; the box edits THIS session's
   // override: prefilled from `effectiveMinor` (satang → baht; 0 is a rate), `classRateMinor` rides ONLY when it differs,
   // `Clear` sends null (back to the default). The (default)/(override) tag reads the facts — no arithmetic here.
@@ -1044,6 +1052,7 @@ function MoveBookingForm({
     if (teacherId !== booking.teacherId) patch.teacherId = teacherId;
     if (date !== booking.date) patch.date = date;
     if (startTime !== booking.startTime) patch.startTime = startTime;
+    if (BRANCH_LIVE && branch !== (booking.branch ?? DEFAULT_BRANCH)) patch.branch = branch; // TASK-898 (F1)
     Object.assign(patch, withoutRates(sessionRateChange(rateBaht, rate, rateClear) ?? {}, canRate));
 
     if (Object.keys(patch).length === 0) {
@@ -1113,6 +1122,8 @@ function MoveBookingForm({
           data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
         />
       </div>
+      {/* TASK-898 (F1) — this booking's branch, for a one-off change (renders nothing while the gate is off). */}
+      <BranchSelect value={branch} onChange={setBranch} />
       {canRate && rate && (
         <div className="flex flex-wrap items-end gap-2" data-session-rate={rateTag(rate)}>
           <NumberInput
@@ -1237,6 +1248,8 @@ function CreateForm({
   const [otherSched, setOtherSched] = useState<OtherScheduleDraft>(emptyOtherSchedule);
   const [seriesOpen, setSeriesOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
+  // TASK-898 (F1) — the branch where THIS booking's class happens (every tab); Bravo unless the admin says otherwise.
+  const [branch, setBranch] = useState<Branch>(DEFAULT_BRANCH);
 
   const isVoucher = bookingType === "VOUCHER";
   const isOther = bookingType === "OTHER";
@@ -1327,6 +1340,7 @@ function CreateForm({
     setDiscount(emptyDiscount());
     setDiscountProblems([]);
     setAttendeeNote("");
+    setBranch(DEFAULT_BRANCH);
     setOther(emptyOtherBooking(createSlot.teacherId));
     setOtherSched(emptyOtherSchedule());
   };
@@ -1463,7 +1477,8 @@ function CreateForm({
         setBlocked(existing);
         return;
       }
-      await create.mutateAsync(input);
+      // TASK-898 (F1) — the branch rides on every create while the field is live (gate off ⇒ the request is byte-identical to before).
+      await create.mutateAsync(BRANCH_LIVE ? { ...input, branch } : input);
       notify({
         title: existing ? t("booking.overbookCreatedTitle") : t("booking.createdTitle"),
         description: t("booking.statusPending"),
@@ -1845,6 +1860,9 @@ function CreateForm({
 
       {/* REQ-068 — one field, every booking type: the note belongs to the SESSION, so it sits with the
           session's own details rather than inside a type-specific branch. Empty ⇒ nothing sent (AC-5). */}
+      {/* TASK-898 (F1) — the branch where this class happens, on every tab (renders nothing while the gate is off). */}
+      <BranchSelect value={branch} onChange={setBranch} />
+
       <AttendeeNoteInput value={attendeeNote} onChange={setAttendeeNote} />
 
       {activeBadgeTypes.length > 0 && (

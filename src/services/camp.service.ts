@@ -5,7 +5,7 @@
 // show the sentence and keep what was typed. Prices come from `GET /camp/prices` — never a constant here.
 import { api, useMockData } from "@/lib/api/client";
 import { markBody, redeemBody, sellCampBody, type CampDayStatusWrite, type CampHalf, type SellCampInput } from "@/lib/camp/units";
-import type { CampDayCheckin, CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDayResult, CampWeekDays } from "@/types/api/contract";
+import type { CampConfirmBody, CampConfirmResult, CampDayCheckin, CampDayEntry, CampPackage, CampPrices, CampWeek, CampWeekDayResult, CampWeekDays } from "@/types/api/contract";
 import type { CampDayPatch } from "@/lib/camp/grid";
 import * as mock from "./camp.mock.service";
 
@@ -101,6 +101,13 @@ export const listCampPackages = async (studentId: string): Promise<CampPackage[]
   if (useMockData) return mock.listCampPackages(studentId);
   const { data } = await api.get<{ packages: CampPackage[] }>("/camp/packages", { params: { studentId } });
   return data.packages;
+};
+
+/** TASK-901 — D3 «Confirm camp»: ONE call, the revenue counts from today. 409 `ALREADY_CONFIRMED` / `NO_FEE` reject (the screen shows their words). Behind `action:camp.sell`. */
+export const confirmCampPackage = async (packageId: string, body: CampConfirmBody): Promise<CampConfirmResult> => {
+  if (useMockData) return mock.confirmCampPackage(packageId, body);
+  const { data } = await api.post<CampConfirmResult>(`/camp/packages/${packageId}/confirm`, { receivedOn: body.receivedOn, method: body.method });
+  return data;
 };
 
 export const sellCampPackage = async (input: SellCampInput): Promise<{ package: CampPackage; planned: CampDayEntry[] | number }> => {

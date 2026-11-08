@@ -25,6 +25,10 @@ import PaymentMethodSelect from "@/components/partials/Payments/PaymentMethodSel
 import { PAYMENTS_LIVE } from "@/components/partials/Payments/config"; // 🔴 the ship gate: false ⇒ no select, no follow-up call
 import { recordSaleMethod } from "@/components/partials/Payments/sale-method";
 import { DEFAULT_PAYMENT_METHOD, type PaymentMethod } from "@/types/payments";
+// TASK-898 (F1) — the sale's Branch: a select here, sent with the sale only while the field is live (`BRANCH_LIVE`).
+import BranchSelect, { DEFAULT_BRANCH } from "@/components/partials/Branch/BranchSelect";
+import { BRANCH_LIVE } from "@/components/partials/Branch/config";
+import type { Branch } from "@/types/api/contract";
 import { COACH_RATE_KEY, duoBody, duoReady, emptyDuo, priceGroupFor, subjectsFor, type DuoDraft } from "@/lib/scheduler/duo";
 import { Checkbox, SegmentedControl } from "@mantine/core";
 import RentalTierPicker, { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
@@ -91,6 +95,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   const [discount, setDiscount] = useState<DiscountDraft>(emptyDiscount());
   // TASK-876 — how the family paid; Transfer unless the admin says otherwise (the server's own default for row 1).
   const [payMethod, setPayMethod] = useState<PaymentMethod>(DEFAULT_PAYMENT_METHOD);
+  // TASK-898 — the branch the course (and every session it creates) belongs to; Bravo unless the admin says otherwise.
+  const [branch, setBranch] = useState<Branch>(DEFAULT_BRANCH);
   // REQ-091 Deploy B (TASK-374) — the whole-course rental: OFF by default; when ON, the same tier + remark as the
   // per-session section. Sent only when ON; the remark rule is the server's (refused before the course is written).
   const [rentalOn, setRentalOn] = useState(false);
@@ -157,6 +163,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       setDiscount(emptyDiscount());
       setDiscountProblems([]);
       setPayMethod(DEFAULT_PAYMENT_METHOD);
+      setBranch(DEFAULT_BRANCH);
     }
   }, [opened]);
 
@@ -300,6 +307,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
        * `Remark`. 🚫 No migration — that is the owner's call through @Porter, not a thing to slip into a fix.
        */
       attendeeNote: note.trim() || undefined,
+      // TASK-898 (F1) — gate off ⇒ `undefined` ⇒ the request is byte-identical to before.
+      branch: BRANCH_LIVE ? branch : undefined,
       absentWeeks: absentWeeks.length ? absentWeeks : undefined,
       // Untouched ⇒ `undefined` ⇒ the request is byte-identical to a pre-REQ-063 create (AC-7).
       discount: discountPayload(discount, chosen?.priceMinor ?? 0),
@@ -514,6 +523,9 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
 
         {/* TASK-876 — beside the discount, under the price: how the family paid. */}
         {PAYMENTS_LIVE && chosen && <PaymentMethodSelect value={payMethod} onChange={setPayMethod} />}
+
+        {/* TASK-898 (F1) — the branch where the course's classes happen (renders nothing while the gate is off). */}
+        <BranchSelect value={branch} onChange={setBranch} />
 
         <Group grow align="flex-start">
           <DatePickerInput

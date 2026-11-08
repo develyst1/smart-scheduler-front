@@ -54,6 +54,8 @@ export function dtoToBooking(dto: BookingDTO): Booking {
     plannedAtCreation: dto.plannedAtCreation,
     // TASK-703 (REQ-115) — the make-up MARKER, as a strict boolean (the server always sends one); the badge reads it, not the status.
     isMakeup: dto.isMakeup === true,
+    // 🔻 TASK-898 (F1) — the branch as sent; anything but OTHER (incl. absent, an older server) reads as BRAVO.
+    branch: dto.branch === "OTHER" ? "OTHER" : "BRAVO",
     // TASK-369 — the closed cancel code as sent; the tray resolves it to the existing label, or falls back to `note`.
     cancelReason: dto.cancelReason ?? null,
     // TASK-372 — the rental row as sent; a payload without the key ⇒ null (no rental), never undefined.

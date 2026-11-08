@@ -21,8 +21,11 @@ import { ApiClientError, errorProblems } from "@/lib/api/client";
 import DiscountSection from "@/components/common/DiscountSection";
 import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
 import { useT } from "@/lib/i18n";
-import type { CreateVoucherResponse } from "@/types/api/contract";
+import type { Branch, CreateVoucherResponse } from "@/types/api/contract";
 import { useCan } from "@/hooks/scheduler/useMe";
+// TASK-898 (F1) — the voucher's Branch: a select here, sent with the sale only while the field is live (`BRANCH_LIVE`).
+import BranchSelect, { DEFAULT_BRANCH } from "@/components/partials/Branch/BranchSelect";
+import { BRANCH_LIVE } from "@/components/partials/Branch/config";
 
 interface Props {
   opened: boolean;
@@ -48,6 +51,7 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
   const { data: card } = useSellablePackages();
   const [discount, setDiscount] = useState<DiscountDraft>(emptyDiscount());
   const [discountProblems, setDiscountProblems] = useState<string[]>([]);
+  const [branch, setBranch] = useState<Branch>(DEFAULT_BRANCH); // TASK-898 (F1)
   const fullMinor = card?.voucherItems.find((v) => v.hours === totalHours)?.priceMinor ?? 0;
   const discountEval = evaluateDiscount(discount, fullMinor);
 
@@ -61,6 +65,7 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
       setError(null);
       setDiscount(emptyDiscount());
       setDiscountProblems([]);
+      setBranch(DEFAULT_BRANCH);
     }
   }, [opened]);
 
@@ -82,6 +87,8 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
         studentPhone: student?.phone,
         totalHours: totalHours as 5 | 10 | 15,
         discount: discountPayload(discount, fullMinor),
+        // TASK-898 (F1) - the voucher's branch; gate off means the request is byte-identical to before.
+        branch: BRANCH_LIVE ? branch : undefined,
         note: note.trim() || undefined,
       });
       setResult(res);
@@ -172,6 +179,9 @@ export default function CreateVoucherModal({ opened, onClose }: Props) {
               required
             />
           </Group>
+
+          {/* TASK-898 (F1) — the branch of this voucher (renders nothing while the gate is off). */}
+          <BranchSelect value={branch} onChange={setBranch} />
 
           {/* TASK-733 — ONE optional note box. Empty ⇒ no `note` key goes out. */}
           <Textarea

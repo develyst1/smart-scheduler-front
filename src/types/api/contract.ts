@@ -122,6 +122,9 @@ export interface TeacherDTO {
 /** SPEC-064 / TASK-188 — server-computed lifecycle. Mirrored from the BE contract; never re-derived here. */
 export type CourseStatus = "CANCELLED" | "DROPPED" | "COMPLETED" | "EXPIRED" | "ACTIVE";
 
+/** 🔻 TASK-898 (F1, SPEC-099 §9) — the branch a booking / course / voucher belongs to (SB `BRANCH`). Absent on an older server ⇒ read as BRAVO. */
+export type Branch = "BRAVO" | "OTHER";
+
 export interface CourseSummary {
   id: string;
   /**
@@ -226,6 +229,8 @@ export interface SetBookingBadgesResponse {
 
 export interface BookingDTO {
   id: string;
+  /** 🔻 TASK-898 — as the server sends it (TASK-889). */
+  branch?: Branch;
   /** 🔻 TASK-703 (REQ-115) — THE MARKER, as the server sends it (`BookingDTO.isMakeup` / `PlanSessionRow.isMakeup`, TASK-702): this class GREW FROM A LEAVE. A make-up is born CONFIRMED, so the status no longer says it; the «ขยายคาบ» badge reads THIS, never `status === "EXTENDED"`. Always a boolean. */
   isMakeup: boolean;
   /**
@@ -595,6 +600,24 @@ export interface CampPackage {
   days: CampPackageDay[];
   createdBy: string | null;
   createdAt: string;
+}
+/** TASK-901 / SPEC-099 §11 — the optional fields of a camp package for D3 «Confirm camp» (declared beside CampPackage; merged by interface merging). */
+export interface CampPackage {
+  /** The date the admin pressed «Confirm camp» (revenue counts from it); `null` while not confirmed. Absent on an older payload ⇒ not confirmed. */
+  confirmedOn?: string | null;
+  /** The camp's NET posted sale in minor units (what the confirm will record); `null` ⇒ no sale yet (`NO_FEE`). Asked of TASK-900 — SF never computes it; absent ⇒ the dialog shows «—» until the 200 answers. */
+  amountMinor?: number | null;
+}
+/** TASK-901 — `POST /camp/packages/:id/confirm` body and 200 (SPEC-099 §11). */
+export interface CampConfirmBody {
+  receivedOn: string; // YYYY-MM-DD
+  method: "TRANSFER" | "CASH" | "CARD";
+}
+export interface CampConfirmResult {
+  packageId: string;
+  confirmedOn: string;
+  amountMinor: number;
+  method: "TRANSFER" | "CASH" | "CARD";
 }
 /** `GET /camp/prices` — the four items, never a constant on the FE. */
 export interface CampPrices {

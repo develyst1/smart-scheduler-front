@@ -416,6 +416,14 @@ const en = {
 
   // REQ-092 Stage 2 (TASK-382) — the route guard's two states: a page without its menu, and a user with no menus.
   // REQ-095 Stage 3a / SPEC-082 (TASK-402) — Balance camp. Every refusal sentence is the server's; credit in units ⇒ days + ½.
+  // TASK-901 (D3 «Confirm camp») — English PENDING (Porter)
+  campConfirm: {
+    confirm: "Confirm camp",
+    notConfirmed: "Not confirmed yet",
+    confirmedOn: "Confirmed · {date}",
+    alreadyConfirmed: "This camp is already confirmed",
+    noFee: "This camp has no sale yet",
+  },
   camp: {
     card: "Camp",
     cardTitle: "Camp — {name}",
@@ -2333,6 +2341,13 @@ const en = {
     chooseDate: "Choose the date received",
     amountAbove0: "Enter an amount above 0",
   },
+
+  // TASK-898 (SPEC-099 §9, F1) — the branch where a class happens. One appended block.
+  branch: {
+    label: "Branch",
+    BRAVO: "Bravo",
+    OTHER: "Other",
+  },
 };
 
 const th: typeof en = {
@@ -2699,6 +2714,14 @@ const th: typeof en = {
     disabledReason: "บัญชีนี้ถูกปิดใช้งาน — กรุณาติดต่อผู้ดูแลระบบ",
   },
 
+  // TASK-901 (D3 «Confirm camp») — Porter's Thai
+  campConfirm: {
+    confirm: "ยืนยันแคมป์",
+    notConfirmed: "ยังไม่ยืนยัน",
+    confirmedOn: "ยืนยันแล้ว · {date}",
+    alreadyConfirmed: "แคมป์นี้ยืนยันแล้ว",
+    noFee: "แคมป์นี้ยังไม่มีรายการขาย",
+  },
   camp: {
     card: "แคมป์",
     cardTitle: "แคมป์ — {name}",
@@ -4335,6 +4358,13 @@ const th: typeof en = {
     noInstallments: "ยังไม่มีงวดชำระ",
     chooseDate: "เลือกวันที่รับเงิน",
     amountAbove0: "กรอกจำนวนเงินมากกว่า 0",
+  },
+
+  // TASK-898 — Porter's Thai (PM wording, 2026-11-09, in TASK-898): "Branch" = สาขา, "Other" = อื่นๆ, "Bravo" stays Bravo (the branch's proper name).
+  branch: {
+    label: "สาขา",
+    BRAVO: "Bravo",
+    OTHER: "อื่นๆ",
   },
 };
 

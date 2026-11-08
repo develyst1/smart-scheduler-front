@@ -83,6 +83,7 @@ import type {
 } from "@/types/app/scheduler";
 import { ApiClientError } from "@/lib/api/client";
 import type { OtherKind, OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
+import type { Branch } from "@/types/api/contract"; // 🔻 TASK-898 (F1)
 import type { ChangeTeacherTimeInput, ChangeTeacherTimePreview, ChangeTeacherTimeResult, GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
 import { groupSeriesBody, type GroupSeriesInput, type GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 import { startChangeBody, type StartChangeForecast, type StartChangeResult } from "@/lib/scheduler/course-start";
@@ -605,6 +606,8 @@ export const getEligibleStudents = async (
 };
 
 export interface CreateBookingInput {
+  /** 🔻 TASK-898 (F1) — the branch where the class happens. Sent only when the Branch field is live (`BRANCH_LIVE`); absent ⇒ BRAVO on the server. */
+  branch?: Branch;
   studentName: string;
   /** existing student id (from the dropdown). When set, name/phone are ignored by the API. */
   studentId?: string;
@@ -730,6 +733,8 @@ export const createBooking = async (input: CreateBookingInput, teachers?: Teache
     otherKind: isOther ? input.otherKind : undefined,
     headCount: isOther ? input.headCount : undefined,
     teacherRates: isOther ? input.teacherRates : undefined,
+    // 🔻 TASK-898 (F1) — the branch, added HERE and not only to the type (this literal is the wire; see TASK-170 above).
+    branch: input.branch,
   });
   return dtoToBooking(data.booking);
 };
@@ -795,6 +800,8 @@ export const createOtherSeries = async (input: OtherSeriesInput): Promise<OtherS
 
 /** ย้าย/แก้คาบด้วยมือ (UC-003) — ครู/วัน/เวลา. ชนช่อง → 409 SLOT_TAKEN. */
 export interface MoveBookingInput {
+  /** 🔻 TASK-898 (F1) — a one-off branch change for THIS booking only; sent only when it differs from the booking's own. */
+  branch?: Branch;
   teacherId?: string;
   subjectId?: string;
   date?: string;
@@ -884,6 +891,8 @@ export const getCoursePackages = async (
 };
 
 export interface CreateCourseInput {
+  /** 🔻 TASK-898 (F1) — the course's branch (and every session it creates). Absent ⇒ BRAVO on the server. */
+  branch?: Branch;
   studentName: string;
   studentId?: string;
   studentPhone?: string;
@@ -947,6 +956,8 @@ export const createCoursePackage = async (
     groupKey: input.groupKey,
     // TASK-421 — the DUO block, only when the toggle is on (absent otherwise).
     duo: input.duo,
+    // 🔻 TASK-898 (F1) — the branch (absent ⇒ BRAVO on the server).
+    branch: input.branch,
   });
   return data;
 };
@@ -955,6 +966,13 @@ export const createCoursePackage = async (
 export const updateCourseRate = async (courseId: string, classRateMinor: number): Promise<CourseListItem> => {
   if (useMock) return mock.updateCourseRate(courseId, classRateMinor);
   const { data } = await api.patch<{ course: CourseListItem }>(`/courses/${courseId}`, { classRateMinor });
+  return data.course;
+};
+
+/** 🔻 TASK-898 (F1, SPEC-099 §9) — change a whole course's branch: `PATCH /courses/:id { branch }`. SB moves the course and its not-yet-attended sessions. */
+export const updateCourseBranch = async (courseId: string, branch: Branch): Promise<CourseListItem> => {
+  if (useMock) return mock.updateCourseBranch(courseId, branch);
+  const { data } = await api.patch<{ course: CourseListItem }>(`/courses/${courseId}`, { branch });
   return data.course;
 };
 
@@ -985,6 +1003,8 @@ export const previewCoursePackage = async (input: {
 };
 
 export interface CreateVoucherInput {
+  /** 🔻 TASK-898 (F1) — the voucher's branch. Absent ⇒ BRAVO on the server. */
+  branch?: Branch;
   studentName: string;
   studentId?: string;
   studentPhone?: string;
@@ -1003,6 +1023,8 @@ export const createVoucher = async (
     student: studentPayload(input),
     totalHours: input.totalHours,
     discount: input.discount,
+    // TASK-898 (F1) - the voucher's branch.
+    branch: input.branch,
     note: input.note || undefined, // same idiom as `discount`: `undefined` is dropped by JSON, so an empty note puts NO `note` key on the wire
   });
   return data;

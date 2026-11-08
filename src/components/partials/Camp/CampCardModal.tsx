@@ -12,6 +12,7 @@ import { formatDateDisplay } from "@/lib/ui/format";
 import { creditDays, creditLabel } from "@/lib/camp/units";
 import { CampHalfChip, CampStatusChip } from "./campChips";
 import SellCampDialog from "./SellCampDialog";
+import CampConfirmBlock from "@/components/partials/CampConfirm/CampConfirmBlock";
 import type { StudentSelectValue } from "@/components/common/StudentSelect";
 
 /**
@@ -74,6 +75,7 @@ export default function CampCardModal({ student, opened, onClose }: { student: S
                     ))}
                   </Stack>
                 )}
+                <CampConfirmBlock pkg={p} />
               </Card>
             );
           })

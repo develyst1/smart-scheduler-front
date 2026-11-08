@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  confirmCampPackage,
   createCampWeek,
   deleteCampWeek,
   getCampDayCheckin,
@@ -20,6 +21,7 @@ import {
 import { isUuid } from "@/lib/camp/units";
 import type { CampDayStatusWrite, CampHalf, SellCampInput } from "@/lib/camp/units";
 import type { CampDayPatch } from "@/lib/camp/grid";
+import type { CampConfirmBody } from "@/types/api/contract";
 import { CALENDAR_KEY } from "./useScheduler";
 
 /** REQ-095 Stage 3a (TASK-402) — the Camp menu's data. Every write re-reads the weeks, the roster and the packages; the calendar too (its day banner). */
@@ -38,6 +40,12 @@ export const useCampWeekDays = (id: string | null) =>
   useQuery({ queryKey: [...CAMP_KEY, "week", id], queryFn: () => getCampWeekDays(id as string), enabled: isUuid(id), staleTime: 0 });
 export const useCampPackages = (studentId: string | null) =>
   useQuery({ queryKey: [...CAMP_KEY, "packages", studentId], queryFn: () => listCampPackages(studentId as string), enabled: !!studentId, staleTime: 0 });
+
+/** TASK-901 — D3 «Confirm camp»: the packages re-read (the badge flips), and the calendar like every camp write. 🚫 No retry: a repeated confirm is a 409, not a second write. */
+export const useConfirmCamp = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ({ packageId, body }: { packageId: string; body: CampConfirmBody }) => confirmCampPackage(packageId, body), retry: false, onSuccess: () => invalidate(qc) });
+};
 
 export const useCreateCampWeek = () => {
   const qc = useQueryClient();

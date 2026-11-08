@@ -42,6 +42,7 @@ import {
   reportOwnLeave,
   reportTeacherLeave,
   updateCourseRate,
+  updateCourseBranch, // 🔻 TASK-898 (F1)
   bulkConfirm,
   getEligibleStudents,
   markSickLeave,
@@ -105,7 +106,7 @@ import { undoBody } from "@/lib/scheduler/undo";
 import type { CourseEndReason, EndCourseReason, PlanChange, RecordRentalInput, SessionCancelReason, TeacherType, TeacherView } from "@/types/app/scheduler";
 import { withoutSystem } from "@/lib/scheduler/teacher";
 import type { OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
-import type { ChangeTeacherTimeInput } from "@/types/api/contract";
+import type { Branch, ChangeTeacherTimeInput } from "@/types/api/contract";
 import type { GroupSeriesInput, GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 
 export const TEACHERS_KEY = ["teachers"] as const;
@@ -776,6 +777,11 @@ export const useSwapGroupTeacher = () => {
 export const useUpdateCourseRate = () => {
   const qc = useQueryClient();
   return useMutation({ mutationFn: ({ courseId, classRateMinor }: { courseId: string; classRateMinor: number }) => updateCourseRate(courseId, classRateMinor), onSuccess: () => invalidateAll(qc) });
+};
+/** 🔻 TASK-898 (F1) — change a whole course's branch from the plan modal; every list and the plan re-read. */
+export const useUpdateCourseBranch = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ({ courseId, branch }: { courseId: string; branch: Branch }) => updateCourseBranch(courseId, branch), onSuccess: () => invalidateAll(qc) });
 };
 export const useMoveBooking = () => {
   const qc = useQueryClient();

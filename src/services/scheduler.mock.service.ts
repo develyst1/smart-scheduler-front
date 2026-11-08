@@ -471,6 +471,10 @@ export const swapGroupTeacher = async (id: string, _input: unknown): Promise<Boo
 export const updateCourseRate = async (courseId: string, classRateMinor: number): Promise<CourseListItem> =>
   delay({ id: courseId, size: 6, usedSessions: 0, leaveUsed: 0, leaveQuota: 2, maxWeek: 8, endedAt: null, endReason: null, status: "ACTIVE", expiryDate: "2026-12-31", courseKind: "DUO", classRateMinor, student: { id: "s1", name: "A", nickname: "A" }, coStudent: { id: "s2", name: "B", nickname: "B" } } as CourseListItem);
 
+/** 🔻 TASK-898 (F1) — the whole-course branch change on the mock: echo a course-shaped row. */
+export const updateCourseBranch = async (courseId: string, branch: "BRAVO" | "OTHER"): Promise<CourseListItem> =>
+  delay({ id: courseId, branch, size: 6, usedSessions: 0, leaveUsed: 0, leaveQuota: 2, maxWeek: 8, endedAt: null, endReason: null, status: "ACTIVE", expiryDate: "2026-12-31", student: { id: "s1", name: "A", nickname: "A" } } as unknown as CourseListItem);
+
 export const createOtherSeries = async (input: { dates: string[] }) => delay({ created: input.dates.length, bookingIds: input.dates.map((d) => `mock-${d}`) });
 
 export const moveBooking = (
