@@ -43,6 +43,8 @@ export interface Teacher {
   setupIncomplete?: boolean;
   /** เก็บ/ออกจากงานแล้ว — ซ่อนจาก roster + ปฏิทิน */
   archived?: boolean;
+  /** TASK-861 (REQ-120 F5) — the ONE system teacher ("No Teacher") a park-fee OTHER block sits on. Read this flag, never the name. */
+  isSystem?: boolean;
   /** 0=Sun … 6=Sat — วันที่ครูมาสอนได้ */
   workDays?: number[];
 }
@@ -310,6 +312,10 @@ export interface VoucherContext {
   totalHours: number;
   usedHours: number;
   remainingHours: number;
+  /** TASK-870 (REQ-5008) — sessions already BOOKED on this voucher and not yet deducted. Absent on an older payload. */
+  hoursReserved?: number;
+  /** TASK-870 — `total − used − reserved`: what a NEW session may still take. The picker gates on this, not on `remainingHours`. */
+  hoursAvailable?: number;
   expiryDate: string; // YYYY-MM-DD
 }
 
@@ -558,6 +564,9 @@ export interface VoucherPlanSummary {
   totalHours: number;
   usedHours: number;
   hoursRemaining: number;
+  /** TASK-870 — additive, as on `VoucherContext`; absent on an older payload. */
+  hoursReserved?: number;
+  hoursAvailable?: number;
   expiryDate: string;
 }
 

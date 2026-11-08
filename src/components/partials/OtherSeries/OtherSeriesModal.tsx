@@ -9,6 +9,7 @@ import { notify } from "@/lib/ui/notify";
 import { formatDateWithDay, formatTimeDisplay } from "@/lib/ui/format";
 import { useCan } from "@/hooks/scheduler/useMe";
 import { useAllBookings, useTeachers } from "@/hooks/scheduler";
+import { withoutSystem } from "@/lib/scheduler/teacher";
 import { useConfirmAllOtherSeries, useOtherSeries } from "@/hooks/scheduler/useOtherSeries";
 import { groupSeriesDoors, kindLabelKey, pendingSeats, seatCascade, seriesDoors, statusCounts, type SeriesRef } from "@/lib/scheduler/other-series";
 import { COACH_RATE_KEY } from "@/lib/scheduler/duo";
@@ -37,7 +38,9 @@ export default function OtherSeriesModal({ series: ref, opened, onClose, onOpenB
   const can = useCan();
   const isGroup = ref.kind === "group";
   const { data: series, isLoading, error } = useOtherSeries(ref);
-  const { data: teachers = [] } = useTeachers();
+  // TASK-861 — an OTHER series may sit on the system teacher (its name must read, its picker offers it); a GROUP series never.
+  const { data: allTeachers = [] } = useTeachers({ withSystem: true });
+  const teachers = isGroup ? withoutSystem(allTeachers) : allTeachers;
   const confirmAll = useConfirmAllOtherSeries();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [teacherDlg, setTeacherDlg] = useState<{ mode: "add" | "remove" | "swap"; teacherId?: string } | null>(null);

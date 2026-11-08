@@ -5,7 +5,7 @@ import { Combobox, InputBase, Loader, ScrollArea, useCombobox } from "@mantine/c
 import { useDebouncedValue } from "@mantine/hooks";
 import { useEligibleStudents } from "@/hooks/scheduler";
 import { useT } from "@/lib/i18n";
-import { eligibleLabel, entKey, type EligibleType } from "@/lib/scheduler/eligible";
+import { eligibleLabel, eligiblePickable, entKey, type EligibleType } from "@/lib/scheduler/eligible";
 
 interface Props {
   type: EligibleType;
@@ -57,7 +57,7 @@ export default function EligibleStudentSelect({ type, value, onChange, label, re
 
   const handleSubmit = (val: string) => {
     const row = eligible.find((e) => entKey(e, type) === val);
-    if (row) {
+    if (row && eligiblePickable(row, type)) {
       setSearch(eligibleLabel(row, type, eligible));
       onChange(val);
     }
@@ -67,7 +67,7 @@ export default function EligibleStudentSelect({ type, value, onChange, label, re
   const options = eligible.map((e) => {
     const key = entKey(e, type);
     return (
-      <Combobox.Option value={key} key={key} active={key === value}>
+      <Combobox.Option value={key} key={key} active={key === value} disabled={!eligiblePickable(e, type)}>
         {eligibleLabel(e, type, eligible)}
       </Combobox.Option>
     );

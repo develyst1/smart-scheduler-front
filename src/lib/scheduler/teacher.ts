@@ -15,6 +15,8 @@ export function toTeacherView(
   bookings: Booking[],
   ref: dayjs.Dayjs = dayjs(),
 ): TeacherView {
+  // TASK-861 — the system teacher has no pay to set up and no budget to run out: it is placeable while it is active.
+  if (teacher.isSystem) teacher = { ...teacher, setupIncomplete: false, overLimit: false };
   const monthlyHours = bookings.filter(
     (b) => b.teacherId === teacher.id && dayjs(b.date).isSame(ref, "month"),
   ).length;
@@ -37,6 +39,16 @@ export function toTeacherView(
     overLimit,
     bookable: teacher.active && !overLimit && !teacher.setupIncomplete,
   };
+}
+
+/** TASK-861 — every list a LESSON can pick from drops the system teacher. Only the calendar and the OTHER forms keep it. */
+export function withoutSystem<T extends { isSystem?: boolean }>(teachers: readonly T[]): T[] {
+  return teachers.filter((t) => !t.isSystem);
+}
+
+/** TASK-861 — the calendar's columns: the real coaches in their order, the system teacher LAST (when `showSystem`). */
+export function systemTeacherLast<T extends { isSystem?: boolean }>(teachers: readonly T[], showSystem = true): T[] {
+  return [...withoutSystem(teachers), ...(showSystem ? teachers.filter((t) => t.isSystem) : [])];
 }
 
 export type BudgetTone = "green" | "yellow" | "red";

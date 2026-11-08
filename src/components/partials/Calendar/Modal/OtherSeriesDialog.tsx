@@ -33,7 +33,7 @@ export default function OtherSeriesDialog({
   seed: { title: string; teacherIds: string[]; startTime: string; date: string; schedule: OtherScheduleDraft };
 }) {
   const t = useT();
-  const { data: teachers = [] } = useTeachers();
+  const { data: teachers = [] } = useTeachers({ withSystem: true }); // TASK-861 — a park-fee series may sit on the system teacher
   const create = useCreateOtherSeries();
   const [title, setTitle] = useState(seed.title);
   const [note, setNote] = useState("");

@@ -477,12 +477,14 @@ export const resumeBooking = async (
   return dtoToBooking(data.booking);
 };
 
-export const markAttended = async (id: string) => {
+/** TASK-870 — the booking, plus the server's `voucherWarning` sentence when the attend deducted from an empty voucher. */
+export type AttendedResult = Booking & { voucherWarning?: string };
+export const markAttended = async (id: string): Promise<AttendedResult> => {
   if (useMock) return mock.markAttended(id);
   const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {
     action: "attend",
   });
-  return dtoToBooking(data.booking);
+  return { ...dtoToBooking(data.booking), ...(data.voucherWarning ? { voucherWarning: data.voucherWarning } : {}) };
 };
 
 /**

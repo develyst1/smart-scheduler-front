@@ -25,7 +25,7 @@ const DOT_CLASS: Record<"green" | "yellow" | "red" | "masked", string> = {
 
 export default function FreelanceBudgetStrip({ teacher }: { teacher: TeacherView }) {
   const t = useT();
-  if (teacher.type !== "FREELANCE") return null;
+  if (teacher.type !== "FREELANCE" || teacher.isSystem) return null; // TASK-861 — the system teacher has no budget strip
 
   // REQ-102 (TASK-427) — the figures come back NULL for a user without `teachers.budget-view` (the server masks; the
   // FE only draws): a grey `— / —` strip, so the column reads the same shape for everyone; the tone needs the figures.

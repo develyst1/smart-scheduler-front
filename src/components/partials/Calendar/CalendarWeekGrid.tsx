@@ -114,7 +114,7 @@ export default function CalendarWeekGrid({
           <div key={tc.id} className="contents">
             <div className="sticky left-0 z-10 flex flex-col gap-1.5 border-r border-t border-muted-100 bg-content1 p-3">
               <p className="truncate text-sm font-semibold leading-none">{tc.nickname}</p>
-              <TeacherTypeChip type={tc.type} />
+              {!tc.isSystem && <TeacherTypeChip type={tc.type} />}
               <FreelanceBudgetStrip teacher={tc} />
             </div>
 

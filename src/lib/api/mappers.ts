@@ -102,6 +102,7 @@ export function dtoToTeacher(dto: TeacherDTO): Teacher {
     limitOverride: dto.limitOverride ?? false,
     setupIncomplete: dto.setupIncomplete ?? false,
     archived: dto.archived ?? false,
+    isSystem: dto.isSystem ?? false,
   };
 }
 

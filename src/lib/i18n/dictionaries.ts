@@ -2306,6 +2306,30 @@ const en = {
     status: "Status",
     undone: "Earlier mark undone: {reason}",
   },
+
+  // TASK-876 (SPEC-099 §8) — the payment record: the sale form's method select + the Payment card. One appended block.
+  paymentRecord: {
+    title: "Payment",
+    method: "Payment Method",
+    edit: "Edit",
+    paid: "Paid",
+    installment: "Installment",
+    addInstallment: "Add an installment",
+    courseFee: "Course Fee",
+    remaining: "Remaining",
+    methods: { TRANSFER: "Transfer", CASH: "Cash", CARD: "Credit card" },
+    saleWarning: "Sale saved; payment method not saved — set it on the course's Payment card",
+    dateReceived: "Date received",
+    amount: "Amount",
+    transferDefault: "Transfer (default)",
+    retry: "Retry",
+    loading: "Loading payments",
+    loadError: "Could not load the payments",
+    saveError: "Could not save the payment",
+    noInstallments: "No installments yet",
+    chooseDate: "Choose the date received",
+    amountAbove0: "Enter an amount above 0",
+  },
 };
 
 const th: typeof en = {
@@ -4282,6 +4306,30 @@ const th: typeof en = {
     half: "ช่วง",
     status: "สถานะ",
     undone: "ยกเลิกการบันทึกก่อนหน้า: {reason}",
+  },
+
+  // TASK-876 — the Thai the PM wrote (Porter, 2026-11-08, in TASK-876: the first table and the Q7 table).
+  paymentRecord: {
+    title: "การชำระเงิน",
+    method: "วิธีชำระเงิน",
+    edit: "แก้ไข",
+    paid: "ชำระแล้ว",
+    installment: "งวดชำระ",
+    addInstallment: "เพิ่มงวดชำระ",
+    courseFee: "ค่าคอร์ส",
+    remaining: "ค้างชำระ",
+    methods: { TRANSFER: "โอนเงิน", CASH: "เงินสด", CARD: "บัตรเครดิต" },
+    saleWarning: "บันทึกการขายแล้ว แต่ยังไม่ได้บันทึกวิธีชำระเงิน ตั้งได้ที่การ์ดการชำระเงินของคอร์สนี้",
+    dateReceived: "วันที่รับเงิน",
+    amount: "จำนวนเงิน",
+    transferDefault: "โอนเงิน (ค่าเริ่มต้น)",
+    retry: "ลองอีกครั้ง",
+    loading: "กำลังโหลดข้อมูลการชำระเงิน",
+    loadError: "โหลดข้อมูลการชำระเงินไม่สำเร็จ",
+    saveError: "บันทึกการชำระเงินไม่สำเร็จ",
+    noInstallments: "ยังไม่มีงวดชำระ",
+    chooseDate: "เลือกวันที่รับเงิน",
+    amountAbove0: "กรอกจำนวนเงินมากกว่า 0",
   },
 };
 

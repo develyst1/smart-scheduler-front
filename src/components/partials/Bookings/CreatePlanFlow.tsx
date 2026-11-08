@@ -20,6 +20,11 @@ import { formatPriceMinor } from "@/types/app/pricing";
 import { ApiClientError, errorProblems } from "@/lib/api/client";
 import DiscountSection from "@/components/common/DiscountSection";
 import { discountPayload, emptyDiscount, evaluateDiscount, type DiscountDraft } from "@/lib/scheduler/discount";
+// TASK-876 (SPEC-099 §8) — the sale's Payment Method: a select here, one follow-up call after the sale.
+import PaymentMethodSelect from "@/components/partials/Payments/PaymentMethodSelect";
+import { PAYMENTS_LIVE } from "@/components/partials/Payments/config"; // 🔴 the ship gate: false ⇒ no select, no follow-up call
+import { recordSaleMethod } from "@/components/partials/Payments/sale-method";
+import { DEFAULT_PAYMENT_METHOD, type PaymentMethod } from "@/types/payments";
 import { COACH_RATE_KEY, duoBody, duoReady, emptyDuo, priceGroupFor, subjectsFor, type DuoDraft } from "@/lib/scheduler/duo";
 import { Checkbox, SegmentedControl } from "@mantine/core";
 import RentalTierPicker, { rentalPrintLine, useRentalPrices } from "@/components/partials/Rental/RentalTierPicker";
@@ -84,6 +89,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   // now — the FE stops reading it FIRST, the contract drops it later, never both at once.
   // REQ-063 — the sale's discount. FE math is display only; the BE re-validates and is the source of truth.
   const [discount, setDiscount] = useState<DiscountDraft>(emptyDiscount());
+  // TASK-876 — how the family paid; Transfer unless the admin says otherwise (the server's own default for row 1).
+  const [payMethod, setPayMethod] = useState<PaymentMethod>(DEFAULT_PAYMENT_METHOD);
   // REQ-091 Deploy B (TASK-374) — the whole-course rental: OFF by default; when ON, the same tier + remark as the
   // per-session section. Sent only when ON; the remark rule is the server's (refused before the course is written).
   const [rentalOn, setRentalOn] = useState(false);
@@ -149,6 +156,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       setLeaveWeeks([]);
       setDiscount(emptyDiscount());
       setDiscountProblems([]);
+      setPayMethod(DEFAULT_PAYMENT_METHOD);
     }
   }, [opened]);
 
@@ -319,6 +327,13 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       description: t("course.successDesc", { count: result.bookings.length }),
       color: "success",
     });
+    // TASK-876 — the sale is saved. Record the method the admin chose (nothing to do for Transfer). Not awaited: the form
+    // closes at once; a failure is a warning, never an error, and the sale stays saved.
+    if (PAYMENTS_LIVE) {
+      void recordSaleMethod("COURSE", result.course.id, payMethod).then((r) => {
+        if (r === "failed") notify({ title: t("paymentRecord.saleWarning"), color: "warning" });
+      });
+    }
     onClose();
   };
 
@@ -496,6 +511,9 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
             serverProblems={discountProblems}
           />
         )}
+
+        {/* TASK-876 — beside the discount, under the price: how the family paid. */}
+        {PAYMENTS_LIVE && chosen && <PaymentMethodSelect value={payMethod} onChange={setPayMethod} />}
 
         <Group grow align="flex-start">
           <DatePickerInput

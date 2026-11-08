@@ -116,7 +116,7 @@ export default function CalendarGrid({ teachers, bookings, times = [], onSelectB
             className="sticky top-0 z-10 flex flex-col items-center gap-1.5 border-b border-l border-muted-100 bg-content1 p-3"
           >
             <p className="truncate text-sm font-semibold leading-none">{tc.nickname}</p>
-            <TeacherTypeChip type={tc.type} />
+            {!tc.isSystem && <TeacherTypeChip type={tc.type} />}
             <FreelanceBudgetStrip teacher={tc} />
           </div>
         ))}

@@ -85,7 +85,7 @@ describe("§2 — the box, the grids, the wire", () => {
     expect(box).not.toMatch(/disabled=\{!can\(/); // hidden, never disabled
   });
   it("the modal renders the box on EITHER half; the grids mark both halves and paint the group's tone", () => {
-    expect(modal).toContain("{inClashPair(booking, bookings) && <ClashResolveBox booking={booking} rows={bookings} teachers={teachers} />}");
+    expect(modal).toContain("{inClashPair(booking, bookings) && <ClashResolveBox booking={booking} rows={bookings} teachers={withoutSystem(teachers)} />}"); // TASK-861: a lesson clash never offers the system teacher
     expect(cell).toContain("export function ClashMark(");
     expect(cell).toContain("if (!isClash(booking) && !inPair) return null;");
     expect(dayGrid).toContain("<ClashMark booking={booking} inPair={inClashPair(booking, bookings)} />");

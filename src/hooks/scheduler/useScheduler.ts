@@ -102,7 +102,8 @@ import {
   type ExtraSessionInput,
 } from "@/services/scheduler.service";
 import { undoBody } from "@/lib/scheduler/undo";
-import type { CourseEndReason, EndCourseReason, PlanChange, RecordRentalInput, SessionCancelReason, TeacherType } from "@/types/app/scheduler";
+import type { CourseEndReason, EndCourseReason, PlanChange, RecordRentalInput, SessionCancelReason, TeacherType, TeacherView } from "@/types/app/scheduler";
+import { withoutSystem } from "@/lib/scheduler/teacher";
 import type { OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
 import type { ChangeTeacherTimeInput } from "@/types/api/contract";
 import type { GroupSeriesInput, GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
@@ -120,8 +121,13 @@ export const CATALOG_ITEMS_KEY = ["catalog-items"] as const;
 
 // ───────────────────────────── Teachers ─────────────────────────────
 
-export const useTeachers = () =>
-  useQuery({ queryKey: TEACHERS_KEY, queryFn: getTeachers });
+/**
+ * TASK-861 (REQ-120 F5) — the system teacher ("No Teacher") is OUT of every list by default, so a new picker cannot leak it.
+ * Only the calendar and the OTHER forms ask for it with `{ withSystem: true }`. Same cache entry either way.
+ */
+const dropSystem = (all: TeacherView[]) => withoutSystem(all);
+export const useTeachers = (opts?: { withSystem?: boolean }) =>
+  useQuery({ queryKey: TEACHERS_KEY, queryFn: getTeachers, select: opts?.withSystem ? undefined : dropSystem });
 
 export const useToggleTeacher = () => {
   const qc = useQueryClient();

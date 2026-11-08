@@ -13,6 +13,17 @@ export const entKey = (e: EligibleStudent, type: EligibleType) =>
     : (e.context as VoucherContext).voucherId;
 
 /**
+ * TASK-870 (REQ-5008) — the hours a NEW session may still take from a voucher: the server's `hoursAvailable`
+ * (total − used − already booked). An older payload without it falls back to `remainingHours` — the old behaviour,
+ * never a number invented here.
+ */
+export const voucherAvailable = (c: VoucherContext): number => c.hoursAvailable ?? c.remainingHours;
+
+/** TASK-870 — a voucher row with nothing available cannot be picked for a new session. Courses are never gated here. */
+export const eligiblePickable = (e: EligibleStudent, type: EligibleType): boolean =>
+  type !== "VOUCHER" || voucherAvailable(e.context as VoucherContext) > 0;
+
+/**
  * TASK-121 — a student with 2+ active courses would otherwise show identical name-only rows; enrich the
  * COURSE label with subject + used/size so the row is pickable without guessing. Voucher rows stay name-only.
  * TASK-125 (OBS-5) — when the SAME student has 2+ course entries, also append the expiry so two packages identical

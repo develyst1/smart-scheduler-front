@@ -48,6 +48,8 @@ export const otherNewStudentNeedsPhone = (student: StudentSelectValue | null | u
 import EligibleStudentSelect from "@/components/common/EligibleStudentSelect";
 import { notify } from "@/lib/ui/notify";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
+import { withoutSystem } from "@/lib/scheduler/teacher";
+import { attendRefusedToast, attendedToast } from "@/lib/scheduler/attend-outcome";
 import { resumeTeacherIdToSend, resumeTeacherOptions } from "@/lib/scheduler/resume-teacher";
 import { ApiClientError, errorProblems } from "@/lib/api/client";
 import DiscountSection from "@/components/common/DiscountSection";
@@ -71,7 +73,7 @@ import {
 } from "@/hooks/scheduler";
 import { packageFor, voucherAllowsSubject } from "@/lib/scheduler/sellable";
 import { useCan } from "@/hooks/scheduler/useMe";
-import { eligibleLabel, entKey, type EligibleType } from "@/lib/scheduler/eligible";
+import { eligibleLabel, entKey, voucherAvailable, type EligibleType } from "@/lib/scheduler/eligible";
 import {
   emptyOtherBooking,
   evaluateOtherBooking,
@@ -264,7 +266,7 @@ function ViewBooking({
   // the default and sends nothing; the options are the shared `resumeTeacherOptions` (bookable on the chosen date
   // + teaches this booking's subject, by NAME — a booking carries the subject name), the current teacher always in.
   const [resumeTeacher, setResumeTeacher] = useState<string | null>(booking.teacherId);
-  const resumeTeacherChoices = resumeTeacherOptions(teachers, booking.teacherId, resumeDate, { name: booking.subject });
+  const resumeTeacherChoices = resumeTeacherOptions(withoutSystem(teachers), booking.teacherId, resumeDate, { name: booking.subject });
   // 🔴 AC-14 — the BACKEND's clash sentence, held verbatim. It already names the teacher and the clashing
   // booking; composing a second one here would be two clash rules in the product that can disagree.
   const [resumeError, setResumeError] = useState<string | null>(null);
@@ -460,9 +462,16 @@ function ViewBooking({
       }))
     )
       return;
-    await attended.mutateAsync(booking.id);
-    notify({ title: t("booking.attendedTitle"), color: "success" });
-    onClose();
+    try {
+      const res = await attended.mutateAsync(booking.id);
+      // TASK-870 — the `WARN` value of the server's switch: the hour WAS deducted from an empty voucher; the server's sentence rides along.
+      notify(attendedToast(res, t));
+      onClose();
+    } catch (e) {
+      // 🔴 TASK-870 — `409 VOUCHER_EXHAUSTED` (the default): nothing was deducted, the row stays un-attended and the modal stays open.
+      // The server's sentence, UNCHANGED (same shape as the pause refusal above).
+      notify(attendRefusedToast(e, t));
+    }
   };
 
   // ── โหมดย้ายคาบด้วยมือ (UC-003) ──
@@ -470,7 +479,7 @@ function ViewBooking({
     return (
       <MoveBookingForm
         booking={booking}
-        teachers={teachers}
+        teachers={booking.bookingType === "OTHER" ? teachers : withoutSystem(teachers)}
         onCancel={() => setMoving(false)}
         onClose={onClose}
       />
@@ -576,7 +585,7 @@ function ViewBooking({
           through their own route. A lesson booking has `other === null` and shows nothing. */}
       {/* REQ-105 (TASK-457) — the clash box on EITHER half of the pair: the yielded GROUP block, or the Private
           standing in its hour (`inClashPair`, pure, over the rows on screen). The verdict is the server's `group.clash`. */}
-      {inClashPair(booking, bookings) && <ClashResolveBox booking={booking} rows={bookings} teachers={teachers} />}
+      {inClashPair(booking, bookings) && <ClashResolveBox booking={booking} rows={bookings} teachers={withoutSystem(teachers)} />}
       {/* A SEAT row: which group it sits in, from the server's `groupName`; nothing else changes on a seat. */}
       {booking.groupName && (
         <p className="text-sm text-muted-500">{t("booking.inGroup", { name: booking.groupName })}</p>
@@ -686,7 +695,7 @@ function ViewBooking({
         <OtherDetailsDialog booking={booking} teachers={teachers} opened={otherDetailsOpen} onClose={() => setOtherDetailsOpen(false)} />
       )}
       {booking.bookingType === "GROUP" && swapOpen && (
-        <GroupSwapDialog booking={booking} teachers={teachers} opened={swapOpen} onClose={() => setSwapOpen(false)} />
+        <GroupSwapDialog booking={booking} teachers={withoutSystem(teachers)}opened={swapOpen} onClose={() => setSwapOpen(false)} />
       )}
       {/* Sell a course INTO this group: the EXISTING course form, the group's teacher / day / time prefilled + locked. */}
       {booking.bookingType === "GROUP" && booking.group?.key && sellOpen && (
@@ -1020,6 +1029,7 @@ function MoveBookingForm({
   const [rateBaht, setRateBaht] = useState<number | "">(rate ? rate.effectiveMinor / 100 : "");
   const [rateClear, setRateClear] = useState(false);
 
+  // TASK-861 — the caller already dropped the system teacher for a lesson; a moved OTHER block keeps it.
   const bookableTeachers = teachers.filter((tc) => bookableOnDate(tc, date));
   const teacherOff = !!teacherId && !bookableTeachers.some((tc) => tc.id === teacherId);
 
@@ -1195,10 +1205,13 @@ function CreateForm({
   // 400 mismatch, `404`), so the client's own slot check is skipped: it would only find the group.
   const walkIn = createSlot.groupSeat ?? null;
 
-  const [bookingType, setBookingType] = useState<BookingType>("SINGLE_SESSION");
+  // TASK-861 — a slot on the system teacher's column is a park-fee block: the form opens on อื่นๆ, and a lesson tab starts
+  // with NO teacher chosen (the lesson picker never offers the system teacher).
+  const slotIsSystem = !!teachers.find((tc) => tc.id === createSlot.teacherId)?.isSystem;
+  const [bookingType, setBookingType] = useState<BookingType>(slotIsSystem ? "OTHER" : "SINGLE_SESSION");
   // Trial / Single — free student picker + teacher + subject + time.
   const [student, setStudent] = useState<StudentSelectValue | null>(null);
-  const [teacherId, setTeacherId] = useState(createSlot.teacherId);
+  const [teacherId, setTeacherId] = useState(slotIsSystem ? "" : createSlot.teacherId);
   const [subjectId, setSubjectId] = useState("");
   /** SPEC-026 — the voucher's program, chosen not guessed. Empty until staff pick one. */
   const [voucherSubjectId, setVoucherSubjectId] = useState<string | null>(null);
@@ -1307,7 +1320,7 @@ function CreateForm({
     setStudent(null);
     setEntitlementId(null);
     setSubmitError(null);
-    setTeacherId(createSlot.teacherId);
+    setTeacherId(slotIsSystem ? "" : createSlot.teacherId);
     setStartTime(createSlot.time);
     setSubjectId("");
     setVoucherSubjectId(null);
@@ -1343,7 +1356,8 @@ function CreateForm({
     const ctx = selectedEligible?.context as VoucherContext | undefined;
     // Blocked until a program is chosen — same shape as TASK-076's collision picker: never offer a submit
     // that can only guess.
-    valid = !!selectedEligible && !!ctx && !!createSlot.teacherId && !!voucherSubject && !!startTime;
+    // TASK-870 — nothing available ⇒ Save stays shut (the picker already disables such a row; this is the backstop).
+    valid = !!selectedEligible && !!ctx && voucherAvailable(ctx) > 0 && !!createSlot.teacherId && !!voucherSubject && !!startTime;
     if (selectedEligible && ctx && voucherSubject) {
       input = {
         studentName: selectedEligible.name,
@@ -1499,7 +1513,7 @@ function CreateForm({
       ) : (
         <Tabs value={bookingType} onChange={(v) => v && changeTab(v as BookingType)}>
           <Tabs.List grow>
-            {BOOKING_TABS.map((k) => (
+            {(slotIsSystem ? BOOKING_TABS.filter((k) => k === "OTHER") : BOOKING_TABS).map((k) => (
               <Tabs.Tab key={k} value={k}>
                 {t(`bookingType.${k}`)}
               </Tabs.Tab>
@@ -1555,7 +1569,7 @@ function CreateForm({
           {selectedEligible && (
             <ContextCard
               text={t("booking.voucherContext", {
-                remaining: (selectedEligible.context as VoucherContext).remainingHours,
+                remaining: voucherAvailable(selectedEligible.context as VoucherContext), // TASK-870 — what a NEW session may take
                 expiry: (selectedEligible.context as VoucherContext).expiryDate,
               })}
             />
@@ -1788,7 +1802,7 @@ function CreateForm({
               setSubjectId("");
             }}
             disabled={!!walkIn}
-            data={teacherSelectData(teachers.filter((tc) => bookableOnDate(tc, createSlot.date)))}
+            data={teacherSelectData(withoutSystem(teachers).filter((tc) => bookableOnDate(tc, createSlot.date)))}
             allowDeselect={false}
             searchable
             renderOption={({ option, checked }) => (

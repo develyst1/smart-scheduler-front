@@ -5,7 +5,7 @@ import type { Teacher } from "@/types/app/scheduler";
 import { TEACHER_TYPE_LABEL } from "@/types/app/scheduler";
 import { TeacherTypeChip } from "./BookingBadges";
 
-type TeacherLike = Pick<Teacher, "id" | "nickname" | "type">;
+type TeacherLike = Pick<Teacher, "id" | "nickname" | "type"> & Partial<Pick<Teacher, "isSystem">>;
 
 /**
  * Select data ของครู — label มี type ติดไปด้วย ("ชื่อ · Freelance")
@@ -14,7 +14,7 @@ type TeacherLike = Pick<Teacher, "id" | "nickname" | "type">;
 export const teacherSelectData = (teachers: TeacherLike[]) =>
   teachers.map((t) => ({
     value: t.id,
-    label: `${t.nickname} · ${TEACHER_TYPE_LABEL[t.type]}`,
+    label: t.isSystem ? t.nickname : `${t.nickname} · ${TEACHER_TYPE_LABEL[t.type]}`, // TASK-861 — the system teacher has no type to print
   }));
 
 /**
@@ -46,7 +46,7 @@ export function TeacherOption({
     <div className="flex w-full items-center gap-2">
       <CheckIcon size={12} aria-hidden className={checked ? "shrink-0" : "shrink-0 opacity-0"} />
       <span className="min-w-0 flex-1 truncate">{t ? t.nickname : option.label}</span>
-      {t && <TeacherTypeChip type={t.type} />}
+      {t && !t.isSystem && <TeacherTypeChip type={t.type} />}
     </div>
   );
 }

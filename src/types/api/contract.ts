@@ -115,6 +115,8 @@ export interface TeacherDTO {
   setupIncomplete?: boolean;
   /** Soft-archived (offboarded); excluded from GET /teachers unless ?archived=true. */
   archived?: boolean;
+  /** TASK-861 (REQ-120 F5) — true on the one system teacher ("No Teacher"); absent on an older payload ⇒ false. */
+  isSystem?: boolean;
 }
 
 /** SPEC-064 / TASK-188 — server-computed lifecycle. Mirrored from the BE contract; never re-derived here. */
@@ -917,6 +919,8 @@ export interface UpdateBookingStatusResponse {
   course: CourseSummary | null;
   /** 🔴 TASK-658 — kept OPTIONAL and unread: the server still sends `false`; nothing on a screen depends on it. */
   locked?: boolean;
+  /** TASK-870 (REQ-5008) — the server's sentence when an attend deducted from an already-empty voucher (the `WARN` value of its switch). Absent otherwise. */
+  voucherWarning?: string | null;
   notification:
     | { channel: "line"; status: "queued" | "skipped"; reason?: string }
     | null;

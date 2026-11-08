@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { useDisclosure } from "@mantine/hooks";
 import { calendarDayBookings, calendarToBookings } from "@/lib/api/mappers";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
+import { withoutSystem } from "@/lib/scheduler/teacher";
 import { usePausedTrayCollapsed } from "@/lib/scheduler/paused-tray";
 import { useCancelledTrayCollapsed, useShowCancelled } from "@/lib/scheduler/cancelled-tray";
 import { useLoadPhase } from "@/lib/ui/load-phase";
@@ -70,7 +71,10 @@ export default function CalendarContent() {
   const leaveIndex = useMemo(() => leaveDayIndex(leaveDays), [leaveDays]);
 
   const calView = view === "day" ? "day" : "week";
-  const { data: teachers = [], isLoading: loadingTeachers } = useTeachers();
+  // TASK-861 — the grid and the booking modal ask for the system teacher; every picker and the header get the real coaches only.
+  const { data: allTeachers = [], isLoading: loadingTeachers } = useTeachers({ withSystem: true });
+  const teachers = useMemo(() => withoutSystem(allTeachers), [allTeachers]);
+  const systemTeacher = allTeachers.find((t) => t.isSystem);
   // TASK-369 (REQ-089 §5) — the `Show cancelled` toggle: ON ⇒ the request carries `includeCancelled=true` and the
   // response carries `cancelled`, rendered in its own tray; OFF ⇒ no param, no tray. The grid is untouched either way.
   const { shown: showCancelled } = useShowCancelled();
@@ -126,7 +130,7 @@ export default function CalendarContent() {
   // กรองครูตามประเภท + รายชื่อ — ว่าง = แสดงทั้งหมด
   // TASK-407 — scoped: the columns are the ones the payload came back with (mine), the filters do not apply.
   const scopedIds = scoped ? columnTeacherIds(calendar) : null;
-  const filteredTeachers = scopedIds
+  const coachColumns = scopedIds
     ? teachers.filter((t) => scopedIds.includes(t.id))
     : teachers.filter(
         (t) =>
@@ -134,6 +138,9 @@ export default function CalendarContent() {
           (selectedTeacherIds.length === 0 || selectedTeacherIds.includes(t.id)) &&
           (view === "week" || bookableOnDate(t, date)),
       );
+  // TASK-861 — the system teacher's column comes LAST, only on the unfiltered grid (a type or coach filter is about coaches).
+  const showSystemColumn = !scopedIds && selectedTypes.length === 0 && selectedTeacherIds.length === 0 && !!systemTeacher?.active;
+  const filteredTeachers = showSystemColumn && systemTeacher ? [...coachColumns, systemTeacher] : coachColumns;
 
   const [isOpen, { open: onOpen, close: onClose }] = useDisclosure(false);
   const [selected, setSelected] = useState<Booking | undefined>();
@@ -326,7 +333,7 @@ export default function CalendarContent() {
         onClose={onClose}
         booking={selected}
         createSlot={createSlot}
-        teachers={teachers}
+        teachers={allTeachers}
         bookings={view === "day" ? dayBookings : weekBookings}
         onOverbook={openOverbook}
         onWalkIn={openWalkIn}

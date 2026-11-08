@@ -52,6 +52,7 @@ import {
 } from "@/types/app/scheduler";
 import StickyScrollArea from "@/components/common/StickyScrollArea";
 import EndCourseDialog from "./EndCourseDialog";
+import PaymentCard from "@/components/partials/Payments/PaymentCard"; // TASK-876 (SPEC-099 §8)
 import { useUndoControl } from "@/components/common/UndoControl";
 import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
@@ -393,6 +394,10 @@ export default function PlanModal({
               )}
             </Stack>
           )}
+
+          {/* TASK-876 — the payment record of this saved course or voucher (not of the create preview: nothing is sold yet).
+              `entitlementId` is the course_packages.id / vouchers.id the payment rows hang on. */}
+          {!isCreate && entitlementId && <PaymentCard refType={isCourse ? "COURSE" : "VOUCHER"} refId={entitlementId} />}
 
           {/* REQ-036 — an ended course is offered no write action at all. TASK-185's server guard is the real
               protection; this exists so staff aren't handed a button whose only outcome is a 409. */}

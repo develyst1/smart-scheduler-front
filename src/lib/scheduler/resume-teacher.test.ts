@@ -123,7 +123,7 @@ describe("both doors — pre-selected default, the shared options, `teacherId` o
   it("booking resume (BookingModal): default = the booking's teacher, re-seeded on open; options via the ONE function", () => {
     expect(booking).toContain("useState<string | null>(booking.teacherId)");
     expect(booking).toContain("setResumeTeacher(booking.teacherId);");
-    expect(booking).toContain("resumeTeacherOptions(teachers, booking.teacherId, resumeDate, { name: booking.subject })");
+    expect(booking).toContain("resumeTeacherOptions(withoutSystem(teachers), booking.teacherId, resumeDate, { name: booking.subject })"); // TASK-861: still the ONE function; the system teacher is dropped before it
     expect(booking).toContain("teacherId: resumeTeacherIdToSend(resumeTeacher, booking.teacherId),");
   });
 
