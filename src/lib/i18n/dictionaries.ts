@@ -1832,7 +1832,7 @@ const en = {
     existingTitle: "Existing Customers",
     byCourse: "Active course",
     byVoucher: "Active voucher",
-    byRecentTrial: "1st Trial (last 3 months) (มาลองแล้วไม่ชอบ)",
+    byRecentTrial: "1st Trial (last 3 months) (Tried, didn't continue)",
     byRecentSingle: "1 HR (last 3 months)",
     totalCustomers: "Total customers",
     trialRange: "1st Trial / 1 HR: {from} – {to}",

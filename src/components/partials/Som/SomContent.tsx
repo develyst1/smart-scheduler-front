@@ -255,6 +255,13 @@ export default function SomContent() {
 /** Card colors, set per card by the client. */
 type StatTone = "orange" | "green" | "gray";
 
+// Text on a toned card is always black (client); only the background carries the color.
+const STAT_TONE_BG: Record<StatTone, string> = {
+  orange: "rgb(249 115 22 / 0.4)", // orange-500, same strength as the green
+  green: "rgb(var(--cal-att) / 0.4)", // the calendar's "attended" green
+  gray: "rgb(var(--cal-leave) / 0.34)", // the calendar's "leave" slate, same fill strength
+};
+
 const NVR_TONE: Record<NvrBucket, StatTone> = {
   firstTrial: "green",
   newCourseThisMonth: "green",
@@ -274,7 +281,7 @@ function Stat({
   label: string;
   value: number | string;
   accent?: boolean;
-  /** Tints the whole card; Mantine's `-light` variables follow light / dark mode. */
+  /** Colors the whole card. */
   tone?: StatTone;
   onClick?: () => void;
 }) {
@@ -282,35 +289,26 @@ function Stat({
     ? {
         component: "button" as const,
         onClick,
-        className: tone
-          ? "text-left transition hover:brightness-95"
-          : "text-left transition-colors hover:bg-muted-50",
+        // A card that opens a modal has to look pressable: pointer, darker border (`!` beats the Card's own border), lift,
+        // shadow, and a keyboard focus ring.
+        className:
+          "cursor-pointer text-left transition hover:!border-black/30 hover:shadow-md hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary motion-safe:hover:-translate-y-0.5",
       }
     : {};
   return (
     <Card
       withBorder
       padding="sm"
-      style={
-        tone
-          ? { backgroundColor: `var(--mantine-color-${tone}-light)` }
-          : undefined
-      }
+      style={tone ? { backgroundColor: STAT_TONE_BG[tone] } : undefined}
       {...clickable}
     >
-      <Text size="xs" c="dimmed">
+      <Text size="xs" c={tone ? "black" : "dimmed"}>
         {label}
       </Text>
       <Text
         fw={700}
         fz="xl"
-        c={
-          tone
-            ? `var(--mantine-color-${tone}-light-color)`
-            : accent
-              ? "blue"
-              : undefined
-        }
+        c={tone ? "black" : accent ? "blue" : undefined}
         className="tabular-nums"
       >
         {value}
