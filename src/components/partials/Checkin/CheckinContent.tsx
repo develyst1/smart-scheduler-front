@@ -195,8 +195,25 @@ export function CampSuccessView({ result }: { result: CampCheckinResult }) {
   );
 }
 
+/** TASK-870 (REQ-5008) — the server's refusal when a check-in finds the voucher empty. Retrying can never pass. */
+export const VOUCHER_EXHAUSTED = "VOUCHER_EXHAUSTED";
+
 function ErrorView({ message, code, onRetry }: { message: string; code?: string; onRetry: () => void }) {
   const t = useT();
+  // 🔴 TASK-870 — only for THIS code: the full sentence from our own dictionary (not the server's message), the existing
+  // close hint instead of a Retry. Every other failure below is unchanged, Retry included.
+  if (code === VOUCHER_EXHAUSTED) {
+    return (
+      <div className="flex flex-col items-center gap-3 text-center" data-voucher-exhausted>
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-danger/10 text-danger">
+          <XCircle size={32} />
+        </span>
+        <Title order={3}>{t("checkin.voucherEmptyTitle")}</Title>
+        <p className="text-sm text-muted-600">{t("checkin.voucherEmptyBody")}</p>
+        <p className="mt-1 text-xs text-muted-400">{t("checkin.closeHint")}</p>
+      </div>
+    );
+  }
   const isWindow =
     code === CAMP_TOKEN_EXPIRED || message.includes("เช็คอินได้") || message.includes("หมดอายุ") || /check in|expired/i.test(message);
   return (

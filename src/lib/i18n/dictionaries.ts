@@ -2298,6 +2298,9 @@ const en = {
     remainingHours: "{used}/{total} hours",
     closeHint: "You can close this page",
     failTitle: "Check-in failed",
+    // TASK-870 (REQ-5008) — a parent's check-in on a voucher with no hours left (409 VOUCHER_EXHAUSTED): the full sentence, no Retry.
+    voucherEmptyTitle: "Voucher used up",
+    voucherEmptyBody: "This voucher has no hours left. Please contact the admin to buy more.",
     retry: "Try again",
     // TASK-404 — the camp day's shape on the same page
     campTitle: "Camp day",
@@ -4300,6 +4303,8 @@ const th: typeof en = {
     remainingHours: "{used}/{total} ชม.",
     closeHint: "ปิดหน้านี้ได้เลย",
     failTitle: "เช็คอินไม่สำเร็จ",
+    voucherEmptyTitle: "วอยเชอร์หมดแล้ว",
+    voucherEmptyBody: "ชั่วโมงในวอยเชอร์หมดแล้ว กรุณาติดต่อแอดมินเพื่อซื้อเพิ่ม",
     retry: "ลองอีกครั้ง",
     campTitle: "วันแคมป์",
     date: "วันที่",
