@@ -72,13 +72,13 @@ export interface NewVsRenewing extends SomPeriodEcho {
   notRenewed?: number;
 }
 
-/** The six New-vs-Renewing cards — each opens a detail table (GET /reports/som/new-vs-renewing/:bucket). */
+/** The six New-vs-Renewing cards, in screen order — each opens a detail table (GET /reports/som/new-vs-renewing/:bucket). */
 export const NVR_BUCKETS = [
   "firstTrial",
   "newCourseThisMonth",
+  "trialNotConverted",
   "newCoursePrevMonth",
   "renewCourse",
-  "trialNotConverted",
   "notRenewed",
 ] as const;
 export type NvrBucket = (typeof NVR_BUCKETS)[number];

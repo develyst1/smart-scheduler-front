@@ -116,20 +116,30 @@ export default function SomContent() {
         <SimpleGrid cols={{ base: 2, sm: 3, lg: 5 }} spacing="sm">
           {/* New contract only (§2). A missing / null field shows "—" — never the legacy fields, which the server
               keeps at their old, buggy values (Active Course counted ended/paused courses, Trial counted cancellations). */}
-          <Stat label={t("som.byCourse")} value={ec.activeCourse ?? "—"} />
-          <Stat label={t("som.byVoucher")} value={ec.activeVoucher ?? "—"} />
           <Stat
-            label={t("som.byRecentTrial")}
-            value={ec.recentFirstTrial ?? "—"}
+            label={t("som.byCourse")}
+            value={ec.activeCourse ?? "—"}
+            tone="orange"
           />
           <Stat
-            label={t("som.byRecentSingle")}
-            value={ec.recentSingleSession ?? "—"}
+            label={t("som.byVoucher")}
+            value={ec.activeVoucher ?? "—"}
+            tone="orange"
           />
           <Stat
             label={t("som.totalCustomers")}
             value={ec.totalCustomers ?? "—"}
-            accent
+            tone="orange"
+          />
+          <Stat
+            label={t("som.byRecentSingle")}
+            value={ec.recentSingleSession ?? "—"}
+            tone="orange"
+          />
+          <Stat
+            label={t("som.byRecentTrial")}
+            value={ec.recentFirstTrial ?? "—"}
+            tone="gray"
           />
         </SimpleGrid>
         {/* Only when the server reports a 1st Trial / 1 HR window — with no month selected there may be none. */}
@@ -156,6 +166,7 @@ export default function SomContent() {
               key={b}
               label={t(`som.nvr.${b}`)}
               value={nvrValue(b)}
+              tone={NVR_TONE[b]}
               onClick={() => setNvrOpen(b)}
             />
           ))}
@@ -241,33 +252,65 @@ export default function SomContent() {
   }
 }
 
+/** Card colors, set per card by the client. */
+type StatTone = "orange" | "green" | "gray";
+
+const NVR_TONE: Record<NvrBucket, StatTone> = {
+  firstTrial: "green",
+  newCourseThisMonth: "green",
+  trialNotConverted: "gray",
+  newCoursePrevMonth: "green",
+  renewCourse: "green",
+  notRenewed: "gray",
+};
+
 function Stat({
   label,
   value,
   accent,
+  tone,
   onClick,
 }: {
   label: string;
   value: number | string;
   accent?: boolean;
+  /** Tints the whole card; Mantine's `-light` variables follow light / dark mode. */
+  tone?: StatTone;
   onClick?: () => void;
 }) {
   const clickable = onClick
     ? {
         component: "button" as const,
         onClick,
-        className: "text-left transition-colors hover:bg-muted-50",
+        className: tone
+          ? "text-left transition hover:brightness-95"
+          : "text-left transition-colors hover:bg-muted-50",
       }
     : {};
   return (
-    <Card withBorder padding="sm" {...clickable}>
+    <Card
+      withBorder
+      padding="sm"
+      style={
+        tone
+          ? { backgroundColor: `var(--mantine-color-${tone}-light)` }
+          : undefined
+      }
+      {...clickable}
+    >
       <Text size="xs" c="dimmed">
         {label}
       </Text>
       <Text
         fw={700}
         fz="xl"
-        c={accent ? "blue" : undefined}
+        c={
+          tone
+            ? `var(--mantine-color-${tone}-light-color)`
+            : accent
+              ? "blue"
+              : undefined
+        }
         className="tabular-nums"
       >
         {value}
