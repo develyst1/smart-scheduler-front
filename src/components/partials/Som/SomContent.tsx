@@ -18,6 +18,7 @@ import { NvrDetailModal } from "./NvrDetailModal";
 import { SomFilters } from "./SomFilters";
 import { CoachCapacitySection } from "./CoachCapacitySection";
 import { ActivityProgramSection } from "./ActivityProgramSection";
+import { ActivityPackagesSection } from "./ActivityPackagesSection";
 import { DemographicsSection } from "./DemographicsSection";
 
 export default function SomContent() {
@@ -144,7 +145,7 @@ export default function SomContent() {
         </SimpleGrid>
         {/* Only when the server reports a 1st Trial / 1 HR window — with no month selected there may be none. */}
         {ec.recentFrom && ec.recentTo && (
-          <p className="mt-1.5 text-xs text-muted-400">
+          <p className="mt-1.5 text-xs text-muted-600">
             {t("som.trialRange", {
               from: fmtMonth(ec.recentFrom),
               to: fmtMonth(ec.recentTo),
@@ -171,7 +172,7 @@ export default function SomContent() {
             />
           ))}
         </SimpleGrid>
-        <p className="mt-1.5 text-xs text-muted-400">{t("som.nvrHint")}</p>
+        <p className="mt-1.5 text-xs text-muted-600">{t("som.nvrHint")}</p>
         <NvrDetailModal
           bucket={nvrOpen}
           query={query}
@@ -198,12 +199,19 @@ export default function SomContent() {
         <DemographicsSection demo={demo} />
       </section>
 
-      {/* 6. Activity / Program */}
+      {/* 6. Activity / Program — the per-activity package pies once the server sends `activityPackages`; until then
+          the earlier category donuts (the server keeps `activityProgram` until this screen ships). */}
       <section>
-        <SectionHeading scope={scopeLabel(data.activityProgram)}>
+        <SectionHeading
+          scope={scopeLabel(data.activityPackages ?? data.activityProgram)}
+        >
           {t("som.sportShareTitle")}
         </SectionHeading>
-        <ActivityProgramSection data={data.activityProgram} />
+        {data.activityPackages ? (
+          <ActivityPackagesSection data={data.activityPackages} />
+        ) : (
+          <ActivityProgramSection data={data.activityProgram} />
+        )}
       </section>
     </Stack>
   );

@@ -83,7 +83,7 @@ export function CoachCapacitySection({
   return (
     <Card withBorder padding="md">
       <Group justify="space-between" mb="sm" gap="xs">
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="gray.7">
           {data
             ? t("som.capacityPeriod", { period: periodLabel })
             : t("som.capacityHint")}

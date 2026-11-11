@@ -60,7 +60,7 @@ export function ActivityProgramSection({
 
   return (
     <Card withBorder padding="md">
-      <Text size="xs" c="dimmed">
+      <Text size="xs" c="gray.7">
         {t("som.activityHint")}
       </Text>
 
@@ -93,7 +93,7 @@ export function ActivityProgramSection({
                 <Text
                   component="span"
                   size="xs"
-                  c="dimmed"
+                  c="gray.7"
                   fw={400}
                   className="block"
                 >
@@ -201,7 +201,7 @@ export function ActivityProgramSection({
           <Text fw={600} size="sm">
             {title}
           </Text>
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="gray.7">
             {subtitle}
           </Text>
         </div>

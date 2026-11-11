@@ -17,6 +17,7 @@ import {
   SOM_UNKNOWN_KEY,
   type Breakdown,
   type BreakdownBucket,
+  type SomBase,
   type SomReport,
 } from "@/types/app/som";
 
@@ -65,7 +66,7 @@ export function DemographicsSection({
   return (
     <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
       {/* Gender — one 100% bar */}
-      <Panel title={t("som.genderTitle")} data={demo.gender}>
+      <Panel base={demo.base} title={t("som.genderTitle")} data={demo.gender}>
         {(() => {
           const rows = known(demo.gender).filter((b) => b.count > 0);
           return (
@@ -113,12 +114,21 @@ export function DemographicsSection({
       </Panel>
 
       {/* Nationality — ranked bars */}
-      <Panel title={t("som.nationalityTitle")} data={demo.nationality}>
+      <Panel
+        base={demo.base}
+        title={t("som.nationalityTitle")}
+        data={demo.nationality}
+      >
         <RankedBars data={demo.nationality} />
       </Panel>
 
       {/* Age — vertical columns, every band kept (0 included) so the ladder reads in order */}
-      <Panel title={t("som.ageBandTitle")} data={demo.ageBand} wide>
+      <Panel
+        base={demo.base}
+        title={t("som.ageBandTitle")}
+        data={demo.ageBand}
+        wide
+      >
         {(() => {
           const rows = known(demo.ageBand);
           const max = Math.max(1, ...rows.map((b) => b.count));
@@ -170,6 +180,7 @@ export function DemographicsSection({
 
       {/* Address — Province / District toggle, ranked bars; a district row expands to its แขวง/ตำบล. */}
       <Panel
+        base={demo.base}
         title={t("som.addressTitle")}
         data={address}
         wide
@@ -199,12 +210,15 @@ export function DemographicsSection({
 
 // Module-level so children (RankedBars' state) aren't remounted on every parent render.
 function Panel({
+  base,
   title,
   data,
   wide,
   headerRight,
   children,
 }: {
+  /** Who the counts cover — picks the wording of the "based on X of Y" line. */
+  base?: SomBase | null;
   title: string;
   data: Breakdown;
   wide?: boolean;
@@ -223,8 +237,13 @@ function Panel({
           <Text fw={600} size="sm">
             {title}
           </Text>
-          <Text size="xs" c="dimmed">
-            {t("som.coverage", { known: data.known, total: data.total })}
+          <Text size="xs" c="gray.7">
+            {t(
+              base === "CUSTOMERS_PLUS_RECENT_1HR"
+                ? "som.coverageCustomers"
+                : "som.coverage",
+              { known: data.known, total: data.total },
+            )}
             {data.unknown > 0 &&
               ` · ${t("som.unknownCount", { n: data.unknown })}`}
           </Text>

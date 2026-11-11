@@ -151,6 +151,34 @@ export interface ActivityProgram extends SomPeriodEcho {
   categories: ActivityCategory[];
 }
 
+/** Who a demographics / activity count covers. The only value so far: active course or voucher holders at the
+ *  range end + the "1 HR (last 3 months)" children, each child once (backend spec 2026-11-11). */
+export type SomBase = "CUSTOMERS_PLUS_RECENT_1HR";
+
+/** One slice of an activity's pie: active COURSES of one size (a child with two courses counts two), or the
+ *  CHILDREN with a 1 HR of that activity in the last-3-months window. Vouchers are never counted. */
+export type ActivityPackage =
+  | { kind: "COURSE"; size: number; count: number }
+  | { kind: "SINGLE_SESSION"; count: number };
+
+export interface ActivityPackageGroup {
+  key: string;
+  /** Display name, e.g. "Private SURFSKATE"; `unknown` is labelled FE-side. */
+  label?: string | null;
+  /** Sum of `packages[].count` — `firstTrial` is NOT part of it. */
+  total: number;
+  /** Largest count first. */
+  packages: ActivityPackage[];
+  /** 1st Trials of this activity in the range, shown on their own. */
+  firstTrial: number;
+}
+
+/** The activity chart (backend spec 2026-11-11): every active activity, 0 included, so colours stay stable. */
+export interface ActivityPackages extends SomPeriodEcho {
+  base?: SomBase | null;
+  activities: ActivityPackageGroup[];
+}
+
 export interface TodaySection {
   date: string; // YYYY-MM-DD
   /** Legacy — superseded by `confirmed` (kept by the server so older screens don't break). */
@@ -167,6 +195,8 @@ export interface SomReport {
   sportShare: Breakdown;
   newVsRenewing: NewVsRenewing;
   demographics: SomPeriodEcho & {
+    /** Who the breakdowns count — drives the "based on X of Y …" line. Absent = attended students (older servers). */
+    base?: SomBase | null;
     gender: Breakdown;
     ageBand: Breakdown;
     province: Breakdown;
@@ -180,7 +210,9 @@ export interface SomReport {
   today: TodaySection;
   /** Absent / null → the section renders its columns with "—". */
   coachCapacity?: CoachCapacity;
-  /** Absent / null → "No data yet" (never the legacy `sportShare`). */
+  /** Absent / null → "No data yet" (never the legacy `sportShare`). Shown only until `activityPackages` ships. */
   activityProgram?: ActivityProgram;
+  /** The new activity chart. When present it replaces the Activity / Program section. */
+  activityPackages?: ActivityPackages | null;
   generatedAt: string; // ISO
 }

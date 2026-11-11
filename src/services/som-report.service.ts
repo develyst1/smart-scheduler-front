@@ -56,6 +56,7 @@ const mockSom = (): SomReport => {
       notRenewed: 1,
     },
     demographics: {
+      base: "CUSTOMERS_PLUS_RECENT_1HR",
       gender: bd(
         [
           { key: "male", count: 3 },
@@ -132,6 +133,41 @@ const mockSom = (): SomReport => {
       attended: 11,
       confirmed: 18,
       attendanceRate: 61,
+    },
+    activityPackages: {
+      month: "2026-08",
+      base: "CUSTOMERS_PLUS_RECENT_1HR",
+      activities: [
+        {
+          key: "surfskate",
+          label: "Private SURFSKATE",
+          total: 87,
+          packages: [
+            { kind: "COURSE", size: 10, count: 61 },
+            { kind: "SINGLE_SESSION", count: 15 },
+            { kind: "COURSE", size: 6, count: 11 },
+          ],
+          firstTrial: 0,
+        },
+        {
+          key: "bike",
+          label: "Private BIKE",
+          total: 24,
+          packages: [
+            { kind: "COURSE", size: 4, count: 12 },
+            { kind: "COURSE", size: 10, count: 7 },
+            { kind: "SINGLE_SESSION", count: 5 },
+          ],
+          firstTrial: 4,
+        },
+        {
+          key: "balance-play",
+          label: "Balance Play",
+          total: 0,
+          packages: [],
+          firstTrial: 2,
+        },
+      ],
     },
     activityProgram: {
       categories: [
@@ -308,13 +344,7 @@ const mockNvrDetail = (bucket: NvrBucket): NvrDetailRow[] => {
     trial: string | null,
   ): NvrDetailRow => ({
     studentId: `st${i}`,
-    studentName: [
-      "น้องข้าวหอม",
-      "น้องไทม์",
-      "น้องมะลิ",
-      "น้องปีใหม่",
-      "น้องภูผา",
-    ][i % 5],
+    studentName: ["น้องข้าวหอม", "น้องไทม์", "น้องมะลิ", "น้องปีใหม่", "น้องภูผา"][i % 5],
     packageLabel: label,
     courseTeacherId: course,
     trialTeacherId: trial,
