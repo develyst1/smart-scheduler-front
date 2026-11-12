@@ -19,7 +19,7 @@ import { useCan } from "@/hooks/scheduler/useMe";
 import { mergeCampCells, type CampBlock } from "@/lib/camp/grid";
 import CampBlockCell from "./CampBlockCell";
 import { CAL_DOT_STYLE, CAL_SURFACE_HOVER, CAL_SURFACE_STYLE, showsMakeupMark } from "./calendar-status";
-import { leaveDayKey, leaveMarkerKey, type LeaveMarker } from "@/lib/scheduler/teacher-scope";
+import { leaveBlocksSlot, leaveDayKey, leaveMarkerKey, type LeaveMarker } from "@/lib/scheduler/teacher-scope";
 
 interface Props {
   teachers: TeacherView[];
@@ -123,14 +123,16 @@ export default function CalendarWeekGrid({
               const items = mergeCampCells(cellBookings(tc.id, day));
               // 🔴 TASK-622 — a blocked day is not bookable: it greys like a non-working one and offers no `+`. Its classes stay live.
               const leave = leaveDays?.get(leaveDayKey(tc.id, day));
-              const canBook = bookableOnDate(tc, day) && !leave;
+              // 🔴 TASK-966 — a PART-DAY leave does not grey the whole cell (the week cell holds every hour of the day): it marks only the classes it overlaps, and the `+` stays. A whole-day leave is as before.
+              const wholeDayLeave = leave && !(leave.startTime && leave.endTime) ? leave : undefined;
+              const canBook = bookableOnDate(tc, day) && !wholeDayLeave;
               return (
                 <div
                   key={day}
                   className={`min-h-24 space-y-1 border-l border-t border-muted-100 p-1.5 ${
                     canBook ? "" : "bg-muted-50/80"
                   }`}
-                  data-leave-day={leave ? "yes" : undefined}
+                  data-leave-day={wholeDayLeave ? "yes" : leave ? "part" : undefined}
                 >
                   {items.map((item) => {
                     if (item.kind === "camp") return <CampBlockCell key={item.id} block={item} closed={closedWeeks?.has(item.campWeekId) ?? false} size="sm" onSelect={(blk) => onSelectCamp?.(blk)} />;
@@ -165,7 +167,7 @@ export default function CalendarWeekGrid({
                             {b.displayName}
                           </span>
                           {/* 🔴 TASK-622 — the class is still on, but its coach is away: the strip's own sentence. */}
-                          {leave && <LeaveMark marker={leave} size={12} />}
+                          {leave && leaveBlocksSlot(leave, b.startTime) && <LeaveMark marker={leave} size={12} />}
                           {/* REQ-089 item 5 — the server's `courseLast`, as a stamp on the name row. */}
                           <LastStamp booking={b} size="sm" />
                           {/* REQ-091 — the server's rental row: red unpaid, green paid. */}

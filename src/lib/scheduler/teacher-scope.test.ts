@@ -86,10 +86,13 @@ describe("§3 — the calendar page under the flag", () => {
    * ("a scoped session only hits allowed routes") is kept by asserting the GATE, not by pretending the hook is allowed:**
    * it is mounted with `!scoped`, so a teacher session never sends it. 🚫 A caught 403 would have sent it.
    */
-  it("🔴 the load path: five data hooks — four on the allowed set, and the fifth GATED to admins", () => {
-    expect(dataHooks(region(content, "export default function CalendarContent", "return ("))).toEqual(["useBadges", "useCalendar", "useLeaveDays", "usePausedBookings", "useTeachers"]);
+  // 🔻 TASK-960, declared: a SIXTH hook, `useClosedDays` (SPEC-105's `GET /closed-days`), and it is the SECOND admin-only read: a linked teacher is refused there too, so it is gated by the same `!scoped`.
+  it("🔴 the load path: six data hooks — four on the allowed set, and two GATED to admins", () => {
+    expect(dataHooks(region(content, "export default function CalendarContent", "return ("))).toEqual(["useBadges", "useCalendar", "useClosedDays", "useLeaveDays", "usePausedBookings", "useTeachers"]);
     // 🔑 the gate, at the source: the read is asked only when the session is NOT teacher-scoped
     expect(content).toContain("useLeaveDays(leaveRange.from, leaveRange.to, !scoped)");
+    expect(content).toContain("useClosedDays(leaveRange.from, leaveRange.to, !scoped)");
+    expect(codeOf("src/services/closed-day.service.ts")).toContain('api.get<{ items: ClosedDayRow[] }>("/closed-days"');
     expect(schedSvc).toContain('api.get<{ items: LeaveDayRow[] }>("/teacher-leave-days"');
     expect(schedSvc).toContain('api.get<CalendarResponse>("/calendar"');
     expect(schedSvc).toContain('api.get<TeachersResponse>("/teachers")');
@@ -145,8 +148,9 @@ describe("§4 — `Report leave`: one call, the ticks from the scoped day, the b
     // 🔻 TASK-818, declared: the admin door gained a RANGE call beside the one-day call (`isRange ? mutateAsync({ teacherId, from, to, reason }) : mutateAsync({ teacherId, ...body })`).
     // ✅ What this pin protects is intact: `leaveBody` is still called EXACTLY ONCE, the one-day admin call is unchanged, `teacherId` rides in BOTH admin bodies, and the teacher's own
     // door still sends `body` and nothing else.
-    expect(leaveDialog).toContain("await adminLeave.mutateAsync({ teacherId: subject.id, from: date, to: dateTo, reason: reason.trim() })");
-    expect(leaveDialog).toContain("await adminLeave.mutateAsync({ teacherId: subject.id, ...body })");
+    // 🔻 TASK-966, declared: both admin calls gained `...leaveWindow` (a part-day `startTime` / `endTime`; `{}` for a whole day, so those bodies are byte for byte what they were), and a SEVERAL-coach save loops the same two calls once per coach.
+    expect(leaveDialog).toContain("await adminLeave.mutateAsync({ teacherId: subject.id, from: date, to: dateTo, reason: reason.trim(), ...leaveWindow })");
+    expect(leaveDialog).toContain("await adminLeave.mutateAsync({ teacherId: subject.id, ...body, ...leaveWindow })");
     expect(leaveDialog).toContain(": await leave.mutateAsync(body);");
     // 🔻 TASK-611, declared: + `refusedForAdmin` as the FIRST term. ✅ The two it already protected are unchanged (no
     // ticks on the cancel path, and a reason always); the new one is the admin door's future-only rule.
@@ -154,7 +158,8 @@ describe("§4 — `Report leave`: one call, the ticks from the scoped day, the b
     // condition, so a pressed-anyway button sends nothing.
     // 🔻 TASK-818, declared: + `noDate || choosing` — the two WAITS (no date chosen yet · no teacher chosen yet on the calendar's entry). ✅ `refusedForAdmin` is still the FIRST term.
     // 🔻 TASK-822, declared: + `rangeIssue !== null` — the button also WAITS while a range refusal stands (end before start · over 31 days; TEST-108 F1). ✅ `refusedForAdmin` is still the FIRST term.
-    expect(leaveDialog).toContain("disabled={refusedForAdmin || noDate || choosing || rangeIssue !== null || (!advance && ticked.length === 0) || reason.trim().length === 0}");
+    // 🔻 TASK-966, declared: + `timeIssue !== null` — the button also WAITS while a part-day window is incomplete or backwards. ✅ `refusedForAdmin` is still the FIRST term.
+    expect(leaveDialog).toContain("disabled={refusedForAdmin || noDate || choosing || rangeIssue !== null || timeIssue !== null || (!advance && ticked.length === 0) || reason.trim().length === 0}");
     expect(leaveDialog).toContain("if (refusedForAdmin) return;");
     // 🔴 the refusal is derived from the SAME comparison the act uses — 🚫 not a second rule about dates
     expect(leaveDialog).toContain("const refusedForAdmin = onBehalf && !advance;");
@@ -184,7 +189,8 @@ describe("§4 — `Report leave`: one call, the ticks from the scoped day, the b
     expect(leaveDialog).toContain("const body = leaveBody(date, allIds, ticked, reason, advance);");
     expect(leaveDialog.match(/leaveBody\(/g)?.length).toBe(1);
     // 🔑 whose day it is rides in the body; 🚫 the actor never does
-    expect(leaveDialog).toContain("adminLeave.mutateAsync({ teacherId: subject.id, ...body })");
+    // 🔻 TASK-966, declared: `...body` is now followed by `...leaveWindow` (see above) — the teacher id still rides IN the body, and the actor still never does.
+    expect(leaveDialog).toContain("adminLeave.mutateAsync({ teacherId: subject.id, ...body, ...leaveWindow })");
     expect(schedSvc).toContain('api.post<OwnLeaveResult>("/teachers/me/leave", body)');
     expect(codeOf("src/hooks/scheduler/useScheduler.ts")).toContain("mutationFn: (body: { date: string; sessionIds?: string[]; reason: string }) => reportOwnLeave(body),");
   });
@@ -234,7 +240,8 @@ describe("§6 — `TEACHER_LEAVE`: read everywhere, offered nowhere", () => {
     // 🔻 TASK-822, declared: 41 → 43. TWO keys, both APPROVED (owner 2026-10-17, REQ-123 Phase 1, verbatim): `rangeEndBeforeStart · rangeTooLong` — the range's two refusals, now shown by the dialog itself.
     // 🔻 TASK-828, declared: 43 → 47. FOUR keys, all APPROVED (owner 2026-10-20, REQ-125 ruling B, COPY-REVIEW 2026-10-20, verbatim): `coTaughtOwn · coTaughtAdmin · continuesWith · cannotTakeOff` — the P7 co-taught
     // counts (the teacher's own door · the admin's), the "Continues with {names}" row tag and the D4 sentence.
-    expect(Object.keys(en).length).toBe(47); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
+    // 🔻 TASK-966, declared: 47 → 54. SEVEN DRAFT keys (REQ-5015, SPEC-108; the FE's words, TH + EN, unreviewed): `allDay · timeFrom · timeTo · timePartial · timeOrder · multiResultsTitle · multiSaved` — the part-day window and the per-coach result.
+    expect(Object.keys(en).length).toBe(54); /* TASK-588: +8 — the advance act's hint, its button, and the result's seven lines */
     for (const k of Object.keys(en)) expect(th[k]?.length).toBeGreaterThan(0);
     for (const k of ["teacherLink", "teacherLinkHint", "teacherNone", "teacherLine"]) {
       expect((dictionaries.en.users as Record<string, string>)[k]?.length).toBeGreaterThan(0);

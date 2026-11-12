@@ -3,6 +3,7 @@
 import { UserX } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { leaveMarkerKey, leaveMarkersFor } from "@/lib/scheduler/teacher-scope";
+import { hhmm } from "@/lib/scheduler/work-days";
 import type { LeaveDayRow } from "@/types/api/contract";
 import LeaveChip from "./LeaveChip";
 
@@ -32,7 +33,11 @@ export default function LeaveDayBanner({ rows, dates }: { rows: readonly LeaveDa
   if (markers.length === 0) return null;
   return (
     <div className="mb-2 flex flex-wrap gap-2" data-leave-banner={dates.length}>
-      {markers.map((m) => (
+      {markers.map((m) => {
+        const row = rows?.find((r) => r.teacherId === m.teacherId && r.date === m.date) as LeaveDayRow;
+        // 🔴 TASK-966 (REQ-5015 AC2) — a PART-DAY leave says its window: «HH:MM–HH:MM». A whole-day leave (no times) reads exactly as before.
+        const window = row.startTime && row.endTime ? ` · ${hhmm(row.startTime)}–${hhmm(row.endTime)}` : "";
+        return (
         <span
           key={`${m.teacherId}-${m.date}`}
           className={
@@ -46,12 +51,13 @@ export default function LeaveDayBanner({ rows, dates }: { rows: readonly LeaveDa
           <UserX size={14} />
           {/* 🔑 Whose day AND how many classes — a marker that only said "blocked" would send an admin hunting for them. */}
           <LeaveChip
-            row={rows?.find((r) => r.teacherId === m.teacherId && r.date === m.date) as LeaveDayRow}
-            text={t(leaveMarkerKey(m), { name: m.teacherName, n: String(m.classes), date: m.date })}
+            row={row}
+            text={t(leaveMarkerKey(m), { name: m.teacherName, n: String(m.classes), date: m.date }) + window}
             seeAll
           />
         </span>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -5,7 +5,9 @@ import { Button, Group, Modal, MultiSelect, Select, Stack, TextInput } from "@ma
 import { notify } from "@/lib/ui/notify";
 import { useT } from "@/lib/i18n";
 import { useWorkDays } from "@/lib/scheduler/useWorkDays";
+import { hoursFromDraft, type HoursDraft } from "@/lib/scheduler/work-days";
 import { useCreateTeacher, useUpdateTeacher } from "@/hooks/scheduler";
+import { WorkHoursEditor } from "./TeacherWorkDaysSelect";
 import { ApiClientError } from "@/lib/api/client";
 import { TEACHER_TYPE_LABEL, type Teacher, type TeacherType } from "@/types/app/scheduler";
 import { syncErrorMessage } from "@/lib/scheduler/teacher-errors";
@@ -38,6 +40,8 @@ export default function TeacherFormModal({ opened, teacher, subjectCatalog, onCl
   const [nickname, setNickname] = useState("");
   const [type, setType] = useState<TeacherType>("FREELANCE");
   const [workDays, setWorkDays] = useState<number[]>([]);
+  // 🔴 TASK-966 (REQ-5015 AC3) — optional hours for each ticked day (add mode only, like the days themselves)
+  const [hoursDraft, setHoursDraft] = useState<HoursDraft>({});
   const [subjectIds, setSubjectIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -46,6 +50,7 @@ export default function TeacherFormModal({ opened, teacher, subjectCatalog, onCl
     setNickname(teacher?.nickname ?? "");
     setType(teacher?.type ?? "FREELANCE");
     setWorkDays(teacher?.workDays ?? []);
+    setHoursDraft({});
     setSubjectIds(teacher?.subjectOptions?.map((s) => s.id) ?? []);
   }, [opened, teacher]);
 
@@ -57,6 +62,13 @@ export default function TeacherFormModal({ opened, teacher, subjectCatalog, onCl
   const submit = async () => {
     if (!name.trim() || !nickname.trim()) {
       notify({ title: t("teachers.formName"), color: "warning" });
+      return;
+    }
+    // 🔴 TASK-966 — the hours of the ticked days; a day left with one end only (or From not before To) is said in words and nothing is sent. No ticked day = every day = hours need a day to hang on.
+    const hours = hoursFromDraft(workDays, hoursDraft);
+    if (!isEdit && hours.issue) {
+      const day = dayOptions.find((o) => Number(o.value) === hours.issue?.day)?.label ?? "";
+      notify({ title: t(hours.issue.kind === "order" ? "teachers.workHoursOrder" : "teachers.workHoursPartial", { day }), color: "warning" });
       return;
     }
     try {
@@ -72,6 +84,7 @@ export default function TeacherFormModal({ opened, teacher, subjectCatalog, onCl
           nickname: nickname.trim(),
           type,
           workDays: workDays.length ? workDays : undefined,
+          ...(Object.keys(hours.hours).length ? { workHours: hours.hours } : {}),
           subjectIds: subjectIds.length ? subjectIds : undefined,
         });
         notify({ title: t("teachers.createdOk"), description: nickname, color: "success" });
@@ -135,6 +148,9 @@ export default function TeacherFormModal({ opened, teacher, subjectCatalog, onCl
                     </button>
                   );
                 })}
+              </div>
+              <div className="mt-2">
+                <WorkHoursEditor days={workDays} draft={hoursDraft} onChange={setHoursDraft} />
               </div>
             </div>
           </>

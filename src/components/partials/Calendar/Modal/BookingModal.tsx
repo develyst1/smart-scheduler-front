@@ -22,7 +22,7 @@ import {
   Loader,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil, Users, Repeat, GraduationCap, Ticket, ListChecks } from "lucide-react";
+import { BadgeCheck, Ban, CalendarX2, Bell, AlertTriangle, ArrowLeftRight, Move, MoreVertical, PauseCircle, PlayCircle, CalendarPlus, Pencil, Users, Repeat, Replace, GraduationCap, Ticket, ListChecks } from "lucide-react";
 import type { SeriesRef } from "@/lib/scheduler/other-series";
 import ClashResolveBox from "./ClashResolveBox";
 import { useUndoControl } from "@/components/common/UndoControl";
@@ -106,6 +106,7 @@ import { COACH_RATE_KEY, rateTag, sessionRateChange, withoutRates } from "@/lib/
 import { seatsLabel } from "@/lib/scheduler/group-session";
 import { emptyOtherSchedule, otherScheduleFacts, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import CancelBookingDialog from "./CancelBookingDialog";
+import ChangeActivityDialog from "@/components/partials/Bookings/ChangeActivityDialog"; // 🔴 TASK-962 (REQ-5014)
 import { useConfirm } from "@/components/common/useConfirm";
 import { badgeColorVar } from "@/lib/ui/badge-colors";
 import type {
@@ -253,6 +254,7 @@ function ViewBooking({
   // lifetime; the item goes in the dropdown and the dialog goes after `</Menu>`.
   const undoControl = useUndoControl(booking, onClose, scoped);
   const [moving, setMoving] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false); // TASK-962 — «เปลี่ยนกิจกรรม» on a live 1 HR / Trial
   const [noticeError, setNoticeError] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   // REQ-095 (TASK-395) — the OTHER facts editor (its own route); behind `calendar.booking-edit`.
@@ -515,6 +517,9 @@ function ViewBooking({
     booking.status !== "CANCELLED" &&
     canStatus;
   const canPause = can("action:calendar.pause");
+  // 🔴 TASK-962 (REQ-5014, SPEC-106 § 2.2/§ 7) — the activity of ONE 1 HR / Trial, while it is live: `canMove` already says "live status + may edit a booking" (an ATTENDED row has no door:
+  // the server would say ALREADY_DELIVERED). Same key as the move, no new one.
+  const canChangeActivity = canMove && (booking.bookingType === "SINGLE_SESSION" || booking.bookingType === "FIRST_TRIAL");
   // The ⋯ menu exists only when at least one of its items does.
   const menuHasItems =
     canOverbook || canMove || canStatus || (canPause && (canPauseBooking(booking) || canResumeBooking(booking))) || canCancelWithReason;
@@ -861,6 +866,11 @@ function ViewBooking({
                 {t("booking.moveBtn")}
               </Menu.Item>
             )}
+            {canChangeActivity && (
+              <Menu.Item leftSection={<Replace size={16} />} onClick={() => setActivityOpen(true)} data-change-activity-open>
+                {t("changeActivity.title")}
+              </Menu.Item>
+            )}
             {/* 🔴 TASK-531 D5 — NOT offered on an ATTENDED row. Recording a leave there is not a thing an admin means to
                 do: this control's dialog promises the family's quota and a make-up, and on an attended session the act
                 is an UNDO, which has its own door below. Leaving it visible put the quota promise back in front of an
@@ -924,6 +934,20 @@ function ViewBooking({
         onClose={() => setCancelOpen(false)}
         onCancelled={onClose}
       />
+      {/* TASK-962 — OUTSIDE the `<Menu>` (its dropdown unmounts on click). A 1 HR / Trial never asks a typed price. */}
+      {activityOpen && (
+        <ChangeActivityDialog
+          opened
+          target="booking"
+          id={booking.id}
+          current={{ name: booking.subject }}
+          currentTeacherId={booking.teacherId}
+          program={booking.subject}
+          student={booking.studentName}
+          onClose={() => setActivityOpen(false)}
+          onDone={onClose}
+        />
+      )}
       {/* REQ-076 AC-13/AC-14 — put it back on the schedule at ANY date and time. */}
       <Modal
         opened={resumeOpen}

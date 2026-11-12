@@ -47,7 +47,8 @@ describe("useTeachers — the door", () => {
 
 describe("a real picker (the leave teacher pick, a list family that reads the hook)", () => {
   it("does not offer 'No Teacher'", async () => {
-    wrap(h(LeaveTeacherPick, { value: null, onPick: () => {} }));
+    // 🔻 TASK-966, declared: the pick is a MULTI-select now (REQ-5015 AC1), so its `value` is the list picked so far — `[]`, not `null`. What this test protects (the system teacher is never offered) is unchanged.
+    wrap(h(LeaveTeacherPick, { value: [], onPick: () => {} }));
     // The options mount when the list opens; open it once the teachers have landed.
     await waitFor(async () => {
       await userEvent.click(document.querySelector("[data-leave-teacher-pick]") as Element);

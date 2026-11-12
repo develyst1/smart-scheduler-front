@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 import dayjs from "dayjs";
+import { useSearchParams } from "next/navigation";
+import { Button } from "@mantine/core";
+import { CalendarX2 } from "lucide-react";
 import { useDisclosure } from "@mantine/hooks";
 import { calendarDayBookings, calendarToBookings } from "@/lib/api/mappers";
 import { bookableOnDate } from "@/lib/scheduler/work-days";
@@ -12,6 +15,8 @@ import { useLoadPhase } from "@/lib/ui/load-phase";
 import { useT } from "@/lib/i18n";
 import { useBadges, useCalendar, useLeaveDays, usePausedBookings, useTeachers } from "@/hooks/scheduler";
 import { useCan, useMe } from "@/hooks/scheduler/useMe";
+import { useClosedDays } from "@/hooks/scheduler/useClosedDays";
+import { dayRequestFromParams } from "@/lib/scheduler/attention-link";
 import { closedWeekIds } from "@/lib/camp/units";
 import { columnTeacherIds, isScoped, leaveDayIndex } from "@/lib/scheduler/teacher-scope";
 import { dtoToBooking } from "@/lib/api/mappers";
@@ -24,6 +29,8 @@ import PausedTray from "./PausedTray";
 import CalendarGridSkeleton from "./CalendarGridSkeleton";
 import CampDayBanner from "./CampDayBanner";
 import LeaveDayBanner from "./LeaveDayBanner";
+import ClosedDayBanner from "./ClosedDayBanner";
+import CloseDayDialog from "./CloseDayDialog";
 import ReportLeaveDialog from "./Modal/ReportLeaveDialog";
 import SeriesInRange from "./SeriesInRange";
 import OtherSeriesModal from "@/components/partials/OtherSeries/OtherSeriesModal";
@@ -46,7 +53,13 @@ export default function CalendarContent() {
   // Linked users only: the act alone is not the identity (an unlinked holder of the key is the server's 403).
   const canReportLeave = scoped && can("action:calendar.teacher-leave");
   const [leaveOpen, setLeaveOpen] = useState(false);
-  const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
+  // 🔴 TASK-960 — `?date=YYYY-MM-DD` (an Attention "classes on a closed day" item's link) opens the calendar on that day, READ ONCE (the initial state), never again: stepping through
+  // the days afterwards is the page's own. `attention-link.ts` builds the URL and reads it — one place each.
+  const params = useSearchParams();
+  const [date, setDate] = useState(() => dayRequestFromParams((k) => params?.get(k) ?? null) ?? dayjs().format("YYYY-MM-DD"));
+  const [closeOpen, setCloseOpen] = useState(false);
+  // Admin and CEO only — the same key as «Record teacher leave»; never a teacher-scoped session (`!scoped`), whose calendar the server refuses these routes for.
+  const canCloseDay = !scoped && can("action:calendar.status");
   const [view, setView] = useState<CalendarView>("week");
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -69,6 +82,8 @@ export default function CalendarContent() {
   const { data: leaveDays } = useLeaveDays(leaveRange.from, leaveRange.to, !scoped);
   // 🔴 TASK-622 — the same rows, indexed for the CELLS: the strip alone left the day reading as free.
   const leaveIndex = useMemo(() => leaveDayIndex(leaveDays), [leaveDays]);
+  // 🔴 TASK-960 — the school's closed days over the same dates. `enabled` is the gate, as for the leave read: a teacher-scoped session never asks (the route refuses it).
+  const { data: closedDays } = useClosedDays(leaveRange.from, leaveRange.to, !scoped);
 
   const calView = view === "day" ? "day" : "week";
   // TASK-861 — the grid and the booking modal ask for the system teacher; every picker and the header get the real coaches only.
@@ -214,6 +229,14 @@ export default function CalendarContent() {
         onReportLeave={canReportLeave ? () => setLeaveOpen(true) : undefined}
       />
       {leaveOpen && <ReportLeaveDialog opened initialDate={date} onClose={() => setLeaveOpen(false)} />}
+      {canCloseDay && (
+        <div className="flex justify-end">
+          <Button variant="light" color="red" size="sm" radius="md" leftSection={<CalendarX2 size={15} />} onClick={() => setCloseOpen(true)} data-close-day-door>
+            {t("closedDay.door")}
+          </Button>
+        </div>
+      )}
+      {closeOpen && <CloseDayDialog opened initialDate={date} onClose={() => setCloseOpen(false)} />}
       {/* REQ-101 (TASK-429) — the ECA/Free/KOL series touching the visible week, each linking to its Manage-plan page. Not under a linked account (outside its allowed set). */}
       {!scoped && <SeriesInRange from={weekDays[0]} to={weekDays[6]} onOpen={setSeriesRef} />}
       {seriesRef && <OtherSeriesModal series={seriesRef} opened onClose={() => setSeriesRef(null)} onOpenBooking={openView} />}
@@ -271,6 +294,8 @@ export default function CalendarContent() {
             <CampDayBanner campWeeks={calendar?.campWeeks} date={date} />
             {/* 🔴 TASK-589 — a coach's blocked day, above the grid where those classes are handled. 🚫 Not a control. */}
             <LeaveDayBanner rows={leaveDays} dates={[date]} />
+            {/* 🔴 TASK-960 — a whole-school closed day, in the same place. */}
+            <ClosedDayBanner rows={closedDays} dates={[date]} />
             <CalendarGrid
               teachers={filteredTeachers}
               closedWeeks={closedWeeks}
@@ -288,6 +313,7 @@ export default function CalendarContent() {
             {/* ⚠️ In the WEEK view too, unlike the camp banner: an admin plans a week, and a marker you can only see after
                 navigating into the day is one you find only if you were already looking. */}
             <LeaveDayBanner rows={leaveDays} dates={weekDays} />
+            <ClosedDayBanner rows={closedDays} dates={weekDays} />
             <CalendarWeekGrid
               teachers={filteredTeachers}
               closedWeeks={closedWeeks}

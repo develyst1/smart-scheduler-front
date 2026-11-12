@@ -75,6 +75,7 @@ const SITE_INVENTORY = [
   "src/components/partials/Bookings/PlanModal.tsx → action:calendar.status",
   "src/components/partials/Bookings/VoucherPanel.tsx → action:bookings.course-cancel",
   "src/components/partials/Bookings/VoucherPanel.tsx → action:bookings.course-expiry",
+  "src/components/partials/Calendar/CalendarContent.tsx → action:calendar.status", // 🔻 TASK-960, declared: the «ปิดวันทำการ» button (the same key as CalendarHeader's «Record teacher leave»)
   "src/components/partials/Calendar/CalendarContent.tsx → action:calendar.teacher-leave",
   "src/components/partials/Calendar/CalendarGrid.tsx → action:calendar.book",
   "src/components/partials/Calendar/CalendarHeader.tsx → action:calendar.status",

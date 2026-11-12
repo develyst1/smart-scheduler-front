@@ -162,6 +162,8 @@ describe("🔴 TASK-567 — no clicked test may type into a masked input and bel
     // 🔻 TASK-733 added the SIXTH: the voucher SALE form (`CreateVoucherModal`) has two `NumberInput`s and now a note box, and its test
     // asserts the `POST /vouchers` BODY (the note, `totalHours`, the student) — so it satisfies the rule; the sweep found it by itself.
     expect(inScope.map((f) => f.replace(/\\/g, "/")).sort()).toEqual([
+      // 🔻 TASK-962 added the SEVENTH: the change-activity dialog's typed price is a `NumberInput`, and its test asserts the act's BODY (`manualPriceBaht: 4500`) — so it satisfies the rule.
+      "src/components/partials/Bookings/change-activity-task962.dom.test.tsx",
       "src/components/partials/Bookings/parent-phone-task662.dom.test.tsx",
       "src/components/partials/Bookings/voucher-note-task733.dom.test.tsx",
       "src/components/partials/Calendar/Modal/group-swap-rate-key-revoked.dom.test.tsx",

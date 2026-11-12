@@ -299,8 +299,8 @@ function TeacherRow({
           <TeacherRowActions teacher={teacher} onEdit={onEdit} />
         </div>
       </div>
-      <TeacherWorkDaysSelect teacherId={teacher.id} nickname={teacher.nickname} workDays={teacher.workDays} />
-    </div>
+      <TeacherWorkDaysSelect teacherId={teacher.id} nickname={teacher.nickname} workDays={teacher.workDays} workHours={teacher.workHours} />
+</div>
   );
 }
 
@@ -438,7 +438,7 @@ function FreelanceRow({
 
       <FreelanceBudgetControls teacher={teacher} />
 
-      <TeacherWorkDaysSelect teacherId={teacher.id} nickname={teacher.nickname} workDays={teacher.workDays} />
-    </div>
+      <TeacherWorkDaysSelect teacherId={teacher.id} nickname={teacher.nickname} workDays={teacher.workDays} workHours={teacher.workHours} />
+</div>
   );
 }

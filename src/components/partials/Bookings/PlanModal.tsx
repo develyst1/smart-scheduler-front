@@ -18,7 +18,7 @@ import {
   Text,
 } from "@mantine/core";
 import { Checkbox, Textarea, Tooltip } from "@mantine/core";
-import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Repeat, Ticket, UserMinus, X } from "lucide-react";
+import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Repeat, Replace, Ticket, UserMinus, X } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
 import { formatDateDisplay, formatDateWithDay, formatTimeDisplay } from "@/lib/ui/format";
@@ -59,6 +59,7 @@ import { useUndoControl } from "@/components/common/UndoControl";
 import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
 import ChangeTeacherTimeDialog from "./ChangeTeacherTimeDialog";
+import ChangeActivityDialog, { currentActivityOf } from "./ChangeActivityDialog";
 import { canResumeCourse, isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import { visiblePlanRows } from "@/lib/scheduler/plan-rows";
 import { toTimeSlot } from "@/lib/scheduler/time-slot";
@@ -158,6 +159,8 @@ export default function PlanModal({
   const [dropMode, setDropMode] = useState<"drop" | "resume" | null>(null);
   // TASK-838 (REQ-127) — "change teacher / time for the rest": one act on the rest of THIS course.
   const [changeRestOpen, setChangeRestOpen] = useState(false);
+  // TASK-962 (REQ-5014) — "change activity" from the next class: the same door, the same key.
+  const [changeActivityOpen, setChangeActivityOpen] = useState(false);
   // TASK-202 — confirm every PENDING session at once. `skips` is kept in state because a skip is a fact the
   // admin must see: "10 confirmed" when 9 were is worse than 9 and the reason.
   const confirmCourseMut = useConfirmCourse();
@@ -236,6 +239,8 @@ export default function PlanModal({
   /** TASK-362 §3 — the LAST non-extra row (the plan is in date order): the resume picker's default teacher. */
   const courseLastRow =
     [...sessions].reverse().find((s) => s.bookingType !== "SINGLE_SESSION") ?? sessions.at(-1) ?? null;
+  /** 🔴 D-157-2 — the activity of the REMAINING rows (what «เปลี่ยนกิจกรรม» changes); `courseSlot` above stays the TASK-288 slot rule for everything else. */
+  const currentActivity = currentActivityOf(sessions, dayjs().format("YYYY-MM-DD"));
   const createPreviewLine = t("plan.createPreview", {
     n: liveSessions.length,
     d: absentWeeks.length,
@@ -508,6 +513,23 @@ export default function PlanModal({
                     {t("plan.changeRest")}
                   </Button>
                 )}
+                {/* 🔴 TASK-962 (REQ-5014, SPEC-106 § 7) — «เปลี่ยนกิจกรรม», beside the change of teacher / time. This block is already writable-only (not ended, not paused: the server refuses both as
+                    COURSE_ENDED / COURSE_PAUSED); a course with a GROUP class never offers it (GROUP_COURSE). Same key as the change of teacher / time (`canPlan`). */}
+                {canPlan && !sessions.some((s) => s.bookingType === "GROUP") && (
+                  <Button
+                    variant="light"
+                    color="blue"
+                    size="xs"
+                    leftSection={<Replace size={14} />}
+                    data-change-activity-open
+                    onClick={() => {
+                      setError(null);
+                      setChangeActivityOpen(true);
+                    }}
+                  >
+                    {t("changeActivity.title")}
+                  </Button>
+                )}
                 {/* 🔻 TASK-898 (F1) — the whole course's branch (and its not-yet-attended sessions), next to Change teacher. Same key. */}
                 {canPlan && <CourseBranchControl courseId={plan.id} current={plan.summary.branch} />}
                 {can("action:bookings.course-cancel") && (
@@ -685,6 +707,19 @@ export default function PlanModal({
           courseSubject={courseSlot?.subject ?? null}
           courseTeacherId={courseLastRow?.teacher?.id ?? null}
           onClose={() => setChangeRestOpen(false)}
+        />
+      )}
+      {/* TASK-962 — mounted only while open; the course and the calendar are re-read by the act itself. */}
+      {changeActivityOpen && (
+        <ChangeActivityDialog
+          opened
+          target="course"
+          id={isCourse && !isCreate ? (plan?.id ?? null) : null}
+          current={currentActivity}
+          currentTeacherId={courseLastRow?.teacher?.id ?? null}
+          program={currentActivity?.name ?? null}
+          student={plan?.student?.nickname || plan?.student?.name || null}
+          onClose={() => setChangeActivityOpen(false)}
         />
       )}
     </Modal>

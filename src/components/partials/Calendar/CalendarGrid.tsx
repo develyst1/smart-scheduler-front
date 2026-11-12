@@ -15,7 +15,7 @@ import { useMemo } from "react";
 import { mergeCampCells, type CampBlock } from "@/lib/camp/grid";
 import CampBlockCell from "./CampBlockCell";
 import { LeaveMark } from "./CalendarWeekGrid";
-import { leaveDayKey, type LeaveMarker } from "@/lib/scheduler/teacher-scope";
+import { leaveBlocksSlot, leaveDayKey, type LeaveMarker } from "@/lib/scheduler/teacher-scope";
 import {
   ClashMark,
   groupToneClass,
@@ -78,6 +78,16 @@ export default function CalendarGrid({ teachers, bookings, times = [], onSelectB
         !b.pendingSlot &&
         !OFF_CALENDAR_STATUSES.includes(b.status),
     );
+  // 🔴 TASK-942 — the "No Teacher" (system) column may hold SEVERAL park blocks in one hour (the server's `slot_exempt` lifts
+  // the one-per-slot rule for that teacher only). Same filter as `findBooking`, every match, in payload order.
+  const findAll = (teacherId: string, time: string) =>
+    bookings.filter(
+      (b) =>
+        b.teachers.some((tc) => tc.id === teacherId) &&
+        b.startTime === time &&
+        !b.pendingSlot &&
+        !OFF_CALENDAR_STATUSES.includes(b.status),
+    );
   // TASK-419 — contiguous CAMP hours of one teacher fold into ONE block (render-only, `mergeCampCells`): the block sits
   // in its first hour's cell and SPANS the rows it covers; the covered hours render no cell at all, so the CSS grid's
   // auto-placement keeps every other column in step. The data stays per hour.
@@ -128,6 +138,7 @@ export default function CalendarGrid({ teachers, bookings, times = [], onSelectB
             time={time}
             teachers={activeTeachers}
             findBooking={findBooking}
+            findAll={findAll}
             onSelectBooking={onSelectBooking}
             onCreate={onCreate}
             display={display}
@@ -148,6 +159,7 @@ function Row({
   time,
   teachers,
   findBooking,
+  findAll,
   onSelectBooking,
   onCreate,
   display,
@@ -162,6 +174,8 @@ function Row({
   /** REQ-105 (TASK-457) — the rows on screen, so a cell can tell it is one half of a clash PAIR (pure `inClashPair`). */
   bookings: Booking[];
   findBooking: (teacherId: string, time: string) => Booking | undefined;
+  /** TASK-942 — every booking of the cell; only the system teacher's column reads it (a real coach keeps ONE per hour). */
+  findAll: (teacherId: string, time: string) => Booking[];
   onSelectBooking: (b: Booking) => void;
   onCreate: (teacherId: string, time: string) => void;
   display: CellDisplay;
@@ -190,20 +204,27 @@ function Row({
             </div>
           );
         }
-        const booking = findBooking(tc.id, time);
-        const accent = booking ? BOOKING_STATUS_COLOR[booking.status] : "default";
-        const leave = leaveOf(tc.id);
+        // 🔴 TASK-942 — a real coach: ONE booking per hour, exactly as before. The system teacher: all of them, stacked.
+        const first = findBooking(tc.id, time);
+        const list = tc.isSystem ? findAll(tc.id, time) : first ? [first] : [];
+        // 🔴 TASK-966 — a PART-DAY leave greys only the hours it overlaps (the marker carries its window); a whole-day leave greys every hour, as before.
+        const leave = leaveBlocksSlot(leaveOf(tc.id), time) ? leaveOf(tc.id) : undefined;
         return (
           <div
             key={tc.id}
             className={`min-h-20 border-l border-t border-muted-100 p-1.5 ${leave ? "bg-muted-50/80" : ""}`}
             data-leave-day={leave ? "yes" : undefined}
           >
-            {booking ? (
+            {list.length > 0 ? (
+              <div className={tc.isSystem ? "flex h-full flex-col gap-1.5" : "contents"} data-park-stack={tc.isSystem ? list.length : undefined}>
+              {list.map((booking) => {
+              const accent = BOOKING_STATUS_COLOR[booking.status];
+              return (
               <button
+                key={booking.id}
                 type="button"
                 onClick={() => onSelectBooking(booking)}
-                className={`relative flex h-full w-full flex-col gap-1 overflow-hidden rounded-xl border-y border-r p-2 pl-3 text-left shadow-sm transition-shadow hover:shadow-md ${CAL_SURFACE_STYLE[accent]} ${CAL_SURFACE_HOVER[accent]} ${groupToneClass(booking)}`}
+                className={`relative flex ${tc.isSystem ? "min-h-16 flex-1" : "h-full"} w-full flex-col gap-1 overflow-hidden rounded-xl border-y border-r p-2 pl-3 text-left shadow-sm transition-shadow hover:shadow-md ${CAL_SURFACE_STYLE[accent]} ${CAL_SURFACE_HOVER[accent]} ${groupToneClass(booking)}`}
                 data-group-tone={booking.bookingType === "GROUP" ? groupTone(booking) : undefined}
               >
                 {/* SPEC-046 — the left stripe carries TYPE (the stable commercial channel), matching the week cell;
@@ -303,6 +324,21 @@ function Row({
                   </span>
                 )}
               </button>
+              );
+              })}
+              {/* 🔴 TASK-942 — the "+" stays on the system column even when the hour is taken: another group may rent the park. */}
+              {tc.isSystem && canBook && !leave && (
+                <button
+                  type="button"
+                  onClick={() => onCreate(tc.id, time)}
+                  className="flex min-h-8 w-full items-center justify-center rounded-xl border border-dashed border-muted-200 text-muted-500 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                  aria-label={t("calendar.addBooking")}
+                  data-park-add
+                >
+                  <Plus size={16} />
+                </button>
+              )}
+              </div>
             ) : leave ? (
               /* 🔴 TASK-622 — the coach is away: grey, and no `+` (the server would refuse it with TEACHER_ON_LEAVE). */
               <div className="h-full min-h-16 w-full" aria-hidden />

@@ -134,7 +134,8 @@ describe("🔴 TASK-611 — the ADMIN door, clicked", () => {
     // a FUTURE date: the chooser is absent for the same reason it is on the teacher's door…
     mount(FUTURE, SUBJECT);
     await waitFor(() => expect(document.querySelectorAll("[data-leave-advance-notice]").length).toBe(1));
-    expect(document.querySelectorAll('input[type="checkbox"]').length).toBe(0);
+    // 🔻 TASK-966, declared: the «ทั้งวัน» switch (a part-day window, advance leave only) is a checkbox input too, and it is not a session tick — so it is the one input excluded here.
+    expect(document.querySelectorAll('input[type="checkbox"]:not([data-leave-all-day])').length).toBe(0);
     expect(document.querySelectorAll("[data-leave-rows]").length).toBe(0);
     cleanup();
 

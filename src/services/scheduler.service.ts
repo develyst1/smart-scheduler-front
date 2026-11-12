@@ -61,6 +61,7 @@ import type {
   LiftLeaveRangeResponse,
   LeavePreview,
   SetTeacherWorkDaysResponse,
+  WorkHours,
   TeacherDTO,
   TeachersResponse,
   TeacherTypeOrderResponse,
@@ -84,7 +85,7 @@ import type {
 import { ApiClientError } from "@/lib/api/client";
 import type { OtherKind, OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
 import type { Branch } from "@/types/api/contract"; // 🔻 TASK-898 (F1)
-import type { ChangeTeacherTimeInput, ChangeTeacherTimePreview, ChangeTeacherTimeResult, GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
+import type { ChangeActivityAnswer, ChangeActivityInput, ChangeTeacherTimeInput, ChangeTeacherTimePreview, ChangeTeacherTimeResult, GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
 import { groupSeriesBody, type GroupSeriesInput, type GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 import { startChangeBody, type StartChangeForecast, type StartChangeResult } from "@/lib/scheduler/course-start";
 import { summarizeDailyReport } from "@/lib/scheduler/daily-report";
@@ -187,20 +188,24 @@ export const setTeacherTypeOrder = async (order: TeacherType[]): Promise<Teacher
   return data.order;
 };
 
-export const setTeacherWorkDays = async (id: string, workDays: number[]) => {
-  if (useMock) return mock.setTeacherWorkDays(id, workDays);
+/**
+ * 🔴 TASK-966 (SPEC-108 §4) — `workHours` rides the SAME route as the days (the keys must be in `workDays`): sent ONLY when hours are being set (`{ "6": ["13:00","18:00"] }`) or cleared (`null`);
+ * absent ⇒ no key on the wire, so a days-only save is byte for byte what it was.
+ */
+export const setTeacherWorkDays = async (id: string, workDays: number[], workHours?: WorkHours | null) => {
+  if (useMock) return mock.setTeacherWorkDays(id, workDays, workHours);
   const { data } = await api.patch<SetTeacherWorkDaysResponse>(
     `/teachers/${id}/work-days`,
-    { workDays },
+    { workDays, ...(workHours !== undefined ? { workHours } : {}) },
   );
   return dtoToTeacher(data);
 };
 
-/** Preview how many future LIVE course sessions a workDays change would orphan (TASK-100). Read-only. */
-export const getWorkDaysImpact = async (id: string, workDays: number[]): Promise<WorkDaysImpact> => {
-  if (useMock) return mock.getWorkDaysImpact(id, workDays);
+/** Preview how many future LIVE course sessions a workDays change would orphan (TASK-100). Read-only. 🔴 TASK-966: `workHours` (JSON in the query, only when given) makes it count the classes OUTSIDE the new hours too. */
+export const getWorkDaysImpact = async (id: string, workDays: number[], workHours?: WorkHours | null): Promise<WorkDaysImpact> => {
+  if (useMock) return mock.getWorkDaysImpact(id, workDays, workHours);
   const { data } = await api.get<WorkDaysImpact>(`/teachers/${id}/work-days/impact`, {
-    params: { workDays: workDays.join(",") },
+    params: { workDays: workDays.join(","), ...(workHours ? { workHours: JSON.stringify(workHours) } : {}) },
   });
   return data;
 };
@@ -221,6 +226,8 @@ export interface CreateTeacherInput {
   nickname: string;
   type: TeacherType;
   workDays?: number[];
+  /** 🔴 TASK-966 (SPEC-108 §4) — optional hours per ticked weekday; sent only when some are set. */
+  workHours?: WorkHours;
   subjectIds?: string[];
 }
 
@@ -514,7 +521,12 @@ export const reportOwnLeave = async (body: { date: string; sessionIds?: string[]
  * 🔴 **TASK-817 (BE) → TASK-818 — the admin door takes EITHER one day OR a DATE RANGE** (`{ teacherId, from, to, reason }`, one reason, ≤ 31 days
  * — the server's limit and its sentence; the front does not copy the number). 🚫 A range never carries `sessionIds` (the server refuses it).
  */
-export type AdminLeaveBody = { date: string; sessionIds?: string[]; reason: string } | { from: string; to: string; reason: string };
+/**
+ * 🔴 **TASK-966 (SPEC-108 §4, REQ-5015) — a PART-DAY leave: optional `startTime` / `endTime` (`HH:MM`, both or neither, start before end, on the hour or the half hour).** On a range the same window
+ * applies to every day. 🚫 Never with `sessionIds` (the server's 400): the today path that picks classes is a different act and never carries a time.
+ */
+export type LeaveWindow = { startTime?: string; endTime?: string };
+export type AdminLeaveBody = ({ date: string; sessionIds?: string[]; reason: string } | { from: string; to: string; reason: string }) & LeaveWindow;
 export const reportTeacherLeave = async (teacherId: string, body: AdminLeaveBody): Promise<OwnLeaveResult> => {
   if (useMock) {
     // 🔴 TASK-818 — the mock service has no range writer: a range answers the told-nobody, nothing-recorded shape.
@@ -1313,6 +1325,37 @@ export const changeTeacherTime = async (courseId: string, input: ChangeTeacherTi
     startTime: input.startTime,
     teacherId: input.teacherId,
   });
+  return data;
+};
+
+/**
+ * 🔴 TASK-962 (REQ-5014, SPEC-106 § 2) — change the ACTIVITY of the rest of a course, or of ONE 1 HR / Trial, from the next class. Four routes, one body shape:
+ * the preview and the act answer the SAME thing (the preview is the act in a rolled-back transaction), so the dialog's every number is the server's.
+ * `teacherId` / `manualPriceBaht` are spread conditionally — an absent key means "keep the coach" / "the card has a price".
+ */
+const changeActivityBody = (input: ChangeActivityInput) => ({
+  subjectId: input.subjectId,
+  ...(input.teacherId ? { teacherId: input.teacherId } : {}),
+  ...(input.manualPriceBaht !== undefined ? { manualPriceBaht: input.manualPriceBaht } : {}),
+});
+export const previewCourseChangeActivity = async (courseId: string, input: ChangeActivityInput): Promise<ChangeActivityAnswer> => {
+  if (useMock) return mock.previewChangeActivity(input);
+  const { data } = await api.post<ChangeActivityAnswer>(`/courses/${courseId}/change-activity/preview`, changeActivityBody(input));
+  return data;
+};
+export const changeCourseActivity = async (courseId: string, input: ChangeActivityInput): Promise<ChangeActivityAnswer> => {
+  if (useMock) return mock.changeActivity(input);
+  const { data } = await api.post<ChangeActivityAnswer>(`/courses/${courseId}/change-activity`, changeActivityBody(input));
+  return data;
+};
+export const previewBookingChangeActivity = async (bookingId: string, input: ChangeActivityInput): Promise<ChangeActivityAnswer> => {
+  if (useMock) return mock.previewChangeActivity(input);
+  const { data } = await api.post<ChangeActivityAnswer>(`/bookings/${bookingId}/change-activity/preview`, changeActivityBody(input));
+  return data;
+};
+export const changeBookingActivity = async (bookingId: string, input: ChangeActivityInput): Promise<ChangeActivityAnswer> => {
+  if (useMock) return mock.changeActivity(input);
+  const { data } = await api.post<ChangeActivityAnswer>(`/bookings/${bookingId}/change-activity`, changeActivityBody(input));
   return data;
 };
 

@@ -90,6 +90,9 @@ export interface SubjectRef {
   kind?: "PRIVATE" | "DUO";
 }
 
+/** 🔴 TASK-966 (SPEC-108 §4) — `{ "0".."6": [from, to] }`, `HH:MM`, from < to; a key only for a weekday in `workDays`. */
+export type WorkHours = Record<string, [string, string]>;
+
 export interface TeacherDTO {
   id: string;
   name: string;
@@ -99,6 +102,8 @@ export interface TeacherDTO {
   subjects: SubjectRef[];
   lineLinked: boolean;
   workDays: number[];
+  /** 🔴 TASK-966 (SPEC-108 §4) — optional working hours per weekday; absent / null / a missing weekday = the whole day. */
+  workHours?: WorkHours | null;
   /** THB/hour = the teacher's EXPENSE item unit price in backoffice (UC-016). */
   hourlyRate?: number | null;
   /** Remaining monthly freelance budget in **satang** (backoffice item stock); null when none. */
@@ -445,6 +450,35 @@ export interface ChangeTeacherTimePreview {
 }
 
 /**
+ * 🔴 **TASK-962 (REQ-5014, SPEC-106 § 2) — "change activity": the rest of a course (or ONE 1 HR / Trial) moves to another activity, from the next class.**
+ * `teacherId` is sent only when the coach changes; `manualPriceBaht` only when the preview said `newPriceMinor: null` (never for a 1 HR / Trial).
+ * 🔑 **Every number on the screen is the server's** (the preview is the act in a rolled-back transaction): the SF counts nothing and subtracts nothing.
+ */
+export interface ChangeActivityInput {
+  subjectId: string;
+  teacherId?: string;
+  /** Whole baht, 1..100000 — only where the card has no price for the new activity × the course's size. */
+  manualPriceBaht?: number;
+}
+/** The answer of the preview AND of the act (the act adds `changeId`). Money is in SATANG, VAT-inclusive, as everywhere else. */
+export interface ChangeActivityAnswer {
+  remaining: number;
+  firstDate: IsoDate | null;
+  lastDate: IsoDate | null;
+  from: { subjectId: string; subjectName: string };
+  to: { subjectId: string; subjectName: string };
+  teacherChanged: boolean;
+  oldPriceMinor: number;
+  /** `null` = the card has no price for the new activity × size: the dialog asks for a typed one. */
+  newPriceMinor: number | null;
+  /** `null` only in a preview that still needs the typed price. */
+  priceSource: "CARD" | "MANUAL" | null;
+  /** `max(0, …)`; `null` while the price is missing. The admin records it by hand at Add Manually. */
+  differenceMinor: number | null;
+  changeId?: string;
+}
+
+/**
  * SPEC-070 / TASK-229 — a backoffice INCOME item an อื่นๆ booking may be charged to.
  * `GET /catalog-items` → `{ items: CatalogItem[] }`.
  *
@@ -632,7 +666,7 @@ export interface CalendarResponse {
     date: IsoDate;
     columns: Array<{
       teacher: TeacherDTO;
-      slots: Array<{ time: HhMm; booking: BookingDTO | null }>;
+      slots: Array<{ time: HhMm; booking: BookingDTO | null; /** 🔴 TASK-942 / D-155-1 — the OTHER park blocks of the same hour (system teacher only; omitted when none). */ more?: BookingDTO[] }>;
     }>;
   }>;
   /**
@@ -955,6 +989,8 @@ export interface SetAvailabilityResponse {
 
 export interface SetTeacherWorkDaysRequest {
   workDays: number[];
+  /** 🔴 TASK-966 — sent only when hours are being set or cleared (`null` clears them). */
+  workHours?: WorkHours | null;
 }
 export type SetTeacherWorkDaysResponse = TeacherDTO;
 
@@ -1057,6 +1093,9 @@ export interface LeaveDayClass {
  * ⚠️ **A LINKED teacher is refused (403)**, so the caller must not ask on a teacher-scoped session.
  */
 export interface LeaveDayRow {
+  /** 🔴 TASK-966 (SPEC-108 §4) — a PART-DAY leave's window, `HH:MM[:SS]`; null / absent = the whole day (every row before the change). `bookings` then holds only the overlapping classes. */
+  startTime?: string | null;
+  endTime?: string | null;
   teacherId: string;
   /** The coach's nickname — whose day it is, which is half of what makes the marker actionable. */
   teacherName: string;
@@ -1068,6 +1107,43 @@ export interface LeaveDayRow {
   /** 🔻 TASK-826 (REQ-125 ruling B) → TASK-828 — present ONLY when this leave day took the teacher OFF co-taught classes that run on with others. `bookings` then lists only what is left to HANDLE. */
   continues?: Array<{ bookingId: string; startTime: string; with: string[] }>;
   bookings: LeaveDayClass[];
+}
+
+/**
+ * 🔴 **SPEC-105 §3 (REQ-5013, BE TASK-959) → TASK-960 — close a whole day (option B): the school's "advance leave".** One row per closed date, whole school.
+ * `GET /closed-days?from&to` (≤ 62 days) answers only OPEN rows, in date order. `bookings` is the SAME shape as `LeaveDayRow.bookings`: the live classes still on that date
+ * (a planned-absence row is not a class, so it is not listed). 🚫 A READ: nothing is cancelled or moved from it. A linked teacher is refused (403), so only an admin session asks.
+ */
+export type ClosedDayReason = "HOLIDAY" | "VENUE_CLOSED" | "WEATHER" | "OTHER";
+export interface ClosedDayRow {
+  date: IsoDate;
+  reason: ClosedDayReason;
+  /** Required (non-empty) when `reason` is `OTHER`; the server's own check. */
+  note: string | null;
+  /** The rows saved together share it; null for a single day. */
+  rangeId: string | null;
+  createdBy: string;
+  /** ISO timestamp. */
+  createdAt: string;
+  bookings: LeaveDayClass[];
+}
+/** `POST /closed-days` body. `to` defaults to `from`; `from ≤ to`; at most 31 days. Refusals are 400 `PAST_DATE` (today is allowed) · `NOTE_REQUIRED` · `RANGE_TOO_LONG`. */
+export interface CloseDaysBody {
+  from: IsoDate;
+  to?: IsoDate;
+  reason: ClosedDayReason;
+  note?: string;
+}
+/** `201` — a day that was already closed is SKIPPED (`alreadyClosed`), not an error. `classesOnThem` = the live classes now on the created days (they are in Attention). */
+export interface CloseDaysResult {
+  created: IsoDate[];
+  alreadyClosed: IsoDate[];
+  classesOnThem: number;
+}
+/** `DELETE /closed-days/:date` — soft re-open. 404 `NOT_CLOSED`; 400 `PAST_DATE` for a day that has begun. It restores nothing and messages no one. */
+export interface ReopenDayResult {
+  date: IsoDate;
+  reopened: true;
 }
 
 /**

@@ -359,7 +359,8 @@ describe("🔴 TASK-822 — wiring pins", () => {
   });
 
   it("🔑 the dialog's own submit also checks the refusal (a pressed-anyway button sends nothing)", () => {
-    expect(code(C + "Modal/ReportLeaveDialog.tsx")).toContain("if (noDate || choosing || rangeIssue) return;");
+    // 🔻 TASK-966, declared: + `timeIssue` (a part-day window with one end missing, or From not before To, is also a pressed-anyway button that sends nothing).
+    expect(code(C + "Modal/ReportLeaveDialog.tsx")).toContain("if (noDate || choosing || rangeIssue || timeIssue) return;");
   });
 
   it("🔒 the two approved refusal keys carry the APPROVED marker in both languages, once each", () => {

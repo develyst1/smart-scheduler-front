@@ -18,7 +18,8 @@ describe("🔴 TASK-622 — `leaveDayIndex`", () => {
 
   it("each key carries what the strip's sentence needs — name and the server's class count", () => {
     const idx = leaveDayIndex([row("t1", "2026-10-06", [{ id: "bk-1" }, { id: "bk-2" }])]);
-    expect(idx.get("t1|2026-10-06")).toEqual({ teacherId: "t1", teacherName: "ครู t1", date: "2026-10-06", classes: 2 });
+    // 🔻 TASK-966, declared: + the part-day window, `startTime` / `endTime`, `null` for a whole-day row (every row here). ✅ What this pin protects (name + class count, exactly as the server sent them) is unchanged.
+    expect(idx.get("t1|2026-10-06")).toEqual({ teacherId: "t1", teacherName: "ครู t1", date: "2026-10-06", classes: 2, startTime: null, endTime: null });
   });
 
   it("an empty list and a not-yet-loaded (undefined) read are both an empty index", () => {

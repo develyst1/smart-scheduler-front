@@ -47,6 +47,8 @@ export interface Teacher {
   isSystem?: boolean;
   /** 0=Sun … 6=Sat — วันที่ครูมาสอนได้ */
   workDays?: number[];
+  /** 🔴 TASK-966 — optional working hours per weekday (`{ "6": ["13:00","18:00"] }`); absent / a missing weekday = the whole day. */
+  workHours?: Record<string, [string, string]> | null;
 }
 
 /** Teacher + ข้อมูลรายได้เดือนปัจจุบันที่คำนวณแล้ว (Freelance) */

@@ -97,7 +97,24 @@ export interface LeaveMarker {
   teacherName: string;
   date: string;
   classes: number;
+  /** 🔴 TASK-966 (SPEC-108) — a PART-DAY leave's window (`HH:MM[:SS]`); absent / null = the whole day. The cells grey only the hours it overlaps. */
+  startTime?: string | null;
+  endTime?: string | null;
 }
+
+const minutesOf = (t: string): number => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+
+/**
+ * 🔴 **TASK-966 (SPEC-108 §3.1, REQ-5015 AC2) — does this leave block the class slot starting at `startTime`?** No leave ⇒ no. A leave with NO window is the whole day ⇒ yes, every slot (as before).
+ * A part-day leave blocks a slot when the two intervals OVERLAP — the server's own rule: a class at `HH:MM` occupies `[HH:MM, HH:MM + 1 h)`, the leave `[start, end)`, so 09:00–12:00 blocks the
+ * 09:00, 10:00 and 11:00 classes and not the 12:00 one; a 12:30–13:30 leave blocks the 12:00 and the 13:00 classes.
+ */
+export const leaveBlocksSlot = (m: { startTime?: string | null; endTime?: string | null } | undefined, startTime: string): boolean => {
+  if (!m) return false;
+  if (!m.startTime || !m.endTime) return true;
+  const s = minutesOf(startTime);
+  return s < minutesOf(m.endTime) && minutesOf(m.startTime) < s + 60;
+};
 
 export const leaveMarkersFor = (
   rows: readonly { teacherId: string; teacherName: string; date: string; bookings?: readonly unknown[] }[] | undefined,
@@ -120,12 +137,12 @@ export const leaveDayKey = (teacherId: string, date: string): string => `${teach
  * 📌 A Map rather than a Set: the mark on an existing class needs the name and the count the strip's sentence carries.
  */
 export const leaveDayIndex = (
-  rows: readonly { teacherId: string; teacherName: string; date: string; bookings?: readonly unknown[] }[] | undefined,
+  rows: readonly { teacherId: string; teacherName: string; date: string; bookings?: readonly unknown[]; startTime?: string | null; endTime?: string | null }[] | undefined,
 ): ReadonlyMap<string, LeaveMarker> =>
   new Map(
     (rows ?? []).map((r) => [
       leaveDayKey(r.teacherId, r.date),
-      { teacherId: r.teacherId, teacherName: r.teacherName, date: r.date, classes: (r.bookings ?? []).length },
+      { teacherId: r.teacherId, teacherName: r.teacherName, date: r.date, classes: (r.bookings ?? []).length, startTime: r.startTime ?? null, endTime: r.endTime ?? null },
     ]),
   );
 

@@ -8,6 +8,7 @@ import { useT } from "@/lib/i18n";
 import { formatDateWithDay } from "@/lib/ui/format";
 import { useCan, useMe } from "@/hooks/scheduler/useMe";
 import { hasMenu } from "@/lib/rbac/menus";
+import { hhmm } from "@/lib/scheduler/work-days";
 import { useTeacherLeaveDays } from "@/hooks/scheduler";
 import type { LeaveDayClass, LeaveDayRow } from "@/types/api/contract";
 import CancelLeaveButton from "./CancelLeaveButton";
@@ -79,6 +80,12 @@ export default function LeaveDayPanel({
                   <Text size="sm" fw={600} className="tabular-nums">
                     {formatDateWithDay(d.date)}
                   </Text>
+                  {/* 🔴 TASK-966 (REQ-5015 AC2) — a part-day leave shows its window; a whole-day one shows nothing extra. */}
+                  {d.startTime && d.endTime && (
+                    <Badge variant="light" color="orange" className="tabular-nums" data-leave-panel-window={d.date}>
+                      {hhmm(d.startTime)}–{hhmm(d.endTime)}
+                    </Badge>
+                  )}
                   <Text size="xs" c="dimmed">
                     {d.bookings.length > 0 ? t("teacherLeave.rangeDayClasses", { n: d.bookings.length }) : t("teacherLeave.rangeDayNone")}
                   </Text>

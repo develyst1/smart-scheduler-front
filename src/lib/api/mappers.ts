@@ -94,6 +94,7 @@ export function dtoToTeacher(dto: TeacherDTO): Teacher {
     active: dto.active,
     lineLinked: dto.lineLinked,
     workDays: dto.workDays,
+    workHours: dto.workHours ?? null,
     // UC-016 / SPEC-001: rate (baht) + budget fields (satang) from the teacher's
     // backoffice EXPENSE item; limitOverride is now persisted server-side (TASK-008).
     hourlyRate: dto.hourlyRate ?? undefined,
@@ -151,6 +152,7 @@ export function calendarToBookings(cal: CalendarResponse): Booking[] {
     for (const col of day.columns) {
       for (const slot of col.slots) {
         if (slot.booking) out.push(dtoToBooking(slot.booking));
+        for (const extra of slot.more ?? []) out.push(dtoToBooking(extra)); // TASK-942 / D-155-1
       }
     }
   }
@@ -164,6 +166,7 @@ export function calendarDayBookings(cal: CalendarResponse, date: string): Bookin
   for (const col of day.columns) {
     for (const slot of col.slots) {
       if (slot.booking) out.push(dtoToBooking(slot.booking));
+      for (const extra of slot.more ?? []) out.push(dtoToBooking(extra)); // TASK-942 / D-155-1
     }
   }
   return out;

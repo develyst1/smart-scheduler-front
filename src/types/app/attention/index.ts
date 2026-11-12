@@ -6,7 +6,7 @@ export interface AttentionItem {
   label: string;
   hint?: string | null;
   /** REQ-132 (TASK-841) — present only on the "ใกล้ใช้ครบ" / "ใกล้หมดอายุ" items: the course or voucher the item is about. Absent ⇒ the item is plain text, as before. */
-  link?: { kind: "course" | "voucher"; id: string } | null;
+  link?: { kind: "course" | "voucher"; id: string } | { kind: "day"; date: string } | null;
 }
 
 export interface AttentionCheck {

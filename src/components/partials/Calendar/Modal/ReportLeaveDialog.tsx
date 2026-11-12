@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dayjs from "dayjs";
-import { Alert, Badge, Button, Checkbox, Group, Loader, Modal, Stack, Text, Textarea } from "@mantine/core";
+import { Alert, Badge, Button, Checkbox, Group, Loader, Modal, Select, Stack, Switch, Text, Textarea } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { AlertTriangle } from "lucide-react";
 import { ApiClientError } from "@/lib/api/client";
@@ -12,6 +12,8 @@ import { formatDateWithDay, formatTimeDisplay } from "@/lib/ui/format";
 import { calendarDayBookings } from "@/lib/api/mappers";
 import { useCalendar, useReportOwnLeave, useReportTeacherLeave } from "@/hooks/scheduler";
 import { isAdvanceLeaveDate, isAdvanceResult, leaveBody, leaveDefaultTicks } from "@/lib/scheduler/teacher-scope";
+import { HALF_HOUR_TIMES, timeRangeIssue } from "@/lib/scheduler/work-days";
+import type { LeaveWindow } from "@/services/scheduler.service";
 import { StatusChip } from "@/components/common/BookingBadges";
 import TeacherPick from "./LeaveTeacherPick";
 import LeaveClassRow, { LeaveCannotNote, LeaveContinuesRow } from "../LeaveClassRow";
@@ -74,9 +76,15 @@ export default function ReportLeaveDialog({
   pickTeacher?: boolean;
 }) {
   const t = useT();
-  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [picked, setPicked] = useState<{ id: string; name: string }[]>([]);
   // 🔑 `subject` below is WHOSE leave this is: the fixed one, or the teacher the admin picked. Absent on an admin door (`choosing`) = not chosen yet.
-  const subject = fixedSubject ?? picked;
+  // 🔴 TASK-966 (AC1) — the calendar's admin door may pick SEVERAL coaches: `subjects` is the list, and `subject` (the one every sentence below names) is the single coach, or ONE combined
+  // label «A, B» for several (its `id` is never used for a call then: the save loops over `subjects`).
+  const subjects = fixedSubject ? [fixedSubject] : picked;
+  const subject = subjects.length === 0 ? null : subjects.length === 1 ? subjects[0] : { id: subjects[0].id, name: subjects.map((s) => s.name).join(", ") };
+  const several = subjects.length > 1;
+  // per coach: «Saved» or the server's own refusal; one refusal never undoes the others
+  const [coachResults, setCoachResults] = useState<{ id: string; name: string; error: string | null }[] | null>(null);
   const onBehalf = fixedSubject != null || pickTeacher;
   const choosing = onBehalf && !subject;
   const leave = useReportOwnLeave();
@@ -111,6 +119,14 @@ export default function ReportLeaveDialog({
   const advance = isAdvanceLeaveDate(date, dayjs().format("YYYY-MM-DD"));
   // 🔴 TASK-611 — the admin door's one reduction, asked from the SAME comparison the act uses. 🚫 Not a second rule.
   const refusedForAdmin = onBehalf && !advance;
+  // 🔴 TASK-966 (AC2) — a PART-DAY window is for the admin's ADVANCE leave only: today's leave picks classes (a different act) and never carries a time. «ทั้งวัน» is ON by default;
+  // off, From and To are picked (half hours) and BOTH must be set, From before To. Nothing is sent for a window the screen can see is wrong.
+  const [allDay, setAllDay] = useState(true);
+  const [timeFrom, setTimeFrom] = useState<string | null>(null);
+  const [timeTo, setTimeTo] = useState<string | null>(null);
+  const windowOn = onBehalf && advance && !allDay;
+  const timeIssue = windowOn ? (!timeFrom && !timeTo ? "partial" : timeRangeIssue(timeFrom, timeTo)) : null;
+  const leaveWindow: LeaveWindow = windowOn && timeFrom && timeTo && !timeIssue ? { startTime: timeFrom, endTime: timeTo } : {};
 
   const toggle = (id: string, on: boolean) => setTicks({ date, ids: on ? [...ticked, id] : ticked.filter((x) => x !== id) });
 
@@ -119,16 +135,32 @@ export default function ReportLeaveDialog({
     // 🚫 The two guards (TASK-564's lesson): the button is disabled AND nothing is sent on a date this door refuses.
     if (refusedForAdmin) return;
     // 🔴 TASK-818 — and the two WAITS (no date yet · no teacher chosen yet): nothing is sent, nothing is refused in words either.
-    if (noDate || choosing || rangeIssue) return;
+    if (noDate || choosing || rangeIssue || timeIssue) return;
     try {
       // 🔑 ONE body builder for both doors — `leaveBody` is unchanged and needed no new shape. On the admin door the act
       // is always the advance one, so it carries `{ date, reason }` and 🚫 never `sessionIds`.
       // 🔴 TASK-818 — a RANGE is `{ from, to, reason }` (the server's body; one reason for every day).
       const body = leaveBody(date, allIds, ticked, reason, advance);
+      // 🔴 TASK-966 (AC1) — SEVERAL coaches: the SAME body, one POST per coach, one after the other. A refusal for one coach is only its own line; the others are saved.
+      if (several) {
+        const out: { id: string; name: string; error: string | null }[] = [];
+        for (const s of subjects) {
+          try {
+            if (isRange) await adminLeave.mutateAsync({ teacherId: s.id, from: date, to: dateTo, reason: reason.trim(), ...leaveWindow });
+            else await adminLeave.mutateAsync({ teacherId: s.id, ...body, ...leaveWindow });
+            out.push({ id: s.id, name: s.name, error: null });
+          } catch (e) {
+            const issue = rangeIssueFromError(e);
+            out.push({ id: s.id, name: s.name, error: issue ? t(issue) : e instanceof ApiClientError ? e.message : (e as Error).message });
+          }
+        }
+        setCoachResults(out);
+        return;
+      }
       const res = subject
         ? isRange
-          ? await adminLeave.mutateAsync({ teacherId: subject.id, from: date, to: dateTo, reason: reason.trim() })
-          : await adminLeave.mutateAsync({ teacherId: subject.id, ...body })
+          ? await adminLeave.mutateAsync({ teacherId: subject.id, from: date, to: dateTo, reason: reason.trim(), ...leaveWindow })
+          : await adminLeave.mutateAsync({ teacherId: subject.id, ...body, ...leaveWindow })
         : await leave.mutateAsync(body);
       // 🔑 Which act ran is read from the ANSWER, never re-derived from the date we sent.
       if (res.mode === "advance-range") {
@@ -169,7 +201,9 @@ export default function ReportLeaveDialog({
             {error}
           </Alert>
         )}
-        {sameDay ? (
+        {coachResults ? (
+          <CoachResults results={coachResults} onClose={onClose} />
+        ) : sameDay ? (
           <LeaveSameDayResult res={sameDay} rows={rows} onClose={onClose} />
         ) : done?.mode === "advance-range" ? (
           <RangeResult done={done} name={subject?.name ?? ""} onClose={onClose} onOpenClass={setOpenClass} />
@@ -285,6 +319,39 @@ export default function ReportLeaveDialog({
             {t(rangeIssue)}
           </Alert>
         )}
+        {/* 🔴 TASK-966 (AC2) — a part-day window, for the admin's ADVANCE leave only (today's leave picks classes). «ทั้งวัน» is on by default; off, two half-hour pickers, both required, From before To. */}
+        {onBehalf && advance && (
+          <Stack gap="xs" data-leave-window>
+            <Switch label={t("teacherLeave.allDay")} checked={allDay} onChange={(e) => setAllDay(e.currentTarget.checked)} data-leave-all-day />
+            {!allDay && (
+              <>
+                <Select
+                  label={t("teacherLeave.timeFrom")}
+                  data={HALF_HOUR_TIMES}
+                  value={timeFrom}
+                  onChange={setTimeFrom}
+                  clearable
+                  comboboxProps={{ withinPortal: true }}
+                  data-leave-time-from
+                />
+                <Select
+                  label={t("teacherLeave.timeTo")}
+                  data={HALF_HOUR_TIMES}
+                  value={timeTo}
+                  onChange={setTimeTo}
+                  clearable
+                  comboboxProps={{ withinPortal: true }}
+                  data-leave-time-to
+                />
+                {timeIssue && (
+                  <Alert color="red" variant="light" icon={<AlertTriangle size={15} />} data-leave-time-issue={timeIssue}>
+                    {t(timeIssue === "order" ? "teacherLeave.timeOrder" : "teacherLeave.timePartial")}
+                  </Alert>
+                )}
+              </>
+            )}
+          </Stack>
+        )}
         {/* 🔴 TASK-611 — the admin door's refusal, and it NAMES WHAT TO DO INSTEAD. 🚫 Never a bare "not allowed":
             *a reason with no next step is a dead end with a caption.* */}
         {refusedForAdmin && !noDate && (
@@ -360,15 +427,19 @@ export default function ReportLeaveDialog({
         )}
         {/* 🔴 TASK-818 (P7) → TASK-828 (REQ-125 ruling B) — what saving WILL do, said BEFORE it is done, from the server's PREVIEW (whether a co-taught class continues depends on
             whether another teacher remains — not something the calendar rows say): the split counts live in `LeaveWillDo`. */}
-        <LeaveWillDo
-          ready={!noDate && !choosing && !rangeIssue && !isLoading}
-          adminFor={onBehalf ? subject : null}
-          date={date}
-          to={isRange ? dateTo : date}
-          advance={advance}
-          ticked={ticked}
-          ownRows={rows}
-        />
+        {/* 🔴 TASK-966 — the preview is ONE teacher's (it asks the server about that teacher's classes); for several coaches it would describe the first only, so it is not drawn: each coach's
+            result follows the save. */}
+        {!several && (
+          <LeaveWillDo
+            ready={!noDate && !choosing && !rangeIssue && !isLoading}
+            adminFor={onBehalf ? subject : null}
+            date={date}
+            to={isRange ? dateTo : date}
+            advance={advance}
+            ticked={ticked}
+            ownRows={rows}
+          />
+        )}
         <Group justify="flex-end" gap="sm">
           <Button variant="subtle" onClick={onClose}>
             {t("common.cancel")}
@@ -378,7 +449,7 @@ export default function ReportLeaveDialog({
           <Button
             color="orange"
             loading={leave.isPending || adminLeave.isPending}
-            disabled={refusedForAdmin || noDate || choosing || rangeIssue !== null || (!advance && ticked.length === 0) || reason.trim().length === 0}
+            disabled={refusedForAdmin || noDate || choosing || rangeIssue !== null || timeIssue !== null || (!advance && ticked.length === 0) || reason.trim().length === 0}
             data-leave-submit
             onClick={() => void submit()}
           >
@@ -408,6 +479,45 @@ export default function ReportLeaveDialog({
  * first entry stands), and the live classes booked on it. 🔑 The two sentences an admin must not get wrong are the SAME approved ones as the single day's
  * result: NOTHING HAS BEEN CANCELLED, and whether the TEACHER was told (read from the COUNT; absent = say nothing).
  */
+/**
+ * 🔴 **TASK-966 (AC1) — the result of ONE leave for SEVERAL coaches: a line per coach, «Saved» or the server's own refusal.** One refusal never undoes the others (each coach was its own call).
+ * ⚠️ The sentence an admin must not get wrong is the same as on the single result: NOTHING HAS BEEN CANCELLED — shown whenever at least one coach was saved.
+ */
+function CoachResults({ results, onClose }: { results: { id: string; name: string; error: string | null }[]; onClose: () => void }) {
+  const t = useT();
+  return (
+    <Stack gap="sm" data-leave-multi={results.length}>
+      <Text fw={600}>{t("teacherLeave.multiResultsTitle")}</Text>
+      <Stack gap={4}>
+        {results.map((r) => (
+          <Group key={r.id} gap="xs" wrap="nowrap" data-leave-multi-result={r.id} data-leave-multi-ok={r.error ? "no" : "yes"}>
+            <Text size="sm" fw={500} className="min-w-0 flex-1 truncate">
+              {r.name}
+            </Text>
+            {r.error ? (
+              <Text size="sm" c="red" className="min-w-0 flex-[2]">
+                {r.error}
+              </Text>
+            ) : (
+              <Badge variant="light" color="green">
+                {t("teacherLeave.multiSaved")}
+              </Badge>
+            )}
+          </Group>
+        ))}
+      </Stack>
+      {results.some((r) => !r.error) && (
+        <Alert color="orange" variant="light" icon={<AlertTriangle size={15} />} data-leave-nothing-cancelled>
+          {t("teacherLeave.adminNothingCancelled")}
+        </Alert>
+      )}
+      <Group justify="flex-end">
+        <Button onClick={onClose}>{t("common.close")}</Button>
+      </Group>
+    </Stack>
+  );
+}
+
 function RangeResult({ done, name, onClose, onOpenClass }: { done: OwnLeaveResult; name: string; onClose: () => void; onOpenClass: (c: LeaveDayClass) => void }) {
   const t = useT();
   const days = done.days ?? [];

@@ -146,13 +146,16 @@ export const setTeacherLimitOverride = (id: string, override: boolean) => {
   return delay(clone(t) as Teacher);
 };
 
-export const setTeacherWorkDays = (id: string, workDays: number[]) => {
+export const setTeacherWorkDays = (id: string, workDays: number[], workHours?: Record<string, [string, string]> | null) => {
   const t = teachers.find((x) => x.id === id);
-  if (t) t.workDays = workDays;
+  if (t) {
+    t.workDays = workDays;
+    if (workHours !== undefined) t.workHours = workHours;
+  }
   return delay(clone(t) as Teacher);
 };
 
-export const getWorkDaysImpact = (_id: string, _workDays: number[]) =>
+export const getWorkDaysImpact = (_id: string, _workDays: number[], _workHours?: Record<string, [string, string]> | null) =>
   delay({ removedDays: [], removedDaysLabel: "", orphanCount: 0, sessions: [] });
 
 export const cancelBooking = (id: string, _reason?: string): Promise<Booking> => {
@@ -1057,6 +1060,23 @@ export const previewChangeTeacherTime = (_courseId: string, input: { startDate: 
   delay({ n: 4, firstDate: input.startDate, lastDate: dayjs(input.startDate).add(3, "week").format("YYYY-MM-DD") });
 export const changeTeacherTime = (courseId: string, _input: { startDate: string; startTime: string; teacherId: string }) =>
   delay({ id: courseId, moved: 4, needsReconfirm: 2 });
+
+/** TASK-962 — offline stand-ins for "change activity": a card-priced answer, 100 ฿ → 120 ฿ for 4 classes (the SPEC's own example shape). */
+export const previewChangeActivity = (input: { subjectId: string; teacherId?: string; manualPriceBaht?: number }) =>
+  delay({
+    remaining: 4,
+    firstDate: dayjs().add(1, "week").format("YYYY-MM-DD"),
+    lastDate: dayjs().add(4, "week").format("YYYY-MM-DD"),
+    from: { subjectId: "mock-from", subjectName: "Balance" },
+    to: { subjectId: input.subjectId, subjectName: "Skate" },
+    teacherChanged: !!input.teacherId,
+    oldPriceMinor: 10000,
+    newPriceMinor: 12000,
+    priceSource: "CARD" as const,
+    differenceMinor: 2000,
+  });
+export const changeActivity = (input: { subjectId: string; teacherId?: string; manualPriceBaht?: number }) =>
+  previewChangeActivity(input).then((a) => ({ ...a, changeId: "mock-change" }));
 
 /** TASK-571 — offline: one week later, two weeks skipped for the coach's leave, three sessions to reconfirm. */
 /** TASK-574 — offline: the same shape the act will return, plus `forecast: true`. */

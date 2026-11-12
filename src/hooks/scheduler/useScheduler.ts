@@ -86,6 +86,10 @@ import {
   resumeCourse,
   previewChangeTeacherTime,
   changeTeacherTime,
+  previewCourseChangeActivity,
+  changeCourseActivity,
+  previewBookingChangeActivity,
+  changeBookingActivity,
   updateCourseExpiry,
   previewVoucherExpiry,
   updateVoucherExpiry,
@@ -106,7 +110,7 @@ import { undoBody } from "@/lib/scheduler/undo";
 import type { CourseEndReason, EndCourseReason, PlanChange, RecordRentalInput, SessionCancelReason, TeacherType, TeacherView } from "@/types/app/scheduler";
 import { withoutSystem } from "@/lib/scheduler/teacher";
 import type { OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
-import type { Branch, ChangeTeacherTimeInput } from "@/types/api/contract";
+import type { Branch, ChangeActivityInput, ChangeTeacherTimeInput } from "@/types/api/contract";
 import type { GroupSeriesInput, GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 
 export const TEACHERS_KEY = ["teachers"] as const;
@@ -167,8 +171,8 @@ export const useSetTeacherTypeOrder = () => {
 export const useSetTeacherWorkDays = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, workDays }: { id: string; workDays: number[] }) =>
-      setTeacherWorkDays(id, workDays),
+    mutationFn: ({ id, workDays, workHours }: { id: string; workDays: number[]; workHours?: Record<string, [string, string]> | null }) =>
+      setTeacherWorkDays(id, workDays, workHours),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: TEACHERS_KEY });
       qc.invalidateQueries({ queryKey: CALENDAR_KEY });
@@ -451,6 +455,24 @@ export const useChangeTeacherTime = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ courseId, ...input }: { courseId: string } & ChangeTeacherTimeInput) => changeTeacherTime(courseId, input),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+/**
+ * TASK-962 (REQ-5014) — "change activity": the dry run (a MUTATION, asked when an input changes, never on a render) and the act. Course and 1 HR / Trial are two route pairs with one
+ * body; the act invalidates everything (the plan, the calendar, the notices) — the course and the calendar are re-read, as the other course acts do.
+ */
+export const usePreviewChangeActivity = () =>
+  useMutation({
+    mutationFn: ({ target, id, ...input }: { target: "course" | "booking"; id: string } & ChangeActivityInput) =>
+      target === "course" ? previewCourseChangeActivity(id, input) : previewBookingChangeActivity(id, input),
+  });
+export const useChangeActivity = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ target, id, ...input }: { target: "course" | "booking"; id: string } & ChangeActivityInput) =>
+      target === "course" ? changeCourseActivity(id, input) : changeBookingActivity(id, input),
     onSuccess: () => invalidateAll(qc),
   });
 };
