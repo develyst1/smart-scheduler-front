@@ -54,6 +54,16 @@ export const patternPayload = (on: boolean, rows: readonly PatternRow[]): { patt
 };
 
 /**
+ * 🔴 **TASK-974 (O-159-2) — PATTERN ORDER, the server's `orderPattern` (SB `course-pattern.ts`):** by the weekday counted from the course's START weekday, then by `HH:MM`. Pure; the input is not mutated.
+ * The sale's rows are typed in any order; the label must read them like the saved course does.
+ */
+export const orderPatternSlots = <T extends { weekday: number; startTime: string }>(startDate: string, slots: readonly T[]): T[] => {
+  const w0 = new Date(`${startDate}T00:00:00Z`).getUTCDay();
+  const offset = (d: number) => (d - w0 + 7) % 7;
+  return [...slots].sort((a, b) => offset(a.weekday) - offset(b.weekday) || a.startTime.slice(0, 5).localeCompare(b.startTime.slice(0, 5)));
+};
+
+/**
  * 🔴 **«จ 10:00, 11:00 · พฤ 12:00» — a pattern read aloud (SPEC-109 §3.5 / AC6):** the slots in the server's order, consecutive slots of one weekday sharing the day name, days joined with « · ».
  * A one-slot course has no pattern (`null` / one slot) ⇒ the empty string, and the caller shows its usual weekly line.
  */

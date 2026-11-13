@@ -42,7 +42,7 @@ import {
 } from "@/types/app/scheduler";
 import PlanModal from "./PlanModal";
 import WeeklyPatternEditor from "./WeeklyPatternEditor";
-import { emptyPatternRow, patternPayload, type PatternRow } from "@/lib/scheduler/weekly-pattern";
+import { emptyPatternRow, orderPatternSlots, patternPayload, type PatternRow } from "@/lib/scheduler/weekly-pattern";
 import LeaveWeekNotice, { leaveWeeksOf, type LeaveWeek } from "./LeaveWeekNotice";
 import { useCan } from "@/hooks/scheduler/useMe";
 
@@ -252,7 +252,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
           owedCount: 0,
           expiryDate: p.expiryDate,
           // 🔴 TASK-970 — the sale's own pattern, so the plan reads it back as «จ 10:00, 11:00 · พฤ 12:00» before Save.
-          slots: patternBody && "pattern" in patternBody ? patternBody.pattern : null,
+          slots: patternBody && "pattern" in patternBody ? orderPatternSlots(startDate, patternBody.pattern) : null,
         },
       });
     } catch (e) {

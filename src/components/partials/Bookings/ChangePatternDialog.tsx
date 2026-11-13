@@ -39,6 +39,14 @@ export const openingRows = (slots: readonly CoursePatternSlot[] | null | undefin
   return [emptyPatternRow()];
 };
 
+/** Two editor states are the same pattern when they hold the same `weekday · startTime · teacherId` set — row order does not matter. */
+export const samePattern = (a: readonly PatternRow[], b: readonly PatternRow[]): boolean => {
+  const keys = (rs: readonly PatternRow[]) => rs.map((r) => `${r.weekday ?? ""}|${(r.startTime ?? "").slice(0, 5)}|${r.teacherId ?? ""}`).sort();
+  const ka = keys(a);
+  const kb = keys(b);
+  return ka.length === kb.length && ka.every((k, i) => k === kb[i]);
+};
+
 interface Props {
   opened: boolean;
   courseId: string | null;
@@ -116,7 +124,9 @@ export default function ChangePatternDialog({ opened, courseId, slots, oneSlot, 
   }, [opened, courseId, key]);
 
   const fresh = answer && answer.key === key ? answer.a : null;
-  const canConfirm = !!courseId && !!pattern && !!fresh && fresh.moved > 0 && !act.isPending;
+  // 🔴 Amendment 1b — an UNTOUCHED pattern moves nothing real (the act would only set rows back to PENDING): Confirm needs the rows to differ from the opening ones. A changed from-date alone does not count.
+  const unchanged = samePattern(rows, openingRows(slots, oneSlot));
+  const canConfirm = !!courseId && !!pattern && !!fresh && fresh.moved > 0 && !unchanged && !act.isPending;
 
   const submit = async () => {
     if (!courseId || !pattern) return;
@@ -163,6 +173,11 @@ export default function ChangePatternDialog({ opened, courseId, slots, oneSlot, 
             {t("changePattern.pattern")}
           </Text>
           <WeeklyPatternEditor rows={rows} onChange={setRows} teachers={teachers} seedTeacherId={oneSlot?.teacherId ?? null} />
+          {unchanged && (
+            <Text fz="xs" c="dimmed" data-change-pattern-unchanged>
+              {t("changePattern.unchanged")}
+            </Text>
+          )}
         </Stack>
 
         {pattern && !error ? (

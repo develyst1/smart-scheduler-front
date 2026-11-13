@@ -433,7 +433,7 @@ function ViewBooking({
         color: "orange",
         // 🔴 TASK-972 — «ลาทั้งวัน» replaces the two words above: it names the DATE and EVERY time that will be marked (the per-hour leave's own lines stay exactly as they were, and pinned).
         ...(wholeDay
-          ? { message: t("wholeDay.confirm", { date: wholeDayDate, times: wholeDayTimes }), confirmLabel: t("wholeDay.action") }
+          ? { title: t("wholeDay.confirmTitle"), message: t("wholeDay.confirm", { date: wholeDayDate, times: wholeDayTimes }), confirmLabel: t("wholeDay.action") }
           : {}),
       }))
     )

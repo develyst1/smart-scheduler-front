@@ -58,7 +58,7 @@ const realNotify = await import("@/lib/ui/notify");
 mock.module("@/lib/ui/notify", () => ({ ...realNotify, notify: () => {} }));
 
 const ChangePatternDialog = (await import("./ChangePatternDialog")).default;
-const { nextUntaughtRow, openingRows } = await import("./ChangePatternDialog");
+const { nextUntaughtRow, openingRows, samePattern } = await import("./ChangePatternDialog");
 
 const row = (id: string, date: string, startTime: string, teacher: string) => ({
   id,
@@ -192,10 +192,36 @@ describe("🔴 the preview: ONE request per edit (D-157-1's lesson)", () => {
   it("🔑 the confirm WAITS for the answer to THESE inputs (disabled until it arrives, and again after an edit)", async () => {
     mount();
     expect(btn("Confirm")!.disabled).toBe(true);
-    await waitFor(() => expect(btn("Confirm")!.disabled).toBe(false), { timeout: 3000 });
     await pickTime(0, "11:00");
+    expect(btn("Confirm")!.disabled).toBe(true); // the answer for the edit has not arrived yet
+    await waitFor(() => expect(btn("Confirm")!.disabled).toBe(false), { timeout: 3000 });
+    await pickTime(0, "09:00");
     expect(btn("Confirm")!.disabled).toBe(true); // the answer on screen is for the OLD inputs
     await waitFor(() => expect(btn("Confirm")!.disabled).toBe(false), { timeout: 3000 });
+  });
+
+  it("🔑 Amendment 1b: an UNTOUCHED pattern ⇒ Confirm stays off even with the server's answer, and the hint is shown; an edit lifts both", async () => {
+    mount();
+    await waitFor(() => expect(q("[data-change-line]")).toBeTruthy(), { timeout: 3000 }); // the preview answered «Move 2 classes»…
+    expect(btn("Confirm")!.disabled).toBe(true); // …and still no confirm
+    expect(q("[data-change-pattern-unchanged]")!.textContent).toBe("This is the current pattern. Change a slot to move classes.");
+    await pickTime(0, "11:00");
+    await waitFor(() => expect(btn("Confirm")!.disabled).toBe(false), { timeout: 3000 });
+    expect(count("[data-change-pattern-unchanged]")).toBe(0);
+  });
+
+  it("Amendment 1b: TH hint", async () => {
+    mount({}, "th");
+    expect(q("[data-change-pattern-unchanged]")!.textContent).toBe("ตารางนี้เหมือนตารางปัจจุบัน แก้คาบก่อนจึงจะย้ายได้");
+  });
+
+  it("🔑 Amendment 1b: the SAME rows in another order are still unchanged; a changed from-date alone is not a change", async () => {
+    mount({ slots: [...SLOTS].reverse() });
+    await waitFor(() => expect(q("[data-change-line]")).toBeTruthy(), { timeout: 3000 });
+    expect(btn("Confirm")!.disabled).toBe(true);
+    expect(samePattern(openingRows(SLOTS, null), openingRows([...SLOTS].reverse(), null))).toBe(true);
+    expect(samePattern(openingRows(SLOTS, null), openingRows([SLOTS[0], { ...SLOTS[1], startTime: "13:00" }], null))).toBe(false);
+    expect(samePattern(openingRows(SLOTS, null), openingRows([SLOTS[0], { ...SLOTS[1], teacherId: "t-z" }], null))).toBe(false);
   });
 
   it("an invalid pattern (two rows on the same day and time) is NOT sent, and the confirm stays off", async () => {
@@ -212,11 +238,12 @@ describe("🔴 the act", () => {
   it("🔑 Confirm sends the act on its own route with the date and the pattern, then closes and says it is done", async () => {
     const user = userEvent.setup();
     mount();
+    await pickTime(0, "11:00"); // an untouched pattern cannot be confirmed (Amendment 1b)
     await waitFor(() => expect(btn("Confirm")!.disabled).toBe(false), { timeout: 3000 });
     await user.click(btn("Confirm") as HTMLElement);
     await waitFor(() => expect(acts().length).toBe(1));
     expect(acts()[0].url).toBe("/courses/c1/change-pattern");
-    expect(acts()[0].body).toEqual({ fromDate: "2026-11-17", pattern: SLOTS });
+    expect(acts()[0].body).toEqual({ fromDate: "2026-11-17", pattern: [{ ...SLOTS[0], startTime: "11:00" }, SLOTS[1]] });
     await waitFor(() => expect(closes).toBe(1));
     expect(dones).toBe(1);
   });
@@ -229,6 +256,7 @@ describe("🔴 every refusal has its sentence; an unknown code shows the server'
       actFails = { code, message: "Tue 17 Nov 10:00", status: 409 };
       const user = userEvent.setup();
       mount({}, "th");
+      await pickTime(0, "11:00");
       await waitFor(() => expect(btn("ยืนยัน")!.disabled).toBe(false), { timeout: 3000 });
       await user.click(btn("ยืนยัน") as HTMLElement);
       await waitFor(() => expect(q("[data-change-pattern-error]")).toBeTruthy());
@@ -248,6 +276,7 @@ describe("🔴 every refusal has its sentence; an unknown code shows the server'
     actFails = { code: "VALIDATION", message: sentence, status: 400 };
     const user = userEvent.setup();
     mount({}, "th");
+    await pickTime(0, "11:00");
     await waitFor(() => expect(btn("ยืนยัน")!.disabled).toBe(false), { timeout: 3000 });
     await user.click(btn("ยืนยัน") as HTMLElement);
     await waitFor(() => expect(q("[data-change-pattern-error]")).toBeTruthy());
@@ -259,6 +288,7 @@ describe("🔴 every refusal has its sentence; an unknown code shows the server'
     actFails = { code: "SOMETHING_NEW", message: "ข้อความจากเซิร์ฟเวอร์", status: 409 };
     const user = userEvent.setup();
     mount({}, "th");
+    await pickTime(0, "11:00");
     await waitFor(() => expect(btn("ยืนยัน")!.disabled).toBe(false), { timeout: 3000 });
     await user.click(btn("ยืนยัน") as HTMLElement);
     await waitFor(() => expect(q("[data-change-pattern-error]")).toBeTruthy());

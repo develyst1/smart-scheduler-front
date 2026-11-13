@@ -1447,6 +1447,7 @@ const en = {
   // 🔴 TASK-972 (REQ-5016, SPEC-109 § 3.3 / § 3.4) — «ลาทั้งวัน» and "change the weekly pattern". ⚠️ THAI WORDING NOT YET CHECKED (Porter, with ขวัญ); the EN half mirrors it for `th: typeof en`.
   wholeDay: {
     action: "Leave all day",
+    confirmTitle: "Record leave for the whole day?",
     confirm: "Mark every class of this course on {date} as leave: {times}",
   },
   changePattern: {
@@ -1456,6 +1457,7 @@ const en = {
     previewLine: "Move {moved} classes from {fromDate}",
     previewLineOne: "Move {moved} class from {fromDate}",
     none: "No classes to move",
+    unchanged: "This is the current pattern. Change a slot to move classes.",
     rowLine: "{date} · {time} · {coach}",
     done: "Weekly pattern changed",
     err: {
@@ -3730,6 +3732,7 @@ const th: typeof en = {
   // 🔴 TASK-972 — คำไทยของ «ลาทั้งวัน» และ «เปลี่ยนตารางเรียนรายสัปดาห์» ยังไม่ผ่านการตรวจ (พอร์เตอร์ตรวจกับขวัญ) — แก้ได้ที่ข้อความอย่างเดียว
   wholeDay: {
     action: "ลาทั้งวัน",
+    confirmTitle: "บันทึกลาทั้งวันนี้?",
     confirm: "บันทึกลาทุกคาบของคอร์สนี้ในวันที่ {date}: {times}",
   },
   changePattern: {
@@ -3739,6 +3742,7 @@ const th: typeof en = {
     previewLine: "ย้าย {moved} คาบ ตั้งแต่ {fromDate}",
     previewLineOne: "ย้าย {moved} คาบ ตั้งแต่ {fromDate}",
     none: "ไม่มีคาบที่ต้องย้าย",
+    unchanged: "ตารางนี้เหมือนตารางปัจจุบัน แก้คาบก่อนจึงจะย้ายได้",
     rowLine: "{date} · {time} · {coach}",
     done: "เปลี่ยนตารางเรียนแล้ว",
     err: {

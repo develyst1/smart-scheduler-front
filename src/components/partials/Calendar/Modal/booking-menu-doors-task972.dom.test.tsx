@@ -125,6 +125,9 @@ describe("🔴 TASK-972 — «ลาทั้งวัน»", () => {
     const text = document.body.textContent ?? "";
     expect(text).toContain("17/Nov/26");
     expect(text).toContain("10:00, 11:00");
+    // O-159-1: the TITLE is the whole-day one, not the per-hour «Record leave for this session?»
+    expect(text).toContain("Record leave for the whole day?");
+    expect(text.includes(dictionaries.en.confirmAction.leaveTitle)).toBe(false);
     await user.click(btn("Leave all day") as HTMLElement);
     await waitFor(() => expect(patches.length).toBe(1));
     expect(patches[0].url).toBe("/bookings/r1/status");
@@ -137,6 +140,9 @@ describe("🔴 TASK-972 — «ลาทั้งวัน»", () => {
     const user = await openMenu();
     await user.click(item('[data-status-action="sick-leave"]')!);
     await waitFor(() => expect(btn("Sick leave") ?? btn(dictionaries.en.booking.sickLeaveBtn)).toBeTruthy());
+    // O-159-1: the per-hour confirm keeps its own title
+    expect(document.body.textContent).toContain(dictionaries.en.confirmAction.leaveTitle);
+    expect(document.body.textContent).not.toContain("Record leave for the whole day?");
     await user.click((btn(dictionaries.en.booking.sickLeaveBtn) ?? btn("Sick leave")) as HTMLElement);
     await waitFor(() => expect(patches.length).toBe(1));
     expect(patches[0].body).toEqual({ action: "sick-leave" });
