@@ -207,9 +207,9 @@ const en = {
     resumeExpiryMoved: "The expiry moved to {date} to cover the new last session.",
     resumeExpirySame: "The expiry is unchanged: {date}.",
     resumeDone: "Course resumed",
-    // ✅ APPROVED by the owner 2026-10-25 (REQ-126), COPY-REVIEW-2026-09-29.md §2026-10-25, verbatim — the end-course act's button + dialog (the behaviour is unchanged).
-    action: "End course early",
-    title: "End this course early?",
+    // ✅ APPROVED by the owner 2026-10-25 (REQ-126), COPY-REVIEW-2026-09-29.md §2026-10-25, verbatim — the end-course act's button + dialog (the behaviour is unchanged). action / title / confirm: changed 2026-11-13 on ขวัญ's ask, PM-decided «Cancel course», owner to see (REQUEST-porter-to-silver-sector-2026-11-13-fo-feedback-1311.md).
+    action: "Cancel course",
+    title: "Cancel this course?",
     confirmLine: "End the {program} course for {student} early — the {n} remaining sessions are removed. It cannot be undone.",
     reasonLabel: "Reason",
     reasonRequired: "Pick a reason to continue",
@@ -223,7 +223,7 @@ const en = {
     TEACHER_LEAVE: "Teacher leave", // REQ-097 — read-only: written by the teacher's own leave, never offered in a dialog
     noteLabel: "Note (optional)",
     alreadyEnded: "This course has already been cancelled.",
-    confirm: "End course early",
+    confirm: "Cancel course",
     done: "Course ended early",
   },
   attendeeNote: {
@@ -777,7 +777,7 @@ const en = {
     previewLineOne: "Change {remaining} class from {firstDate}",
     priceLine: "{old} ฿ → {new} ฿",
     typedTag: "typed price",
-    difference: "Difference {difference} ฿",
+    difference: "Add {difference} ฿",
     noRefund: "0 ฿ · no refund",
     attendedKept: "Classes already taught don't change",
     done: "Activity changed",
@@ -1451,7 +1451,7 @@ const en = {
     confirm: "Mark every class of this course on {date} as leave: {times}",
   },
   changePattern: {
-    title: "Change weekly pattern",
+    title: "Change Schedule / Coach",
     fromDate: "From date",
     pattern: "New pattern",
     previewLine: "Move {moved} classes from {fromDate}",
@@ -2652,8 +2652,8 @@ const th: typeof en = {
     resumeExpirySame: "วันหมดอายุเท่าเดิม: {date}",
     resumeDone: "กลับมาเรียนแล้ว",
     // ✅ อนุมัติโดยเจ้าของ 2026-10-25 (REQ-126), COPY-REVIEW-2026-09-29.md §2026-10-25, ตรงตัว — ปุ่มและหน้าต่างของการตัดจบคอร์ส (พฤติกรรมเดิมทุกอย่าง)
-    action: "ตัดจบคอร์ส",
-    title: "ตัดจบคอร์สนี้?",
+    action: "ยกเลิกคอร์ส",
+    title: "ยกเลิกคอร์สนี้?",
     confirmLine: "ตัดจบคอร์ส {program} ของ {student} — คาบที่เหลือ {n} คาบจะถูกนำออกจากตาราง ทำแล้วย้อนกลับไม่ได้",
     reasonLabel: "เหตุผล",
     reasonRequired: "เลือกเหตุผลก่อนจึงจะดำเนินการต่อได้",
@@ -2667,7 +2667,7 @@ const th: typeof en = {
     TEACHER_LEAVE: "ครูลา",
     noteLabel: "หมายเหตุ (ไม่บังคับ)",
     alreadyEnded: "คอร์สนี้ถูกยกเลิกไปแล้ว",
-    confirm: "ตัดจบคอร์ส",
+    confirm: "ยกเลิกคอร์ส",
     done: "ตัดจบคอร์สแล้ว",
   },
   attendeeNote: {
@@ -3177,7 +3177,7 @@ const th: typeof en = {
     previewLineOne: "เปลี่ยน {remaining} คาบ ตั้งแต่ {firstDate}",
     priceLine: "{old} ฿ → {new} ฿",
     typedTag: "ราคาพิมพ์เอง",
-    difference: "ส่วนต่าง {difference} ฿",
+    difference: "จ่ายเพิ่ม {difference} ฿",
     noRefund: "0 ฿ · ไม่มีการคืนเงิน",
     attendedKept: "คาบที่เรียนไปแล้วไม่เปลี่ยน",
     done: "เปลี่ยนกิจกรรมแล้ว",
@@ -3736,7 +3736,7 @@ const th: typeof en = {
     confirm: "บันทึกลาทุกคาบของคอร์สนี้ในวันที่ {date}: {times}",
   },
   changePattern: {
-    title: "เปลี่ยนตารางเรียนรายสัปดาห์",
+    title: "เปลี่ยนตาราง / ครู",
     fromDate: "ตั้งแต่วันที่",
     pattern: "ตารางใหม่",
     previewLine: "ย้าย {moved} คาบ ตั้งแต่ {fromDate}",

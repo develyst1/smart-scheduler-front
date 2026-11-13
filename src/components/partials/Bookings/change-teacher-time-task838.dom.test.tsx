@@ -225,12 +225,13 @@ describe("🔴 the dialog", () => {
 
 describe("the button in the plan modal", () => {
   const plan = readFileSync("src/components/partials/Bookings/PlanModal.tsx", "utf8");
-  it("🔑 it is gated by `bookings.course-plan` (never `course-edit`), sits inside the WRITABLE-course block, and carries the approved label", () => {
+  it("🔑 TASK-981 (F3): the ONE merged button is gated by `bookings.course-plan` through `canPlan` (never `course-edit`), sits inside the WRITABLE-course block, and a GROUP course opens this dialog", () => {
     expect(plan).not.toContain("action:bookings.course-edit");
-    expect(plan).toMatch(/can\("action:bookings\.course-plan"\) && \(\s*<Button[\s\S]{0,400}?\{t\("plan\.changeRest"\)\}/);
+    expect(plan).toContain('const canPlan = can("action:bookings.course-plan");');
+    expect(plan).toMatch(/\{canPlan && \(\s*<Button[\s\S]{0,500}?data-change-schedule-open[\s\S]{0,400}?if \(sessions\.some\(\(s\) => s\.bookingType === "GROUP"\)\) setChangeRestOpen\(true\);/);
     const writable = plan.indexOf("isCourse && !isCreate && courseWritable && (");
     expect(writable).toBeGreaterThan(0);
-    expect(plan.indexOf('t("plan.changeRest")')).toBeGreaterThan(writable);
+    expect(plan.indexOf("data-change-schedule-open")).toBeGreaterThan(writable);
   });
   it("the dialog is mounted only while open and reads the same slot / teacher facts as the pause dialog", () => {
     expect(plan).toContain("{changeRestOpen && (");

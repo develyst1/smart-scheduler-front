@@ -19,6 +19,7 @@ export default function WeeklyPatternEditor({
   teachers,
   seedTeacherId,
   disabled = false,
+  hideHints = false,
 }: {
   rows: PatternRow[];
   onChange: (rows: PatternRow[]) => void;
@@ -27,6 +28,8 @@ export default function WeeklyPatternEditor({
   /** A new row opens on this coach (the course's main one) — a convenience; every field can still be changed. */
   seedTeacherId?: string | null;
   disabled?: boolean;
+  /** TASK-980 F4: true = do not show the two help lines (`weeklyPattern.hint`, `weeklyPattern.oneRow`). The change-pattern dialog passes it; the sale form does not. */
+  hideHints?: boolean;
 }) {
   const t = useT();
   const { options: dayOptions } = useWorkDays();
@@ -35,9 +38,11 @@ export default function WeeklyPatternEditor({
 
   return (
     <Stack gap="xs" data-pattern-editor={rows.length}>
-      <Text size="xs" c="dimmed">
-        {t("weeklyPattern.hint")}
-      </Text>
+      {!hideHints && (
+        <Text size="xs" c="dimmed">
+          {t("weeklyPattern.hint")}
+        </Text>
+      )}
       {rows.map((r, i) => (
         <Group key={i} gap="xs" wrap="nowrap" align="flex-end" data-pattern-row={i}>
           <Select
@@ -98,7 +103,7 @@ export default function WeeklyPatternEditor({
           <Text size="xs" c="red" data-pattern-issue={issue}>
             {t(`weeklyPattern.${issue}`)}
           </Text>
-        ) : rows.length === 1 ? (
+        ) : rows.length === 1 && !hideHints ? (
           <Text size="xs" c="dimmed" data-pattern-one-row>
             {t("weeklyPattern.oneRow")}
           </Text>

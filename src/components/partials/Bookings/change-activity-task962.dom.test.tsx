@@ -162,7 +162,7 @@ describe("🔴 the preview", () => {
     expect(previews()[0].body).toEqual({ subjectId: "s-skate" }); // the coach is unchanged ⇒ the key is NOT sent
     expect(q("[data-change-line]")!.textContent).toBe("Change 4 classes from 17/Nov/26");
     expect(q("[data-change-price]")!.textContent).toBe("100 ฿ → 120 ฿");
-    expect(q("[data-change-difference]")!.textContent).toBe("Difference 8 ฿");
+    expect(q("[data-change-difference]")!.textContent).toBe("Add 8 ฿");
     expect(document.body.textContent).toContain("Classes already taught don't change");
     expect(acts().length).toBe(0); // the preview wrote nothing
   });
@@ -180,7 +180,7 @@ describe("🔴 the preview", () => {
     await pick("Skate");
     await waitFor(() => expect(q("[data-change-line]")).toBeTruthy());
     expect(q("[data-change-line]")!.textContent).toBe("เปลี่ยน 4 คาบ ตั้งแต่ 17/Nov/26");
-    expect(q("[data-change-difference]")!.textContent).toBe("ส่วนต่าง 8 ฿");
+    expect(q("[data-change-difference]")!.textContent).toBe("จ่ายเพิ่ม 8 ฿");
     expect(document.body.textContent).toContain("คาบที่เรียนไปแล้วไม่เปลี่ยน");
     expect(dictionaries.th.changeActivity.noRefund).toBe("0 ฿ · ไม่มีการคืนเงิน");
     expect(dictionaries.th.changeActivity.typedTag).toBe("ราคาพิมพ์เอง");
@@ -218,7 +218,7 @@ describe("🔴 the typed price", () => {
     await waitFor(() => expect(q("[data-change-difference]")).toBeTruthy());
     expect(q("[data-change-price]")!.textContent).toContain("100 ฿ → 4,500 ฿");
     expect(q("[data-change-price]")!.textContent).toContain("typed price");
-    expect(q("[data-change-difference]")!.textContent).toBe("Difference 15 ฿");
+    expect(q("[data-change-difference]")!.textContent).toBe("Add 15 ฿");
     await waitFor(() => expect(btn("Confirm")!.disabled).toBe(false));
 
     await user.click(btn("Confirm") as HTMLElement);
@@ -245,7 +245,7 @@ describe("🔴 the typed price", () => {
     expect(previews()[1].body).toEqual({ subjectId: "s-skate", manualPriceBaht: 5500 });
     expect(q("[data-manual-price]")).toBeTruthy(); // the field stays
     expect(q("[data-change-price]")!.textContent).toBe("4,790 ฿ → 5,500 ฿ · typed price");
-    expect(q("[data-change-difference]")!.textContent).toBe("Difference 533 ฿");
+    expect(q("[data-change-difference]")!.textContent).toBe("Add 533 ฿");
     expect(btn("Confirm")!.disabled).toBe(false);
   });
 

@@ -18,7 +18,7 @@ import {
   Text,
 } from "@mantine/core";
 import { Checkbox, Textarea, Tooltip } from "@mantine/core";
-import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Repeat, Replace, Ticket, UserMinus, X } from "lucide-react";
+import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Repeat, Replace, UserMinus, X } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
 import { formatDateDisplay, formatDateWithDay, formatTimeDisplay } from "@/lib/ui/format";
@@ -511,32 +511,19 @@ export default function PlanModal({
                     {t("endCourse.drop")}
                   </Button>
                 )}
-                {/* 🔴 TASK-838 (REQ-127) — the rest of the course moves to a new teacher, day and time, in ONE act. Only on a writable course (this block), by `bookings.course-plan` (the plan editor's key — the back's routes require it). */}
-                {can("action:bookings.course-plan") && (
+                {/* 🔻 TASK-981 (F3, ขวัญ 13/11): ONE button for both acts; a group-seat course opens TASK-838's dialog, every other course the pattern dialog (a one-row pattern = TASK-838's act). Only on a writable course (this block), by `bookings.course-plan` (`canPlan`). */}
+                {canPlan && (
                   <Button
                     variant="light"
                     color="blue"
                     size="xs"
                     leftSection={<Repeat size={14} />}
-                    onClick={() => {
-                      setError(null);
-                      setChangeRestOpen(true);
-                    }}
-                  >
-                    {t("plan.changeRest")}
-                  </Button>
-                )}
-                {/* 🔴 TASK-972 (REQ-5016, SPEC-109 § 3.4) — «เปลี่ยนตารางเรียนรายสัปดาห์», beside the change of teacher / time; the same key, the same writable-only block; a group-seat course has no pattern. */}
-                {canPlan && !sessions.some((s) => s.bookingType === "GROUP") && (
-                  <Button
-                    variant="light"
-                    color="blue"
-                    size="xs"
-                    leftSection={<CalendarPlus size={14} />}
+                    data-change-schedule-open
                     data-change-pattern-open
                     onClick={() => {
                       setError(null);
-                      setChangePatternOpen(true);
+                      if (sessions.some((s) => s.bookingType === "GROUP")) setChangeRestOpen(true);
+                      else setChangePatternOpen(true);
                     }}
                   >
                     {t("changePattern.title")}
@@ -575,23 +562,7 @@ export default function PlanModal({
                     {t("endCourse.action")}
                   </Button>
                 )}
-                {/* SPEC-033 — visibly separate from Insert: a charged single-session, not a quota reschedule. */}
-                {can("action:bookings.course-extra-session") && (
-                <Tooltip label={t("plan.extraHint")} withArrow multiline w={220}>
-                  <Button
-                    variant="light"
-                    color="grape"
-                    size="xs"
-                    leftSection={<Ticket size={14} />}
-                    onClick={() => {
-                      setError(null);
-                      setEdit({ kind: "extra" });
-                    }}
-                  >
-                    {t("plan.extra")}
-                  </Button>
-                </Tooltip>
-                )}
+                {/* TASK-980 F1 (2026-11-13, ขวัญ: "Add extra (charged) เอาออกได้ไหมคะ ตอนนี้ไม่ได้ใช้"): the «Add extra (charged)» button (SPEC-033) is hidden. The extra-session edit code + the dictionary keys stay, unreachable; the button can come back as one block. */}
                 {canPlan && (
                 <Tooltip label={insertable ? t("plan.insertHint") : t("plan.insertDisabled")} withArrow multiline w={220}>
                   <Button

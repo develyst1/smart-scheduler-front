@@ -67,8 +67,6 @@ const SITE_INVENTORY = [
   "src/components/partials/Bookings/PlanModal.tsx → action:bookings.course-cancel",
   "src/components/partials/Bookings/PlanModal.tsx → action:bookings.course-confirm",
   "src/components/partials/Bookings/PlanModal.tsx → action:bookings.course-drop",
-  "src/components/partials/Bookings/PlanModal.tsx → action:bookings.course-extra-session",
-  "src/components/partials/Bookings/PlanModal.tsx → action:bookings.course-plan",
   "src/components/partials/Bookings/PlanModal.tsx → action:bookings.course-plan",
   "src/components/partials/Bookings/PlanModal.tsx → action:calendar.booking-edit",
   "src/components/partials/Bookings/PlanModal.tsx → action:calendar.note",
@@ -323,7 +321,7 @@ describe("§1 — ONE gate, everywhere", () => {
     expect(codeOf("src/auth.ts")).toContain("actions: Array.isArray(data.user.actions) ? data.user.actions : [],");
   });
 
-  it("the snapshot: the registry equals its named list, in 9 areas; every key a site uses exists; exactly two keys have no FE site", () => {
+  it("the snapshot: the registry equals its named list, in 9 areas; every key a site uses exists; exactly three keys have no FE site", () => {
     expect(KEYS).toEqual(KEY_INVENTORY);
     const areas = [...new Set(KEYS.map((k) => k.slice("action:".length, k.indexOf("."))))];
     expect(areas).toEqual(["calendar", "bookings", "people", "teachers", "link-requests", "badges", "camp", "settings", "sales"]); // camp after badges, as the BE
@@ -332,10 +330,10 @@ describe("§1 — ONE gate, everywhere", () => {
     const unknown = sites.filter((s) => !KEYS.includes(s.key));
     expect(unknown).toEqual([]);
     // the two acts the FE never calls today: `POST /students` (the booking form creates through the parent) and
-    // `POST /teachers/:id/calendar-link` (no FE caller, placed by area on the BE side too)
+    // `POST /teachers/:id/calendar-link` (no FE caller, placed by area on the BE side too), and the charged extra session, its button hidden on ขวัญ's ask 2026-11-13 (TASK-980 F1)
     const used = new Set(sites.map((s) => s.key));
     // judged against the NAMED registry, not the live one: a new key then breaks the registry list above and ONLY that assertion
-    expect(KEY_INVENTORY.filter((k) => !used.has(k))).toEqual(["action:people.student-create", "action:teachers.calendar-link"]);
+    expect(KEY_INVENTORY.filter((k) => !used.has(k))).toEqual(["action:bookings.course-extra-session", "action:people.student-create", "action:teachers.calendar-link"]);
   });
 
   it("the sweep: every `action:…` literal at a site — file and key — equals the named site list (the gate asked at its own site)", () => {

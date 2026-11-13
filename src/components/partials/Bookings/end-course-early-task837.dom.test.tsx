@@ -66,19 +66,19 @@ beforeEach(() => {
 describe("🔑 the approved words, pinned exactly (owner 2026-10-25)", () => {
   it("EN: button · title · sentence · confirm · done · the new reason", () => {
     const en = dictionaries.en.endCourse;
-    expect(en.action).toBe("End course early");
-    expect(en.title).toBe("End this course early?");
+    expect(en.action).toBe("Cancel course"); // TASK-980 F2 (2026-11-13)
+    expect(en.title).toBe("Cancel this course?");
     expect(en.confirmLine).toBe("End the {program} course for {student} early — the {n} remaining sessions are removed. It cannot be undone.");
-    expect(en.confirm).toBe("End course early");
+    expect(en.confirm).toBe("Cancel course");
     expect(en.done).toBe("Course ended early");
     expect(en.ENDED_EARLY).toBe("Course ended early");
   });
   it("TH: the same six, in her words", () => {
     const th = dictionaries.th.endCourse;
-    expect(th.action).toBe("ตัดจบคอร์ส");
-    expect(th.title).toBe("ตัดจบคอร์สนี้?");
+    expect(th.action).toBe("ยกเลิกคอร์ส"); // TASK-980 F2 (2026-11-13)
+    expect(th.title).toBe("ยกเลิกคอร์สนี้?");
     expect(th.confirmLine).toBe("ตัดจบคอร์ส {program} ของ {student} — คาบที่เหลือ {n} คาบจะถูกนำออกจากตาราง ทำแล้วย้อนกลับไม่ได้");
-    expect(th.confirm).toBe("ตัดจบคอร์ส");
+    expect(th.confirm).toBe("ยกเลิกคอร์ส");
     expect(th.done).toBe("ตัดจบคอร์สแล้ว");
     expect(th.ENDED_EARLY).toBe("ตัดจบคอร์ส");
   });
@@ -94,19 +94,19 @@ describe("🔴 the COURSE end dialog", () => {
   it("🔑 EN: title, the server's sentence, FOUR reasons (the three + Course ended early), and the confirm button — all the approved words", async () => {
     mount("course");
     await ready();
-    expect(document.body.textContent).toContain("End this course early?");
+    expect(document.body.textContent).toContain("Cancel this course?");
     expect(document.body.textContent).toContain("End the Surfskate course for Beam early — the 5 remaining sessions are removed. It cannot be undone.");
     expect(radios()).toEqual(["Customer changed activity", "Customer no longer wants it", "Admin entered it by mistake", "Course ended early"]);
-    expect(submitBtn("End course early")).toBeTruthy();
+    expect(submitBtn("Cancel course")).toBeTruthy();
   });
 
   it("TH: the same dialog in her words", async () => {
     mount("course", "th");
     await ready();
-    expect(document.body.textContent).toContain("ตัดจบคอร์สนี้?");
+    expect(document.body.textContent).toContain("ยกเลิกคอร์สนี้?");
     expect(document.body.textContent).toContain("ตัดจบคอร์ส Surfskate ของ Beam — คาบที่เหลือ 5 คาบจะถูกนำออกจากตาราง ทำแล้วย้อนกลับไม่ได้");
     expect(radios()).toEqual(["ลูกค้าเปลี่ยนกิจกรรม", "ลูกค้าไม่เอาแล้ว", "แอดมินคีย์ผิด", "ตัดจบคอร์ส"]);
-    expect(submitBtn("ตัดจบคอร์ส")).toBeTruthy();
+    expect(submitBtn("ยกเลิกคอร์ส")).toBeTruthy();
   });
 
   it("🔑 choosing 'Course ended early' sends reason ENDED_EARLY on the course cancel (and nothing before that)", async () => {
@@ -115,7 +115,7 @@ describe("🔴 the COURSE end dialog", () => {
     await ready();
     expect(posts.length).toBe(0);
     await user.click(document.querySelectorAll("input[type='radio']")[3] as HTMLElement);
-    await user.click(submitBtn("End course early") as HTMLElement);
+    await user.click(submitBtn("Cancel course") as HTMLElement);
     await waitFor(() => expect(posts.length).toBe(1));
     expect(posts[0].url).toBe("/courses/c1/cancel");
     expect(posts[0].body.reason).toBe("ENDED_EARLY");
@@ -126,7 +126,7 @@ describe("🔴 the COURSE end dialog", () => {
     mount("course");
     await ready();
     await user.click(document.querySelectorAll("input[type='radio']")[1] as HTMLElement);
-    await user.click(submitBtn("End course early") as HTMLElement);
+    await user.click(submitBtn("Cancel course") as HTMLElement);
     await waitFor(() => expect(posts.length).toBe(1));
     expect(posts[0].body.reason).toBe("CUSTOMER_CANCELLED");
   });
@@ -151,5 +151,15 @@ describe("🚫 the VOUCHER end dialog never offers it", () => {
     await waitFor(() => expect(posts.length).toBe(1));
     expect(posts[0].url).toBe("/vouchers/v1/cancel");
     expect(posts[0].body.reason).toBe("PROGRAM_CHANGED");
+  });
+});
+
+// TASK-980 F1: the plan modal has no «Add extra (charged)» button. A source-text pin (the repo mounts PlanModal only in other desks' suites): nothing in PlanModal opens the extra edit, or reads its permission.
+describe("🚫 TASK-980 F1: no «Add extra (charged)» button in the plan modal", () => {
+  it("PlanModal.tsx neither opens { kind: \"extra\" } nor checks action:bookings.course-extra-session, and imports no Ticket icon", async () => {
+    const src = await Bun.file(new URL("./PlanModal.tsx", import.meta.url)).text();
+    expect(src).not.toContain("setEdit({ kind: \"extra\" })");
+    expect(src).not.toContain("action:bookings.course-extra-session");
+    expect(src).not.toMatch(/\bTicket\b/);
   });
 });

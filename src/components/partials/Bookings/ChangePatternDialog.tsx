@@ -172,12 +172,7 @@ export default function ChangePatternDialog({ opened, courseId, slots, oneSlot, 
           <Text fz="sm" fw={500}>
             {t("changePattern.pattern")}
           </Text>
-          <WeeklyPatternEditor rows={rows} onChange={setRows} teachers={teachers} seedTeacherId={oneSlot?.teacherId ?? null} />
-          {unchanged && (
-            <Text fz="xs" c="dimmed" data-change-pattern-unchanged>
-              {t("changePattern.unchanged")}
-            </Text>
-          )}
+          <WeeklyPatternEditor rows={rows} onChange={setRows} teachers={teachers} seedTeacherId={oneSlot?.teacherId ?? null} hideHints />
         </Stack>
 
         {pattern && !error ? (

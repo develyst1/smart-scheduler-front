@@ -1,4 +1,5 @@
 import { describe, expect, it, mock, beforeEach, afterEach } from "bun:test";
+import { readFileSync } from "node:fs";
 import { createElement as h } from "react";
 import { MantineProvider } from "@mantine/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -200,19 +201,45 @@ describe("🔴 the preview: ONE request per edit (D-157-1's lesson)", () => {
     await waitFor(() => expect(btn("Confirm")!.disabled).toBe(false), { timeout: 3000 });
   });
 
-  it("🔑 Amendment 1b: an UNTOUCHED pattern ⇒ Confirm stays off even with the server's answer, and the hint is shown; an edit lifts both", async () => {
+  it("🔑 Amendment 1b: an UNTOUCHED pattern ⇒ Confirm stays off even with the server's answer; an edit lifts it (TASK-980 F4: no hint text either way)", async () => {
     mount();
     await waitFor(() => expect(q("[data-change-line]")).toBeTruthy(), { timeout: 3000 }); // the preview answered «Move 2 classes»…
     expect(btn("Confirm")!.disabled).toBe(true); // …and still no confirm
-    expect(q("[data-change-pattern-unchanged]")!.textContent).toBe("This is the current pattern. Change a slot to move classes.");
     await pickTime(0, "11:00");
     await waitFor(() => expect(btn("Confirm")!.disabled).toBe(false), { timeout: 3000 });
-    expect(count("[data-change-pattern-unchanged]")).toBe(0);
   });
 
-  it("Amendment 1b: TH hint", async () => {
-    mount({}, "th");
-    expect(q("[data-change-pattern-unchanged]")!.textContent).toBe("ตารางนี้เหมือนตารางปัจจุบัน แก้คาบก่อนจึงจะย้ายได้");
+  it("🔑 TASK-980 F4: the dialog shows none of the three texts (unchanged · weeklyPattern.hint · weeklyPattern.oneRow), in EN and TH", async () => {
+    for (const lang of ["en", "th"] as const) {
+      mount({ slots: [SLOTS[0]] }, lang); // ONE row — the case that used to show «oneRow» too
+      await waitFor(() => expect(q("[data-change-line]")).toBeTruthy(), { timeout: 3000 });
+      expect(count("[data-change-pattern-unchanged]")).toBe(0);
+      expect(count("[data-pattern-one-row]")).toBe(0);
+      const body = document.body.textContent ?? "";
+      for (const l of ["en", "th"] as const) {
+        expect(body).not.toContain(dictionaries[l].changePattern.unchanged);
+        expect(body).not.toContain(dictionaries[l].weeklyPattern.hint);
+        expect(body).not.toContain(dictionaries[l].weeklyPattern.oneRow);
+      }
+      expect(btn(dictionaries[lang].common.confirm)!.disabled).toBe(true); // an unchanged pattern still cannot be confirmed
+      cleanup();
+    }
+  });
+
+  it("🔑 TASK-980 F4: WeeklyPatternEditor WITHOUT hideHints still shows the hint and the one-row line (the sale form is unchanged); WITH it, neither", async () => {
+    const Editor = (await import("./WeeklyPatternEditor")).default;
+    const one = [{ weekday: 1, startTime: "10:00", teacherId: "t-a" }];
+    const view = (hide: boolean) =>
+      render(
+        h(MantineProvider, null, h(I18nProvider, { storageKey: "t972-lang" }, h(Editor, { rows: one, onChange: () => {}, teachers: [{ id: "t-a", name: "A" }], hideHints: hide } as never))) as never,
+      );
+    view(false);
+    expect(document.body.textContent).toContain(dictionaries.en.weeklyPattern.hint);
+    expect(count("[data-pattern-one-row]")).toBe(1);
+    cleanup();
+    view(true);
+    expect(document.body.textContent).not.toContain(dictionaries.en.weeklyPattern.hint);
+    expect(count("[data-pattern-one-row]")).toBe(0);
   });
 
   it("🔑 Amendment 1b: the SAME rows in another order are still unchanged; a changed from-date alone is not a change", async () => {
@@ -297,5 +324,21 @@ describe("🔴 every refusal has its sentence; an unknown code shows the server'
   it("EN and TH carry the same codes", () => {
     expect(Object.keys(dictionaries.en.changePattern.err).sort()).toEqual([...CODES].sort());
     expect(Object.keys(dictionaries.th.changePattern.err).sort()).toEqual([...CODES].sort());
+  });
+});
+
+describe("🔴 TASK-981 (F3, ขวัญ 13/11): ONE «Change Schedule / Coach» button in the plan modal", () => {
+  // No plan-modal render harness exists in the repo (PlanModal needs the whole booking context), so the branch is asserted by source.
+  const plan = readFileSync("src/components/partials/Bookings/PlanModal.tsx", "utf8");
+  it("🔑 exactly one `data-change-schedule-open` button, and no button renders «plan.changeRest» any more", () => {
+    expect(plan.match(/data-change-schedule-open/g)?.length).toBe(1);
+    expect(plan).not.toContain('t("plan.changeRest")');
+  });
+  it("🔑 a GROUP course opens TASK-838's dialog; every other course opens the pattern dialog", () => {
+    expect(plan).toMatch(/if \(sessions\.some\(\(s\) => s\.bookingType === "GROUP"\)\) setChangeRestOpen\(true\);\s*else setChangePatternOpen\(true\);/);
+  });
+  it("her words: the button and the dialog title (EN «Change Schedule / Coach», TH «เปลี่ยนตาราง / ครู»)", () => {
+    expect(dictionaries.en.changePattern.title).toBe("Change Schedule / Coach");
+    expect(dictionaries.th.changePattern.title).toBe("เปลี่ยนตาราง / ครู");
   });
 });
