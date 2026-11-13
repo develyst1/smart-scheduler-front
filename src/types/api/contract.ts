@@ -450,6 +450,18 @@ export interface ChangeTeacherTimePreview {
 }
 
 /**
+ * 🔴 **TASK-970 (REQ-5016 F1, SPEC-109 §2 / §4) — a course's WEEKLY PATTERN: an ordered list of hour-slots, each with its own coach.** `weekday` 0 = Sunday … 6 = Saturday (as `dayjs().day()`),
+ * `startTime` `HH:MM` on the hour or the half hour. 1…21 slots, no two with the same `(weekday, startTime)`; a course with 2+ slots sends `pattern` (with ONE slot it sends today's fields).
+ * `POST /courses` and `/courses/preview` take `pattern` (exclusive with `sessions[]` and with `groupKey`); the course DTO answers `slots` (`null` = a one-slot course). Order = weekday from the
+ * course's start weekday, then time — the server's, never re-derived here.
+ */
+export interface CoursePatternSlot {
+  weekday: number;
+  startTime: string;
+  teacherId: string;
+}
+
+/**
  * 🔴 **TASK-962 (REQ-5014, SPEC-106 § 2) — "change activity": the rest of a course (or ONE 1 HR / Trial) moves to another activity, from the next class.**
  * `teacherId` is sent only when the coach changes; `manualPriceBaht` only when the preview said `newPriceMinor: null` (never for a 1 HR / Trial).
  * 🔑 **Every number on the screen is the server's** (the preview is the act in a rolled-back transaction): the SF counts nothing and subtracts nothing.
@@ -476,6 +488,21 @@ export interface ChangeActivityAnswer {
   /** `max(0, …)`; `null` while the price is missing. The admin records it by hand at Add Manually. */
   differenceMinor: number | null;
   changeId?: string;
+}
+
+/**
+ * 🔴 **TASK-972 (REQ-5016, SPEC-109 § 3.4 / § 4) — "change the weekly pattern mid-course": every untaught row from `fromDate` is re-placed onto the new pattern, in order, keeping the count.**
+ * `pattern` is 1…21 slots (a 1-slot result is a normal weekly class). The preview is the act in a rolled-back transaction: **the rows listed on screen are the SERVER's** — nothing is expanded here.
+ */
+export interface ChangePatternInput {
+  fromDate: IsoDate;
+  pattern: CoursePatternSlot[];
+}
+/** The answer of the preview AND of the act (`rows` = the moved rows; `notices` is the server's own summary, not read by the screen). */
+export interface ChangePatternAnswer {
+  moved: number;
+  rows: BookingDTO[];
+  notices?: unknown;
 }
 
 /**

@@ -22,7 +22,8 @@ import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, P
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
 import { formatDateDisplay, formatDateWithDay, formatTimeDisplay } from "@/lib/ui/format";
-import { useT } from "@/lib/i18n";
+import { useI18n, useT } from "@/lib/i18n";
+import { patternLabel } from "@/lib/scheduler/weekly-pattern";
 import { studentLabel } from "@/lib/scheduler/duo";
 import { ApiClientError } from "@/lib/api/client";
 import { StatusChip } from "@/components/common/BookingBadges";
@@ -60,6 +61,7 @@ import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
 import ChangeTeacherTimeDialog from "./ChangeTeacherTimeDialog";
 import ChangeActivityDialog, { currentActivityOf } from "./ChangeActivityDialog";
+import ChangePatternDialog, { nextUntaughtRow } from "./ChangePatternDialog"; // 🔴 TASK-972 (REQ-5016)
 import { canResumeCourse, isCourseWritable } from "@/lib/scheduler/course-lifecycle";
 import { visiblePlanRows } from "@/lib/scheduler/plan-rows";
 import { toTimeSlot } from "@/lib/scheduler/time-slot";
@@ -142,6 +144,7 @@ export default function PlanModal({
   createSummaryLine = null,
 }: Props) {
   const t = useT();
+  const { lang } = useI18n(); // 🔴 TASK-970 — the pattern line names its weekdays in the viewer's language
   const isCreate = mode === "create";
   const query = useEntitlementPlan(entitlementId, opened && !isCreate);
   const plan: EntitlementPlan | undefined = isCreate ? initialPlan : query.data;
@@ -161,6 +164,8 @@ export default function PlanModal({
   const [changeRestOpen, setChangeRestOpen] = useState(false);
   // TASK-962 (REQ-5014) — "change activity" from the next class: the same door, the same key.
   const [changeActivityOpen, setChangeActivityOpen] = useState(false);
+  // TASK-972 (REQ-5016) — «เปลี่ยนตารางเรียนรายสัปดาห์»: the untaught rest re-placed onto a new weekly pattern.
+  const [changePatternOpen, setChangePatternOpen] = useState(false);
   // TASK-202 — confirm every PENDING session at once. `skips` is kept in state because a skip is a fact the
   // admin must see: "10 confirmed" when 9 were is worse than 9 and the reason.
   const confirmCourseMut = useConfirmCourse();
@@ -241,6 +246,8 @@ export default function PlanModal({
     [...sessions].reverse().find((s) => s.bookingType !== "SINGLE_SESSION") ?? sessions.at(-1) ?? null;
   /** 🔴 D-157-2 — the activity of the REMAINING rows (what «เปลี่ยนกิจกรรม» changes); `courseSlot` above stays the TASK-288 slot rule for everything else. */
   const currentActivity = currentActivityOf(sessions, dayjs().format("YYYY-MM-DD"));
+  /** 🔴 TASK-972 — where the course is NOW (D-157-2's lesson): the next untaught row, never the plan's first row. The pattern itself is the course DTO's `slots`. */
+  const nextRow = nextUntaughtRow(sessions, dayjs().format("YYYY-MM-DD"));
   const createPreviewLine = t("plan.createPreview", {
     n: liveSessions.length,
     d: absentWeeks.length,
@@ -317,6 +324,12 @@ export default function PlanModal({
           <SummaryBar plan={plan} />
           {/* TASK-898 (F1) — the branch the plan reader returned, read-only, only when it is not BRAVO (nothing until SB sends it). */}
           <BranchLine branch={plan.summary.branch} />
+          {/* 🔴 TASK-970 (REQ-5016 F1, SPEC-109 §3.5) — a pattern course reads «จ 10:00, 11:00 · พฤ 12:00»; a one-slot course shows nothing here (its slot is its first session's date and time, as before). */}
+          {plan.summary.kind === "course" && patternLabel(plan.summary.slots, lang) && (
+            <Text fz="sm" fw={500} data-pattern-label>
+              {t("weeklyPattern.label", { pattern: patternLabel(plan.summary.slots, lang) })}
+            </Text>
+          )}
 
           {/* Every skip, with the SERVER's reason — the point of the endpoint returning per-session results. */}
           {skips.length > 0 && (
@@ -513,6 +526,22 @@ export default function PlanModal({
                     {t("plan.changeRest")}
                   </Button>
                 )}
+                {/* 🔴 TASK-972 (REQ-5016, SPEC-109 § 3.4) — «เปลี่ยนตารางเรียนรายสัปดาห์», beside the change of teacher / time; the same key, the same writable-only block; a group-seat course has no pattern. */}
+                {canPlan && !sessions.some((s) => s.bookingType === "GROUP") && (
+                  <Button
+                    variant="light"
+                    color="blue"
+                    size="xs"
+                    leftSection={<CalendarPlus size={14} />}
+                    data-change-pattern-open
+                    onClick={() => {
+                      setError(null);
+                      setChangePatternOpen(true);
+                    }}
+                  >
+                    {t("changePattern.title")}
+                  </Button>
+                )}
                 {/* 🔴 TASK-962 (REQ-5014, SPEC-106 § 7) — «เปลี่ยนกิจกรรม», beside the change of teacher / time. This block is already writable-only (not ended, not paused: the server refuses both as
                     COURSE_ENDED / COURSE_PAUSED); a course with a GROUP class never offers it (GROUP_COURSE). Same key as the change of teacher / time (`canPlan`). */}
                 {canPlan && !sessions.some((s) => s.bookingType === "GROUP") && (
@@ -657,6 +686,8 @@ export default function PlanModal({
         <DropResumeDialog
           opened
           mode={dropMode}
+          // 🔴 TASK-970 A1 — a pattern course resumes on its pattern (the dialog hides the time / coach pickers).
+          slots={plan?.summary.kind === "course" ? plan.summary.slots : null}
           courseId={isCourse && !isCreate ? (plan?.id ?? null) : null}
           /**
            * 🔴 TASK-292 §2 — **was `plan.sessions[0]?.subject?.name`, an ARBITRARY row.** A soft-linked
@@ -707,6 +738,19 @@ export default function PlanModal({
           courseSubject={courseSlot?.subject ?? null}
           courseTeacherId={courseLastRow?.teacher?.id ?? null}
           onClose={() => setChangeRestOpen(false)}
+        />
+      )}
+      {/* TASK-972 — mounted only while open; the course and the calendar are re-read by the act itself. */}
+      {changePatternOpen && (
+        <ChangePatternDialog
+          opened
+          courseId={isCourse && !isCreate ? (plan?.id ?? null) : null}
+          slots={plan?.summary.kind === "course" ? plan.summary.slots : null}
+          oneSlot={nextRow ? { weekday: dayjs(nextRow.date).day(), startTime: nextRow.startTime, teacherId: nextRow.teacher?.id ?? null } : null}
+          defaultFromDate={nextRow && nextRow.date >= dayjs().format("YYYY-MM-DD") ? nextRow.date : dayjs().format("YYYY-MM-DD")}
+          program={currentActivity?.name ?? null}
+          student={plan?.student?.nickname || plan?.student?.name || null}
+          onClose={() => setChangePatternOpen(false)}
         />
       )}
       {/* TASK-962 — mounted only while open; the course and the calendar are re-read by the act itself. */}

@@ -563,6 +563,8 @@ export interface CoursePlanSummary {
   /** TASK-188/199 — the SAME server lifecycle the card badge renders. The plan reads it rather than deriving
    *  "is this course writable?" a second way, which is the duplication TASK-189 removed. */
   status?: CourseStatus;
+  /** 🔴 TASK-970 (REQ-5016 F1, SPEC-109 §4) — the course's weekly pattern when it has 2+ slots (`null` / absent = one weekly slot, as before). The course DTO's `slots`; read, never derived. */
+  slots?: Array<{ weekday: number; startTime: string; teacherId: string }> | null;
 }
 
 export interface VoucherPlanSummary {

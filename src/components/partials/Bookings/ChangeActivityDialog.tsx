@@ -144,7 +144,7 @@ export default function ChangeActivityDialog({ opened, target, id, current, curr
           // activity (the Select) clears it.
           if (target === "course" && a.newPriceMinor === null && sendBaht === undefined) setNeedsPriceFor(subjectId);
         })
-        .catch((e) => mine === seq.current && setError(errorText(e)));
+        .catch((e) => mine === seq.current && setError(errorTextRef.current(e)));
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,6 +156,9 @@ export default function ChangeActivityDialog({ opened, target, id, current, curr
     if (typeof code === "string" && (KNOWN_CODES as readonly string[]).includes(code)) return t(`changeActivity.err.${code}`, { detail: message });
     return message || t("plan.genericError");
   };
+  // the debounced request outlives the render that scheduled it: it must speak in the CURRENT language, not the one of that render
+  const errorTextRef = useRef(errorText);
+  errorTextRef.current = errorText;
 
   const fresh = answer && answer.key === key ? answer.a : null;
   const priceOk = !showPrice || typedBaht !== null;

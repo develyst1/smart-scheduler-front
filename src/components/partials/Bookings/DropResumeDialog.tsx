@@ -7,7 +7,8 @@ import { AlertTriangle } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
 import { ApiClientError } from "@/lib/api/client";
-import { useT } from "@/lib/i18n";
+import { useI18n, useT } from "@/lib/i18n";
+import { patternLabel } from "@/lib/scheduler/weekly-pattern";
 import { useDropCourse, usePreviewEndCourse, useResumeCourse, useTeachers } from "@/hooks/scheduler";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
 import { resumeTeacherIdToSend, resumeTeacherOptions } from "@/lib/scheduler/resume-teacher";
@@ -40,6 +41,11 @@ interface Props {
    */
   courseTeacherId?: string | null;
   courseSubject?: { id: string; name: string } | null;
+  /**
+   * 🔴 TASK-970 addendum A1 (SPEC-109 §3.4) — the course's weekly pattern when it has 2+ slots (the plan summary's `slots`). A pattern course resumes ON ITS PATTERN: the server re-plans onto the slots from the
+   * resume date and IGNORES `startTime` / `teacherId`, so the resume face shows no time or coach picker, says so in one line, and sends no coach. Absent / one slot ⇒ the dialog is exactly what it was.
+   */
+  slots?: Array<{ weekday: number; startTime: string; teacherId: string }> | null;
   onClose: () => void;
   /** Called once the act has happened AND the admin has read the outcome — never before (TASK-288 §2). */
   onDone?: () => void;
@@ -73,10 +79,15 @@ export default function DropResumeDialog({
   courseWeekday,
   courseTeacherId = null,
   courseSubject = null,
+  slots = null,
   onClose,
   onDone,
 }: Props) {
   const t = useT();
+  const { lang } = useI18n();
+  // 🔴 TASK-970 A1 — a pattern course (2+ slots) resumes on its pattern; the line reads it aloud (`patternLabel`, the plan header's own words).
+  const patternCourse = !!slots && slots.length >= 2;
+  const patternText = patternCourse ? patternLabel(slots, lang) : "";
   const can = useCan(); // REQ-092 Stage 3 — the submit is the act; hidden without its key
   const drop = useDropCourse();
   const resume = useResumeCourse();
@@ -172,12 +183,17 @@ export default function DropResumeDialog({
         // 🔴 TASK-287 — the schedule is ALWAYS sent. `{}` is refused server-side now, deliberately: that empty
         // path is what produced DEF-2's non-determinism.
         // TASK-360 — `teacherId` only when it differs from the course's own; unchanged ⇒ the key is absent.
-        const res = await resume.mutateAsync({
-          courseId,
-          startDate,
-          startTime,
-          teacherId: resumeTeacherIdToSend(teacherId, courseTeacherId),
-        });
+        // 🔴 TASK-970 A1 — a PATTERN course: the body still needs a time, so the FIRST slot's time rides (the server ignores it for a pattern course) and NO `teacherId` key is sent.
+        const res = await resume.mutateAsync(
+          patternCourse && slots
+            ? { courseId, startDate, startTime: slots[0].startTime.slice(0, 5) }
+            : {
+                courseId,
+                startDate,
+                startTime,
+                teacherId: resumeTeacherIdToSend(teacherId, courseTeacherId),
+              },
+        );
         notify({ title: t("endCourse.resumeDone"), color: "success" });
         // 🔑 The re-plan MOVED things — where the course now ends, and possibly its expiry. The dialog holds
         // open to state both, because an expiry that shifts silently is exactly what REQ-082's audit trail
@@ -338,17 +354,25 @@ export default function DropResumeDialog({
                 submit the wrong time silently**, which is worse.
                 📌 `CreateCourseModal`'s copy keeps it, ruled by @Sober: **a new course has no server value to
                 mismatch, so the mechanism is absent there.** */}
-            <Select
-              label={t("course.time")}
-              value={startTime}
-              onChange={(v) => v && setStartTime(v)}
-              data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
-              allowDeselect={false}
-              required
-            />
+            {!patternCourse && (
+              <Select
+                label={t("course.time")}
+                value={startTime}
+                onChange={(v) => v && setStartTime(v)}
+                data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
+                allowDeselect={false}
+                required
+              />
+            )}
           </Group>
         )}
-        {!isDrop && !result && (
+        {/* 🔴 TASK-970 A1 — a pattern course has no time or coach to pick: it comes back on its weekly pattern. */}
+        {!isDrop && !result && patternCourse && patternText && (
+          <Text fz="sm" fw={500} data-resume-pattern>
+            {t("weeklyPattern.resumeLine", { pattern: patternText })}
+          </Text>
+        )}
+        {!isDrop && !result && !patternCourse && (
           /* TASK-360 (REQ-089 item 8) — WHO teaches the resumed course. Pre-selected = the current teacher; the
              options are `resumeTeacherOptions` — the create picker's own parts (bookable on the date + teaches the
              subject) — and the current teacher is always among them. 🔴 The server has no teacher↔subject rule;

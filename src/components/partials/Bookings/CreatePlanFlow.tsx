@@ -41,6 +41,8 @@ import {
   type PlanSession,
 } from "@/types/app/scheduler";
 import PlanModal from "./PlanModal";
+import WeeklyPatternEditor from "./WeeklyPatternEditor";
+import { emptyPatternRow, patternPayload, type PatternRow } from "@/lib/scheduler/weekly-pattern";
 import LeaveWeekNotice, { leaveWeeksOf, type LeaveWeek } from "./LeaveWeekNotice";
 import { useCan } from "@/hooks/scheduler/useMe";
 
@@ -77,6 +79,10 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   const [size, setSize] = useState<PackageSize>(6);
   const [startDate, setStartDate] = useState<string>(dayjs().add(7, "day").format("YYYY-MM-DD"));
   const [startTime, setStartTime] = useState("10:00");
+  // 🔴 TASK-970 (REQ-5016 F1, SPEC-109 §3.1) — «วันเรียนหลายวัน»: a WEEKLY PATTERN of hour-slots, each with its own coach. OFF by default; never inside a group (§3.6: a group has its own schedule).
+  // Two or more complete rows send `pattern`; ONE row keeps today's fields. The dates it makes are the SERVER's (`/courses/preview`), shown in the plan before Save.
+  const [patternOn, setPatternOn] = useState(false);
+  const [patternRows, setPatternRows] = useState<PatternRow[]>([emptyPatternRow()]);
   const [note, setNote] = useState("");
   const [plan, setPlan] = useState<EntitlementPlan | null>(null); // phase 2 when set
   const [error, setError] = useState<string | null>(null);
@@ -155,6 +161,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       setSize(6);
       setStartDate(dayjs().add(7, "day").format("YYYY-MM-DD"));
       setStartTime("10:00");
+      setPatternOn(false);
+      setPatternRows([emptyPatternRow()]);
       setNote("");
       setPlan(null);
       setError(null);
@@ -176,6 +184,12 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
     if (subjectId && !subjectOptions.some((s) => s.id === subjectId)) setSubjectId("");
   }, [duo.on, subjectId, subjectOptions]);
 
+  // 🔴 TASK-970 — what the pattern editor sends: `{ pattern }` for 2+ complete rows, `{}` (today's fields) for one row or with the editor off, `null` while a row is half-filled / duplicated (nothing is sent).
+  const patternOnNow = patternOn && !group;
+  const patternBody = patternPayload(patternOnNow, patternRows);
+  // ONE row is a normal weekly class: its time is the class's time (the single Time field is hidden while the editor is on).
+  const effectiveStartTime = patternOnNow && patternRows.length === 1 && patternRows[0].startTime ? patternRows[0].startTime : startTime;
+
   // REQ-063 — "refuse, never clamp": an invalid discount blocks the flow rather than being capped at the price.
   const discountEval = evaluateDiscount(discount, chosen?.priceMinor ?? 0);
   const valid =
@@ -185,7 +199,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
     subjectId &&
     !!chosen &&
     startDate &&
-    startTime &&
+    effectiveStartTime &&
+    patternBody !== null &&
     !preview.isPending &&
     discountEval.problemKeys.length === 0;
 
@@ -199,8 +214,10 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
         subjectId,
         size,
         startDate,
-        startTime,
+        startTime: effectiveStartTime,
         absentWeeks: weeks.length ? weeks : undefined,
+        // 🔴 TASK-970 — the SAME `pattern` the sale will send: the answer is the expanded dates, so what is shown is what is saved.
+        ...(patternBody ?? {}),
       });
       setAbsentWeeks(p.absentWeeks ?? weeks);
       setLeaveWeeks(leaveWeeksOf(p.sessions));
@@ -234,6 +251,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
           maxWeek: MAX_WEEK_BY_SIZE[size],
           owedCount: 0,
           expiryDate: p.expiryDate,
+          // 🔴 TASK-970 — the sale's own pattern, so the plan reads it back as «จ 10:00, 11:00 · พฤ 12:00» before Save.
+          slots: patternBody && "pattern" in patternBody ? patternBody.pattern : null,
         },
       });
     } catch (e) {
@@ -283,7 +302,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       subjectId,
       size,
       startDate,
-      startTime,
+      startTime: effectiveStartTime,
       /**
        * 🔴 TASK-320 (`TASK-284` reopened) — **this was `note:`, and one word was the whole defect.**
        *
@@ -325,11 +344,17 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       // `sessions` describes ONLY the weekly chain — the BE requires exactly `size` of them and appends the
       // make-ups itself from `absentWeeks` (sending the make-up rows too would fail its length check and would
       // also mean the FE deciding placement, which is the BE's job). The first `size` draft rows ARE that chain.
-      sessions: sessions.slice(0, size).map((s) => ({
-        date: s.date,
-        startTime: s.startTime,
-        teacherId: s.teacher?.id,
-      })),
+      // 🔴 TASK-970 (SPEC-109 §3.1) — `pattern` and `sessions` are EXCLUSIVE (the server refuses both): with a pattern the sale sends the pattern and NO per-row list — the server expands the SAME
+      // slots the preview just showed. (A per-row edit made in the plan modal is therefore not carried by a pattern sale.)
+      pattern: patternBody && "pattern" in patternBody ? patternBody.pattern : undefined,
+      sessions:
+        patternBody && "pattern" in patternBody
+          ? undefined
+          : sessions.slice(0, size).map((s) => ({
+              date: s.date,
+              startTime: s.startTime,
+              teacherId: s.teacher?.id,
+            })),
     });
     notify({
       title: t("course.successTitle"),
@@ -537,16 +562,38 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
             minDate={new Date()}
             required
           />
-          <Select
-            label={t("course.time")}
-            value={startTime}
-            onChange={(v) => v && setStartTime(v)}
-            disabled={!!group}
-            data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
-            allowDeselect={false}
-            searchable
-          />
+          {/* 🔴 TASK-970 — while the pattern editor is on, every row carries its own time: the single Time field steps aside. */}
+          {!patternOnNow && (
+            <Select
+              label={t("course.time")}
+              value={startTime}
+              onChange={(v) => v && setStartTime(v)}
+              disabled={!!group}
+              data={TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
+              allowDeselect={false}
+              searchable
+            />
+          )}
         </Group>
+
+        {/* 🔴 TASK-970 (REQ-5016 F1) — «วันเรียนหลายวัน»: not inside a group sale (a group has its own schedule, SPEC-109 §3.6). Opening it seeds row 1 with the course's day, time and coach. */}
+        {!group && (
+          <Checkbox
+            label={t("weeklyPattern.toggle")}
+            checked={patternOn}
+            onChange={(e) => {
+              const on = e.currentTarget.checked;
+              setPatternOn(on);
+              if (on)
+                setPatternRows([
+                  emptyPatternRow({ weekday: dayjs(startDate).day(), startTime, teacherId: teacherId || null }),
+                  emptyPatternRow({ teacherId: teacherId || null }),
+                ]);
+            }}
+            data-pattern-toggle
+          />
+        )}
+        {patternOnNow && <WeeklyPatternEditor rows={patternRows} onChange={setPatternRows} teachers={teachers.filter((tc) => tc.active)} seedTeacherId={teacherId || null} />}
 
         <TextInput label={t("course.noteField")} value={note} onChange={(e) => setNote(e.currentTarget.value)} />
 

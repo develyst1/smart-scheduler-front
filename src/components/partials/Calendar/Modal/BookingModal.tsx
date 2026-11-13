@@ -256,6 +256,8 @@ function ViewBooking({
   const [moving, setMoving] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false); // TASK-962 — «เปลี่ยนกิจกรรม» on a live 1 HR / Trial
   const [noticeError, setNoticeError] = useState<string | null>(null);
+  /** TASK-972 — the notice error came from «ลาทั้งวัน», so its override re-asks the WHOLE-day leave, not the per-hour one. */
+  const [noticeWholeDay, setNoticeWholeDay] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   // REQ-095 (TASK-395) — the OTHER facts editor (its own route); behind `calendar.booking-edit`.
   const [otherDetailsOpen, setOtherDetailsOpen] = useState(false);
@@ -419,7 +421,8 @@ function ViewBooking({
    * the thing we agreed to avoid. ⇒ This control is a LEAVE again, on every row, with its original words (REQ-073: it
    * spends one of the course's leaves and appends a make-up — both work to unpick, so the dialog warns).
    */
-  const handleSickLeave = async (override = false) => {
+  // 🔴 TASK-972 — an OVERRIDE re-asks whichever leave raised the notice error (`noticeWholeDay`); a plain call is the per-hour leave unless «ลาทั้งวัน» says so.
+  const handleSickLeave = async (override = false, wholeDay = override && noticeWholeDay) => {
     if (
       !(await askConfirm({
         title: t("confirmAction.leaveTitle"),
@@ -428,11 +431,15 @@ function ViewBooking({
         message: t(leaveClaimKey(booking)),
         confirmLabel: t("booking.sickLeaveBtn"),
         color: "orange",
+        // 🔴 TASK-972 — «ลาทั้งวัน» replaces the two words above: it names the DATE and EVERY time that will be marked (the per-hour leave's own lines stay exactly as they were, and pinned).
+        ...(wholeDay
+          ? { message: t("wholeDay.confirm", { date: wholeDayDate, times: wholeDayTimes }), confirmLabel: t("wholeDay.action") }
+          : {}),
       }))
     )
       return;
     try {
-      const res = await sickLeave.mutateAsync({ id: booking.id, override });
+      const res = await sickLeave.mutateAsync({ id: booking.id, override, ...(wholeDay ? { wholeDay: true } : {}) });
       // 🔴 TASK-658 (REQ-112) — the `locked` toast is GONE: nothing is ever locked, and a leave whose make-up cannot fit is
       // REFUSED by the server (it arrives as the catch below, in the server's own sentence) — not a second toast here.
       if (res.extended) {
@@ -449,6 +456,7 @@ function ViewBooking({
     } catch (err) {
       // UC-029: leave requested too late for this teacher type — offer an admin override.
       if (err instanceof ApiClientError && err.code === "LEAVE_NOTICE_TOO_LATE") {
+        setNoticeWholeDay(wholeDay);
         setNoticeError(err.message);
       } else {
         throw err;
@@ -520,6 +528,14 @@ function ViewBooking({
   // 🔴 TASK-962 (REQ-5014, SPEC-106 § 2.2/§ 7) — the activity of ONE 1 HR / Trial, while it is live: `canMove` already says "live status + may edit a booking" (an ATTENDED row has no door:
   // the server would say ALREADY_DELIVERED). Same key as the move, no new one.
   const canChangeActivity = canMove && (booking.bookingType === "SINGLE_SESSION" || booking.bookingType === "FIRST_TRIAL");
+  // 🔴 TASK-972 (REQ-5016, SPEC-109 § 3.3) — «ลาทั้งวัน», next to the per-hour leave: only on a COURSE row whose course has 2 or more live rows on this date (a one-slot course has one a day: nothing to add).
+  // The rows are the ones on screen (`bookings`), the same set the clash box reads; the server marks every live row of the course that day, whatever is drawn.
+  const wholeDayRows = booking.courseId
+    ? bookings.filter((b) => b.courseId === booking.courseId && b.date === booking.date && MOVABLE_STATUSES.includes(b.status) && !b.pendingSlot).sort((a, b) => a.startTime.localeCompare(b.startTime))
+    : [];
+  const wholeDayDate = formatDateDisplay(booking.date); // formatted BEFORE the `t()` call (the repo's t-arg sweep)
+  const wholeDayTimes = wholeDayRows.map((r) => formatTimeDisplay(r.startTime)).join(", ");
+  const canWholeDay = canStatus && booking.bookingType === "COURSE_PACKAGE" && MOVABLE_STATUSES.includes(booking.status) && wholeDayRows.length >= 2;
   // The ⋯ menu exists only when at least one of its items does.
   const menuHasItems =
     canOverbook || canMove || canStatus || (canPause && (canPauseBooking(booking) || canResumeBooking(booking))) || canCancelWithReason;
@@ -883,6 +899,11 @@ function ViewBooking({
                 data-status-action="sick-leave"
               >
                 {t("booking.sickLeaveBtn")}
+              </Menu.Item>
+            )}
+            {canWholeDay && (
+              <Menu.Item leftSection={<CalendarX2 size={16} />} onClick={() => handleSickLeave(false, true)} data-status-action="sick-leave-whole-day">
+                {t("wholeDay.action")}
               </Menu.Item>
             )}
             {/* SPEC-094 (TASK-518/531) — the ONE Undo door: its own key, its label from the row's state, absent where

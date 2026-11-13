@@ -1444,6 +1444,44 @@ const en = {
     successDesc: "Created {count} weekly sessions",
   },
 
+  // 🔴 TASK-972 (REQ-5016, SPEC-109 § 3.3 / § 3.4) — «ลาทั้งวัน» and "change the weekly pattern". ⚠️ THAI WORDING NOT YET CHECKED (Porter, with ขวัญ); the EN half mirrors it for `th: typeof en`.
+  wholeDay: {
+    action: "Leave all day",
+    confirm: "Mark every class of this course on {date} as leave: {times}",
+  },
+  changePattern: {
+    title: "Change weekly pattern",
+    fromDate: "From date",
+    pattern: "New pattern",
+    previewLine: "Move {moved} classes from {fromDate}",
+    previewLineOne: "Move {moved} class from {fromDate}",
+    none: "No classes to move",
+    rowLine: "{date} · {time} · {coach}",
+    done: "Weekly pattern changed",
+    err: {
+      SLOT_TAKEN: "A coach already has a class in one of these slots: {detail}",
+      DAY_CLOSED: "A day in the new pattern is closed: {detail}",
+      TEACHER_ON_LEAVE: "A coach is on leave in the new pattern: {detail}",
+    },
+  },
+  // 🔴 TASK-970 (REQ-5016 F1, SPEC-109) — a course's WEEKLY PATTERN: several days a week, each hour with its own coach. DRAFT words (the FE's, TH and EN, unreviewed).
+  weeklyPattern: {
+    toggle: "Several days a week",
+    hint: "Pick the day, time and coach of each class in the week. Two or more rows make a weekly pattern; one row is a normal weekly class.",
+    day: "Day",
+    time: "Time",
+    coach: "Coach",
+    add: "Add a class",
+    remove: "Remove",
+    incomplete: "Fill in the day, time and coach of every row",
+    duplicate: "Two rows share the same day and time",
+    tooMany: "At most 21 classes a week",
+    oneRow: "One row is a normal weekly class — add a second to make a pattern",
+    label: "Weekly: {pattern}",
+    // 🔻 TASK-970 addendum A1 — the resume dialog of a pattern course (no time / coach picker: it comes back on its pattern). The TH sentence is Sector's own wording (A1).
+    resumeLine: "Resumes on its weekly pattern: {pattern}",
+  },
+
   plan: {
     manage: "Manage plan",
     // ✅ APPROVED by the owner 2026-10-25 (REQ-127), COPY-REVIEW-2026-09-29.md §2026-10-25, verbatim — the button in the plan modal (also the dialog's title) and the dialog's line (`{n}` = the server's preview, never counted here).
@@ -3687,6 +3725,43 @@ const th: typeof en = {
     submitBtn: "สมัคร + สร้างคาบ",
     successTitle: "สมัครคอร์สสำเร็จ",
     successDesc: "สร้าง {count} คาบรายสัปดาห์แล้ว",
+  },
+
+  // 🔴 TASK-972 — คำไทยของ «ลาทั้งวัน» และ «เปลี่ยนตารางเรียนรายสัปดาห์» ยังไม่ผ่านการตรวจ (พอร์เตอร์ตรวจกับขวัญ) — แก้ได้ที่ข้อความอย่างเดียว
+  wholeDay: {
+    action: "ลาทั้งวัน",
+    confirm: "บันทึกลาทุกคาบของคอร์สนี้ในวันที่ {date}: {times}",
+  },
+  changePattern: {
+    title: "เปลี่ยนตารางเรียนรายสัปดาห์",
+    fromDate: "ตั้งแต่วันที่",
+    pattern: "ตารางใหม่",
+    previewLine: "ย้าย {moved} คาบ ตั้งแต่ {fromDate}",
+    previewLineOne: "ย้าย {moved} คาบ ตั้งแต่ {fromDate}",
+    none: "ไม่มีคาบที่ต้องย้าย",
+    rowLine: "{date} · {time} · {coach}",
+    done: "เปลี่ยนตารางเรียนแล้ว",
+    err: {
+      SLOT_TAKEN: "ครูมีคิวอื่นซ้อนอยู่ในคาบใดคาบหนึ่ง: {detail}",
+      DAY_CLOSED: "มีวันที่ปิดทำการอยู่ในตารางใหม่: {detail}",
+      TEACHER_ON_LEAVE: "ครูลาอยู่ในวันที่อยู่ในตารางใหม่: {detail}",
+    },
+  },
+
+  weeklyPattern: {
+    toggle: "วันเรียนหลายวัน",
+    hint: "เลือกวัน เวลา และครูของแต่ละคาบในสัปดาห์ ตั้งแต่สองแถวขึ้นไปเป็นตารางรายสัปดาห์ แถวเดียวคือเรียนสัปดาห์ละครั้งตามปกติ",
+    day: "วัน",
+    time: "เวลา",
+    coach: "ครู",
+    add: "เพิ่มคาบ",
+    remove: "ลบ",
+    incomplete: "กรอกวัน เวลา และครูให้ครบทุกแถว",
+    duplicate: "มีสองแถวที่วันและเวลาเดียวกัน",
+    tooMany: "สัปดาห์หนึ่งมีได้ไม่เกิน 21 คาบ",
+    oneRow: "แถวเดียวคือเรียนสัปดาห์ละครั้งตามปกติ — เพิ่มอีกแถวเพื่อทำเป็นตาราง",
+    label: "ทุกสัปดาห์: {pattern}",
+    resumeLine: "กลับมาเรียนตามตารางเดิม: {pattern}",
   },
 
   plan: {

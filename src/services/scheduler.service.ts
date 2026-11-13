@@ -85,7 +85,8 @@ import type {
 import { ApiClientError } from "@/lib/api/client";
 import type { OtherKind, OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
 import type { Branch } from "@/types/api/contract"; // 🔻 TASK-898 (F1)
-import type { ChangeActivityAnswer, ChangeActivityInput, ChangeTeacherTimeInput, ChangeTeacherTimePreview, ChangeTeacherTimeResult, GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
+import type { CoursePatternSlot } from "@/types/api/contract"; // 🔴 TASK-970
+import type { ChangePatternAnswer, ChangePatternInput, ChangeActivityAnswer, ChangeActivityInput, ChangeTeacherTimeInput, ChangeTeacherTimePreview, ChangeTeacherTimeResult, GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
 import { groupSeriesBody, type GroupSeriesInput, type GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 import { startChangeBody, type StartChangeForecast, type StartChangeResult } from "@/lib/scheduler/course-start";
 import { summarizeDailyReport } from "@/lib/scheduler/daily-report";
@@ -384,11 +385,14 @@ export interface SickLeaveResult {
 export const markSickLeave = async (
   id: string,
   override = false,
+  /** 🔴 TASK-972 (REQ-5016, SPEC-109 § 3.3) — «ลาทั้งวัน»: every live row of this course on this date. Absent ⇒ today's per-hour leave, byte for byte. */
+  wholeDay = false,
 ): Promise<SickLeaveResult> => {
   if (useMock) return mock.markSickLeave(id);
   const { data } = await api.patch<UpdateBookingStatusResponse>(`/bookings/${id}/status`, {
     action: "sick-leave",
     ...(override ? { override: true } : {}),
+    ...(wholeDay ? { wholeDay: true } : {}),
   });
   return {
     booking: dtoToBooking(data.booking),
@@ -916,6 +920,11 @@ export interface CreateCourseInput {
   note?: string;
   /** TASK-098 — per-session overrides from the purchase-time planner (len must === size). */
   sessions?: CoursePlanOverride[];
+  /**
+   * 🔴 TASK-970 (REQ-5016 F1, SPEC-109 §3.1) — a WEEKLY PATTERN of 2+ hour-slots, each with its own coach. Sent INSTEAD of `sessions` (the server refuses both) and never with `groupKey`; with ONE slot the
+   * sale sends today's fields and this key is absent. The server expands it, so the preview and the sale agree.
+   */
+  pattern?: CoursePatternSlot[];
   /** SPEC-049 — 1-based ROW positions declared absent at creation (free of quota; each appends a make-up).
    *  TASK-362 (REQ-089 item 1): any row of the previewed plan, make-ups included; existence and the cap are the server's. */
   absentWeeks?: number[];
@@ -954,6 +963,8 @@ export const createCoursePackage = async (
     startTime: input.startTime,
     note: input.note,
     sessions: input.sessions,
+    // 🔴 TASK-970 — a 2+ slot pattern (absent ⇒ the key is not on the wire, the body is byte for byte what it was).
+    pattern: input.pattern,
     // SPEC-049 — the BE is the source of truth for what a declared absence does (free quota + appended
     // make-up + ceiling check); the FE only says WHICH weeks.
     absentWeeks: input.absentWeeks,
@@ -1008,6 +1019,8 @@ export const previewCoursePackage = async (input: {
   startTime: string;
   /** SPEC-049 — preview the plan WITH the declared absences, so what is shown is what gets saved (AC-2). */
   absentWeeks?: number[];
+  /** 🔴 TASK-970 (SPEC-109 §3.1) — the same `pattern` the sale sends: the answer is the expanded dates, so the preview IS the act. */
+  pattern?: CoursePatternSlot[];
 }): Promise<CoursePreview> => {
   if (useMock) return mock.previewCoursePackage(input);
   const { data } = await api.post<CoursePreview>("/courses/preview", input);
@@ -1325,6 +1338,21 @@ export const changeTeacherTime = async (courseId: string, input: ChangeTeacherTi
     startTime: input.startTime,
     teacherId: input.teacherId,
   });
+  return data;
+};
+
+/**
+ * 🔴 TASK-972 (REQ-5016, SPEC-109 § 3.4) — change the weekly PATTERN of the rest of a course: `{ fromDate, pattern }`. The preview is the act in a rolled-back transaction (nothing written);
+ * the dialog's every row is read from it.
+ */
+export const previewChangePattern = async (courseId: string, input: ChangePatternInput): Promise<ChangePatternAnswer> => {
+  if (useMock) return mock.previewChangePattern(input);
+  const { data } = await api.post<ChangePatternAnswer>(`/courses/${courseId}/change-pattern/preview`, { fromDate: input.fromDate, pattern: input.pattern });
+  return data;
+};
+export const changePattern = async (courseId: string, input: ChangePatternInput): Promise<ChangePatternAnswer> => {
+  if (useMock) return mock.changePattern(input);
+  const { data } = await api.post<ChangePatternAnswer>(`/courses/${courseId}/change-pattern`, { fromDate: input.fromDate, pattern: input.pattern });
   return data;
 };
 

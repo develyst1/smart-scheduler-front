@@ -86,6 +86,8 @@ import {
   resumeCourse,
   previewChangeTeacherTime,
   changeTeacherTime,
+  previewChangePattern,
+  changePattern,
   previewCourseChangeActivity,
   changeCourseActivity,
   previewBookingChangeActivity,
@@ -110,7 +112,7 @@ import { undoBody } from "@/lib/scheduler/undo";
 import type { CourseEndReason, EndCourseReason, PlanChange, RecordRentalInput, SessionCancelReason, TeacherType, TeacherView } from "@/types/app/scheduler";
 import { withoutSystem } from "@/lib/scheduler/teacher";
 import type { OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
-import type { Branch, ChangeActivityInput, ChangeTeacherTimeInput } from "@/types/api/contract";
+import type { Branch, ChangeActivityInput, ChangePatternInput, ChangeTeacherTimeInput } from "@/types/api/contract";
 import type { GroupSeriesInput, GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 
 export const TEACHERS_KEY = ["teachers"] as const;
@@ -459,6 +461,17 @@ export const useChangeTeacherTime = () => {
   });
 };
 
+/** TASK-972 (REQ-5016) — "change the weekly pattern": the dry run (a mutation, asked when an input changes) and the act (re-reads everything, like the other course acts). */
+export const usePreviewChangePattern = () =>
+  useMutation({ mutationFn: ({ courseId, ...input }: { courseId: string } & ChangePatternInput) => previewChangePattern(courseId, input) });
+export const useChangePattern = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, ...input }: { courseId: string } & ChangePatternInput) => changePattern(courseId, input),
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
 /**
  * TASK-962 (REQ-5014) — "change activity": the dry run (a MUTATION, asked when an input changes, never on a render) and the act. Course and 1 HR / Trial are two route pairs with one
  * body; the act invalidates everything (the plan, the calendar, the notices) — the course and the calendar are re-read, as the other course acts do.
@@ -580,8 +593,8 @@ export const useBulkConfirm = () => {
 export const useMarkSickLeave = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { id: string; override?: boolean }) =>
-      markSickLeave(vars.id, vars.override),
+    mutationFn: (vars: { id: string; override?: boolean; wholeDay?: boolean }) =>
+      markSickLeave(vars.id, vars.override, vars.wholeDay),
     onSuccess: () => invalidateAll(qc),
   });
 };

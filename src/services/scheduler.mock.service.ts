@@ -1061,6 +1061,11 @@ export const previewChangeTeacherTime = (_courseId: string, input: { startDate: 
 export const changeTeacherTime = (courseId: string, _input: { startDate: string; startTime: string; teacherId: string }) =>
   delay({ id: courseId, moved: 4, needsReconfirm: 2 });
 
+/** TASK-972 — offline stand-ins for "change pattern": two moved rows. */
+export const previewChangePattern = (input: { fromDate: string; pattern: Array<{ weekday: number; startTime: string; teacherId: string }> }) =>
+  delay({ moved: 2, rows: [] as import("@/types/api/contract").BookingDTO[], notices: null, fromDate: input.fromDate });
+export const changePattern = (input: { fromDate: string; pattern: Array<{ weekday: number; startTime: string; teacherId: string }> }) => previewChangePattern(input);
+
 /** TASK-962 — offline stand-ins for "change activity": a card-priced answer, 100 ฿ → 120 ฿ for 4 classes (the SPEC's own example shape). */
 export const previewChangeActivity = (input: { subjectId: string; teacherId?: string; manualPriceBaht?: number }) =>
   delay({
