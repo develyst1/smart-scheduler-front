@@ -220,3 +220,28 @@ describe("🔴 TASK-982 — the plan modal's cancel on a reason-required row (VO
     expect("reasonCode" in sent("PATCH")[0].body).toBe(false);
   });
 });
+
+describe("🔴 TASK-982 Amendment 2 — no course wording in a voucher's dialog; no «Attended — locked» on a cancelled row", () => {
+  it("(c) a VOUCHER live row's dialog shows neither course note; a COURSE_PACKAGE live row still shows `cancelLiveNote`", async () => {
+    const note = "a make-up is re-owed";
+    wrap(h(CancelSessionDialog, { session: typed("VOUCHER"), onClose: () => {}, onError: () => {} }));
+    await waitFor(() => expect(radios().length).toBe(3));
+    expect((document.body.textContent ?? "").includes(note)).toBe(false);
+    expect((document.body.textContent ?? "").includes("the course stays at its size")).toBe(false);
+    cleanup();
+    wrap(h(CancelSessionDialog, { session: typed("VOUCHER", "ATTENDED"), onClose: () => {}, onError: () => {} }));
+    await waitFor(() => expect(radios().length).toBe(3));
+    expect((document.body.textContent ?? "").includes(note)).toBe(false); // the delivered note too
+    expect(document.querySelectorAll("textarea").length).toBe(1); // the required Reason box stays
+    cleanup();
+    wrap(h(CancelSessionDialog, { session: typed("COURSE_PACKAGE"), onClose: () => {}, onError: () => {} }));
+    await waitFor(() => expect(box()).toBeTruthy());
+    expect((document.body.textContent ?? "").includes("the course stays at its size")).toBe(true);
+  });
+
+  it("(d) source pin (SessionTable is not exported; mounting the whole plan modal is not cheap): the «locked» text is returned for a DELIVERED row only", async () => {
+    const src = await Bun.file(new URL("./PlanModal.tsx", import.meta.url)).text();
+    expect(src.includes('return locked ? <Text fz="xs" c="dimmed" ta="right">{t("plan.locked")}</Text> : null;')).toBe(true);
+    expect(src.includes('  return <Text fz="xs" c="dimmed" ta="right">{t("plan.locked")}</Text>;')).toBe(false);
+  });
+});

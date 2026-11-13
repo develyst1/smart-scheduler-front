@@ -922,8 +922,8 @@ function SessionActions({
   const canCancel = !!onCancelSession && (locked || isLiveStatus(session.status));
 
   if (!canEdit && !canMarkAbsence && !canCancel) {
-    // Delivered with no cancel handler (create mode) — nothing actionable.
-    return <Text fz="xs" c="dimmed" ta="right">{t("plan.locked")}</Text>;
+    // Delivered with no cancel handler (create mode) — nothing actionable. 🔴 TASK-982 Amd 2: the «attended — locked» text is for a DELIVERED row only; a cancelled row with no action shows nothing.
+    return locked ? <Text fz="xs" c="dimmed" ta="right">{t("plan.locked")}</Text> : null;
   }
 
   return (
@@ -1368,9 +1368,12 @@ export function CancelSessionDialog({
           {dayjs(session.date).format("D MMM")} {formatTimeDisplay(session.startTime)} ·{" "}
           {session.teacher?.nickname ?? "—"} · {session.subject?.name ?? "—"}
         </Text>
-        <Text fz="xs" c="dimmed">
-          {delivered ? t("plan.cancelDeliveredNote") : t("plan.cancelLiveNote")}
-        </Text>
+        {/* 🔴 TASK-982 Amd 2: both notes speak of a COURSE («the course stays at its size»); a reason-required row (voucher …) has no course, so it shows neither. */}
+        {!needsReason && (
+          <Text fz="xs" c="dimmed">
+            {delivered ? t("plan.cancelDeliveredNote") : t("plan.cancelLiveNote")}
+          </Text>
+        )}
         {delivered && (
           <Textarea
             label={t("plan.cancelReasonLabel")}
