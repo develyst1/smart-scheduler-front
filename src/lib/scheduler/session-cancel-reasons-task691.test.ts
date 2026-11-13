@@ -53,7 +53,12 @@ describe("🔴 TASK-694 — where it is OFFERED, and where it must NOT be", () =
     expect(plan.includes('label={t("endCourse.SCHOOL_ISSUE")}')).toBe(true);
     expect(plan.includes('description={t("cancelBooking.schoolIssueHint")}')).toBe(true);
     // 🚫 not the full reason list: on a course class the server ignores every other reason
-    expect(plan.match(/END_COURSE_REASONS|SESSION_CANCEL_REASONS/)?.[0] ?? null).toBeNull();
+    // TASK-982 (2026-11-13, ขวัญ): a reason-required row (VOUCHER / SINGLE / TRIAL / OTHER / GROUP) gets the calendar's three reasons in this dialog; a COURSE class still never gets a list (DOM-pinned in cancel-course-class-task694).
+    expect(plan.match(/SESSION_CANCEL_REASONS/)?.[0] ?? null).toBeNull();
+    expect(plan.match(/END_COURSE_REASONS/g)?.length).toBe(2); // the import + the one `.map(`
+    const dialog = plan.indexOf("export function CancelSessionDialog");
+    expect(plan.indexOf("END_COURSE_REASONS.map(")).toBeGreaterThan(dialog);
+    expect(plan.indexOf("END_COURSE_REASONS.map(")).toBeGreaterThan(plan.indexOf("needsReason", dialog));
   });
 
   it("🔑 the GROUP series cancel-all offers it — and ONLY for a group (an OTHER series has no course behind it)", () => {

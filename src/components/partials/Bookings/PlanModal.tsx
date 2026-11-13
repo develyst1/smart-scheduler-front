@@ -17,7 +17,7 @@ import {
   Table,
   Text,
 } from "@mantine/core";
-import { Checkbox, Textarea, Tooltip } from "@mantine/core";
+import { Checkbox, Radio, Textarea, Tooltip } from "@mantine/core";
 import { AlertTriangle, Ban, CalendarPlus, Check, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Repeat, Replace, UserMinus, X } from "lucide-react";
 import dayjs from "dayjs";
 import { notify } from "@/lib/ui/notify";
@@ -43,7 +43,9 @@ import {
 import {
   TIME_SLOTS,
   SESSION_ONLY_CANCEL_REASONS,
+  END_COURSE_REASONS,
   isDeliveredStatus,
+  type EndCourseReason,
   type BookingStatus,
   type CourseStatus,
   type EntitlementPlan,
@@ -1311,6 +1313,12 @@ function ConfirmCreateButton({
  * today's cancel, +0 weeks — and, ticked, it sends `reasonCode: "SCHOOL_ISSUE"`.
  * The words are the owner's A5 + A6, verbatim (no new copy).
  */
+/**
+ * 🔴 **TASK-982 — the booking types whose cancel the SERVER refuses without a `reasonCode`** (400 `REASON_REQUIRED`). Must match SB `scheduler.service.ts` `REASON_ENUM_REQUIRED`.
+ * A Voucher plan opens this same dialog; for these rows it asks the calendar's three reasons (no «our side» tick: no course behind it, so no week to give).
+ */
+const REASON_REQUIRED_TYPES = new Set(["SINGLE_SESSION", "VOUCHER", "FIRST_TRIAL", "OTHER", "GROUP"]);
+
 export function CancelSessionDialog({
   session,
   onClose,
@@ -1326,6 +1334,8 @@ export function CancelSessionDialog({
   const [reason, setReason] = useState("");
   /** 🔴 TASK-694 — OFF by default: a week must never be given by accident. */
   const [ourSide, setOurSide] = useState(false);
+  const needsReason = REASON_REQUIRED_TYPES.has(session.bookingType ?? "");
+  const [reasonCode, setReasonCode] = useState<EndCourseReason | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const submit = async () => {
@@ -1340,6 +1350,7 @@ export function CancelSessionDialog({
         id: session.id,
         reason: delivered ? reason.trim() : undefined,
         ...(ourSide ? { reasonCode: SESSION_ONLY_CANCEL_REASONS[0] } : {}),
+        ...(needsReason && reasonCode ? { reasonCode } : {}), // TASK-982: the checkbox is not shown on these rows, so `ourSide` is false and only one of the two spreads applies
       });
       notify({ title: t("plan.cancelled"), color: "success" });
       onError(null);
@@ -1372,13 +1383,23 @@ export function CancelSessionDialog({
         )}
         {/* 🔴 TASK-694 — the single choice, with the approved line under it. Shown for a live class AND a delivered one: the server earns
             the week for both when the reason is "our side". */}
-        <Checkbox
-          checked={ourSide}
-          onChange={(e) => setOurSide(e.currentTarget.checked)}
-          label={t("endCourse.SCHOOL_ISSUE")}
-          description={t("cancelBooking.schoolIssueHint")}
-          data-our-side-cancel
-        />
+        {needsReason ? (
+          <Radio.Group label={t("endCourse.reasonLabel")} value={reasonCode ?? ""} onChange={(v) => setReasonCode(v as EndCourseReason)} required>
+            <Stack gap="xs" mt="xs">
+              {END_COURSE_REASONS.map((r) => (
+                <Radio key={r} value={r} label={t(`endCourse.${r}`)} />
+              ))}
+            </Stack>
+          </Radio.Group>
+        ) : (
+          <Checkbox
+            checked={ourSide}
+            onChange={(e) => setOurSide(e.currentTarget.checked)}
+            label={t("endCourse.SCHOOL_ISSUE")}
+            description={t("cancelBooking.schoolIssueHint")}
+            data-our-side-cancel
+          />
+        )}
         {localError && (
           <Alert color="red" icon={<AlertTriangle size={16} />}>
             {localError}
@@ -1388,7 +1409,7 @@ export function CancelSessionDialog({
           <Button variant="subtle" color="gray" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button color="red" leftSection={<Ban size={14} />} loading={cancel.isPending} onClick={submit}>
+          <Button color="red" leftSection={<Ban size={14} />} loading={cancel.isPending} disabled={needsReason && !reasonCode} onClick={submit}>
             {t("plan.cancelConfirm")}
           </Button>
         </Group>

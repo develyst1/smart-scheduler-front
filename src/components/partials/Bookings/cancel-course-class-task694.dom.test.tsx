@@ -180,3 +180,43 @@ describe("🔴 TASK-695 — ticking the box turns the reason radios VISIBLY OFF 
     await waitFor(() => expect(confirm().disabled).toBe(false));
   });
 });
+
+// 🔴 TASK-982 — a VOUCHER plan's cancel asks the calendar's three reasons (the server refuses a cancel without one); a COURSE row is unchanged.
+const typed = (bookingType: string, status = "CONFIRMED") => ({ ...(session(status) as object), bookingType }) as unknown as PlanSession;
+const radios = () => [...document.querySelectorAll('input[type="radio"]')] as HTMLInputElement[];
+
+describe("🔴 TASK-982 — the plan modal's cancel on a reason-required row (VOUCHER …)", () => {
+  it("🔑 a VOUCHER row: the three reasons, no «our side» checkbox, Confirm disabled; a pick sends `reasonCode` on the wire", async () => {
+    const user = userEvent.setup();
+    wrap(h(CancelSessionDialog, { session: typed("VOUCHER"), onClose: () => {}, onError: () => {} }));
+    await waitFor(() => expect(radios().length).toBe(3));
+    expect(box() === null).toBe(true);
+    expect(document.querySelectorAll('input[type="checkbox"]').length).toBe(0);
+    expect(screen.queryAllByText("Customer changed activity").length).toBe(1);
+    expect(screen.queryAllByText("Customer no longer wants it").length).toBe(1);
+    expect(screen.queryAllByText("Admin entered it by mistake").length).toBe(1);
+    expect(confirm().disabled).toBe(true);
+    await user.click(screen.getByLabelText("Customer no longer wants it"));
+    expect(confirm().disabled).toBe(false);
+    await user.click(confirm());
+    await waitFor(() => expect(sent("PATCH").length).toBe(1));
+    expect(sent("PATCH")[0].body).toEqual({ action: "cancel", reasonCode: "CUSTOMER_CANCELLED" });
+  });
+
+  it("every reason-required type asks; a COURSE_PACKAGE row is unchanged (checkbox, no radios, unticked ⇒ no `reasonCode` key)", async () => {
+    for (const ty of ["SINGLE_SESSION", "VOUCHER", "FIRST_TRIAL", "OTHER", "GROUP"]) {
+      wrap(h(CancelSessionDialog, { session: typed(ty), onClose: () => {}, onError: () => {} }));
+      await waitFor(() => expect(radios().length).toBe(3));
+      expect(box() === null).toBe(true);
+      cleanup();
+    }
+    const user = userEvent.setup();
+    wrap(h(CancelSessionDialog, { session: typed("COURSE_PACKAGE"), onClose: () => {}, onError: () => {} }));
+    await waitFor(() => expect(box()).toBeTruthy());
+    expect(radios().length).toBe(0);
+    expect(confirm().disabled).toBe(false);
+    await user.click(confirm());
+    await waitFor(() => expect(sent("PATCH").length).toBe(1));
+    expect("reasonCode" in sent("PATCH")[0].body).toBe(false);
+  });
+});
