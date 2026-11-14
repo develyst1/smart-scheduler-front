@@ -77,9 +77,9 @@ export const NVR_BUCKETS = [
   "firstTrial",
   "newCourseThisMonth",
   "trialNotConverted",
-  "newCoursePrevMonth",
   "renewCourse",
   "notRenewed",
+  "newCoursePrevMonth",
 ] as const;
 export type NvrBucket = (typeof NVR_BUCKETS)[number];
 

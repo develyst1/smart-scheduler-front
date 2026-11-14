@@ -128,13 +128,13 @@ export default function SomContent() {
             tone="orange"
           />
           <Stat
-            label={t("som.totalCustomers")}
-            value={ec.totalCustomers ?? "—"}
+            label={t("som.byRecentSingle")}
+            value={ec.recentSingleSession ?? "—"}
             tone="orange"
           />
           <Stat
-            label={t("som.byRecentSingle")}
-            value={ec.recentSingleSession ?? "—"}
+            label={t("som.totalCustomers")}
+            value={ec.totalCustomers ?? "—"}
             tone="orange"
           />
           <Stat
