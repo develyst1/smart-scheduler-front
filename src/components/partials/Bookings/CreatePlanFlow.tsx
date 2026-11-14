@@ -389,6 +389,12 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
         // TASK-374 — after the plan, before confirm: the whole-course rental, and its line × the count.
         createExtras={
           <Stack gap="xs">
+            {/* 🔻 TASK-990 (D-164-2): a failed re-preview says why; a pattern's make-up rows are not declarable at sale (TASK-989) */}
+            {error && (
+              <Alert color="red" icon={<AlertTriangle size={16} />} variant="light" data-plan-error>
+                {error}
+              </Alert>
+            )}
             {/* 🔴 TASK-816 — a week on the teacher's leave day: warn, one click to the planned absence (the same toggle as the row's own). */}
             <LeaveWeekNotice weeks={leaveWeeks} pending={preview.isPending} onTick={toggleAbsent} />
             <Checkbox

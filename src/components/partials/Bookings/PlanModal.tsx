@@ -353,6 +353,18 @@ export default function PlanModal({
             </Alert>
           )}
 
+          {/* 🔻 TASK-988 (ขวัญ 14/11): the rows dim and say «updating» while the server re-previews; she could not tell the screen was working. Create mode only: in edit mode the div carries no attribute and no class. */}
+          {isCourse && isCreate && previewPending && (
+            <Group gap="xs" data-plan-updating>
+              <Loader size="xs" />
+              <Text fz="sm">{t("plan.updating")}</Text>
+            </Group>
+          )}
+          <div
+            {...(isCourse && isCreate
+              ? { className: previewPending ? "opacity-50 pointer-events-none transition-opacity" : undefined, "aria-busy": previewPending, ...(previewPending ? { "data-plan-pending": "" } : {}) }
+              : {})}
+          >
           <SessionTable
             sessions={planRows}
             onEdit={
@@ -382,7 +394,8 @@ export default function PlanModal({
                     // TASK-362 (REQ-089 item 1) — every previewed row offers the action, make-ups included: a
                     // make-up ticked is an advance leave too, and the server appends another make-up for it.
                     // (TASK-148 withheld it from make-ups — "staff chasing their own tail" — reversed by the owner.)
-                    weekIndexOf(s) === 0
+                    // 🔻 TASK-990 (D-164-2): a failed re-preview says why; a pattern's make-up rows are not declarable at sale (TASK-989)
+                    weekIndexOf(s) === 0 || (plan?.summary.kind === "course" && plan.summary.slots != null && weekIndexOf(s) > plan.summary.size)
                       ? null
                       : absentWeeks.includes(weekIndexOf(s))
                         ? t("plan.plannedAbsenceUndo")
@@ -398,6 +411,7 @@ export default function PlanModal({
                 : undefined
             }
           />
+          </div>
 
           {isCourse && isCreate && (
             <Stack gap="xs">

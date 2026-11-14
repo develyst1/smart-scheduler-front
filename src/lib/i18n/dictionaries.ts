@@ -1491,6 +1491,7 @@ const en = {
     changeRestLine: "The remaining {n} sessions move to the chosen teacher, on the new day and time. Sessions already taught don't change.",
     title: "{name} — plan",
     loading: "Loading…",
+    updating: "Updating the plan…", // 🔻 TASK-988 (ขวัญ 14/11)
     loadError: "Couldn't load the plan.",
     course: "Course",
     voucher: "Voucher",
@@ -3775,6 +3776,7 @@ const th: typeof en = {
     changeRestLine: "คาบที่เหลือ {n} คาบจะย้ายไปเรียนกับครูที่เลือก ตามวันและเวลาใหม่ คาบที่เรียนไปแล้วไม่เปลี่ยน",
     title: "แผนของ {name}",
     loading: "กำลังโหลด…",
+    updating: "กำลังคำนวณแผนใหม่…", // 🔻 TASK-988 (ขวัญ 14/11)
     loadError: "โหลดแผนไม่สำเร็จ",
     course: "คอร์ส",
     voucher: "วอยเชอร์",
