@@ -161,11 +161,11 @@ describe("🔴 TASK-970 — a pattern goes to the preview AND the sale, and the 
     await click(document.querySelector("[data-pattern-toggle]"));
     await waitFor(() => expect(q("[data-pattern-row]")).toBe(2));
     await user.click(document.querySelector('[data-pattern-remove="1"]') as HTMLElement);
-    await pick(user, '[data-pattern-time="0"]', "11:30");
+    await pick(user, '[data-pattern-time="0"]', "12:00"); // TASK-987: whole hours only (was 11:30)
     await user.click(generateBtn());
     await waitFor(() => expect(previews().length).toBe(1));
     expect(Object.keys(previews()[0].body)).not.toContain("pattern");
-    expect(previews()[0].body.startTime).toBe("11:30");
+    expect(previews()[0].body.startTime).toBe("12:00");
   });
 
   it("🔑 a half-filled row blocks Generate and nothing is sent", async () => {

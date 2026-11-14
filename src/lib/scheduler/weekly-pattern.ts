@@ -1,12 +1,11 @@
 import type { CoursePatternSlot } from "@/types/api/contract";
 import { TIME_SLOTS } from "@/types/app/scheduler";
-import { HALF_HOUR_TIMES, dayShort } from "./work-days";
+import { dayShort } from "./work-days";
 
 /**
- * The times a pattern row is picked from: every HALF hour over the same opening hours as the sale's single Time field (`TIME_SLOTS`, 09:00–17:00), up to 17:30 — a slot is on the hour or the half hour
- * (SPEC-109 §2), and the single field is hourly only because a one-slot course has always been.
+ * 🔻 TASK-986/987 (TEST-163): whole hours only, the same list as the sale's single Time field — a class at :30 would be saved and never drawn on the calendar
  */
-export const PATTERN_TIMES: string[] = HALF_HOUR_TIMES.filter((x) => x >= TIME_SLOTS[0] && x <= `${TIME_SLOTS[TIME_SLOTS.length - 1].slice(0, 2)}:30`);
+export const PATTERN_TIMES: string[] = [...TIME_SLOTS];
 
 /**
  * 🔴 **TASK-970 (REQ-5016 F1, SPEC-109 §2-§4) — the pure side of a course's WEEKLY PATTERN: the editor's rows, what they send, and how a pattern is read aloud.**

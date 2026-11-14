@@ -55,13 +55,25 @@ describe("🔴 TASK-970 — the editor's rows", () => {
     expect(latest[1].teacherId).toBeNull();
   });
 
-  it("🔑 a row is filled by its three pickers: day (Sunday counts as 0, not empty), time (every half hour), coach", async () => {
+  it("🔑 a row is filled by its three pickers: day (Sunday counts as 0, not empty), time (a whole hour), coach", async () => {
     const user = userEvent.setup();
     mount([emptyPatternRow()]);
     await pick(user, '[data-pattern-day="0"]', "Sun");
-    await pick(user, '[data-pattern-time="0"]', "10:30");
+    await pick(user, '[data-pattern-time="0"]', "11:00");
     await pick(user, '[data-pattern-coach="0"]', "สอง");
-    expect(latest[0]).toEqual({ weekday: 0, startTime: "10:30", teacherId: "t2" });
+    expect(latest[0]).toEqual({ weekday: 0, startTime: "11:00", teacherId: "t2" });
+  });
+
+  it("🔑 TASK-987 (TEST-163): the time picker offers exactly the nine whole hours 09:00 … 17:00; :30 is never offered", async () => {
+    const user = userEvent.setup();
+    mount([emptyPatternRow()]);
+    const input = document.querySelector('[data-pattern-time="0"]') as HTMLElement;
+    await user.click(input);
+    const options = () => [...(document.getElementById(input.getAttribute("aria-controls") ?? "")?.querySelectorAll('[role="option"]') ?? [])].map((o) => o.textContent);
+    await waitFor(() => expect(options().length).toBeGreaterThan(0));
+    expect(options()).toEqual(["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"]);
+    expect(options()).not.toContain("10:30");
+    expect(options()).not.toContain("17:30");
   });
 
   it("🔑 remove takes out THAT row only, and the last row cannot be removed", async () => {
