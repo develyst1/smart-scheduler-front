@@ -10,7 +10,7 @@ import { dtoToBooking, dtoToCourseView } from "@/lib/api/mappers";
 import { GROUP_KINDS } from "@/lib/scheduler/group-session";
 import DuoRateLine from "@/components/partials/Bookings/DuoRateLine";
 import type { BookingDTO, CourseListItem } from "@/types/api/contract";
-import { CREATABLE_GROUP_KINDS, DUO_PRICE_GROUP, callName, duoBody, duoReady, emptyDuo, priceGroupFor, rateChange, rateTag, sessionRateChange, studentLabel } from "./duo";
+import { CREATABLE_GROUP_KINDS, DUO_PRICE_GROUP, callName, duoBody, duoReady, emptyDuo, priceGroupFor, ratePrefill, rateChange, rateTag, sessionRateChange, studentLabel } from "./duo";
 
 /**
  * REQ-095 §13 / SPEC-087 / TASK-420/421 — DUO = ONE course, TWO kids. The two-name label through ONE pure function
@@ -163,7 +163,7 @@ describe("§3 — the forms", () => {
   it("Move-session (§13.3): the box on a COURSE row (`rate` non-null), prefilled from `effectiveMinor`, the tag from the facts, `Clear` ⇒ null; relabelled THIS session's rate with the default in the hint", () => {
     const move = modal.slice(modal.indexOf("function MoveBookingForm("), modal.indexOf("function CreateForm("));
     expect(move).toContain("const rate = canRate ? (booking.rate ?? null) : null;"); // TASK-432 — no key ⇒ no box
-    expect(move).toContain('useState<number | "">(rate ? rate.effectiveMinor / 100 : "")');
+    expect(move).toContain('useState<number | "">(ratePrefill(rate))'); // TASK-995 — null effective ⇒ blank, never 0
     expect(move).toContain("Object.assign(patch, withoutRates(sessionRateChange(rateBaht, rate, rateClear) ?? {}, canRate));"); // TASK-432 — one guard
     expect(move).toContain("{canRate && rate && ("); // TASK-432 — the key first
     expect(move).toContain('data-session-rate={rateTag(rate)}');
@@ -211,5 +211,27 @@ describe("§3 — the forms", () => {
     for (const lang of ["en", "th"] as const)
       for (const k of ["kindPrivate", "kindDuo", "coStudent", "duoSameChild", "classRate", "classRateHint", "classRateMoveHint", "duoTag", "rateLine", "rateEdit", "rateSavedOk", "sessionRate", "sessionRateHint", "rateDefault", "rateOverride", "rateClear", "defaultRate"]) expect((dictionaries[lang].course as Record<string, string>)[k]?.length).toBeGreaterThan(0);
     expect(ACTION_KEYS_SNAPSHOT.length).toBe(60) /* TASK-518: + the 60th, `calendar.undo` (SPEC-094) */ /* TASK-427 + TASK-429 + TASK-432: budget-view, other-cancel-all, coach-rate */;
+  });
+});
+
+describe("TASK-995 — Move session never writes ฿0 for a course with no rate", () => {
+  const none = { effectiveMinor: null, overrideMinor: null, defaultMinor: null };
+  const withDefault = { effectiveMinor: 50000, overrideMinor: null, defaultMinor: 50000 };
+  it("(a) ratePrefill: no rate ⇒ blank; null effective ⇒ blank; 0 is a rate ⇒ 0; satang ⇒ baht", () => {
+    expect(ratePrefill(null)).toBe("");
+    expect(ratePrefill(undefined)).toBe("");
+    expect(ratePrefill(none)).toBe("");
+    expect(ratePrefill({ effectiveMinor: 0, overrideMinor: 0, defaultMinor: null })).toBe(0);
+    expect(ratePrefill({ effectiveMinor: 50000, overrideMinor: null, defaultMinor: 50000 })).toBe(500);
+  });
+  it("(b) the bug end to end: a no-rate row, nothing typed ⇒ NO body (the old prefill `effectiveMinor / 100` made it 0 ⇒ { classRateMinor: 0 })", () => {
+    expect(sessionRateChange(ratePrefill(none), none, false)).toBeUndefined();
+  });
+  it("(c) a typed rate on that row is sent; a typed 0 is still sent (0 is a rate the admin chose)", () => {
+    expect(sessionRateChange(400, none, false)).toEqual({ classRateMinor: 40000 });
+    expect(sessionRateChange(0, none, false)).toEqual({ classRateMinor: 0 });
+  });
+  it("(d) a row with a default: the untouched prefill sends nothing, as before", () => {
+    expect(sessionRateChange(ratePrefill(withDefault), withDefault, false)).toBeUndefined();
   });
 });

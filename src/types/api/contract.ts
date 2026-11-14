@@ -262,7 +262,7 @@ export interface BookingDTO {
   /** REQ-095 §13 (TASK-420) — a DUO course row's SECOND child (the same `studentRef` shape); null elsewhere. */
   coStudent?: StudentRef | null;
   /** REQ-095 §13.3 (TASK-423) — the coach rate facts, non-null on COURSE_PACKAGE rows only: effective · this session's override · the course default. */
-  rate?: { effectiveMinor: number; overrideMinor: number | null; defaultMinor: number | null } | null;
+  rate?: { effectiveMinor: number | null; overrideMinor: number | null; defaultMinor: number | null } | null;
   /** REQ-101 (TASK-428) — an OTHER row's series (the Manage-plan page's key); null on legacy rows before the backfill and on CAMP rows. */
   otherSeriesKey?: string | null;
   /** The FIRST teacher — unchanged meaning, still always present. See `teachers` for all of them. */

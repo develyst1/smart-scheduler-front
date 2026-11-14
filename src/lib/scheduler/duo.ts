@@ -73,13 +73,16 @@ export const rateChange = (typedBaht: number | "", currentMinor: number | null |
 /**
  * REQ-095 §13.3 (TASK-423/424) — the server's THREE facts on a course row. 🔴 The FE never computes `override ?? default`:
  * `effectiveMinor` is rendered as sent (0 is a rate — ฿0, not blank); the tag reads `overrideMinor != null` alone.
+ * 🔴 TASK-995 — `null` is NO rate (a Private course with no override and no default): shown blank, never as 0.
  */
 export interface SessionRate {
-  effectiveMinor: number;
+  effectiveMinor: number | null;
   overrideMinor: number | null;
   defaultMinor: number | null;
 }
-export const rateTag = (rate: SessionRate | null | undefined): "override" | "default" | null => (rate ? (rate.overrideMinor !== null && rate.overrideMinor !== undefined ? "override" : "default") : null);
+/** TASK-995 — the Move-session box's prefill: the effective rate in baht, or BLANK when the row has no rate (null rate or null `effectiveMinor`). Never 0 for "no rate". */
+export const ratePrefill = (rate: SessionRate | null | undefined): number | "" => (rate && rate.effectiveMinor !== null ? rate.effectiveMinor / 100 : "");
+export const rateTag = (rate:SessionRate | null | undefined): "override" | "default" | null => (rate ? (rate.overrideMinor !== null && rate.overrideMinor !== undefined ? "override" : "default") : null);
 
 /**
  * THIS session's body: `{ classRateMinor: n }` when the typed baht differs from the EFFECTIVE rate; `{ classRateMinor: null }`

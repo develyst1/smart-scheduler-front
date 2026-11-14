@@ -102,7 +102,7 @@ import OtherDetailsDialog from "./OtherDetailsDialog";
 import GroupSeriesDialog from "./GroupSeriesDialog";
 import GroupSwapDialog from "./GroupSwapDialog";
 import CreatePlanFlow from "@/components/partials/Bookings/CreatePlanFlow";
-import { COACH_RATE_KEY, rateTag, sessionRateChange, withoutRates } from "@/lib/scheduler/duo";
+import { COACH_RATE_KEY, ratePrefill, rateTag, sessionRateChange, withoutRates } from "@/lib/scheduler/duo";
 import { seatsLabel } from "@/lib/scheduler/group-session";
 import { emptyOtherSchedule, otherScheduleFacts, type OtherScheduleDraft } from "@/lib/scheduler/other-schedule";
 import CancelBookingDialog from "./CancelBookingDialog";
@@ -1075,14 +1075,14 @@ function MoveBookingForm({
   // TASK-898 (F1) — a ONE-OFF branch change for THIS booking only; sent only when it differs from the booking's own.
   const [branch, setBranch] = useState<Branch>(booking.branch ?? DEFAULT_BRANCH);
   // REQ-095 §13.3 (TASK-424) — a COURSE session carries the server's three rate facts; the box edits THIS session's
-  // override: prefilled from `effectiveMinor` (satang → baht; 0 is a rate), `classRateMinor` rides ONLY when it differs,
+  // override: prefilled from `effectiveMinor` (satang → baht; 0 is a rate; null = NO rate, shown blank — TASK-995), `classRateMinor` rides ONLY when it differs,
   // `Clear` sends null (back to the default). The (default)/(override) tag reads the facts — no arithmetic here.
   // REQ-102 §6 (TASK-432) — the box renders ONLY with key 59 (absent, not dashed); the server sends `rate: null`
   // without it and refuses any `classRateMinor` body — `withoutRates` strips it, one guard.
   const canMove = useCan();
   const canRate = canMove(COACH_RATE_KEY);
   const rate = canRate ? (booking.rate ?? null) : null;
-  const [rateBaht, setRateBaht] = useState<number | "">(rate ? rate.effectiveMinor / 100 : "");
+  const [rateBaht, setRateBaht] = useState<number | "">(ratePrefill(rate));
   const [rateClear, setRateClear] = useState(false);
 
   // TASK-861 — the caller already dropped the system teacher for a lesson; a moved OTHER block keeps it.
