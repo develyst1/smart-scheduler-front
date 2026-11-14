@@ -441,7 +441,7 @@ function ViewBooking({
     try {
       const res = await sickLeave.mutateAsync({ id: booking.id, override, ...(wholeDay ? { wholeDay: true } : {}) });
       // 🔴 TASK-658 (REQ-112) — the `locked` toast is GONE: nothing is ever locked, and a leave whose make-up cannot fit is
-      // REFUSED by the server (it arrives as the catch below, in the server's own sentence) — not a second toast here.
+      // REFUSED by the server (it arrives in the catch below, in the server's own sentence, and is shown there as a toast) — not a second toast here.
       if (res.extended) {
         notify({
           title: t("booking.leaveSavedTitle"),
@@ -458,6 +458,9 @@ function ViewBooking({
       if (err instanceof ApiClientError && err.code === "LEAVE_NOTICE_TOO_LATE") {
         setNoticeWholeDay(wholeDay);
         setNoticeError(err.message);
+      } else if (err instanceof ApiClientError) {
+        // 🔴 TASK-983 — any OTHER refusal (e.g. 409 LEAVE_NO_VALIDITY) is shown in the server's own sentence; the modal stays open. Per-hour leave and «ลาทั้งวัน» alike.
+        notify({ title: err.message, color: "danger" });
       } else {
         throw err;
       }

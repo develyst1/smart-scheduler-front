@@ -17,6 +17,8 @@ import type { Booking } from "@/types/app/scheduler";
 
 const patches: Array<{ url: string; body: Record<string, unknown> }> = [];
 let closed = 0;
+const toasts: Array<{ title?: string; color?: string }> = []; // TASK-983: what `notify` was asked to show
+let refuse: { code: string; message: string; status: number } | null = null; // TASK-983: the server refuses the next status change
 
 const realMe = await import("@/hooks/scheduler/useMe");
 mock.module("@/hooks/scheduler/useMe", () => ({ ...realMe, useCan: () => () => true }));
@@ -29,12 +31,13 @@ mock.module("@/lib/api/client", () => ({
     get: async (url: string) => ({ data: url === "/badges" ? [] : {} }),
     patch: async (url: string, body: Record<string, unknown>) => {
       patches.push({ url, body });
+      if (refuse) throw new realClient.ApiClientError(refuse.code, refuse.message, refuse.status);
       return { data: { booking: { ...DTO, status: "SICK_LEAVE" } } };
     },
   },
 }));
 const realNotify = await import("@/lib/ui/notify");
-mock.module("@/lib/ui/notify", () => ({ ...realNotify, notify: () => {} }));
+mock.module("@/lib/ui/notify", () => ({ ...realNotify, notify: (n: { title?: string; color?: string }) => { toasts.push(n); } }));
 
 const BookingModal = (await import("./BookingModal")).default;
 
@@ -103,6 +106,8 @@ afterEach(() => {
 beforeEach(() => {
   patches.length = 0;
   closed = 0;
+  toasts.length = 0;
+  refuse = null;
 });
 
 describe("🔴 TASK-972 — «ลาทั้งวัน»", () => {
@@ -193,5 +198,51 @@ describe("🔴 TASK-962 — «เปลี่ยนกิจกรรม» door 
       cleanup();
     }
     void open;
+  });
+});
+
+// 🔴 TASK-983 — a refused leave shows the server's sentence (it used to be rethrown and shown NOTHING); LEAVE_NOTICE_TOO_LATE keeps its override path.
+describe("🔴 TASK-983 — a refused leave is SHOWN", () => {
+  const R1 = mk("r1", "10:00");
+  const R2 = mk("r2", "11:00");
+  const SENTENCE = "อายุคอร์สไม่พอสำหรับคาบชดเชย — ขยายวันหมดอายุก่อน แล้วค่อยบันทึกลา";
+
+  it("(a) per-hour leave: 409 LEAVE_NO_VALIDITY ⇒ the server's sentence is the toast title, and the modal stays open", async () => {
+    refuse = { code: "LEAVE_NO_VALIDITY", message: SENTENCE, status: 409 };
+    mount(R1, [R1, R2]);
+    const user = await openMenu();
+    await user.click(item('[data-status-action="sick-leave"]')!);
+    await waitFor(() => expect(btn(dictionaries.en.booking.sickLeaveBtn)).toBeTruthy());
+    await user.click(btn(dictionaries.en.booking.sickLeaveBtn) as HTMLElement);
+    await waitFor(() => expect(patches.length).toBe(1));
+    expect(patches[0].body).toEqual({ action: "sick-leave" });
+    await waitFor(() => expect(toasts.some((n) => n.title === SENTENCE && n.color === "danger")).toBe(true));
+    expect(closed).toBe(0);
+  });
+
+  it("(b) «ลาทั้งวัน»: the same sentence, the same toast, and the modal stays open", async () => {
+    refuse = { code: "LEAVE_NO_VALIDITY", message: SENTENCE, status: 409 };
+    mount(R1, [R1, R2]);
+    const user = await openMenu();
+    await user.click(item('[data-status-action="sick-leave-whole-day"]')!);
+    await waitFor(() => expect(btn("Leave all day")).toBeTruthy());
+    await user.click(btn("Leave all day") as HTMLElement);
+    await waitFor(() => expect(patches.length).toBe(1));
+    expect(patches[0].body).toEqual({ action: "sick-leave", wholeDay: true });
+    await waitFor(() => expect(toasts.some((n) => n.title === SENTENCE && n.color === "danger")).toBe(true));
+    expect(closed).toBe(0);
+  });
+
+  it("(c) LEAVE_NOTICE_TOO_LATE still takes the override path: the sentence is inline, NOT a toast", async () => {
+    const LATE = "Too late to take leave for this teacher type";
+    refuse = { code: "LEAVE_NOTICE_TOO_LATE", message: LATE, status: 409 };
+    mount(R1, [R1, R2]);
+    const user = await openMenu();
+    await user.click(item('[data-status-action="sick-leave"]')!);
+    await waitFor(() => expect(btn(dictionaries.en.booking.sickLeaveBtn)).toBeTruthy());
+    await user.click(btn(dictionaries.en.booking.sickLeaveBtn) as HTMLElement);
+    await waitFor(() => expect(document.body.textContent).toContain(LATE));
+    expect(toasts.length).toBe(0);
+    expect(closed).toBe(0);
   });
 });
