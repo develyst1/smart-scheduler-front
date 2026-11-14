@@ -58,6 +58,7 @@ import EndCourseDialog from "./EndCourseDialog";
 import PaymentCard from "@/components/partials/Payments/PaymentCard"; // TASK-876 (SPEC-099 §8)
 import BranchLine from "@/components/partials/Branch/BranchLine"; // TASK-898 (F1): read-only branch, and
 import CourseBranchControl from "@/components/partials/Branch/CourseBranchControl"; // the whole-course change (both gated by BRANCH_LIVE)
+import { BRANCH_LIVE } from "@/components/partials/Branch/config"; // TASK-993
 import { useUndoControl } from "@/components/common/UndoControl";
 import { useConfirm } from "@/components/common/useConfirm";
 import DropResumeDialog from "./DropResumeDialog";
@@ -884,6 +885,12 @@ function SessionTable({
                     {isExtra && (
                       <Badge size="xs" variant="light" color="grape">
                         {t("plan.extraBadge")}
+                      </Badge>
+                    )}
+                    {/* 🔻 TASK-993 (ขวัญ 14/11): every class row says where it happens */}
+                    {BRANCH_LIVE && s.branch && (
+                      <Badge size="xs" variant="outline" color={s.branch === "OTHER" ? "orange" : "gray"} tt="none" data-row-branch={s.branch}>
+                        {t(`branch.${s.branch}`)}
                       </Badge>
                     )}
                   </Group>

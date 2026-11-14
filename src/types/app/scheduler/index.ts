@@ -482,6 +482,8 @@ export interface PlanSession {
    * keystroke away in a grep.
    */
   cancelledByPause?: boolean;
+  /** 🔻 TASK-993 — the branch where THIS class happens (SB TASK-992); absent from an older server ⇒ no badge. */
+  branch?: Branch;
 }
 
 /** REQ-036 — the three reasons a course may be ended early. **The contract; there is no fourth.** */
