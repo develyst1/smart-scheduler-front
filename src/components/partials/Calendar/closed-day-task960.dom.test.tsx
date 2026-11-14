@@ -443,3 +443,50 @@ describe("🔴 TASK-960 — wiring pins", () => {
     expect(client).toContain("studentPhoneSentence(body.error) ?? body.error.message");
   });
 });
+
+describe("🔴 TASK-985 (ขวัญ 14/11) — a closed day offers no «+», as a coach's whole-day leave", () => {
+  const WeekGrid = require("./CalendarWeekGrid").default;
+  const DayGrid = require("./CalendarGrid").default;
+  const teacherOf = (id: string, nickname: string) => ({ id, name: `ครู${nickname}`, nickname, type: "FULL_TIME", subjects: [], active: true, monthlyHours: 0, monthlyIncome: 0, overLimit: false, bookable: true });
+  const TEACHERS = [teacherOf("t1", "เอ"), teacherOf("t2", "บี")];
+  const D = WEEK[1];
+  const classOn = {
+    id: "bk-closed", displayName: "น้องบีม", studentName: "น้องบีม", teacherId: "t1",
+    teachers: [{ id: "t1", name: "ครูเอ", nickname: "เอ", type: "FULL_TIME" }],
+    subject: null, date: D, startTime: "10:00", endTime: "11:00", bookingType: "COURSE_PACKAGE", status: "CONFIRMED",
+  };
+  const plusIn = (cell: Element) => cell.querySelectorAll(`button[aria-label="${dictionaries.en.calendar.addBooking}"]`).length;
+  const weekCell = (teacherIdx: number, dayIdx: number) => document.querySelectorAll(".min-h-24")[teacherIdx * 7 + dayIdx];
+
+  it("🔑 WEEK: the closed day's cells carry data-closed-day, are grey, have no «+»; the next day still has «+»; the class on it still renders as a button", () => {
+    wrap(h(WeekGrid, { teachers: TEACHERS, weekDays: WEEK, bookings: [classOn], onSelectBooking: () => {}, onCreate: () => {}, closedDates: new Set([D]) }));
+    for (const ti of [0, 1]) {
+      const closedCell = weekCell(ti, 1);
+      expect(closedCell.getAttribute("data-closed-day")).toBe("yes");
+      expect(closedCell.className.includes("bg-muted-50/80")).toBe(true);
+      expect(plusIn(closedCell)).toBe(0);
+      const next = weekCell(ti, 2);
+      expect(next.getAttribute("data-closed-day")).toBeNull();
+      expect(plusIn(next)).toBe(1);
+    }
+    expect([...weekCell(0, 1).querySelectorAll("button")].some((b) => b.textContent?.includes("น้องบีม"))).toBe(true);
+  });
+
+  it("🔑 DAY: with `closed` no cell offers an add button (every column), every cell is grey; without it «+» renders", () => {
+    const { unmount } = wrap(h(DayGrid, { teachers: TEACHERS, bookings: [classOn], onSelectBooking: () => {}, onCreate: () => {}, date: D, closed: true }));
+    const cells = [...document.querySelectorAll(".min-h-20")];
+    expect(cells.length).toBeGreaterThan(0);
+    expect(cells.every((c) => plusIn(c) === 0 && c.getAttribute("data-closed-day") === "yes" && c.className.includes("bg-muted-50/80"))).toBe(true);
+    expect([...document.querySelectorAll("button")].some((b) => b.textContent?.includes("น้องบีม"))).toBe(true);
+    unmount();
+    wrap(h(DayGrid, { teachers: TEACHERS, bookings: [classOn], onSelectBooking: () => {}, onCreate: () => {}, date: D }));
+    expect([...document.querySelectorAll(".min-h-20")].some((c) => plusIn(c) > 0)).toBe(true);
+  });
+
+  it("wiring: CalendarContent builds the closed-date set from the closed-day rows and passes it to both grids", () => {
+    const c = readFileSync("src/components/partials/Calendar/CalendarContent.tsx", "utf8").replace(/\r\n/g, "\n").replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(c).toContain("const closedDates = useMemo(() => new Set((closedDays ?? []).map((r) => r.date)), [closedDays]);");
+    expect(c).toContain("closed={closedDates.has(date)}");
+    expect(c).toContain("closedDates={closedDates}");
+  });
+});

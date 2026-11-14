@@ -35,6 +35,8 @@ interface Props {
   closedWeeks?: ReadonlySet<string>;
   /** 🔴 TASK-622 — the coaches' blocked days by `leaveDayKey` (`leaveDayIndex`): greyed, no `+`, classes marked. */
   leaveDays?: ReadonlyMap<string, LeaveMarker>;
+  /** 🔻 TASK-985 (ขวัญ 14/11): a closed day offers no «+», as a coach's whole-day leave — the whole-school closed dates on screen (`YYYY-MM-DD`). */
+  closedDates?: ReadonlySet<string>;
 }
 
 // พื้น/ขอบ + dot ตามสถานะ — `./calendar-status`, shared with the day grid AND the legend that explains both.
@@ -51,6 +53,7 @@ export default function CalendarWeekGrid({
   onSelectCamp,
   closedWeeks,
   leaveDays,
+  closedDates,
 }: Props) {
   const { lang, t } = useI18n();
   // Display-only preference (SPEC-046 re-cut) — it hides lines, it never filters bookings.
@@ -125,7 +128,8 @@ export default function CalendarWeekGrid({
               const leave = leaveDays?.get(leaveDayKey(tc.id, day));
               // 🔴 TASK-966 — a PART-DAY leave does not grey the whole cell (the week cell holds every hour of the day): it marks only the classes it overlaps, and the `+` stays. A whole-day leave is as before.
               const wholeDayLeave = leave && !(leave.startTime && leave.endTime) ? leave : undefined;
-              const canBook = bookableOnDate(tc, day) && !wholeDayLeave;
+              // 🔻 TASK-985 (ขวัญ 14/11): a closed day offers no «+», as a coach's whole-day leave
+              const canBook = bookableOnDate(tc, day) && !wholeDayLeave && !closedDates?.has(day);
               return (
                 <div
                   key={day}
@@ -133,6 +137,7 @@ export default function CalendarWeekGrid({
                     canBook ? "" : "bg-muted-50/80"
                   }`}
                   data-leave-day={wholeDayLeave ? "yes" : leave ? "part" : undefined}
+                  data-closed-day={closedDates?.has(day) ? "yes" : undefined} // 🔻 TASK-985 (ขวัญ 14/11): a closed day offers no «+», as a coach's whole-day leave
                 >
                   {items.map((item) => {
                     if (item.kind === "camp") return <CampBlockCell key={item.id} block={item} closed={closedWeeks?.has(item.campWeekId) ?? false} size="sm" onSelect={(blk) => onSelectCamp?.(blk)} />;

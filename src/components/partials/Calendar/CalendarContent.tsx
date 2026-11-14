@@ -102,6 +102,8 @@ export default function CalendarContent() {
    * not look like one that can. 🚫 One source, the server's `status`; nothing derived here.
    */
   const closedWeeks = closedWeekIds(calendar?.campWeeks);
+  // 🔻 TASK-985 (ขวัญ 14/11): a closed day offers no «+», as a coach's whole-day leave
+  const closedDates = useMemo(() => new Set((closedDays ?? []).map((r) => r.date)), [closedDays]);
   const { collapsed: cancelledTrayCollapsed } = useCancelledTrayCollapsed();
   const { data: badgeTypes = [] } = useBadges();
   // REQ-076 AC-9 — the tray's own list. Deliberately NOT filtered by the calendar's date/teacher/badge
@@ -306,6 +308,7 @@ export default function CalendarContent() {
               onSelectCamp={openCamp}
               date={date}
               leaveDays={leaveIndex}
+              closed={closedDates.has(date)} /* 🔻 TASK-985 (ขวัญ 14/11): a closed day offers no «+», as a coach's whole-day leave */
             />
             </>
           ) : (
@@ -324,6 +327,7 @@ export default function CalendarContent() {
               onCreate={openCreate}
               onSelectCamp={openCamp}
               leaveDays={leaveIndex}
+              closedDates={closedDates} /* 🔻 TASK-985 (ขวัญ 14/11): a closed day offers no «+», as a coach's whole-day leave */
             />
             </>
           )}

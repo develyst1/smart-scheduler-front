@@ -44,6 +44,8 @@ interface Props {
   date: string;
   /** 🔴 TASK-622 — the coaches' blocked days by `leaveDayKey` (`leaveDayIndex`): the column greyed, no `+`, classes marked. */
   leaveDays?: ReadonlyMap<string, LeaveMarker>;
+  /** 🔻 TASK-985 (ขวัญ 14/11): a closed day offers no «+», as a coach's whole-day leave — the day on screen is a whole-school closed day. */
+  closed?: boolean;
 }
 
 // พื้น/ขอบการ์ด + dot ตามสถานะ — `./calendar-status`, shared with the week grid AND the legend.
@@ -51,7 +53,7 @@ interface Props {
 // tradeoff the owner saw in both previews before choosing it, not an oversight.
 // 🚫 Do not re-declare either map here (see that file).
 
-export default function CalendarGrid({ teachers, bookings, times = [], onSelectBooking, onCreate, onSelectCamp, closedWeeks, date, leaveDays }: Props) {
+export default function CalendarGrid({ teachers, bookings, times = [], onSelectBooking, onCreate, onSelectCamp, closedWeeks, date, leaveDays, closed }: Props) {
   const t = useT();
   // The rows on screen, in the day's own order — the filter picks slots, it never reorders them.
   const visibleSlots = useMemo<string[]>(() => (times.length === 0 ? [...TIME_SLOTS] : TIME_SLOTS.filter((s) => times.includes(s))), [times]);
@@ -147,6 +149,7 @@ export default function CalendarGrid({ teachers, bookings, times = [], onSelectB
             closedWeeks={closedWeeks}
             bookings={bookings}
             leaveOf={(teacherId) => leaveDays?.get(leaveDayKey(teacherId, date))}
+            closed={closed}
           />
         ))}
         </div>
@@ -168,6 +171,7 @@ function Row({
   closedWeeks,
   bookings,
   leaveOf,
+  closed,
 }: {
   time: string;
   teachers: TeacherView[];
@@ -185,6 +189,8 @@ function Row({
   closedWeeks?: ReadonlySet<string>;
   /** 🔴 TASK-622 — this coach's blocked day, if today is one. 🚫 The column is KEPT (greyed), never dropped like a day off. */
   leaveOf: (teacherId: string) => LeaveMarker | undefined;
+  /** 🔻 TASK-985 (ขวัญ 14/11): a closed day offers no «+», as a coach's whole-day leave */
+  closed?: boolean;
 }) {
   const t = useT();
   const can = useCan();
@@ -212,8 +218,9 @@ function Row({
         return (
           <div
             key={tc.id}
-            className={`min-h-20 border-l border-t border-muted-100 p-1.5 ${leave ? "bg-muted-50/80" : ""}`}
+            className={`min-h-20 border-l border-t border-muted-100 p-1.5 ${leave || closed ? "bg-muted-50/80" : ""}`}
             data-leave-day={leave ? "yes" : undefined}
+            data-closed-day={closed ? "yes" : undefined} // 🔻 TASK-985 (ขวัญ 14/11): a closed day offers no «+», as a coach's whole-day leave
           >
             {list.length > 0 ? (
               <div className={tc.isSystem ? "flex h-full flex-col gap-1.5" : "contents"} data-park-stack={tc.isSystem ? list.length : undefined}>
@@ -327,7 +334,8 @@ function Row({
               );
               })}
               {/* 🔴 TASK-942 — the "+" stays on the system column even when the hour is taken: another group may rent the park. */}
-              {tc.isSystem && canBook && !leave && (
+              {/* 🔻 TASK-985 (ขวัญ 14/11): a closed day offers no «+», as a coach's whole-day leave */}
+              {tc.isSystem && canBook && !leave && !closed && (
                 <button
                   type="button"
                   onClick={() => onCreate(tc.id, time)}
@@ -339,7 +347,7 @@ function Row({
                 </button>
               )}
               </div>
-            ) : leave ? (
+            ) : leave || closed ? (
               /* 🔴 TASK-622 — the coach is away: grey, and no `+` (the server would refuse it with TEACHER_ON_LEAVE). */
               <div className="h-full min-h-16 w-full" aria-hidden />
             ) : !canBook ? (
