@@ -242,6 +242,7 @@ const en = {
     summaryFull: "Full price {full}",
     summaryOff: "Discount −{disc}",
     summaryNet: "Amount payable {net}",
+    summaryTrial: "Trial credit −{amount}", // 🔴 TASK-998 Amendment 1 — the Trial counted as class 1, off the list price
     errTooLarge: "A discount cannot exceed the full price.",
     errNoReason: "Please give a reason for this discount.",
     errNotAdmin: "Only an admin can apply a discount.",
@@ -2690,6 +2691,7 @@ const th: typeof en = {
     summaryFull: "ราคาเต็ม {full}",
     summaryOff: "ส่วนลด −{disc}",
     summaryNet: "ยอดที่ต้องชำระ {net}",
+    summaryTrial: "หัก Trial −{amount}", // 🔴 TASK-998 Amendment 1 — Trial ที่นับเป็นคาบที่ 1 หักจากราคาเต็ม
     errTooLarge: "ส่วนลดมากกว่าราคาเต็มไม่ได้",
     errNoReason: "กรุณาระบุเหตุผลของส่วนลด",
     errNotAdmin: "เฉพาะแอดมินเท่านั้นที่ให้ส่วนลดได้",

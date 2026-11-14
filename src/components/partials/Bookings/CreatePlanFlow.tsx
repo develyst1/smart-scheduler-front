@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Alert, Button, Group, Modal, NumberInput, Select, Stack, TextInput } from "@mantine/core";
+import { Alert, Button, Group, Modal, NumberInput, Select, Stack, Text, TextInput } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { CalendarPlus, Info, AlertTriangle, Users } from "lucide-react";
 import { TeacherOption, teacherSelectData } from "@/components/common/TeacherOption";
@@ -584,16 +584,28 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
         )}
 
         {/* REQ-063 — right under the price it applies to. Hidden entirely for a non-admin (the server also 403s).
-            🔴 TASK-998 — a native `fieldset disabled` (laid out as `display: contents`, so the form's spacing is unchanged) locks every control of the discount while the Trial tick is on. */}
-        {chosen && (
-          <fieldset disabled={trialOn} data-discount-fieldset data-discount-locked={trialOn ? "" : undefined} style={{ display: "contents" }}>
+            🔴 TASK-998 Amendment 1 (D1) — with the Trial tick ON there is NO discount block (the server refuses both together, and its own «Amount payable» line knows nothing of the Trial credit):
+            one money line of our own takes its place — «full · Trial credit · payable», payable = list − the Trial's net, the amount the sale records. Not a discount, so not behind `action:sales.discount`.
+            Unticked: the DiscountSection, exactly as before. */}
+        {chosen && trialOn && trial ? (
+          <Text fz="sm" className="tabular-nums" data-trial-money>
+            {t("discount.summaryFull", { full: formatPriceMinor(chosen.priceMinor) })}
+            {" · "}
+            {t("discount.summaryTrial", { amount: formatPriceMinor(trial.amountMinor) })}
+            {" · "}
+            <Text span fw={700}>
+              {t("discount.summaryNet", { net: formatPriceMinor(chosen.priceMinor - trial.amountMinor) })}
+            </Text>
+          </Text>
+        ) : (
+          chosen && (
             <DiscountSection
               fullMinor={chosen.priceMinor}
               value={discount}
               onChange={setDiscount}
               serverProblems={discountProblems}
             />
-          </fieldset>
+          )
         )}
 
         {/* TASK-876 — beside the discount, under the price: how the family paid. */}

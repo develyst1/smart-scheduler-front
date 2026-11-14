@@ -67,7 +67,7 @@ const TEACHERS = [
 ];
 const CARD = {
   packages: [
-    { size: 6, priceGroup: "PRIVATE", priceMinor: 600000, subjects: [{ id: "sub1", name: "เปียโน" }] },
+    { size: 6, priceGroup: "PRIVATE", priceMinor: 979000, subjects: [{ id: "sub1", name: "เปียโน" }] },
     { size: 6, priceGroup: "DUO", priceMinor: 900000, subjects: [] },
   ],
   unpricedSubjects: [],
@@ -121,7 +121,6 @@ const fillBasics = async (user: ReturnType<typeof userEvent.setup>) => {
   await waitFor(() => expect(generateBtn().disabled).toBe(false));
 };
 const tick = () => document.querySelector("[data-trial-first-class]") as HTMLInputElement | null;
-const discountFieldset = () => document.querySelector("[data-discount-fieldset]") as HTMLFieldSetElement;
 const discountInput = () => document.querySelector(`input[aria-label="${dictionaries.en.discount.section}"]`) as HTMLInputElement;
 const previews = () => posts.filter((p) => p.url === "/courses/preview");
 const sales = () => posts.filter((p) => p.url === "/courses");
@@ -174,30 +173,24 @@ describe("🔴 TASK-998 (a) — a Trial today: the tick shows, and ticking it ri
     expect(Object.keys(sales()[0].body)).not.toContain("discount");
   });
 
-  it("🔑 ticked ⇒ the DISCOUNT is cleared and every control of it is disabled (the server refuses both together)", async () => {
+  it("🔑 ticked ⇒ the DISCOUNT block is GONE and its typed value is cleared (the server refuses both together); unticking brings it back empty (Amendment 1: was a locked fieldset)", async () => {
     const user = userEvent.setup();
     mount();
     await fillBasics(user);
     await waitFor(() => expect(q("[data-trial-first-class]")).toBe(1));
-    // a discount typed first …
-    // (focus + keyboard, not `user.type`: this file asserts the wire below, so the TASK-567 masked-input rule is met; it is just not added to that sweep's pinned list, which is outside TASK-998's files)
-    await user.click(discountInput());
-    await user.keyboard("10");
-    await waitFor(() => expect(discountInput().value).toBe("10"));
-    expect(discountFieldset().disabled).toBe(false);
-    // … then the tick: cleared and locked
+    // (no discount is typed here: a NumberInput's typed text does not reach the form's state under happy-dom — the TASK-567 trap — so "the typed value is cleared on tick" is the code's `setDiscount(emptyDiscount())`, not something this test can drive)
+    expect(q("[data-trial-money]")).toBe(0);
+    expect(discountInput() === null).toBe(false);
+    // the tick: the block is not rendered at all, our own money line is
     await user.click(tick() as HTMLElement);
-    await waitFor(() => expect(discountFieldset().disabled).toBe(true));
-    expect(q("[data-discount-locked]")).toBe(1);
-    expect(discountInput().value).toBe("");
-    // every control sits INSIDE the disabled fieldset (the HTML spec disables them; happy-dom does not model that, so the proof here is the structure — the real-browser look is Tanya's, on sid)
-    expect(discountFieldset().contains(discountInput())).toBe(true);
-    expect(discountFieldset().querySelectorAll("input").length).toBeGreaterThan(2); // the kind radios, the value, the reason
-    // unticking unlocks it again
+    await waitFor(() => expect(q("[data-trial-money]")).toBe(1));
+    expect(discountInput() === null).toBe(true);
+    expect(q("[data-discount-fieldset]")).toBe(0);
+    // unticking brings the block back, and the money line goes
     await user.click(tick() as HTMLElement);
-    await waitFor(() => expect(discountFieldset().disabled).toBe(false));
-    expect(q("[data-discount-locked]")).toBe(0);
-    // 🔑 the typed 10 is a masked input's value: what matters is what the OTHER side got — tick again and sell; the sale body carries the tick and NO discount
+    await waitFor(() => expect(discountInput() === null).toBe(false));
+    expect(q("[data-trial-money]")).toBe(0);
+    // tick again and sell: the sale body carries the tick and NO discount
     await user.click(tick() as HTMLElement);
     await waitFor(() => expect(tick()?.checked).toBe(true));
     await user.click(generateBtn());
@@ -390,5 +383,48 @@ describe("🔴 TASK-998 R1/R2 (Silver's rework) — the sale's row count, and a 
     expect(actionMenus().length).toBe(0); // no stale plan
     expect(q("[data-trial-first-class]")).toBe(0);
     expect(sales().length).toBe(0); // nothing was sold
+  });
+});
+
+describe("🔴 TASK-998 Amendment 1 (D1) — the REAL amount payable with the tick", () => {
+  const money = () => document.querySelector("[data-trial-money]")?.textContent ?? "";
+
+  it("🔑 (e) ticked, list 9,790 and a Trial of 1,390 ⇒ the screen says «Amount payable 8,400» and «Trial credit −1,390», with no discount inputs", async () => {
+    trialAnswer = { ...TRIAL, amountMinor: 139000 };
+    const user = userEvent.setup();
+    mount();
+    await fillBasics(user);
+    await waitFor(() => expect(q("[data-trial-first-class]")).toBe(1));
+    expect(q("[data-trial-money]")).toBe(0); // unticked: today's discount block, not ours
+    await user.click(tick() as HTMLElement);
+    await waitFor(() => expect(q("[data-trial-money]")).toBe(1));
+    expect(money()).toBe("Full price 9,790 · Trial credit −1,390 · Amount payable 8,400");
+    // the discount block is not on the screen at all (no input, no segmented control, no «Discount» heading)
+    expect(discountInput() === null).toBe(true);
+    expect(text()).not.toContain(dictionaries.en.discount.section);
+    expect(text()).not.toContain("Discount −");
+  });
+
+  it("🔑 (e) the words: «Trial credit −{amount}» / «หัก Trial −{amount}»", () => {
+    expect(dictionaries.en.discount.summaryTrial).toBe("Trial credit −{amount}");
+    expect(dictionaries.th.discount.summaryTrial).toBe("หัก Trial −{amount}");
+  });
+
+  it("🔑 (f) UNticked ⇒ the discount block is back, with its OWN line (full price, no discount, payable = full price), and the sale is today's", async () => {
+    trialAnswer = { ...TRIAL, amountMinor: 139000 };
+    const user = userEvent.setup();
+    mount();
+    await fillBasics(user);
+    await waitFor(() => expect(q("[data-trial-first-class]")).toBe(1));
+    expect(q("[data-trial-money]")).toBe(0);
+    expect(discountInput() === null).toBe(false);
+    expect(text()).toContain("Full price 9,790 · Discount −0 · Amount payable 9,790");
+    // (a typed discount cannot be driven here: a NumberInput's typed text does not reach the form's state under happy-dom — the TASK-567 trap — so the discount MATH stays covered by its own tests, `discount.ts` / DiscountSection)
+    await user.click(generateBtn());
+    await waitFor(() => expect(previews().length).toBe(1));
+    await confirmSale(user);
+    await waitFor(() => expect(sales().length).toBe(1));
+    expect(Object.keys(sales()[0].body)).not.toContain("trialAsFirstClass");
+    expect(Object.keys(sales()[0].body)).not.toContain("discount");
   });
 });
