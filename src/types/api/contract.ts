@@ -1270,3 +1270,15 @@ export type ApiErrorCode =
 export interface ApiError {
   error: { code: ApiErrorCode; message: string; details?: unknown };
 }
+
+/** 🔴 TASK-998 (TASK-997 § Contract) — `GET /students/:id/convertible-trial`: today's attended, unlinked 1st Trial that a course sale may count as class 1 (`trial: null` when none). Exact casing, as the server sends it. */
+export interface ConvertibleTrial {
+  bookingId: string;
+  date: string;
+  subjectName: string;
+  teacherName: string;
+  amountMinor: number;
+}
+export interface ConvertibleTrialResponse {
+  trial: ConvertibleTrial | null;
+}

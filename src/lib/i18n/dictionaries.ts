@@ -1415,6 +1415,9 @@ const en = {
     kindDuo: "DUO (two kids)",
     coStudent: "Second child",
     duoSameChild: "The two children must be different.",
+    // 🔴 TASK-998 (TASK-997) — «count today's Trial as class 1» on the course sale
+    trialAsFirstClass: "Count today's Trial as class 1",
+    trialAsFirstClassHint: "{subject} · {teacher} · {left} classes left on the course · deduct ฿{amount}",
     classRate: "Teaching rate (ค่าสอน)",
     classRateHint: "Per session, baht — the DUO course's rate (the price is the DUO card's).",
     classRateMoveHint: "Per session, baht — changes the course's rate; sent only if you change it.",
@@ -3705,6 +3708,9 @@ const th: typeof en = {
     kindDuo: "DUO (2 คน)",
     coStudent: "นักเรียนคนที่ 2",
     duoSameChild: "นักเรียนสองคนต้องไม่ใช่คนเดียวกัน",
+    // 🔴 TASK-998 (TASK-997) — «นับ Trial วันนี้เป็นคาบที่ 1» บนหน้าขายคอร์ส
+    trialAsFirstClass: "นับ Trial วันนี้เป็นคาบที่ 1",
+    trialAsFirstClassHint: "{subject} · {teacher} · คอร์สเหลือ {left} คาบ · หัก ฿{amount}",
     classRate: "ค่าสอน",
     classRateHint: "ต่อคาบ (บาท) — ค่าสอนของคอร์ส DUO (ราคาขายมาจากแพ็กเกจ DUO)",
     classRateMoveHint: "ต่อคาบ (บาท) — แก้ค่าสอนของคอร์ส ส่งเฉพาะเมื่อเปลี่ยน",

@@ -86,6 +86,7 @@ import { ApiClientError } from "@/lib/api/client";
 import type { OtherKind, OtherScheduleFacts } from "@/lib/scheduler/other-schedule";
 import type { Branch } from "@/types/api/contract"; // 🔻 TASK-898 (F1)
 import type { CoursePatternSlot } from "@/types/api/contract"; // 🔴 TASK-970
+import type { ConvertibleTrialResponse } from "@/types/api/contract"; // 🔴 TASK-998
 import type { ChangePatternAnswer, ChangePatternInput, ChangeActivityAnswer, ChangeActivityInput, ChangeTeacherTimeInput, ChangeTeacherTimePreview, ChangeTeacherTimeResult, GroupSeriesResponse, OtherSeriesResponse } from "@/types/api/contract";
 import { groupSeriesBody, type GroupSeriesInput, type GroupTeacherSwapInput } from "@/lib/scheduler/group-session";
 import { startChangeBody, type StartChangeForecast, type StartChangeResult } from "@/lib/scheduler/course-start";
@@ -948,7 +949,19 @@ export interface CreateCourseInput {
   groupKey?: string;
   /** REQ-095 §13 (TASK-420/421) — DUO: the second child + the teaching rate (satang). ONLY when the toggle is on; never with `groupKey` (the server's 400). */
   duo?: { coStudentId: string; classRateMinor?: number };
+  /**
+   * 🔴 TASK-998 (TASK-997) — count TODAY's attended 1st Trial as class 1: the course stays `size`, the plan is `size − 1` rows, the Trial's net is credited. ONLY ticked ⇒ `true`; unticked ⇒ the key is
+   * absent (the body is byte for byte what it was). The server refuses it with `duo` / `groupKey` / `discount` / no trial today — its sentence, shown as any create error.
+   */
+  trialAsFirstClass?: boolean;
 }
+
+/** 🔴 TASK-998 (TASK-997 § Contract) — today's attended, unlinked 1st Trial this student could have counted as class 1 of a course (`{ trial: null }` when none). The mock has none. */
+export const getConvertibleTrial = async (studentId: string): Promise<ConvertibleTrialResponse> => {
+  if (useMock) return mock.getConvertibleTrial(studentId);
+  const { data } = await api.get<ConvertibleTrialResponse>(`/students/${studentId}/convertible-trial`);
+  return { trial: data?.trial ?? null };
+};
 
 export const createCoursePackage = async (
   input: CreateCourseInput,
@@ -981,6 +994,8 @@ export const createCoursePackage = async (
     duo: input.duo,
     // 🔻 TASK-898 (F1) — the branch (absent ⇒ BRAVO on the server).
     branch: input.branch,
+    // 🔴 TASK-998 — only `true` is ever sent (absent otherwise).
+    trialAsFirstClass: input.trialAsFirstClass,
   });
   return data;
 };
@@ -1021,6 +1036,8 @@ export const previewCoursePackage = async (input: {
   absentWeeks?: number[];
   /** 🔴 TASK-970 (SPEC-109 §3.1) — the same `pattern` the sale sends: the answer is the expanded dates, so the preview IS the act. */
   pattern?: CoursePatternSlot[];
+  /** 🔴 TASK-998 (TASK-997) — `true` ⇒ the server plans `size − 1` rows (class 1 is today's Trial), so the preview IS the act. Absent otherwise. */
+  trialAsFirstClass?: boolean;
 }): Promise<CoursePreview> => {
   if (useMock) return mock.previewCoursePackage(input);
   const { data } = await api.post<CoursePreview>("/courses/preview", input);

@@ -22,6 +22,7 @@ import {
   type OtherSeriesInput,
   type MoveBookingInput,
   createCoursePackage,
+  getConvertibleTrial,
   createVoucher,
   importCoursePackage,
   importVoucher,
@@ -908,6 +909,18 @@ export const useSlotAvailability = (date: string | null, startTime: string | nul
 
 /** Generate the editable course plan without writing (TASK-098 purchase planner). */
 export const usePreviewCourse = () => useMutation({ mutationFn: previewCoursePackage });
+
+/**
+ * 🔴 TASK-998 (TASK-997) — today's attended, unlinked 1st Trial this student could count as class 1 of a course (`trial: null` when none). Read only while the sale could use it
+ * (`enabled`: an existing student, a Private course, not into a group). Keyed by the student, so changing the student re-reads it. Never cached long: it is a fact about TODAY.
+ */
+export const useConvertibleTrial = (studentId: string | undefined, enabled: boolean) =>
+  useQuery({
+    queryKey: ["convertible-trial", studentId ?? null],
+    queryFn: () => getConvertibleTrial(studentId as string),
+    enabled: enabled && !!studentId,
+    staleTime: 0,
+  });
 
 // ───────────────────────── Course packages ─────────────────────────
 

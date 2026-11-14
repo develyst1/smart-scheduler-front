@@ -1166,3 +1166,6 @@ export const previewCourseExpiry = (courseId: string, expiryDate: string) =>
 /** TASK-202 — offline stand-in; mirrors the real shape incl. a skip so the skip path is exercisable. */
 export const confirmCourse = (courseId: string) =>
   delay({ confirmed: 3, skipped: 0, alreadyConfirmed: 1, results: [] });
+
+/** 🔴 TASK-998 — offline stand-in for `GET /students/:id/convertible-trial`: no Trial today, so the tick never shows offline. */
+export const getConvertibleTrial = (_studentId: string) => delay({ trial: null });

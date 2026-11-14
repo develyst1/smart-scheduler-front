@@ -14,6 +14,7 @@ import {
   usePreviewCourse,
   useTeachers,
   useSellablePackages,
+  useConvertibleTrial,
 } from "@/hooks/scheduler";
 import { courseSizesFor, courseSizesForGroup, isUnpriced, packageFor, packageForGroup } from "@/lib/scheduler/sellable";
 import { formatPriceMinor } from "@/types/app/pricing";
@@ -115,6 +116,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   const rentalLine =
     rentalOn && rentalCode ? rentalPrintLine(t, rentalCode, rentalRemark.trim() || null, rentalPriceOf(rentalCode)) : null;
   const [discountProblems, setDiscountProblems] = useState<string[]>([]);
+  // 🔴 TASK-998 (TASK-997) — «count today's Trial as class 1»: unticked by default; the tick only means anything while the server still offers a Trial for THIS student (`trialOn`, below).
+  const [trialTick, setTrialTick] = useState(false);
 
   const selectedTeacher = teachers.find((tc) => tc.id === teacherId);
   // REQ-095 §13.4a (TASK-438) — the Program list follows the toggle: DUO ⇒ DUO subjects only; Private ⇒ the rest
@@ -127,6 +130,11 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   // TASK-421 — a DUO prices by the DUO card (`priceGroupFor`), a Private by the program: the same card lookup either way.
   const duoOn = !group && duo.on;
   const sellableSizes = group ? courseSizesForGroup(card, group.priceGroup) : duoOn ? courseSizesForGroup(card, priceGroupFor(true, null)) : courseSizesFor(card, subjectId);
+  // 🔴 TASK-998 — the Trial the server would let this sale count as class 1: an EXISTING student, a Private course, never into a group. Anything else ⇒ no read, no tick, and the body never carries the key.
+  const trialApplies = !group && !duoOn && !!student?.id;
+  const trialQuery = useConvertibleTrial(student?.id, trialApplies);
+  const trial = trialApplies ? (trialQuery.data?.trial ?? null) : null;
+  const trialOn = trialTick && trial !== null;
   const unpriced = !duoOn && isUnpriced(card, subjectId);
   const chosen = group ? packageForGroup(card, group.priceGroup, size) : duoOn ? packageForGroup(card, priceGroupFor(true, null), size) : packageFor(card, subjectId, size);
   const sizeOptions = sellableSizes.map((s) => ({
@@ -143,6 +151,14 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
   useEffect(() => {
     setDuo((d) => ({ ...d, coStudentId: coStudent?.id ?? null }));
   }, [coStudent?.id]);
+  // 🔴 TASK-998 — a different student, or Private ↔ DUO, or a group: the tick is about ANOTHER sale now, so it drops (the trial is re-read by the query's key).
+  useEffect(() => {
+    setTrialTick(false);
+  }, [student?.id, duoOn, group?.groupKey]);
+  // 🔴 TASK-998 R2 — a generated plan is the plan FOR a tick: when the tick changes (ticked, unticked, or the Trial went away on a re-read) the plan shown no longer matches what the sale would send, so it is dropped and «Generate» is needed again.
+  useEffect(() => {
+    setPlan(null);
+  }, [trialOn]);
 
   // TASK-398 — the group's three, seeded on open (and re-seeded if a different group opens the same form).
   useEffect(() => {
@@ -170,6 +186,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       setLeaveWeeks([]);
       setDiscount(emptyDiscount());
       setDiscountProblems([]);
+      setTrialTick(false);
       setPayMethod(DEFAULT_PAYMENT_METHOD);
       setBranch(DEFAULT_BRANCH);
     }
@@ -218,6 +235,8 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
         absentWeeks: weeks.length ? weeks : undefined,
         // 🔴 TASK-970 — the SAME `pattern` the sale will send: the answer is the expanded dates, so what is shown is what is saved.
         ...(patternBody ?? {}),
+        // 🔴 TASK-998 — the SAME flag the sale sends: the server plans size − 1 rows, so the plan shown is the plan saved. Unticked ⇒ no key at all.
+        ...(trialOn ? { trialAsFirstClass: true } : {}),
       });
       setAbsentWeeks(p.absentWeeks ?? weeks);
       setLeaveWeeks(leaveWeeksOf(p.sessions));
@@ -337,11 +356,14 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       groupKey: group?.groupKey,
       // TASK-421 — the DUO block ONLY when the toggle is on (both fields; the rate in satang); never beside a groupKey.
       duo: group ? undefined : duoBody(duo, canRate),
+      // 🔴 TASK-998 — ticked ⇒ `true`; unticked ⇒ `undefined` ⇒ the key is not on the wire (the body is byte for byte today's).
+      trialAsFirstClass: trialOn ? true : undefined,
       // SPEC-045 (REQ-054) — the program is a COURSE-level fact, sent once as `subjectId` above. Per-row
       // `subjectId` is deliberately NOT sent: it was the door through which a brand-new course could be born
       // mixed-program (and its derived program then became whatever `bookings[0]` happened to be). The BE falls
       // back to the course-level subject for every row, so the client cannot emit a mixed course at all.
-      // `sessions` describes ONLY the weekly chain — the BE requires exactly `size` of them and appends the
+      // 🔴 TASK-998 R1 — with the Trial tick the chain is `size − 1` rows (class 1 was the Trial): the slice below is `size − 1`, or a make-up would ride as a chain row and the server refuses the count.
+      // `sessions` describes ONLY the weekly chain — the BE requires exactly `size` of them (`size − 1` with the Trial tick) and appends the
       // make-ups itself from `absentWeeks` (sending the make-up rows too would fail its length check and would
       // also mean the FE deciding placement, which is the BE's job). The first `size` draft rows ARE that chain.
       // 🔴 TASK-970 (SPEC-109 §3.1) — `pattern` and `sessions` are EXCLUSIVE (the server refuses both): with a pattern the sale sends the pattern and NO per-row list — the server expands the SAME
@@ -350,7 +372,7 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
       sessions:
         patternBody && "pattern" in patternBody
           ? undefined
-          : sessions.slice(0, size).map((s) => ({
+          : sessions.slice(0, trialOn ? size - 1 : size).map((s) => ({
               date: s.date,
               startTime: s.startTime,
               teacherId: s.teacher?.id,
@@ -542,14 +564,36 @@ export default function CreatePlanFlow({ opened, onClose, group }: Props) {
           />
         )}
 
-        {/* REQ-063 — right under the price it applies to. Hidden entirely for a non-admin (the server also 403s). */}
-        {chosen && (
-          <DiscountSection
-            fullMinor={chosen.priceMinor}
-            value={discount}
-            onChange={setDiscount}
-            serverProblems={discountProblems}
+        {/* 🔴 TASK-998 (TASK-997) — today's attended Trial of THIS student: one tick counts it as class 1 (the course keeps its size, the plan is size − 1 rows, the Trial's net comes off).
+            Only for an existing student on a Private course not into a group, and only when the server found a Trial. Ticking clears the discount and locks it: the server refuses both together. */}
+        {trial && chosen && (
+          <Checkbox
+            label={t("course.trialAsFirstClass")}
+            description={t("course.trialAsFirstClassHint", { subject: trial.subjectName, teacher: trial.teacherName, left: size - 1, amount: trial.amountMinor / 100 })}
+            checked={trialOn}
+            onChange={(e) => {
+              const on = e.currentTarget.checked;
+              setTrialTick(on);
+              if (on) {
+                setDiscount(emptyDiscount());
+                setDiscountProblems([]);
+              }
+            }}
+            data-trial-first-class
           />
+        )}
+
+        {/* REQ-063 — right under the price it applies to. Hidden entirely for a non-admin (the server also 403s).
+            🔴 TASK-998 — a native `fieldset disabled` (laid out as `display: contents`, so the form's spacing is unchanged) locks every control of the discount while the Trial tick is on. */}
+        {chosen && (
+          <fieldset disabled={trialOn} data-discount-fieldset data-discount-locked={trialOn ? "" : undefined} style={{ display: "contents" }}>
+            <DiscountSection
+              fullMinor={chosen.priceMinor}
+              value={discount}
+              onChange={setDiscount}
+              serverProblems={discountProblems}
+            />
+          </fieldset>
         )}
 
         {/* TASK-876 — beside the discount, under the price: how the family paid. */}
